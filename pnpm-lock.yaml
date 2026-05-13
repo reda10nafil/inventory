@@ -332,6 +332,9 @@ importers:
       react-native-markdown-display:
         specifier: ^7.0.2
         version: 7.0.2(react-native@0.81.5(@babel/core@7.27.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native-nfc-manager:
+        specifier: ^3.17.2
+        version: 3.17.2(@expo/config-plugins@54.0.4)
       react-native-pager-view:
         specifier: 6.9.1
         version: 6.9.1(react-native@0.81.5(@babel/core@7.27.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -5457,6 +5460,14 @@ packages:
     peerDependencies:
       react: '>=16.2.0'
       react-native: '>=0.50.4'
+
+  react-native-nfc-manager@3.17.2:
+    resolution: {integrity: sha512-0NryP/Iw2hzw4MVH5KCngoRerNUrnRok6VfLrlFcFZRKyTQ7KTgpsdDxCB6cR33qYNyEDrWGBayfAI+ym5gt8Q==}
+    peerDependencies:
+      '@expo/config-plugins': '*'
+    peerDependenciesMeta:
+      '@expo/config-plugins':
+        optional: true
 
   react-native-pager-view@6.9.1:
     resolution: {integrity: sha512-uUT0MMMbNtoSbxe9pRvdJJKEi9snjuJ3fXlZhG8F2vVMOBJVt/AFtqMPUHu9yMflmqOr08PewKzj9EPl/Yj+Gw==}
@@ -12746,6 +12757,10 @@ snapshots:
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.27.4)(@types/react@19.1.17)(react@19.1.0)
       react-native-fit-image: 1.5.5
+
+  react-native-nfc-manager@3.17.2(@expo/config-plugins@54.0.4):
+    optionalDependencies:
+      '@expo/config-plugins': 54.0.4
 
   react-native-pager-view@6.9.1(react-native@0.81.5(@babel/core@7.27.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:

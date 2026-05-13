@@ -9,12 +9,15 @@ import * as DocumentPicker from 'expo-document-picker';
 import { ActionSheetIOS } from 'react-native';
 import { Image } from 'expo-image';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Sharing from 'expo-sharing';
 import { theme, typography, borderRadius, spacing, shadows } from '../../constants/theme';
 import { useInventory } from '../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../constants/config';
 import { useLocations } from '../../contexts/LocationsContext';
 import { useCustomFields, FIELD_TYPE_INFO, CustomField } from '../../contexts/CustomFieldsContext';
 import { useLayout, LayoutField } from '../../contexts/LayoutContext';
+import { useGS1Config } from '../../contexts/GS1ConfigContext';
+import { generateGS1DigitalLink, validateGTIN } from '../../utils/gs1';
 
 export default function AddProductScreen() {
   const insets = useSafeAreaInsets();
@@ -23,6 +26,7 @@ export default function AddProductScreen() {
   const { locations } = useLocations();
   const { customFields } = useCustomFields();
   const { layout, getVisibleFields, loading: layoutLoading } = useLayout();
+  const { gs1Config } = useGS1Config();
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const [showDatePickerMap, setShowDatePickerMap] = useState<Record<string, boolean>>({});
@@ -200,6 +204,20 @@ export default function AddProductScreen() {
     try {
       const finalSKU = formData.sku.trim() || generateSKU();
 
+      // GS1 Digital Link generation
+      let gs1DigitalLink: string | undefined;
+      if (gs1Config.baseUrl) {
+        const lottoValue = gs1Config.enableLotto && gs1Config.lottoFieldId
+          ? customFieldValues[gs1Config.lottoFieldId]?.toString()
+          : undefined;
+        gs1DigitalLink = generateGS1DigitalLink(
+          gs1Config,
+          finalSKU,
+          products.length,
+          lottoValue,
+        );
+      }
+
       addProduct({
         sku: finalSKU,
         furType: formData.furType,
@@ -213,6 +231,7 @@ export default function AddProductScreen() {
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
         technicalNotes: formData.technicalNotes || undefined,
         libraryId: formData.libraryId || undefined,
+        gs1DigitalLink,
         customData: Object.keys(customFieldValues)
           .map(fieldId => {
             const field = customFields.find(f => f.id === fieldId);
@@ -558,7 +577,7 @@ export default function AddProductScreen() {
             {renderLabel(customField.name, customField.required)}
             <View style={{ gap: 8 }}>
               {docs.map((docUri: string, index: number) => (
-                <View key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: theme.border }}>
+                <Pressable key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: theme.border }} onPress={() => Sharing.shareAsync(docUri).catch(console.error)}>
                   <MaterialIcons name="insert-drive-file" size={24} color={theme.primary} />
                   <Text style={{ flex: 1, marginLeft: 12, fontSize: 14, color: theme.textPrimary }} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
                   <Pressable onPress={() => {
@@ -568,7 +587,7 @@ export default function AddProductScreen() {
                   }}>
                     <MaterialIcons name="delete" size={24} color={theme.error} />
                   </Pressable>
-                </View>
+                </Pressable>
               ))}
               <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.primary, backgroundColor: `${theme.primary}10`, marginTop: 4 }}

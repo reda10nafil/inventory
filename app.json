@@ -9,14 +9,23 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NFCReaderUsageDescription": "L'app necessita dell'accesso NFC per programmare o leggere i Digital Link sui tuoi prodotti."
+      },
+      "entitlements": {
+        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.NFC"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -36,7 +45,8 @@
       ],
       "expo-secure-store",
       "expo-video",
-      "expo-sqlite"
+      "expo-sqlite",
+      "react-native-nfc-manager"
     ],
     "experiments": {
       "typedRoutes": true

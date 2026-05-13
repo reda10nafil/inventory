@@ -22,6 +22,8 @@ export interface Product {
   deletedAt?: string;
   /** ID of the library/folder this product belongs to (slug format for Google Sheets) */
   libraryId?: string;
+  /** GS1 Digital Link URI generated at save time */
+  gs1DigitalLink?: string;
 }
 
 export interface ProductCustomData {

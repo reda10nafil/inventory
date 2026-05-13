@@ -8,7 +8,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-
+import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import { Image } from 'expo-image';
 import { theme, typography, shadows, borderRadius, spacing } from '../../constants/theme';
@@ -16,6 +16,7 @@ import { useInventory } from '../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../constants/config';
 import { useLocations } from '../../contexts/LocationsContext';
 import { useCustomFields } from '../../contexts/CustomFieldsContext';
+import { nfcService } from '../../utils/nfcService';
 import Barcode from '../../components/Barcode';
 
 export default function ProductDetailScreen() {
@@ -719,6 +720,42 @@ export default function ProductDetailScreen() {
     }
   };
 
+  const handleCopyGS1Link = async () => {
+    if (product.gs1DigitalLink) {
+      await Clipboard.setStringAsync(product.gs1DigitalLink);
+      Alert.alert('Copiato', 'Link GS1 copiato negli appunti');
+    }
+  };
+
+  const handleProgramNFC = async () => {
+    if (!product.gs1DigitalLink) {
+      Alert.alert('Errore', 'Nessun Digital Link generato per questo prodotto.');
+      return;
+    }
+
+    try {
+      // Step 1: Clean tag
+      const cleaned = await nfcService.cleanTag();
+      if (!cleaned) {
+        Alert.alert('Operazione Annullata', 'Pulizia del tag non completata.');
+        return;
+      }
+
+      // Step 2: Write tag (small delay to let user remove and re-tap if needed, or just let system prompt handle it)
+      setTimeout(async () => {
+        const written = await nfcService.writeGS1Uri(product.gs1DigitalLink!);
+        if (written) {
+          Alert.alert('Successo', 'Il tag NFC è stato programmato correttamente con il Digital Link GS1.');
+        } else {
+          Alert.alert('Errore', 'Impossibile registrare il prodotto sul tag.');
+        }
+      }, 500);
+
+    } catch (e) {
+      Alert.alert('Errore Hardware', 'Si è verificato un errore di comunicazione con il sensore NFC.');
+    }
+  };
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <ScrollView
@@ -928,7 +965,7 @@ export default function ProductDetailScreen() {
                         </View>
                         <View style={{ gap: 8, marginTop: 8 }}>
                           {docs.map((docUri, i) => (
-                            <Pressable key={i} style={styles.customDocumentItem} onPress={() => Linking.openURL(docUri).catch(() => Alert.alert('Errore', 'Impossibile aprire il file'))}>
+                            <Pressable key={i} style={styles.customDocumentItem} onPress={() => Sharing.shareAsync(docUri).catch(() => Alert.alert('Errore', 'Impossibile aprire il file'))}>
                               <MaterialIcons name="insert-drive-file" size={20} color={theme.primary} />
                               <Text style={styles.customDocumentText} numberOfLines={1}>{docUri.split('/').pop() || 'Documento Allegato'}</Text>
                               <MaterialIcons name="open-in-new" size={20} color={theme.textSecondary} />
@@ -1069,20 +1106,58 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* QR Code Section */}
+          {/* GS1 Digital Link Section */}
           <View style={styles.qrSection}>
-            <Text style={styles.sectionTitle}>AZIONI RAPIDE</Text>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Pressable style={styles.qrButton} onPress={() => setShowQRModal(true)}>
-                <MaterialIcons name="qr-code-2" size={24} color={theme.textPrimary} />
-                <Text style={styles.qrButtonText}>Mostra QR</Text>
-              </Pressable>
+            <Text style={styles.sectionTitle}>IDENTITÀ DIGITALE GS1</Text>
 
-              <Pressable style={styles.qrButton} onPress={handlePrintPDF}>
-                <MaterialIcons name="picture-as-pdf" size={24} color={theme.primary} />
-                <Text style={[styles.qrButtonText, { color: theme.primary }]}>Stampa PDF</Text>
-              </Pressable>
+            {product.gs1DigitalLink ? (
+              <View style={styles.gs1Card}>
+                <View style={styles.gs1QrContainer}>
+                  <QRCode
+                    value={product.gs1DigitalLink}
+                    size={160}
+                    color="#000"
+                    backgroundColor="#FFF"
+                    logoSize={30}
+                    logoBackgroundColor='transparent'
+                  />
+                </View>
+                <View style={styles.gs1Info}>
+                  <Text style={styles.gs1Label}>URL GS1 Digital Link</Text>
+                  <Text style={styles.gs1UrlText} numberOfLines={2}>
+                    {product.gs1DigitalLink}
+                  </Text>
+                </View>
+                
+                <View style={styles.gs1Actions}>
+                  <Pressable style={styles.gs1ActionButton} onPress={handleCopyGS1Link}>
+                    <MaterialIcons name="content-copy" size={20} color={theme.primary} />
+                    <Text style={styles.gs1ActionText}>Copia Link</Text>
+                  </Pressable>
+                  <Pressable style={[styles.gs1ActionButton, { borderColor: theme.info }]} onPress={handleProgramNFC}>
+                    <MaterialIcons name="nfc" size={20} color={theme.info} />
+                    <Text style={[styles.gs1ActionText, { color: theme.info }]}>Programma Tag</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.gs1Card}>
+                 <Text style={styles.gs1MissingText}>Questo prodotto non ha un Digital Link GS1 generato. Modifica e salva il prodotto per generarlo.</Text>
+                 <Pressable style={styles.qrButton} onPress={() => setShowQRModal(true)}>
+                    <MaterialIcons name="qr-code-2" size={24} color={theme.textPrimary} />
+                    <Text style={styles.qrButtonText}>Mostra SKU QR (Legacy)</Text>
+                  </Pressable>
+              </View>
+            )}
+            
+            {/* Azioni PDF (moved below GS1) */}
+            <View style={{ marginTop: 16 }}>
+               <Pressable style={styles.qrButton} onPress={handlePrintPDF}>
+                 <MaterialIcons name="picture-as-pdf" size={24} color={theme.primary} />
+                 <Text style={[styles.qrButtonText, { color: theme.primary }]}>Stampa Scheda PDF</Text>
+               </Pressable>
             </View>
+
           </View>
         </View>
       </ScrollView>
@@ -1738,5 +1813,66 @@ const styles = StyleSheet.create({
   customNestedImage: {
     width: '100%',
     height: '100%',
+  },
+  gs1Card: {
+    backgroundColor: theme.surface,
+    borderRadius: borderRadius.large,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: theme.primary,
+    alignItems: 'center',
+    gap: 16,
+  },
+  gs1QrContainer: {
+    padding: 12,
+    backgroundColor: '#FFF',
+    borderRadius: borderRadius.medium,
+  },
+  gs1Info: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  gs1Label: {
+    ...typography.caption,
+    color: theme.textSecondary,
+    textTransform: 'uppercase',
+  },
+  gs1UrlText: {
+    ...typography.body,
+    fontSize: 13,
+    color: theme.textPrimary,
+    textAlign: 'center',
+    fontFamily: 'monospace',
+  },
+  gs1Actions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    marginTop: 8,
+  },
+  gs1ActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: borderRadius.medium,
+    borderWidth: 1,
+    borderColor: theme.primary,
+    backgroundColor: `${theme.primary}10`,
+    gap: 8,
+  },
+  gs1ActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.primary,
+  },
+  gs1MissingText: {
+    ...typography.body,
+    fontSize: 14,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 8,
   }
 });

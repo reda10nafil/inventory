@@ -87,6 +87,45 @@ export default function SettingsScreen() {
           <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
         </Pressable>
 
+        {/* CONFIGURAZIONE HARDWARE E GS1 - NEW */}
+        <Text style={styles.sectionTitle}>CONFIGURAZIONE HARDWARE</Text>
+
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/gs1-config')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
+              <MaterialIcons name="link" size={24} color="#FFF" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>GS1 Digital Link</Text>
+              <Text style={styles.settingDescription}>
+                Configura lo standard URL per i prodotti
+              </Text>
+            </View>
+          </View>
+          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+        </Pressable>
+
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/hardware')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
+              <MaterialIcons name="settings-cell" size={24} color="#FFF" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Scanner & NFC</Text>
+              <Text style={styles.settingDescription}>
+                Preferenze lettura/scrittura hardware
+              </Text>
+            </View>
+          </View>
+          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+        </Pressable>
+
         {/* GESTIONE INVENTARIO */}
         <Text style={styles.sectionTitle}>GESTIONE INVENTARIO</Text>
 
