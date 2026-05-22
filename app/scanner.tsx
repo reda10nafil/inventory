@@ -8,12 +8,12 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
-import { decodeBarcodeImage } from '../../utils/barcodeDecoder';
-import { theme, typography, borderRadius } from '../../constants/theme';
-import { useInventory } from '../../contexts/InventoryContext';
-import { useLocations } from '../../contexts/LocationsContext';
-import { soundService } from '../../services/SoundService';
-import { useAutomations } from '../../contexts/AutomationsContext';
+import { decodeBarcodeImage } from '../utils/barcodeDecoder';
+import { theme, typography, borderRadius } from '../constants/theme';
+import { useInventory } from '../contexts/InventoryContext';
+import { useLocations } from '../contexts/LocationsContext';
+import { soundService } from '../services/SoundService';
+import { useAutomations } from '../contexts/AutomationsContext';
 
 export default function ScannerScreen() {
   const router = useRouter();

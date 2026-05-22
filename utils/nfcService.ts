@@ -39,7 +39,9 @@ class NfcService {
       });
 
       // Write an empty NDEF message to clear the tag
-      const bytes = Ndef.encodeMessage([Ndef.emptyRecord()]);
+      // TNF_EMPTY is 0
+      const emptyRec = Ndef.record(0, '', '', '');
+      const bytes = Ndef.encodeMessage([emptyRec]);
       
       if (bytes) {
         await NfcManager.ndefHandler.writeNdefMessage(bytes);
@@ -103,12 +105,13 @@ class NfcService {
       
       if (tag && tag.ndefMessage && tag.ndefMessage.length > 0) {
         const ndefRecord = tag.ndefMessage[0];
+        const payload = new Uint8Array(ndefRecord.payload as number[]);
         // Decode URI
-        tagValue = Ndef.uri.decodePayload(ndefRecord.payload);
+        tagValue = Ndef.uri.decodePayload(payload);
         
         // Se non è un URI, prova a decodificarlo come Testo
         if (!tagValue) {
-            tagValue = Ndef.text.decodePayload(ndefRecord.payload);
+            tagValue = Ndef.text.decodePayload(payload);
         }
       }
       
