@@ -58,11 +58,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="scanner"
+        name="automations"
         options={{
-          title: 'Scanner',
+          title: 'Automazioni',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="qr-code-scanner" size={24} color={color} />
+            <MaterialIcons name="account-tree" size={24} color={color} />
           ),
         }}
       />

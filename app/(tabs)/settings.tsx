@@ -66,26 +66,7 @@ export default function SettingsScreen() {
           <Text style={styles.headerTitle}>Impostazioni</Text>
         </View>
 
-        {/* Automazioni Smart - NEW */}
-        <Text style={styles.sectionTitle}>AUTOMAZIONI SMART</Text>
 
-        <Pressable
-          style={styles.settingRow}
-          onPress={() => router.push('/settings/automations')}
-        >
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
-              <MaterialIcons name="auto-fix-high" size={24} color="#000" />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Centro Automazioni</Text>
-              <Text style={styles.settingDescription}>
-                Spostamenti, Vendite e Audit rapidi
-              </Text>
-            </View>
-          </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
-        </Pressable>
 
         {/* CONFIGURAZIONE HARDWARE E GS1 - NEW */}
         <Text style={styles.sectionTitle}>CONFIGURAZIONE HARDWARE</Text>

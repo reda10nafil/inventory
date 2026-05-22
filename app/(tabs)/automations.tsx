@@ -73,10 +73,10 @@ export default function AutomationsScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.header}>
-                    <Pressable onPress={() => router.back()} style={styles.backButton}>
-                        <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
+                    <Text style={styles.headerTitle}>Centro Automazioni</Text>
+                    <Pressable onPress={() => router.push('/scanner' as any)} style={styles.scannerButton}>
+                        <MaterialIcons name="qr-code-scanner" size={24} color={theme.primary} />
                     </Pressable>
-                    <Text style={styles.headerTitle}>Automazioni Smart</Text>
                 </View>
 
                 {/* ── Custom Automations ── */}
@@ -174,13 +174,16 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: spacing.screenPadding,
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: theme.border,
     },
-    backButton: {
-        marginRight: 16,
+    scannerButton: {
+        padding: 8,
+        backgroundColor: `${theme.primary}15`,
+        borderRadius: borderRadius.medium,
     },
     headerTitle: {
         ...typography.h2 || { fontSize: 24, fontWeight: '700' },
