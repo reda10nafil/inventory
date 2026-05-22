@@ -27,18 +27,29 @@ export default function ScannerScreen() {
   const [manualCode, setManualCode] = useState('');
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  // ... (rest of state)
+  const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<NodeJS.Timeout | null>(null);
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     if (scanned) return;
 
-    setScanned(true);
+    // Clear any pending error
+    if (errorTimeoutRef) {
+      clearTimeout(errorTimeoutRef);
+      setErrorTimeoutRef(null);
+    }
 
     // 1. Try Product
     const product = products.find((p) => p.sku === data || p.id === data);
     if (product) {
-      scanProduct(product.id);
-      soundService.playSuccess();
+      setScanned(true);
+      
+      // Fragile check logic
+      if (product.isFragile) {
+        soundService.playSuccess().then(() => soundService.playFragileAlert());
+      } else {
+        soundService.playSuccess();
+      }
+      
       router.push({
         pathname: '/scanner-action',
         params: { type: 'product', id: product.id },
@@ -50,6 +61,7 @@ export default function ScannerScreen() {
     // 2. Try Location
     const location = locations.find((l) => l.barcode === data || l.id === data);
     if (location) {
+      setScanned(true);
       soundService.playSuccess();
       router.push({
         pathname: '/scanner-action',
@@ -62,6 +74,7 @@ export default function ScannerScreen() {
     // 3. Try Library (Folder)
     const library = libraries.find((l) => l.barcode === data || l.id === data);
     if (library) {
+      setScanned(true);
       soundService.playSuccess();
       router.push({
         pathname: '/scanner-action',
@@ -75,6 +88,7 @@ export default function ScannerScreen() {
     if (data.startsWith('AUTO:')) {
       const automation = getAutomationByQR(data);
       if (automation) {
+        setScanned(true);
         soundService.playSuccess();
         router.push({ pathname: '/automations/custom-runner', params: { id: automation.id } } as any);
         setTimeout(() => setScanned(false), 2000);
@@ -82,18 +96,25 @@ export default function ScannerScreen() {
       }
     }
 
-    // 5. Not Found
-    soundService.playError();
-    Alert.alert(
-      'Codice Non Riconosciuto',
-      `Codice scansionato: ${data}\n\nNessun prodotto, posizione o cartella corrisponde a questo codice.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => setScanned(false),
-        },
-      ]
-    );
+    // 5. Not Found - Delay error by 400ms to allow immediate valid scan
+    const timeout = setTimeout(() => {
+      setScanned(true);
+      soundService.playBlockingError();
+      Alert.alert(
+        'Codice Non Riconosciuto',
+        `Codice scansionato: ${data}\n\nNessun prodotto, posizione o cartella corrisponde a questo codice.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setScanned(false);
+              setErrorTimeoutRef(null);
+            },
+          },
+        ]
+      );
+    }, 400);
+    setErrorTimeoutRef(timeout);
   };
 
   const handleManualSearch = () => {

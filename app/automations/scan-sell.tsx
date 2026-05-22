@@ -21,9 +21,14 @@ export default function ScanSellScreen() {
     const [showPriceModal, setShowPriceModal] = useState(false);
     const [pendingProduct, setPendingProduct] = useState<any>(null);
     const [priceInput, setPriceInput] = useState('');
+    const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<NodeJS.Timeout | null>(null);
 
     const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
-        setShowScanner(false);
+        // Clear pending error if any
+        if (errorTimeoutRef) {
+            clearTimeout(errorTimeoutRef);
+            setErrorTimeoutRef(null);
+        }
 
         // Find product
         let product = products.find(p => p.id === data);
@@ -32,6 +37,7 @@ export default function ScanSellScreen() {
         }
 
         if (product) {
+            setShowScanner(false);
             if (product.status === 'sold') {
                 Alert.alert('Info', 'Questo prodotto risulta già venduto.');
                 return;
@@ -42,8 +48,17 @@ export default function ScanSellScreen() {
             setPriceInput(product.sellPrice ? product.sellPrice.toString() : '');
             setShowPriceModal(true);
         } else {
-            soundService.playError();
-            Alert.alert('Errore', 'Prodotto non trovato.');
+            // Debounce error for 400ms
+            const timeout = setTimeout(() => {
+                setShowScanner(false);
+                soundService.playBlockingError();
+                Alert.alert(
+                    'Errore', 
+                    'Prodotto non trovato.',
+                    [{ text: 'OK', onPress: () => setErrorTimeoutRef(null) }]
+                );
+            }, 400);
+            setErrorTimeoutRef(timeout);
         }
     };
 

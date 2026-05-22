@@ -38,8 +38,16 @@ export default function QuickTagScreen() {
         setStep('scan_loop');
     };
 
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+
     const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
         // Continuous scanning — do NOT close scanner
+        
+        // Clear pending error
+        if (errorTimeoutRef) {
+            clearTimeout(errorTimeoutRef);
+            setErrorTimeoutRef(null);
+        }
 
         let product = products.find((p) => p.id === data);
         if (!product) {
@@ -69,9 +77,13 @@ export default function QuickTagScreen() {
             setTimeout(() => setFeedbackMessage(null), 1000);
 
         } else {
-            soundService.playError();
-            setFeedbackMessage(`Non trovato: ${data}`);
-            setTimeout(() => setFeedbackMessage(null), 2000);
+            // Debounce error
+            const timeout = setTimeout(() => {
+                soundService.playBlockingError();
+                setFeedbackMessage(`Non trovato: ${data}`);
+                setTimeout(() => setFeedbackMessage(null), 2000);
+            }, 400);
+            setErrorTimeoutRef(timeout);
         }
     };
 

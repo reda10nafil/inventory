@@ -143,9 +143,17 @@ export default function CustomRunnerScreen() {
         return false;
     }, [scannedProductId, scannedLocationId, products, locations]);
 
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+
     // ── Handle scan result ──────────────────────────────────
     const handleScan = ({ type, data }: { type: string; data: string }) => {
         if (!currentStep) return;
+
+        // Clear pending error
+        if (errorTimeoutRef) {
+            clearTimeout(errorTimeoutRef);
+            setErrorTimeoutRef(null);
+        }
 
         if (currentStep.type === 'scan_product') {
             let product = products.find(p => p.id === data || p.sku === data);
@@ -161,8 +169,12 @@ export default function CustomRunnerScreen() {
                     advanceToNextScanStep(currentStepIndex + 1, product!.id, scannedLocationId);
                 }, 300);
             } else {
-                soundService.playError();
-                showFeedback(`❌ Non trovato: ${data}`, true);
+                // Debounce error
+                const timeout = setTimeout(() => {
+                    soundService.playBlockingError();
+                    showFeedback(`❌ Non trovato: ${data}`, true);
+                }, 400);
+                setErrorTimeoutRef(timeout);
             }
         } else if (currentStep.type === 'scan_location') {
             const loc = locations.find(l => l.barcode === data || l.id === data);
@@ -176,8 +188,12 @@ export default function CustomRunnerScreen() {
                     advanceToNextScanStep(currentStepIndex + 1, scannedProductId, loc.id);
                 }, 300);
             } else {
-                soundService.playError();
-                showFeedback(`❌ Posizione non trovata`, true);
+                // Debounce error
+                const timeout = setTimeout(() => {
+                    soundService.playBlockingError();
+                    showFeedback(`❌ Posizione non trovata`, true);
+                }, 400);
+                setErrorTimeoutRef(timeout);
             }
         }
     };

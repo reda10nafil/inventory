@@ -2,47 +2,52 @@ import { Audio } from 'expo-av';
 import { Vibration } from 'react-native';
 
 class SoundService {
-    private sounds: { [key: string]: Audio.Sound | null } = {
-        success: null,
-        error: null,
-        warning: null,
-        info: null,
-    };
+    private shortBeep: Audio.Sound | null = null;
+    private longBeep: Audio.Sound | null = null;
 
     constructor() {
-        // Auto-load sounds when service is instantiated
         this.loadSounds();
     }
 
-    /**
-     * Preload sounds using remote URIs as defaults.
-     * User can replace these with local require() if they eject or configure assets.
-     */
     async loadSounds() {
         try {
-            // Success: Short Beep
-            const { sound: successSound } = await Audio.Sound.createAsync(
-                { uri: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg' },
+            // Load local 3000 Hz beep files
+            const { sound: shortSound } = await Audio.Sound.createAsync(
+                require('../../assets/audio/beep_short.wav'),
                 { shouldPlay: false }
             );
-            this.sounds.success = successSound;
+            this.shortBeep = shortSound;
 
-            // Error: Computer Error / Clank
-            const { sound: errorSound } = await Audio.Sound.createAsync(
-                { uri: 'https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg' }, // Or similar distinct sound
+            const { sound: longSound } = await Audio.Sound.createAsync(
+                require('../../assets/audio/beep_long.wav'),
                 { shouldPlay: false }
             );
-            this.sounds.error = errorSound;
-
+            this.longBeep = longSound;
         } catch (error) {
-            console.log('Error loading remote sounds, falling back to vibration:', error);
+            console.log('Error loading local 3kHz beeps:', error);
+        }
+    }
+
+    private sleep(ms: number) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    private async playPattern(type: 'short' | 'long', count: number, intervalMs: number) {
+        const sound = type === 'short' ? this.shortBeep : this.longBeep;
+        if (!sound) return;
+
+        for (let i = 0; i < count; i++) {
+            await sound.replayAsync();
+            if (i < count - 1) {
+                await this.sleep(intervalMs);
+            }
         }
     }
 
     async playSuccess() {
         try {
-            if (this.sounds.success) {
-                await this.sounds.success.replayAsync();
+            if (this.shortBeep) {
+                await this.playPattern('short', 1, 0);
             } else {
                 Vibration.vibrate(50);
             }
@@ -51,25 +56,86 @@ class SoundService {
         }
     }
 
-    async playError() {
+    async playAnomaly() {
         try {
-            if (this.sounds.error) {
-                await this.sounds.error.replayAsync();
+            if (this.shortBeep) {
+                await this.playPattern('short', 3, 400);
             } else {
-                Vibration.vibrate([0, 500]);
+                Vibration.vibrate([0, 100, 50, 100, 50, 100]); 
             }
         } catch (error) {
-            Vibration.vibrate([0, 500]);
+            Vibration.vibrate([0, 100, 50, 100, 50, 100]);
+        }
+    }
+
+    async playBlockingError() {
+        try {
+            if (this.longBeep) {
+                await this.playPattern('long', 1, 0);
+            } else {
+                Vibration.vibrate([0, 1000]); 
+            }
+        } catch (error) {
+            Vibration.vibrate([0, 1000]);
+        }
+    }
+
+    async playError() {
+        return this.playBlockingError();
+    }
+
+    // Altre logiche trasformate in pure combinazioni di 3000 Hz
+
+    async playFragileAlert() {
+        try {
+            if (this.shortBeep) {
+                await this.playPattern('short', 2, 600); // Due bip distanziati
+            } else {
+                Vibration.vibrate([0, 50, 100, 50]); 
+            }
+        } catch (error) {
+            Vibration.vibrate([0, 50, 100, 50]);
+        }
+    }
+
+    async playOrderComplete() {
+        try {
+            if (this.shortBeep) {
+                await this.playPattern('short', 4, 150); // Quattro bip molto rapidi
+            } else {
+                Vibration.vibrate([0, 100, 50, 200, 50, 300]); 
+            }
+        } catch (error) {
+            Vibration.vibrate([0, 100, 50, 200, 50, 300]);
+        }
+    }
+
+    async playBatteryLow() {
+        try {
+            if (this.longBeep) {
+                await this.playPattern('long', 2, 1200); // Due bip lunghi
+            } else {
+                Vibration.vibrate([0, 300, 100, 300]); 
+            }
+        } catch (error) {
+            Vibration.vibrate([0, 300, 100, 300]);
+        }
+    }
+
+    async playUrgentOrder() {
+        try {
+            if (this.shortBeep) {
+                await this.playPattern('short', 5, 100); // Cinque bip estremamente rapidi
+            } else {
+                Vibration.vibrate([0, 100, 50, 100, 50, 100, 50, 100]); 
+            }
+        } catch (error) {
+            Vibration.vibrate([0, 100, 50, 100, 50, 100, 50, 100]);
         }
     }
 
     async playWarning() {
-        try {
-            // Re-use error sound or just vibrate
-            Vibration.vibrate([0, 100, 100, 100]);
-        } catch (error) {
-            Vibration.vibrate([0, 100, 100, 100]);
-        }
+        return this.playAnomaly();
     }
 }
 

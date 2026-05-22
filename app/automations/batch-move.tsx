@@ -90,7 +90,15 @@ export default function BatchMoveScreen() {
         playSuccessSound();
     };
 
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+
     const handleProductScan = async (data: string) => {
+        // Clear pending error
+        if (errorTimeoutRef) {
+            clearTimeout(errorTimeoutRef);
+            setErrorTimeoutRef(null);
+        }
+
         // Check if scanned code is actually a Location (to switch target)
         const potentialLoc = locations.find(l => l.id === data || l.barcode === data);
         if (potentialLoc) {
@@ -141,10 +149,13 @@ export default function BatchMoveScreen() {
             setTimeout(() => setFeedbackMessage(null), 1000);
 
         } else {
-            // Error feedback
-            Vibration.vibrate(500);
-            setFeedbackMessage(`Prodotto non trovato: ${data}`);
-            setTimeout(() => setFeedbackMessage(null), 2000);
+            // Debounce error feedback by 400ms
+            const timeout = setTimeout(() => {
+                soundService.playBlockingError();
+                setFeedbackMessage(`Prodotto non trovato: ${data}`);
+                setTimeout(() => setFeedbackMessage(null), 2000);
+            }, 400);
+            setErrorTimeoutRef(timeout);
         }
     };
 

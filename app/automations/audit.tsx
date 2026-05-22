@@ -74,7 +74,15 @@ export default function AuditScreen() {
         setStep('audit_loop');
     };
 
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+
     const handleProductScan = (data: string) => {
+        // Clear pending error
+        if (errorTimeoutRef) {
+            clearTimeout(errorTimeoutRef);
+            setErrorTimeoutRef(null);
+        }
+
         // Safety check: is it a location?
         const isLocation = locations.some(l => l.id === data || l.barcode === data);
         if (isLocation) {
@@ -141,7 +149,12 @@ export default function AuditScreen() {
                     ]
                 );
             } else {
-                Alert.alert('Errore', 'Prodotto sconosciuto (non in database).');
+                // Debounce error
+                const timeout = setTimeout(() => {
+                    soundService.playBlockingError();
+                    Alert.alert('Errore', 'Prodotto sconosciuto (non in database).', [{ text: 'OK', onPress: () => setErrorTimeoutRef(null) }]);
+                }, 400);
+                setErrorTimeoutRef(timeout);
             }
         }
     };
