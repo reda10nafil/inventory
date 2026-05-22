@@ -13,13 +13,13 @@ class SoundService {
         try {
             // Load local 3000 Hz beep files
             const { sound: shortSound } = await Audio.Sound.createAsync(
-                require('../../assets/audio/beep_short.wav'),
+                require('../assets/audio/beep_short.wav'),
                 { shouldPlay: false }
             );
             this.shortBeep = shortSound;
 
             const { sound: longSound } = await Audio.Sound.createAsync(
-                require('../../assets/audio/beep_long.wav'),
+                require('../assets/audio/beep_long.wav'),
                 { shouldPlay: false }
             );
             this.longBeep = longSound;
