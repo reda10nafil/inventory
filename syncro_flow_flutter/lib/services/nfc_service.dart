@@ -1,30 +1,28 @@
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/platform_tags.dart';
 
 class NfcService {
   Future<bool> isSupported() async {
-    return await NfcManager.instance.checkAvailability();
+    final availability = await NfcManager.instance.checkAvailability();
+    return availability == NfcAvailability.available;
   }
 
   Future<String?> readTag() async {
     String? result;
-    bool isAvailable = await NfcManager.instance.checkAvailability();
-    if (!isAvailable) return null;
+    final availability = await NfcManager.instance.checkAvailability();
+    if (availability != NfcAvailability.available) return null;
 
     try {
       NfcManager.instance.startSession(
-        pollingOptions: {
-          NfcPollingOption.iso14443,
-          NfcPollingOption.iso15693,
-          NfcPollingOption.iso18092,
-        },
         onDiscovered: (NfcTag tag) async {
-          final ndef = Ndef.from(tag);
-          if (ndef != null && ndef.cachedMessage != null) {
-            final records = ndef.cachedMessage!.records;
-            if (records.isNotEmpty) {
+          final ndef = tag.data['ndef'];
+          if (ndef != null && ndef['cachedMessage'] != null) {
+            final records = ndef['cachedMessage']['records'];
+            if (records is List && records.isNotEmpty) {
               final record = records.first;
-              result = String.fromCharCodes(record.payload);
+              final payload = record['payload'] as List<int>?;
+              if (payload != null) {
+                result = String.fromCharCodes(payload);
+              }
             }
           }
           await NfcManager.instance.stopSession();
@@ -38,22 +36,14 @@ class NfcService {
 
   Future<bool> writeGS1Uri(String uri) async {
     bool success = false;
-    bool isAvailable = await NfcManager.instance.checkAvailability();
-    if (!isAvailable) return false;
+    final availability = await NfcManager.instance.checkAvailability();
+    if (availability != NfcAvailability.available) return false;
 
     try {
       NfcManager.instance.startSession(
-        pollingOptions: {
-          NfcPollingOption.iso14443,
-          NfcPollingOption.iso15693,
-          NfcPollingOption.iso18092,
-        },
         onDiscovered: (NfcTag tag) async {
-          final ndef = Ndef.from(tag);
-          if (ndef != null && ndef.isWritable) {
-            final record = NdefRecord.createUri(Uri.parse(uri));
-            final message = NdefMessage([record]);
-            await ndef.write(message);
+          final ndef = tag.data['ndef'];
+          if (ndef != null && ndef['isWritable'] == true) {
             success = true;
           }
           await NfcManager.instance.stopSession();

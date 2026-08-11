@@ -398,6 +398,29 @@ class InventoryNotifier extends Notifier<InventoryState> {
     await _saveProducts();
   }
 
+  Future<void> addLibrary(String name, String icon) async {
+    final slug = name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    final newLib = LibraryModel(
+      id: slug,
+      name: name,
+      icon: icon,
+      fields: const [],
+      createdAt: DateTime.now(),
+    );
+    state = state.copyWith(libraries: [...state.libraries, newLib]);
+    await _saveLibraries();
+  }
+
+  Future<void> deleteLibrary(String id) async {
+    state = state.copyWith(
+      libraries: state.libraries.where((l) => l.id != id).toList(),
+    );
+    await _saveLibraries();
+  }
+
   Future<void> dismissAlert(String alertId) async {
     final updatedAlerts = state.alerts.map((a) {
       if (a.id == alertId) return a.copyWith(dismissed: true);
