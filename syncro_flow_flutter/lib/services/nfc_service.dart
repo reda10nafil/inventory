@@ -1,17 +1,23 @@
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/platform_tags.dart';
 
 class NfcService {
   Future<bool> isSupported() async {
-    return await NfcManager.instance.isAvailable();
+    return await NfcManager.instance.checkAvailability();
   }
 
   Future<String?> readTag() async {
     String? result;
-    bool isAvailable = await NfcManager.instance.isAvailable();
+    bool isAvailable = await NfcManager.instance.checkAvailability();
     if (!isAvailable) return null;
 
     try {
       NfcManager.instance.startSession(
+        pollingOptions: {
+          NfcPollingOption.iso14443,
+          NfcPollingOption.iso15693,
+          NfcPollingOption.iso18092,
+        },
         onDiscovered: (NfcTag tag) async {
           final ndef = Ndef.from(tag);
           if (ndef != null && ndef.cachedMessage != null) {
@@ -32,11 +38,16 @@ class NfcService {
 
   Future<bool> writeGS1Uri(String uri) async {
     bool success = false;
-    bool isAvailable = await NfcManager.instance.isAvailable();
+    bool isAvailable = await NfcManager.instance.checkAvailability();
     if (!isAvailable) return false;
 
     try {
       NfcManager.instance.startSession(
+        pollingOptions: {
+          NfcPollingOption.iso14443,
+          NfcPollingOption.iso15693,
+          NfcPollingOption.iso18092,
+        },
         onDiscovered: (NfcTag tag) async {
           final ndef = Ndef.from(tag);
           if (ndef != null && ndef.isWritable) {

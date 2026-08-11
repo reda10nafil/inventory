@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/custom_field.dart';
-import '../services/storage_service.dart';
 import 'storage_provider.dart';
 
 const String _customFieldsStorageKey = 'furinventory_custom_fields';
@@ -19,15 +18,11 @@ final systemFields = [
   const CustomField(id: 'technicalNotes', name: 'Note Tecniche', type: FieldDataType.textLong, uiType: FieldUIType.text, required: false, order: 10, isSystem: true, icon: 'notes'),
 ];
 
-class CustomFieldsNotifier extends StateNotifier<List<CustomField>> {
-  final StorageService _storageService;
-
-  CustomFieldsNotifier(this._storageService) : super(systemFields) {
-    _loadFields();
-  }
-
-  void _loadFields() {
-    final raw = _storageService.getJson(_customFieldsStorageKey);
+class CustomFieldsNotifier extends Notifier<List<CustomField>> {
+  @override
+  List<CustomField> build() {
+    final storage = ref.watch(storageServiceProvider);
+    final raw = storage.getJson(_customFieldsStorageKey);
     if (raw != null && raw is List) {
       final parsed = raw
           .map((e) => CustomField.fromJson(e as Map<String, dynamic>))
@@ -36,12 +31,14 @@ class CustomFieldsNotifier extends StateNotifier<List<CustomField>> {
       final missingSystem = systemFields.where((sf) => !existingIds.contains(sf.id));
       final merged = [...parsed, ...missingSystem];
       merged.sort((a, b) => a.order.compareTo(b.order));
-      state = merged;
+      return merged;
     }
+    return systemFields;
   }
 
   Future<void> _saveFields() async {
-    await _storageService.setJson(
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(
       _customFieldsStorageKey,
       state.map((f) => f.toJson()).toList(),
     );
@@ -139,7 +136,4 @@ class CustomFieldsNotifier extends StateNotifier<List<CustomField>> {
 }
 
 final customFieldsProvider =
-    StateNotifierProvider<CustomFieldsNotifier, List<CustomField>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  return CustomFieldsNotifier(storage);
-});
+    NotifierProvider<CustomFieldsNotifier, List<CustomField>>(CustomFieldsNotifier.new);

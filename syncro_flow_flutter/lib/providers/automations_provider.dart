@@ -1,28 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/automation.dart';
-import '../services/storage_service.dart';
 import 'storage_provider.dart';
 
 const String _automationsStorageKey = '@furinventory_custom_automations';
 
-class AutomationsNotifier extends StateNotifier<List<CustomAutomation>> {
-  final StorageService _storageService;
-
-  AutomationsNotifier(this._storageService) : super([]) {
-    _loadAutomations();
-  }
-
-  void _loadAutomations() {
-    final raw = _storageService.getJson(_automationsStorageKey);
+class AutomationsNotifier extends Notifier<List<CustomAutomation>> {
+  @override
+  List<CustomAutomation> build() {
+    final storage = ref.watch(storageServiceProvider);
+    final raw = storage.getJson(_automationsStorageKey);
     if (raw != null && raw is List) {
-      state = raw
+      return raw
           .map((e) => CustomAutomation.fromJson(e as Map<String, dynamic>))
           .toList();
     }
+    return [];
   }
 
   Future<void> _saveAutomations() async {
-    await _storageService.setJson(
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(
       _automationsStorageKey,
       state.map((a) => a.toJson()).toList(),
     );
@@ -98,7 +95,4 @@ class AutomationsNotifier extends StateNotifier<List<CustomAutomation>> {
 }
 
 final automationsProvider =
-    StateNotifierProvider<AutomationsNotifier, List<CustomAutomation>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  return AutomationsNotifier(storage);
-});
+    NotifierProvider<AutomationsNotifier, List<CustomAutomation>>(AutomationsNotifier.new);

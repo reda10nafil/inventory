@@ -1,32 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/layout_config.dart';
-import '../services/storage_service.dart';
 import 'storage_provider.dart';
 
 const String _layoutConfigStorageKey = 'furinventory_layout_config';
 
-class LayoutNotifier extends StateNotifier<LayoutConfig> {
-  final StorageService _storageService;
-
-  LayoutNotifier(this._storageService) : super(LayoutConfig.defaultConfig) {
-    _loadLayout();
-  }
-
-  void _loadLayout() {
-    final raw = _storageService.getJson(_layoutConfigStorageKey);
+class LayoutNotifier extends Notifier<LayoutConfig> {
+  @override
+  LayoutConfig build() {
+    final storage = ref.watch(storageServiceProvider);
+    final raw = storage.getJson(_layoutConfigStorageKey);
     if (raw != null && raw is Map<String, dynamic>) {
       final parsed = LayoutConfig.fromJson(raw);
       if (parsed.version < LayoutConfig.defaultConfig.version) {
-        state = LayoutConfig.defaultConfig;
-        _saveLayout();
-      } else {
-        state = parsed;
+        return LayoutConfig.defaultConfig;
       }
+      return parsed;
     }
+    return LayoutConfig.defaultConfig;
   }
 
   Future<void> _saveLayout() async {
-    await _storageService.setJson(_layoutConfigStorageKey, state.toJson());
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(_layoutConfigStorageKey, state.toJson());
   }
 
   Future<void> updateFieldOrder(List<LayoutField> fields) async {
@@ -75,7 +70,4 @@ class LayoutNotifier extends StateNotifier<LayoutConfig> {
 }
 
 final layoutProvider =
-    StateNotifierProvider<LayoutNotifier, LayoutConfig>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  return LayoutNotifier(storage);
-});
+    NotifierProvider<LayoutNotifier, LayoutConfig>(LayoutNotifier.new);

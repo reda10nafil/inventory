@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/location.dart';
-import '../services/storage_service.dart';
 import 'storage_provider.dart';
 
 const String _locationsStorageKey = 'furinventory_locations';
@@ -15,24 +14,22 @@ final defaultLocations = [
   const Location(id: 'sartoria', label: 'Sartoria', color: Color(0xFF8B5CF6)),
 ];
 
-class LocationsNotifier extends StateNotifier<List<Location>> {
-  final StorageService _storageService;
-
-  LocationsNotifier(this._storageService) : super(defaultLocations) {
-    _loadLocations();
-  }
-
-  void _loadLocations() {
-    final raw = _storageService.getJson(_locationsStorageKey);
+class LocationsNotifier extends Notifier<List<Location>> {
+  @override
+  List<Location> build() {
+    final storage = ref.watch(storageServiceProvider);
+    final raw = storage.getJson(_locationsStorageKey);
     if (raw != null && raw is List) {
-      state = raw
+      return raw
           .map((e) => Location.fromJson(e as Map<String, dynamic>))
           .toList();
     }
+    return defaultLocations;
   }
 
   Future<void> _saveLocations() async {
-    await _storageService.setJson(
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(
       _locationsStorageKey,
       state.map((l) => l.toJson()).toList(),
     );
@@ -71,7 +68,4 @@ class LocationsNotifier extends StateNotifier<List<Location>> {
 }
 
 final locationsProvider =
-    StateNotifierProvider<LocationsNotifier, List<Location>>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  return LocationsNotifier(storage);
-});
+    NotifierProvider<LocationsNotifier, List<Location>>(LocationsNotifier.new);

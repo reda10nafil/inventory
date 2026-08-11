@@ -3,7 +3,6 @@ import '../models/product.dart';
 import '../models/timeline_event.dart';
 import '../models/alert_model.dart';
 import '../models/library.dart';
-import '../services/storage_service.dart';
 import 'storage_provider.dart';
 
 const String _productsStorageKey = 'products';
@@ -39,18 +38,14 @@ class InventoryState {
   }
 }
 
-class InventoryNotifier extends StateNotifier<InventoryState> {
-  final StorageService _storageService;
-
-  InventoryNotifier(this._storageService) : super(const InventoryState()) {
-    _loadData();
-  }
-
-  void _loadData() {
-    final productsRaw = _storageService.getJson(_productsStorageKey);
-    final timelineRaw = _storageService.getJson(_timelineStorageKey);
-    final alertsRaw = _storageService.getJson(_alertsStorageKey);
-    final librariesRaw = _storageService.getJson(_librariesStorageKey);
+class InventoryNotifier extends Notifier<InventoryState> {
+  @override
+  InventoryState build() {
+    final storage = ref.watch(storageServiceProvider);
+    final productsRaw = storage.getJson(_productsStorageKey);
+    final timelineRaw = storage.getJson(_timelineStorageKey);
+    final alertsRaw = storage.getJson(_alertsStorageKey);
+    final librariesRaw = storage.getJson(_librariesStorageKey);
 
     List<Product> products = [];
     if (productsRaw != null && productsRaw is List) {
@@ -88,49 +83,53 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
           .toList();
     }
 
-    state = InventoryState(
+    final initialState = InventoryState(
       products: products,
       timeline: timeline,
       alerts: alerts,
       libraries: libraries,
     );
 
-    _generateAlerts();
+    return _generateAlertsForState(initialState);
   }
 
   Future<void> _saveProducts() async {
-    await _storageService.setJson(
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(
       _productsStorageKey,
       state.products.map((p) => p.toJson()).toList(),
     );
   }
 
   Future<void> _saveTimeline() async {
-    await _storageService.setJson(
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(
       _timelineStorageKey,
       state.timeline.map((t) => t.toJson()).toList(),
     );
   }
 
   Future<void> _saveAlerts() async {
-    await _storageService.setJson(
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(
       _alertsStorageKey,
       state.alerts.map((a) => a.toJson()).toList(),
     );
   }
 
   Future<void> _saveLibraries() async {
-    await _storageService.setJson(
+    final storage = ref.read(storageServiceProvider);
+    await storage.setJson(
       _librariesStorageKey,
       state.libraries.map((l) => l.toJson()).toList(),
     );
   }
 
-  void _generateAlerts() {
+  InventoryState _generateAlertsForState(InventoryState currentState) {
     final now = DateTime.now();
     final newAlerts = <AlertModel>[];
 
-    for (final product in state.products) {
+    for (final product in currentState.products) {
       if (product.status == ProductStatusType.available &&
           product.deletedAt == null) {
         final lastAction = product.lastScannedAt ?? product.createdAt;
@@ -162,15 +161,14 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
     }
 
     final dismissedIds =
-        state.alerts.where((a) => a.dismissed).map((a) => a.id).toSet();
+        currentState.alerts.where((a) => a.dismissed).map((a) => a.id).toSet();
 
     final merged = [
       ...newAlerts.where((a) => !dismissedIds.contains(a.id)),
-      ...state.alerts.where((a) => a.dismissed),
+      ...currentState.alerts.where((a) => a.dismissed),
     ];
 
-    state = state.copyWith(alerts: merged);
-    _saveAlerts();
+    return currentState.copyWith(alerts: merged);
   }
 
   String generateSKU() {
@@ -207,14 +205,14 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
     );
     final updatedTimeline = [newTimelineEvent, ...state.timeline];
 
-    state = state.copyWith(
+    state = _generateAlertsForState(state.copyWith(
       products: updatedProducts,
       timeline: updatedTimeline,
-    );
+    ));
 
     await _saveProducts();
     await _saveTimeline();
-    _generateAlerts();
+    await _saveAlerts();
   }
 
   Future<void> updateProduct(String id, Product updated) async {
@@ -453,7 +451,4 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
 }
 
 final inventoryProvider =
-    StateNotifierProvider<InventoryNotifier, InventoryState>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  return InventoryNotifier(storage);
-});
+    NotifierProvider<InventoryNotifier, InventoryState>(InventoryNotifier.new);
