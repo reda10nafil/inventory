@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "onspace-app",
-    "slug": "onspace-app",
+    "name": "Syncro Flow",
+    "slug": "syncro-flow",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
-    "scheme": "onspaceapp",
+    "scheme": "syncroflow",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -14,10 +14,14 @@
         "NFCReaderUsageDescription": "L'app necessita dell'accesso NFC per programmare o leggere i Digital Link sui tuoi prodotti."
       },
       "entitlements": {
-        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"]
+        "com.apple.developer.nfc.readersession.formats": [
+          "NDEF",
+          "TAG"
+        ]
       }
     },
     "android": {
+      "package": "com.redako35.syncroflow",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
@@ -46,10 +50,21 @@
       "expo-secure-store",
       "expo-video",
       "expo-sqlite",
-      "react-native-nfc-manager"
+      "react-native-nfc-manager",
+      "expo-asset",
+      "expo-font",
+      "expo-localization",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0ed841e3-0093-40b9-ae57-088cbe91d340"
+      }
+    },
+    "owner": "redako35"
   }
 }

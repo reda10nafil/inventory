@@ -90,7 +90,7 @@ export default function BatchMoveScreen() {
         playSuccessSound();
     };
 
-    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
     const handleProductScan = async (data: string) => {
         // Clear pending error

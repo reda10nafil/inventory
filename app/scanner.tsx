@@ -27,7 +27,7 @@ export default function ScannerScreen() {
   const [manualCode, setManualCode] = useState('');
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<NodeJS.Timeout | null>(null);
+  const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<number | null>(null);
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     if (scanned) return;

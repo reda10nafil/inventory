@@ -8,6 +8,7 @@ import { theme, typography, borderRadius, spacing, shadows } from '../../constan
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations, Location } from '../../contexts/LocationsContext';
 import BarcodeScanner from '../../components/BarcodeScanner';
+import { soundService } from '../../services/SoundService';
 
 type AuditStatus = 'missing' | 'found' | 'intruder';
 
@@ -74,7 +75,7 @@ export default function AuditScreen() {
         setStep('audit_loop');
     };
 
-    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
     const handleProductScan = (data: string) => {
         // Clear pending error

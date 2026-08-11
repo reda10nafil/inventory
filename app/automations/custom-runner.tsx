@@ -143,7 +143,7 @@ export default function CustomRunnerScreen() {
         return false;
     }, [scannedProductId, scannedLocationId, products, locations]);
 
-    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
     // ── Handle scan result ──────────────────────────────────
     const handleScan = ({ type, data }: { type: string; data: string }) => {

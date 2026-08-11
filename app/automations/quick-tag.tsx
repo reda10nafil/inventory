@@ -38,7 +38,7 @@ export default function QuickTagScreen() {
         setStep('scan_loop');
     };
 
-    const [errorTimeoutRef, setErrorTimeoutRef] = useState<NodeJS.Timeout | null>(null);
+    const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
     const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
         // Continuous scanning — do NOT close scanner

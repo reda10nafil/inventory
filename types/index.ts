@@ -24,6 +24,8 @@ export interface Product {
   libraryId?: string;
   /** GS1 Digital Link URI generated at save time */
   gs1DigitalLink?: string;
+  /** Whether the product is marked as fragile */
+  isFragile?: boolean;
 }
 
 export interface ProductCustomData {

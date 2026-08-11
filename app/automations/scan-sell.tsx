@@ -21,7 +21,7 @@ export default function ScanSellScreen() {
     const [showPriceModal, setShowPriceModal] = useState(false);
     const [pendingProduct, setPendingProduct] = useState<any>(null);
     const [priceInput, setPriceInput] = useState('');
-    const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<NodeJS.Timeout | null>(null);
+    const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<number | null>(null);
 
     const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
         // Clear pending error if any

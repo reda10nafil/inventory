@@ -16,7 +16,7 @@ function BatteryMonitor() {
   const [lastAlertTime, setLastAlertTime] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: number;
 
     const checkBattery = async () => {
       try {
