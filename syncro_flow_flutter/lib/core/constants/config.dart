@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class AppConfig {
   static const int dormantThresholdDays = 180; // 6 months
   static const int promotionThresholdDays = 90; // 3 months
