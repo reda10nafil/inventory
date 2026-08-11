@@ -58,14 +58,61 @@ Ecco i file creati finora con i loro percorsi assoluti:
 
 ---
 
-## 🛠 Cosa Manca Ancora da Fare (I Prossimi Passi)
+8. **Configurazione Permessi Hardware (Fase 0 - Completato)**:
+   - Configurati permessi NFC e Fotocamera per Android (`AndroidManifest.xml`) e iOS (`Info.plist`, `Runner.entitlements`).
 
-Siamo attualmente nella **Fase 0 (Setup)**. I prossimi passi operativi che eseguiremo sono:
+9. **Fondamenta Core, Tema Luxury Dark & Modelli Dati Dart (Fase 1 - Completato)**:
+   - Implementato il design system in [app_colors.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/core/theme/app_colors.dart), [app_typography.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/core/theme/app_typography.dart), [app_theme.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/core/theme/app_theme.dart).
+   - Creati 10 modelli dati Dart in `lib/models/` (`Product`, `TimelineEvent`, `CustomField`, `AlertModel`, `LibraryModel`, `Location`, `CustomAutomation`, `LayoutConfig`, `GS1Config`, `HardwareConfig`) con serializzazione JSON.
 
-1. **Configurazione Permessi (Fase 0)**:
-   - Configurare i permessi per l'utilizzo dell'NFC e della fotocamera su Android (`AndroidManifest.xml`) e iOS (`Info.plist` / entitlements).
+10. **State Management Riverpod & Servizi (Fase 2 & Fase 3 - Completato)**:
+   - Creato `StorageService` con persistenza locale JSON unificata via `shared_preferences`.
+   - Creati tutti gli 8 Provider Riverpod in `lib/providers/` (`inventoryProvider`, `customFieldsProvider`, `locationsProvider`, `hardwareConfigProvider`, `gs1ConfigProvider`, `layoutProvider`, `automationsProvider`, `storageServiceProvider`).
+   - Implementati i servizi di sistema in `lib/services/` (`NfcService`, `SoundService`, `GS1Service`, `StorageService`).
 
-2. **Inizio dello Sviluppo (Fase 1 e successive)**:
-   - **Fase 1 (Core)**: Definire il tema dark con dettagli in oro (`#D4AF37`) e creare i modelli dati in Dart corrispondenti a quelli TypeScript.
-   - **Fase 2 (State)**: Creare i provider Riverpod per gestire lo stato locale (prodotti, posizioni, campi personalizzati) rimpiazzando AsyncStorage con SQLite (`sqflite`) o `shared_preferences`.
-   - **Fase 3-8**: Sviluppare progressivamente i servizi di sistema, le schermate dei tab, i dettagli prodotto, lo scanner fotocamera, la gestione NFC e tutti i widget dinamici.
+---
+
+## 🛠 Stato Attuale e Prossimi Passi
+
+### **Completati:**
+- ✅ **Fase 0**: Setup progetto Flutter, dipendenze, asset e permessi hardware (NFC + Fotocamera)
+- ✅ **Fase 1**: Tema Luxury Dark + Oro, modelli dati Dart 1:1, costanti di configurazione
+- ✅ **Fase 2**: State Management globale con Riverpod (8 Notifier/Provider)
+- ✅ **Fase 3**: Servizi di sistema (NFC, Audio Beeps, GS1 Digital Link, Storage)
+
+---
+
+## 📋 Recap delle Fasi Mancanti
+
+1. **Fase 4 — Schermate Tab (UI Principale)**:
+   - `HomeScreen` (Dashboard con lista prodotti, statistiche, filtri e ricerca full-text)
+   - `AddProductScreen` (Form dinamico basato sul LayoutBuilder)
+   - `TimelineScreen` (Cronologia eventi e attività)
+   - `AutomationsScreen` (Lista ed esecuzione rapida automazioni)
+   - `SettingsScreen` (Pannello centrale configurazioni)
+
+2. **Fase 5 — Dettaglio Prodotto & Scanner**:
+   - `ProductDetailScreen` (Scheda prodotto completa con azioni: Sposta, Vendi, QR/NFC, Elimina)
+   - `ScannerScreen` (Camera live overlay per codici a barre e QR)
+   - `ScannerActionScreen` (Azioni rapide post-scansione)
+
+3. **Fase 6 — Schermate Impostazioni (Pannelli di Configurazione)**:
+   - `LocationsScreen` (CRUD posizioni fisiche magazzino/vetrina)
+   - `FieldsScreen` (Gestione e personalizzazione campi inventario)
+   - `FoldersScreen` (Gestione librerie/cartelle)
+   - `LayoutBuilderScreen` (Personalizzazione layout form con Drag & Drop)
+   - `GS1ConfigScreen` (Impostazioni Digital Link GS1)
+   - `HardwareScreen` (Modalità scanner NFC/Barcode)
+   - `AutomationBuilderScreen` (Creazione automazioni multi-step)
+   - `SectorTemplatesScreen` (Template veloci di settore)
+   - `ShareScreen` (Condivisione prodotti/catalogo)
+   - `TrashScreen` (Cestino e ripristino elementi eliminati)
+
+4. **Fase 7 — Esecuzione Automazioni**:
+   - `AuditScreen`, `AutomationFlowScreen`, `BatchMoveScreen`, `CustomRunnerScreen`, `QuickTagScreen`, `ScanSellScreen`
+
+5. **Fase 8 — Widget Riutilizzabili & Controllo Qualità Finale**:
+   - `DynamicFieldRenderer` (Rendering dinamico di tutti i tipi di campo)
+   - Widget grafici: `ProductCard`, `StatCard`, `BarcodeWidget`, `LuxuryBottomSheet`
+   - Test automatici e verifica build finale
+
