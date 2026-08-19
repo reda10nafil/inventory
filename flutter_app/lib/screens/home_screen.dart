@@ -217,7 +217,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final isSelected = _selectedIds.contains(product.id);
     final isSelectionMode = _selectedIds.isNotEmpty;
     return GestureDetector(
-      onTap: () { if (isSelectionMode) _toggleSelection(product.id); },
+      onTap: () {
+        if (isSelectionMode) {
+          _toggleSelection(product.id);
+        } else {
+          Navigator.pushNamed(context, '/product', arguments: product.id);
+        }
+      },
       onLongPress: () { if (_selectedIds.isEmpty) { setState(() => _selectedIds = [product.id]); } else { _toggleSelection(product.id); } },
       child: Container(
         decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusMedium), border: Border.all(color: isSelected ? AppTheme.primary : Colors.transparent, width: 2), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))]),

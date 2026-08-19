@@ -4,7 +4,7 @@ class MockData {
   static List<Product> get products => [
     Product(id: 'p1', sku: 'FUR-2024-001', furType: 'visone', location: 'vetrina', status: ProductStatus.available,
       images: ['https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&h=800&fit=crop'],
-      purchasePrice: 2500, sellPrice: 4200, length: 85, width: 120, weight: 1.2,
+      purchasePrice: 2500, sellPrice: 4200, length: 85, width: 120, weight: 1.2, isFragile: true,
       createdAt: DateTime.now().subtract(const Duration(days: 30)), updatedAt: DateTime.now().subtract(const Duration(days: 5))),
     Product(id: 'p2', sku: 'FUR-2024-002', furType: 'volpe', location: 'magazzino', status: ProductStatus.available,
       images: ['https://images.unsplash.com/photo-1551488831-00ddcb6d6f3a?w=800&h=800&fit=crop'],
@@ -17,7 +17,7 @@ class MockData {
       soldAt: DateTime.now().subtract(const Duration(days: 10))),
     Product(id: 'p4', sku: 'FUR-2024-004', furType: 'cincilla', location: 'sartoria', status: ProductStatus.available,
       images: ['https://images.unsplash.com/photo-1591047139829-d71aec588223?w=800&h=800&fit=crop'],
-      purchasePrice: 3200, sellPrice: 5800, length: 80, width: 100, weight: 1.0,
+      purchasePrice: 3200, sellPrice: 5800, length: 80, width: 100, weight: 1.0, lotto: 'LOT-2024-A',
       createdAt: DateTime.now().subtract(const Duration(days: 200)), updatedAt: DateTime.now().subtract(const Duration(days: 200))),
     Product(id: 'p5', sku: 'FUR-2024-005', furType: 'ermellino', location: 'vetrina', status: ProductStatus.available,
       images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&h=800&fit=crop'],
@@ -41,8 +41,8 @@ class MockData {
   ];
 
   static List<Library> get libraries => [
-    Library(id: 'lib_collezione', name: 'Collezione 2024', icon: 'folder', createdAt: DateTime.now().subtract(const Duration(days: 90))),
-    Library(id: 'lib_vintage', name: 'Vintage', icon: 'folder', createdAt: DateTime.now().subtract(const Duration(days: 60))),
+    Library(id: 'lib_collezione', name: 'Collezione 2024', icon: 'folder', barcode: 'LIB-COLLEZ-2024', createdAt: DateTime.now().subtract(const Duration(days: 90))),
+    Library(id: 'lib_vintage', name: 'Vintage', icon: 'folder', barcode: 'LIB-VINTAGE', createdAt: DateTime.now().subtract(const Duration(days: 60))),
   ];
 
   static List<ProductAlert> get alerts => [

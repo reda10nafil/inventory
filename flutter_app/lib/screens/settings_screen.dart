@@ -15,7 +15,7 @@ class SettingsScreen extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('Impostazioni', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
             _sectionTitle('CONFIGURAZIONE HARDWARE'),
-            _settingRow('GS1 Digital Link', 'Configura lo standard URL per i prodotti', Icons.link, const Color(0xFFF59E0B)),
+            GestureDetector(onTap: () => Navigator.pushNamed(context, '/gs1-config'), child: _settingRow('GS1 Digital Link', 'Configura lo standard URL per i prodotti', Icons.link, const Color(0xFFF59E0B))),
             _settingRow('Scanner & NFC', 'Preferenze lettura/scrittura hardware', Icons.settings_cell, const Color(0xFF3B82F6)),
             _sectionTitle('GESTIONE INVENTARIO'),
             _settingRow('Gestisci Cartelle', 'Crea e organizza librerie personalizzate', Icons.folder, const Color(0xFF3B82F6)),
@@ -55,6 +55,16 @@ class SettingsScreen extends StatelessWidget {
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)), Text(description, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))])),
       const Icon(Icons.chevron_right, size: 24, color: AppTheme.textSecondary),
+    ]),
+  );
+
+  Widget _settingRow2(String title, String description, IconData icon, Color bgColor, {Color? iconColor}) => Container(
+    margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusMedium)),
+    child: Row(children: [
+      Container(width: 48, height: 48, decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppTheme.radiusMedium)), child: Icon(icon, size: 24, color: iconColor ?? Colors.white)),
+      const SizedBox(width: 12),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)), Text(description, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))])),
     ]),
   );
 

@@ -18,6 +18,8 @@ class Product {
   final DateTime? soldAt;
   final DateTime? deletedAt;
   final String? libraryId;
+  final bool isFragile;
+  final String? lotto;
 
   Product({
     required this.id,
@@ -37,6 +39,8 @@ class Product {
     this.soldAt,
     this.deletedAt,
     this.libraryId,
+    this.isFragile = false,
+    this.lotto,
   });
 
   Product copyWith({
@@ -44,7 +48,7 @@ class Product {
     List<String>? images, double? purchasePrice, double? sellPrice,
     double? length, double? width, double? weight, String? technicalNotes,
     DateTime? createdAt, DateTime? updatedAt, DateTime? soldAt, DateTime? deletedAt,
-    String? libraryId,
+    String? libraryId, bool? isFragile, String? lotto,
   }) {
     return Product(
       id: id, sku: sku ?? this.sku, furType: furType ?? this.furType,
@@ -56,6 +60,8 @@ class Product {
       createdAt: createdAt ?? this.createdAt, updatedAt: updatedAt ?? this.updatedAt,
       soldAt: soldAt ?? this.soldAt, deletedAt: deletedAt ?? this.deletedAt,
       libraryId: libraryId ?? this.libraryId,
+      isFragile: isFragile ?? this.isFragile,
+      lotto: lotto ?? this.lotto,
     );
   }
 }
@@ -84,8 +90,9 @@ class Library {
   final String id;
   final String name;
   final String icon;
+  final String? barcode;
   final DateTime createdAt;
-  Library({required this.id, required this.name, required this.icon, required this.createdAt});
+  Library({required this.id, required this.name, required this.icon, this.barcode, required this.createdAt});
 }
 
 enum AlertType { dormant, promotionSuggestion }
@@ -113,7 +120,8 @@ class Automation {
   final String name;
   final String icon;
   final String color;
+  final String? qrCode;
   final List<AutomationStep> steps;
   final int usageCount;
-  Automation({required this.id, required this.name, required this.icon, required this.color, this.steps = const [], this.usageCount = 0});
+  Automation({required this.id, required this.name, required this.icon, required this.color, this.qrCode, this.steps = const [], this.usageCount = 0});
 }

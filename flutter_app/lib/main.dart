@@ -7,6 +7,10 @@ import 'screens/timeline_screen.dart';
 import 'screens/automations_screen.dart';
 import 'screens/add_product_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/scanner_screen.dart';
+import 'screens/scanner_action_screen.dart';
+import 'screens/product_detail_screen.dart';
+import 'screens/gs1_config_screen.dart';
 
 void main() {
   runApp(const FurInventoryApp());
@@ -23,7 +27,25 @@ class FurInventoryApp extends StatelessWidget {
         title: 'FurInventory Pro',
         theme: AppTheme.darkTheme,
         debugShowCheckedModeBanner: false,
-        home: const MainNavigation(),
+        initialRoute: '/',
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/':
+              return MaterialPageRoute(builder: (_) => const MainNavigation());
+            case '/scanner':
+              return MaterialPageRoute(builder: (_) => const ScannerScreen());
+            case '/scanner-action':
+              final args = settings.arguments as Map<String, dynamic>;
+              return MaterialPageRoute(builder: (_) => ScannerActionScreen(type: args['type'], id: args['id']));
+            case '/product':
+              final productId = settings.arguments as String;
+              return MaterialPageRoute(builder: (_) => ProductDetailScreen(productId: productId));
+            case '/gs1-config':
+              return MaterialPageRoute(builder: (_) => const GS1ConfigScreen());
+            default:
+              return MaterialPageRoute(builder: (_) => const MainNavigation());
+          }
+        },
       ),
     );
   }
@@ -37,6 +59,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+
   final List<Widget> _screens = const [
     HomeScreen(),
     TimelineScreen(),
@@ -45,10 +68,19 @@ class _MainNavigationState extends State<MainNavigation> {
     SettingsScreen(),
   ];
 
+  void _openScanner() {
+    Navigator.pushNamed(context, '/scanner');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
+      floatingActionButton: _currentIndex == 0 ? FloatingActionButton(
+        onPressed: _openScanner,
+        backgroundColor: AppTheme.primary,
+        child: const Icon(Icons.qr_code_scanner, color: Colors.black, size: 28),
+      ) : null,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),

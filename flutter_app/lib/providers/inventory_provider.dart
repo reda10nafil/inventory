@@ -9,12 +9,14 @@ class InventoryProvider extends ChangeNotifier {
   List<Library> _libraries = MockData.libraries;
   List<ProductAlert> _alerts = MockData.alerts;
   List<Automation> _automations = MockData.automations;
+  GS1Config _gs1Config = GS1Config.defaults;
 
   List<Product> get products => _products;
   List<TimelineEvent> get timeline => _timeline;
   List<Library> get libraries => _libraries;
   List<ProductAlert> get alerts => _alerts;
   List<Automation> get automations => _automations;
+  GS1Config get gs1Config => _gs1Config;
 
   Product? getProductById(String id) {
     for (final p in _products) {
@@ -36,6 +38,7 @@ class InventoryProvider extends ChangeNotifier {
     final index = _products.indexWhere((p) => p.id == id);
     if (index == -1) return;
     _products[index] = _products[index].copyWith(
+      sku: changes['sku'] as String?,
       libraryId: changes['libraryId'] as String?,
       status: changes['status'] as ProductStatus?,
       sellPrice: changes['sellPrice'] as double?,
@@ -43,8 +46,39 @@ class InventoryProvider extends ChangeNotifier {
       location: changes['location'] as String?,
       furType: changes['furType'] as String?,
       technicalNotes: changes['technicalNotes'] as String?,
+      length: changes['length'] as double?,
+      width: changes['width'] as double?,
+      weight: changes['weight'] as double?,
+      isFragile: changes['isFragile'] as bool?,
       updatedAt: DateTime.now(),
     );
+    _timeline = [
+      TimelineEvent(id: 't_${DateTime.now().millisecondsSinceEpoch}', productId: id, type: TimelineEventType.modified, timestamp: DateTime.now(), details: TimelineEventDetails(changes: changes.keys.map((k) => k).toList())),
+      ..._timeline,
+    ];
+    notifyListeners();
+  }
+
+  void moveProduct(String id, String newLocation) {
+    final index = _products.indexWhere((p) => p.id == id);
+    if (index == -1) return;
+    final oldLocation = _products[index].location;
+    _products[index] = _products[index].copyWith(location: newLocation, updatedAt: DateTime.now());
+    _timeline = [
+      TimelineEvent(id: 't_${DateTime.now().millisecondsSinceEpoch}', productId: id, type: TimelineEventType.moved, timestamp: DateTime.now(), details: TimelineEventDetails(from: oldLocation, to: newLocation)),
+      ..._timeline,
+    ];
+    notifyListeners();
+  }
+
+  void sellProduct(String id, [double? finalPrice]) {
+    final index = _products.indexWhere((p) => p.id == id);
+    if (index == -1) return;
+    _products[index] = _products[index].copyWith(status: ProductStatus.sold, sellPrice: finalPrice ?? _products[index].sellPrice, soldAt: DateTime.now(), updatedAt: DateTime.now());
+    _timeline = [
+      TimelineEvent(id: 't_${DateTime.now().millisecondsSinceEpoch}', productId: id, type: TimelineEventType.sold, timestamp: DateTime.now(), details: TimelineEventDetails(finalPrice: finalPrice ?? _products[index].sellPrice)),
+      ..._timeline,
+    ];
     notifyListeners();
   }
 
@@ -89,6 +123,19 @@ class InventoryProvider extends ChangeNotifier {
 
   void deleteAutomation(String id) {
     _automations = _automations.where((a) => a.id != id).toList();
+    notifyListeners();
+  }
+
+  void updateGS1Config({String? baseUrl, bool? enableSerial, String? serialMode, bool? enableLotto, String? lottoFieldId}) {
+    _gs1Config = _gs1Config.copyWith(
+      baseUrl: baseUrl, enableSerial: enableSerial, serialMode: serialMode,
+      enableLotto: enableLotto, lottoFieldId: lottoFieldId,
+    );
+    notifyListeners();
+  }
+
+  void resetGS1Config() {
+    _gs1Config = GS1Config.defaults;
     notifyListeners();
   }
 
