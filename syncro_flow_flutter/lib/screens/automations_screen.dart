@@ -7,6 +7,13 @@ import '../models/automation.dart';
 import '../providers/automations_provider.dart';
 import '../services/sound_service.dart';
 
+import 'automations/audit_screen.dart';
+import 'automations/batch_move_screen.dart';
+import 'automations/scan_sell_screen.dart';
+import 'automations/quick_tag_screen.dart';
+import 'automations/custom_runner_screen.dart';
+import 'settings/automation_builder_screen.dart';
+
 class AutomationsScreen extends ConsumerWidget {
   const AutomationsScreen({super.key});
 
@@ -36,7 +43,9 @@ class AutomationsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
             tooltip: 'Nuova Automazione',
-            onPressed: () => _showCreateAutomationModal(context, ref),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const AutomationBuilderScreen()));
+            },
           ),
         ],
       ),
@@ -72,7 +81,9 @@ class AutomationsScreen extends ConsumerWidget {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () => _showCreateAutomationModal(context, ref),
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AutomationBuilderScreen()));
+                  },
                   icon: const Icon(Icons.add, size: 16, color: AppColors.primary),
                   label: Text(
                     'Crea',
@@ -115,7 +126,9 @@ class AutomationsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: () => _showCreateAutomationModal(context, ref),
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AutomationBuilderScreen()));
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.background,
@@ -149,31 +162,31 @@ class AutomationsScreen extends ConsumerWidget {
     final presets = [
       {
         'title': 'Spostamento Rapido',
-        'desc': 'Scansiona e sposta in magazzino/vetrina',
+        'desc': 'Sposta capi in massa tra posizioni',
         'icon': Icons.compare_arrows_rounded,
         'color': const Color(0xFF3B82F6),
-        'route': '/scanner',
+        'screen': const BatchMoveScreen(),
       },
       {
         'title': 'Vendita Express',
-        'desc': 'Segna come venduto con prezzo finale',
+        'desc': 'Scansiona e vendi a raffica',
         'icon': Icons.point_of_sale_rounded,
         'color': const Color(0xFF10B981),
-        'route': '/scanner',
+        'screen': const ScanSellScreen(),
       },
       {
         'title': 'Audit Inventario',
-        'desc': 'Verifica sequenziale e conteggio stock',
+        'desc': 'Verifica conteggio stock e capi mancanti',
         'icon': Icons.fact_check_rounded,
         'color': const Color(0xFF8B5CF6),
-        'route': '/scanner',
+        'screen': const AuditScreen(),
       },
       {
         'title': 'Tagging NFC / QR',
-        'desc': 'Scrittura rapida chip NFC o stampa etichette',
+        'desc': 'Scrittura rapida chip NFC o etichette',
         'icon': Icons.nfc_rounded,
         'color': const Color(0xFFF59E0B),
-        'route': '/scanner',
+        'screen': const QuickTagScreen(),
       },
     ];
 
@@ -191,17 +204,12 @@ class AutomationsScreen extends ConsumerWidget {
         final item = presets[index];
         final color = item['color'] as Color;
         final icon = item['icon'] as IconData;
+        final targetScreen = item['screen'] as Widget;
 
         return InkWell(
           onTap: () {
             SoundService.playBeep();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Avvio workflow: ${item['title']}'),
-                backgroundColor: color,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen));
           },
           borderRadius: BorderRadius.circular(16),
           child: Container(
@@ -232,13 +240,18 @@ class AutomationsScreen extends ConsumerWidget {
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       item['desc'] as String,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.caption.copyWith(color: AppColors.textMuted),
                     ),
                   ],
                 ),
@@ -250,242 +263,46 @@ class AutomationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCustomAutomationCard(
-    BuildContext context,
-    WidgetRef ref,
-    CustomAutomation auto,
-  ) {
+  Widget _buildCustomAutomationCard(BuildContext context, WidgetRef ref, CustomAutomation auto) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                ),
-                child: const Icon(Icons.flash_on_rounded, color: AppColors.primary, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      auto.name,
-                      style: AppTypography.titleSmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (auto.description.isNotEmpty)
-                      Text(
-                        auto.description,
-                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-                      ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 20),
-                onPressed: () {
-                  ref.read(automationsProvider.notifier).deleteAutomation(auto.id);
-                  SoundService.playBeep();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Automazione eliminata')),
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: 12),
-
-          // Steps list
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: auto.steps.map((step) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundSecondary,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle_outline, size: 14, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      step.label,
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Execute button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withAlpha(40),
+          child: const Icon(Icons.flash_on_rounded, color: AppColors.accentGold),
+        ),
+        title: Text(auto.name, style: AppTypography.titleMedium),
+        subtitle: Text('${auto.steps.length} step configurati | Eseguita ${auto.usageCount} volte', style: AppTypography.bodySmall),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.play_arrow_rounded, color: AppColors.success, size: 28),
               onPressed: () {
-                ref.read(automationsProvider.notifier).recordUsage(auto.id);
-                SoundService.playSuccess();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Esecuzione automazione: ${auto.name}'),
-                    backgroundColor: AppColors.primary,
-                  ),
+                SoundService.playBeep();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => CustomRunnerScreen(automationId: auto.id)),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.background,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-              icon: const Icon(Icons.play_arrow_rounded, size: 18),
-              label: const Text('Esegui Ora', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: AppColors.textSecondary),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AutomationBuilderScreen(existingAutomation: auto)),
+                );
+              },
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  void _showCreateAutomationModal(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
-    final descController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.backgroundSecondary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            top: 20,
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Nuova Automazione Custom',
-                    style: AppTypography.titleMedium.copyWith(color: AppColors.textPrimary),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textMuted),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Nome Automazione',
-                  labelStyle: const TextStyle(color: AppColors.textMuted),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Descrizione (opzionale)',
-                  labelStyle: const TextStyle(color: AppColors.textMuted),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (nameController.text.trim().isEmpty) return;
-
-                    final steps = [
-                      const AutomationStep(
-                        id: 's1',
-                        order: 1,
-                        type: StepType.scanProduct,
-                        config: AutomationStepConfig(),
-                        label: 'Scansione Prodotto',
-                      ),
-                      const AutomationStep(
-                        id: 's2',
-                        order: 2,
-                        type: StepType.moveTo,
-                        config: AutomationStepConfig(locationName: 'Vetrina'),
-                        label: 'Sposta in Vetrina',
-                      ),
-                    ];
-
-                    await ref.read(automationsProvider.notifier).addAutomation(
-                          name: nameController.text.trim(),
-                          icon: 'flash_on',
-                          color: '#D4AF37',
-                          description: descController.text.trim(),
-                          steps: steps,
-                        );
-
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      SoundService.playSuccess();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Automazione creata con successo!')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.background,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text(
-                    'Salva Automazione',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
