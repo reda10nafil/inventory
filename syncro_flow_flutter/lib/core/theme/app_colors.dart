@@ -6,6 +6,10 @@ class AppColors {
   static const Color primaryLight = Color(0xFFE6C868);
   static const Color primaryDark = Color(0xFFB8941F);
 
+  // Aliases for gold accent
+  static const Color accentGold = Color(0xFFD4AF37);
+  static const Color accentGoldLight = Color(0xFFE6C868);
+
   // Dark Mode Base
   static const Color background = Color(0xFF0A0A0A);
   static const Color backgroundSecondary = Color(0xFF1A1A1A);

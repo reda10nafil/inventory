@@ -33,6 +33,22 @@ class SoundService {
     await playBeep();
   }
 
+  static Future<void> playSuccessBeep() async {
+    await playBeep();
+  }
+
+  static Future<void> playFragileBeep() async {
+    await playAlarm();
+  }
+
+  Future<void> playSuccessBeepInstance() async {
+    await playBeep();
+  }
+
+  Future<void> playFragileBeepInstance() async {
+    await playFragileAlert();
+  }
+
   static Future<void> playError() async {
     await playAlarm();
   }
