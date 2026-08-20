@@ -15,6 +15,8 @@ class GS1Config {
     this.lottoFieldId = '',
   });
 
+  String get domain => baseUrl;
+
   Map<String, dynamic> toJson() {
     return {
       'baseUrl': baseUrl,

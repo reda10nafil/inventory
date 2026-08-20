@@ -9,6 +9,17 @@ import '../providers/custom_fields_provider.dart';
 import '../providers/hardware_config_provider.dart';
 import '../services/sound_service.dart';
 
+import 'settings/locations_screen.dart';
+import 'settings/fields_screen.dart';
+import 'settings/folders_screen.dart';
+import 'settings/layout_builder_screen.dart';
+import 'settings/gs1_config_screen.dart';
+import 'settings/hardware_screen.dart';
+import 'settings/trash_screen.dart';
+import 'settings/share_screen.dart';
+import 'settings/sector_templates_screen.dart';
+import 'settings/automation_builder_screen.dart';
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -52,7 +63,9 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Posizioni Fisiche',
               subtitle: '${locations.length} posizioni configurate (Magazzino, Vetrina...)',
               color: const Color(0xFF3B82F6),
-              onTap: () => _showModalMessage(context, 'Posizioni Fisiche (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LocationsScreen()));
+              },
             ),
             const SizedBox(height: 8),
             _buildSettingsTile(
@@ -61,7 +74,9 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Campi Personalizzati',
               subtitle: '${customFields.length} campi custom attivi',
               color: const Color(0xFFF59E0B),
-              onTap: () => _showModalMessage(context, 'Campi Personalizzati (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const FieldsScreen()));
+              },
             ),
             const SizedBox(height: 8),
             _buildSettingsTile(
@@ -70,7 +85,9 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Cartelle & Settori',
               subtitle: '${inventoryState.libraries.length} librerie prodotto definite',
               color: AppColors.primary,
-              onTap: () => _showModalMessage(context, 'Cartelle & Settori (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const FoldersScreen()));
+              },
             ),
             const SizedBox(height: 8),
             _buildSettingsTile(
@@ -79,7 +96,20 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Layout Form Builder',
               subtitle: 'Personalizza l\'ordine dei campi nel form inserimento',
               color: const Color(0xFF8B5CF6),
-              onTap: () => _showModalMessage(context, 'Layout Form Builder (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LayoutBuilderScreen()));
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildSettingsTile(
+              context: context,
+              icon: Icons.category_outlined,
+              title: 'Template di Settore',
+              subtitle: 'Seleziona preset settoriali (Pellicceria, Pelletteria, Calzature)',
+              color: const Color(0xFFEC4899),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SectorTemplatesScreen()));
+              },
             ),
 
             const SizedBox(height: 24),
@@ -93,16 +123,31 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Parametri GS1 Digital Link',
               subtitle: 'Domain URI, GTIN prefix e serializzatore avanzato',
               color: const Color(0xFF10B981),
-              onTap: () => _showModalMessage(context, 'Configurazione GS1 (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const GS1ConfigScreen()));
+              },
             ),
             const SizedBox(height: 8),
             _buildSettingsTile(
               context: context,
               icon: Icons.nfc_rounded,
               title: 'Hardware NFC & Scanner',
-              subtitle: 'Lettore NFC: ${hardwareConfig.nfcEnabled ? "Attivo" : "Disattivato"} | Bip: ${hardwareConfig.soundEnabled ? "Attivo" : "Disattivato"}',
+              subtitle: 'Lettore NFC & Modalità Scanner Prossimità',
               color: const Color(0xFFEC4899),
-              onTap: () => _showModalMessage(context, 'Configurazione Hardware (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const HardwareScreen()));
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildSettingsTile(
+              context: context,
+              icon: Icons.auto_awesome_rounded,
+              title: 'Automation Builder',
+              subtitle: 'Crea sequenze di automazione multi-step personalizzate',
+              color: const Color(0xFFD4AF37),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AutomationBuilderScreen()));
+              },
             ),
 
             const SizedBox(height: 24),
@@ -116,7 +161,9 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Cestino Prodotti (Soft Delete)',
               subtitle: '${inventoryState.products.where((p) => p.deletedAt != null).length} capi rimossi nel cestino',
               color: const Color(0xFFEF4444),
-              onTap: () => _showModalMessage(context, 'Cestino & Ripristino (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const TrashScreen()));
+              },
             ),
             const SizedBox(height: 8),
             _buildSettingsTile(
@@ -125,7 +172,9 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Esporta & Condividi Dati',
               subtitle: 'Export backup JSON completo inventario',
               color: const Color(0xFF06B6D4),
-              onTap: () => _showModalMessage(context, 'Esporta Dati (Fase 6)'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ShareScreen()));
+              },
             ),
 
             const SizedBox(height: 28),
@@ -293,16 +342,6 @@ class SettingsScreen extends ConsumerWidget {
             const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showModalMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Apertura schermata: $message'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
