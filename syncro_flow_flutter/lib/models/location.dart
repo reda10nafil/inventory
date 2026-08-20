@@ -17,6 +17,8 @@ class Location {
     this.nfcTag,
   });
 
+  String get name => label;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

@@ -489,7 +489,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? Image.network(
                           product.images.first,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+                          errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
                         )
                       : _buildImagePlaceholder(),
                 ),

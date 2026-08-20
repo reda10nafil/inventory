@@ -88,7 +88,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
         backgroundColor: AppColors.backgroundSecondary,
         elevation: 0,
         title: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Cronologia Eventi',
@@ -335,7 +335,7 @@ class _TimelineEventTile extends StatelessWidget {
 
     return IntrinsicHeight(
       child: Row(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Timeline indicator line + icon dot
           Column(
@@ -380,7 +380,7 @@ class _TimelineEventTile extends StatelessWidget {
                 ],
               ),
               child: Column(
-                crossAxisAlignment: CrossAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -465,7 +465,7 @@ class _TimelineEventTile extends StatelessWidget {
                   if (event.details.changes != null && event.details.changes!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Column(
-                      crossAxisAlignment: CrossAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: event.details.changes!
                           .map(
                             (c) => Padding(

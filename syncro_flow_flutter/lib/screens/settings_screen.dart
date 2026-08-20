@@ -25,7 +25,7 @@ class SettingsScreen extends ConsumerWidget {
         backgroundColor: AppColors.backgroundSecondary,
         elevation: 0,
         title: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Impostazioni di Sistema',
@@ -41,7 +41,7 @@ class SettingsScreen extends ConsumerWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Section 1: GESTIONE INVENTARIO
             _buildSectionHeader('GESTIONE INVENTARIO & STRUTTURA'),
@@ -140,7 +140,7 @@ class SettingsScreen extends ConsumerWidget {
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
-                crossAxisAlignment: CrossAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'DIAGNOSTICA DI SISTEMA',
@@ -273,7 +273,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,

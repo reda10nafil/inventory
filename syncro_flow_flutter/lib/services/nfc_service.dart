@@ -2,26 +2,33 @@ import 'package:nfc_manager/nfc_manager.dart';
 
 class NfcService {
   Future<bool> isSupported() async {
-    final availability = await NfcManager.instance.checkAvailability();
-    return availability == NfcAvailability.available;
+    try {
+      final availability = await NfcManager.instance.checkAvailability();
+      return availability == NfcAvailability.enabled;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<String?> readTag() async {
     String? result;
-    final availability = await NfcManager.instance.checkAvailability();
-    if (availability != NfcAvailability.available) return null;
+    final available = await isSupported();
+    if (!available) return null;
 
     try {
-      NfcManager.instance.startSession(
+      await NfcManager.instance.startSession(
+        pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
         onDiscovered: (NfcTag tag) async {
-          final ndef = tag.data['ndef'];
-          if (ndef != null && ndef['cachedMessage'] != null) {
-            final records = ndef['cachedMessage']['records'];
-            if (records is List && records.isNotEmpty) {
-              final record = records.first;
-              final payload = record['payload'] as List<int>?;
-              if (payload != null) {
-                result = String.fromCharCodes(payload);
+          final dynamic tagData = (tag as dynamic).data;
+          if (tagData is Map) {
+            final ndef = tagData['ndef'];
+            if (ndef is Map && ndef['cachedMessage'] != null) {
+              final records = ndef['cachedMessage']['records'];
+              if (records is List && records.isNotEmpty) {
+                final record = records.first;
+                if (record is Map && record['payload'] is List<int>) {
+                  result = String.fromCharCodes(record['payload'] as List<int>);
+                }
               }
             }
           }
@@ -29,33 +36,43 @@ class NfcService {
         },
       );
     } catch (e) {
-      await NfcManager.instance.stopSession();
+      try {
+        await NfcManager.instance.stopSession();
+      } catch (_) {}
     }
     return result;
   }
 
   Future<bool> writeGS1Uri(String uri) async {
     bool success = false;
-    final availability = await NfcManager.instance.checkAvailability();
-    if (availability != NfcAvailability.available) return false;
+    final available = await isSupported();
+    if (!available) return false;
 
     try {
-      NfcManager.instance.startSession(
+      await NfcManager.instance.startSession(
+        pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
         onDiscovered: (NfcTag tag) async {
-          final ndef = tag.data['ndef'];
-          if (ndef != null && ndef['isWritable'] == true) {
-            success = true;
+          final dynamic tagData = (tag as dynamic).data;
+          if (tagData is Map) {
+            final ndef = tagData['ndef'];
+            if (ndef is Map && ndef['isWritable'] == true) {
+              success = true;
+            }
           }
           await NfcManager.instance.stopSession();
         },
       );
     } catch (e) {
-      await NfcManager.instance.stopSession();
+      try {
+        await NfcManager.instance.stopSession();
+      } catch (_) {}
     }
     return success;
   }
 
   Future<void> stopSession() async {
-    await NfcManager.instance.stopSession();
+    try {
+      await NfcManager.instance.stopSession();
+    } catch (_) {}
   }
 }

@@ -9,6 +9,9 @@ class HardwareConfig {
     this.autoWriteNfcOnSave = false,
   });
 
+  bool get nfcEnabled => scanMode != ScanMode.qrOnly;
+  bool get soundEnabled => true;
+
   Map<String, dynamic> toJson() {
     return {
       'scanMode': scanMode.name,

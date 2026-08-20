@@ -33,8 +33,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
   String? _selectedLocation;
   String? _selectedLibraryId;
-  final Map<String, dynamic> _customFieldsValues = {};
-  List<String> _productImages = [];
+  final List<String> _productImages = [];
 
   final List<String> _furTypeSuggestions = [
     'Visone Stretto',
@@ -119,7 +118,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       sellPrice: sellPrice,
       status: ProductStatusType.available,
       images: _productImages,
-      customFields: _customFieldsValues,
       length: length,
       width: width,
       weight: weight,
@@ -156,7 +154,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
         backgroundColor: AppColors.backgroundSecondary,
         elevation: 0,
         title: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Nuovo Capo Inventario',
@@ -181,7 +179,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Dynamic Layout Renderer based on layoutConfig.fields
               for (final layoutField in layoutConfig.fields.where((f) => f.visible)) ...[
@@ -278,7 +276,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
       case 'furType':
         return Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextFormField(
               controller: _furTypeController,
@@ -322,7 +320,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       case 'location':
         final locList = locations.isNotEmpty ? locations : ['Magazzino Principale', 'Vetrina', 'Sartoria'];
         return DropdownButtonFormField<String>(
-          value: _selectedLocation ?? locList.first,
+          initialValue: _selectedLocation ?? locList.first,
           dropdownColor: AppColors.surface,
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: InputDecoration(
@@ -346,7 +344,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
       case 'folder':
         return DropdownButtonFormField<String>(
-          value: _selectedLibraryId ?? (libraries.isNotEmpty ? libraries.first.id : 'pellicce'),
+          initialValue: _selectedLibraryId ?? (libraries.isNotEmpty ? libraries.first.id : 'pellicce'),
           dropdownColor: AppColors.surface,
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: InputDecoration(
@@ -473,7 +471,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

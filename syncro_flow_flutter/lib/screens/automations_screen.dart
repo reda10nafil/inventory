@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 import '../models/automation.dart';
 import '../providers/automations_provider.dart';
-import '../providers/locations_provider.dart';
 import '../services/sound_service.dart';
 
 class AutomationsScreen extends ConsumerWidget {
@@ -22,7 +20,7 @@ class AutomationsScreen extends ConsumerWidget {
         backgroundColor: AppColors.backgroundSecondary,
         elevation: 0,
         title: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Automazioni Inventario',
@@ -45,7 +43,7 @@ class AutomationsScreen extends ConsumerWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Standard Preset Workflows Section
             Text(
@@ -214,7 +212,7 @@ class AutomationsScreen extends ConsumerWidget {
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
-              crossAxisAlignment: CrossAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
@@ -226,7 +224,7 @@ class AutomationsScreen extends ConsumerWidget {
                   child: Icon(icon, color: color, size: 22),
                 ),
                 Column(
-                  crossAxisAlignment: CrossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       item['title'] as String,
@@ -265,7 +263,7 @@ class AutomationsScreen extends ConsumerWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
-        crossAxisAlignment: CrossAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -281,7 +279,7 @@ class AutomationsScreen extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       auto.name,
@@ -361,7 +359,7 @@ class AutomationsScreen extends ConsumerWidget {
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.background,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.vertical(10),
+                padding: const EdgeInsets.symmetric(vertical: 10),
               ),
               icon: const Icon(Icons.play_arrow_rounded, size: 18),
               label: const Text('Esegui Ora', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -393,7 +391,7 @@ class AutomationsScreen extends ConsumerWidget {
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

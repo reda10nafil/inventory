@@ -66,7 +66,7 @@ class Product {
     this.weight,
     this.productionDate,
     this.technicalNotes,
-    required this.customData,
+    this.customData = const [],
     required this.createdAt,
     required this.updatedAt,
     this.lastScannedAt,
@@ -76,6 +76,10 @@ class Product {
     this.gs1DigitalLink,
     this.isFragile,
   });
+
+  Map<String, dynamic> get customFields => {
+        for (final cd in customData) cd.fieldSnapshot.id: cd.value
+      };
 
   Map<String, dynamic> toJson() {
     return {
