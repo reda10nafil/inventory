@@ -68,51 +68,52 @@ Ecco i file creati finora con i loro percorsi assoluti:
 10. **State Management Riverpod & Servizi (Fase 2 & Fase 3 - Completato)**:
    - Creato `StorageService` con persistenza locale JSON unificata via `shared_preferences`.
    - Creati tutti gli 8 Provider Riverpod in `lib/providers/` (`inventoryProvider`, `customFieldsProvider`, `locationsProvider`, `hardwareConfigProvider`, `gs1ConfigProvider`, `layoutProvider`, `automationsProvider`, `storageServiceProvider`).
-   - Implementati i servizi di sistema in `lib/services/` (`NfcService`, `SoundService`, `GS1Service`, `StorageService`).
-
----
-
-## 🛠 Stato Attuale e Prossimi Passi
-
-### **Completati:**
-- ✅ **Fase 0**: Setup progetto Flutter, dipendenze, asset e permessi hardware (NFC + Fotocamera)
-- ✅ **Fase 1**: Tema Luxury Dark + Oro, modelli dati Dart 1:1, costanti di configurazione
-- ✅ **Fase 2**: State Management globale con Riverpod (8 Notifier/Provider)
-- ✅ **Fase 3**: Servizi di sistema (NFC, Audio Beeps, GS1 Digital Link, Storage)
-
----
-
-## 📋 Recap delle Fasi Mancanti
-
-1. **Fase 4 — Schermate Tab (UI Principale)**:
-   - `HomeScreen` (Dashboard con lista prodotti, statistiche, filtri e ricerca full-text)
-   - `AddProductScreen` (Form dinamico basato sul LayoutBuilder)
-   - `TimelineScreen` (Cronologia eventi e attività)
-   - `AutomationsScreen` (Lista ed esecuzione rapida automazioni)
-   - `SettingsScreen` (Pannello centrale configurazioni)
-
-2. **Fase 5 — Dettaglio Prodotto & Scanner**:
-   - `ProductDetailScreen` (Scheda prodotto completa con azioni: Sposta, Vendi, QR/NFC, Elimina)
-   - `ScannerScreen` (Camera live overlay per codici a barre e QR)
-   - `ScannerActionScreen` (Azioni rapide post-scansione)
-
-3. **Fase 6 — Schermate Impostazioni (Pannelli di Configurazione)**:
-   - `LocationsScreen` (CRUD posizioni fisiche magazzino/vetrina)
-   - `FieldsScreen` (Gestione e personalizzazione campi inventario)
-   - `FoldersScreen` (Gestione librerie/cartelle)
-   - `LayoutBuilderScreen` (Personalizzazione layout form con Drag & Drop)
-   - `GS1ConfigScreen` (Impostazioni Digital Link GS1)
-   - `HardwareScreen` (Modalità scanner NFC/Barcode)
-   - `AutomationBuilderScreen` (Creazione automazioni multi-step)
-   - `SectorTemplatesScreen` (Template veloci di settore)
-   - `ShareScreen` (Condivisione prodotti/catalogo)
-   - `TrashScreen` (Cestino e ripristino elementi eliminati)
-
-4. **Fase 7 — Esecuzione Automazioni**:
-   - `AuditScreen`, `AutomationFlowScreen`, `BatchMoveScreen`, `CustomRunnerScreen`, `QuickTagScreen`, `ScanSellScreen`
-
-5. **Fase 8 — Widget Riutilizzabili & Controllo Qualità Finale**:
-   - `DynamicFieldRenderer` (Rendering dinamico di tutti i tipi di campo)
-   - Widget grafici: `ProductCard`, `StatCard`, `BarcodeWidget`, `LuxuryBottomSheet`
-   - Test automatici e verifica build finale
+71:    - Implementati i servizi di sistema in `lib/services/` (`NfcService`, `SoundService`, `GS1Service`, `StorageService`).
+72: 11. **Schermate Tab Principali (Fase 4 - Completato)**:
+73:    - Implementata la navigazione bottom bar in `AppShell`.
+74:    - `HomeScreen` (Dashboard con filtri, ricerche, stats e liste prodotti).
+75:    - `AddProductScreen` (Form per l'aggiunta di nuovi capi con campi personalizzati).
+76:    - `TimelineScreen` (Attività e registro eventi).
+77:    - `AutomationsScreen` (Gestione ed esecuzione rapida dei workflow).
+78:    - `SettingsScreen` (Pannello centrale configurazioni ed opzioni).
+79: 
+80: ---
+81: 
+82: ## 🛠 Stato Attuale e Prossimi Passi
+83: 
+84: ### **Completati:**
+85: - ✅ **Fase 0**: Setup progetto Flutter, dipendenze, asset e permessi hardware (NFC + Fotocamera)
+86: - ✅ **Fase 1**: Tema Luxury Dark + Oro, modelli dati Dart 1:1, costanti di configurazione
+87: - ✅ **Fase 2**: State Management globale con Riverpod (8 Notifier/Provider)
+88: - ✅ **Fase 3**: Servizi di sistema (NFC, Audio Beeps, GS1 Digital Link, Storage)
+89: - ✅ **Fase 4**: Schermate Tab Principali (`HomeScreen`, `AddProductScreen`, `TimelineScreen`, `AutomationsScreen`, `SettingsScreen`, `AppShell`)
+90: 
+91: ---
+92: 
+93: ## 📋 Recap delle Fasi Mancanti
+94: 
+95: 1. 🔄 **Fase 5 — Dettaglio Prodotto & Scanner (IN CORSO)**:
+96:    - `ProductDetailScreen` (Scheda prodotto completa con azioni: Sposta, Vendi, Tag QR/NFC, Modifica, Elimina)
+97:    - `ScannerScreen` (Camera live overlay per codici a barre e QR)
+98:    - `ScannerActionScreen` (Azioni rapide post-scansione)
+99: 
+100: 2. **Fase 6 — Schermate Impostazioni (Pannelli di Configurazione)**:
+101:    - `LocationsScreen` (CRUD posizioni fisiche magazzino/vetrina)
+102:    - `FieldsScreen` (Gestione e personalizzazione campi inventario)
+103:    - `FoldersScreen` (Gestione librerie/cartelle)
+104:    - `LayoutBuilderScreen` (Personalizzazione layout form con Drag & Drop)
+105:    - `GS1ConfigScreen` (Impostazioni Digital Link GS1)
+106:    - `HardwareScreen` (Modalità scanner NFC/Barcode)
+107:    - `AutomationBuilderScreen` (Creazione automazioni multi-step)
+108:    - `SectorTemplatesScreen` (Template veloci di settore)
+109:    - `ShareScreen` (Condivisione prodotti/catalogo)
+110:    - `TrashScreen` (Cestino e ripristino elementi eliminati)
+111: 
+112: 3. **Fase 7 — Esecuzione Automazioni**:
+113:    - `AuditScreen`, `AutomationFlowScreen`, `BatchMoveScreen`, `CustomRunnerScreen`, `QuickTagScreen`, `ScanSellScreen`
+114: 
+115: 4. **Fase 8 — Widget Riutilizzabili & Controllo Qualità Finale**:
+116:    - `DynamicFieldRenderer` (Rendering dinamico di tutti i tipi di campo)
+117:    - Widget grafici: `ProductCard`, `StatCard`, `BarcodeWidget`, `LuxuryBottomSheet`
+118:    - Test automatici e verifica build finale
 
