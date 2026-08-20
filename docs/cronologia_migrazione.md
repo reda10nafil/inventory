@@ -59,6 +59,18 @@ Questo documento riassume lo stato attuale del processo di migrazione dell'appli
    - `ScannerScreen` (Fotocamera con `mobile_scanner`, overlay animato Luxury Dark, toggle torcia/camera, rilevamento NFC background).
    - `ScannerActionScreen` (Azioni rapide post-scansione per prodotto, posizione e cartella).
 
+13. **Pannelli di Configurazione Impostazioni (Fase 6 - Completato)**:
+   - `LocationsScreen` (CRUD posizioni fisiche magazzino/vetrina)
+   - `FieldsScreen` (Gestione e personalizzazione campi inventario con Drag & Drop)
+   - `FoldersScreen` (Gestione librerie/cartelle)
+   - `LayoutBuilderScreen` (Personalizzazione layout form con Drag & Drop)
+   - `GS1ConfigScreen` (Impostazioni Digital Link GS1)
+   - `HardwareScreen` (Modalità scanner NFC/Barcode)
+   - `AutomationBuilderScreen` (Creazione automazioni multi-step)
+   - `SectorTemplatesScreen` (Template veloci di settore)
+   - `ShareScreen` (Condivisione prodotti/catalogo e backup JSON)
+   - `TrashScreen` (Cestino e ripristino elementi eliminati)
+
 ---
 
 ## 🛠 Stato Attuale e Prossimi Passi
@@ -70,27 +82,16 @@ Questo documento riassume lo stato attuale del processo di migrazione dell'appli
 - ✅ **Fase 3**: Servizi di sistema (NFC, Audio Beeps, GS1 Digital Link, Storage)
 - ✅ **Fase 4**: Schermate Tab Principali (`HomeScreen`, `AddProductScreen`, `TimelineScreen`, `AutomationsScreen`, `SettingsScreen`, `AppShell`)
 - ✅ **Fase 5**: Dettaglio Prodotto & Scanner (`ProductDetailScreen`, `ScannerScreen`, `ScannerActionScreen`)
+- ✅ **Fase 6**: Schermate Impostazioni (`LocationsScreen`, `FieldsScreen`, `FoldersScreen`, `GS1ConfigScreen`, `HardwareScreen`, `TrashScreen`, `ShareScreen`, `SectorTemplatesScreen`, `AutomationBuilderScreen`, `LayoutBuilderScreen`)
 
 ---
 
 ## 📋 Recap delle Fasi Mancanti
 
-1. 🔄 **Fase 6 — Schermate Impostazioni (Pannelli di Configurazione) (PROSSIMA FASE)**:
-   - `LocationsScreen` (CRUD posizioni fisiche magazzino/vetrina)
-   - `FieldsScreen` (Gestione e personalizzazione campi inventario)
-   - `FoldersScreen` (Gestione librerie/cartelle)
-   - `LayoutBuilderScreen` (Personalizzazione layout form con Drag & Drop)
-   - `GS1ConfigScreen` (Impostazioni Digital Link GS1)
-   - `HardwareScreen` (Modalità scanner NFC/Barcode)
-   - `AutomationBuilderScreen` (Creazione automazioni multi-step)
-   - `SectorTemplatesScreen` (Template veloci di settore)
-   - `ShareScreen` (Condivisione prodotti/catalogo)
-   - `TrashScreen` (Cestino e ripristino elementi eliminati)
-
-2. **Fase 7 — Esecuzione Automazioni**:
+1. 🔄 **Fase 7 — Esecuzione Automazioni (PROSSIMA FASE)**:
    - `AuditScreen`, `AutomationFlowScreen`, `BatchMoveScreen`, `CustomRunnerScreen`, `QuickTagScreen`, `ScanSellScreen`
 
-3. **Fase 8 — Widget Riutilizzabili & Controllo Qualità Finale**:
+2. **Fase 8 — Widget Riutilizzabili & Controllo Qualità Finale**:
    - `DynamicFieldRenderer` (Rendering dinamico di tutti i tipi di campo)
    - Widget grafici: `ProductCard`, `StatCard`, `BarcodeWidget`, `LuxuryBottomSheet`
    - Test automatici e verifica build finale
