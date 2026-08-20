@@ -71,6 +71,14 @@ Questo documento riassume lo stato attuale del processo di migrazione dell'appli
    - `ShareScreen` (Condivisione prodotti/catalogo e backup JSON)
    - `TrashScreen` (Cestino e ripristino elementi eliminati)
 
+14. **Schermate Esecuzione Automazioni (Fase 7 - Completato)**:
+   - `AuditScreen` (Inventario e verifica capi in posizione)
+   - `BatchMoveScreen` (Spostamento di massa tra posizioni)
+   - `ScanSellScreen` (Scansiona e vendi a raffica con report incasso)
+   - `QuickTagScreen` (Scrittura rapida tag NFC seriali)
+   - `CustomRunnerScreen` (Esecutore interattivo per workflow personalizzati)
+   - `AutomationFlowScreen` (Mappa del flusso visivo a step)
+
 ---
 
 ## 🛠 Stato Attuale e Prossimi Passi
@@ -83,15 +91,13 @@ Questo documento riassume lo stato attuale del processo di migrazione dell'appli
 - ✅ **Fase 4**: Schermate Tab Principali (`HomeScreen`, `AddProductScreen`, `TimelineScreen`, `AutomationsScreen`, `SettingsScreen`, `AppShell`)
 - ✅ **Fase 5**: Dettaglio Prodotto & Scanner (`ProductDetailScreen`, `ScannerScreen`, `ScannerActionScreen`)
 - ✅ **Fase 6**: Schermate Impostazioni (`LocationsScreen`, `FieldsScreen`, `FoldersScreen`, `GS1ConfigScreen`, `HardwareScreen`, `TrashScreen`, `ShareScreen`, `SectorTemplatesScreen`, `AutomationBuilderScreen`, `LayoutBuilderScreen`)
+- ✅ **Fase 7**: Esecuzione Automazioni (`AuditScreen`, `BatchMoveScreen`, `ScanSellScreen`, `QuickTagScreen`, `CustomRunnerScreen`, `AutomationFlowScreen`)
 
 ---
 
 ## 📋 Recap delle Fasi Mancanti
 
-1. 🔄 **Fase 7 — Esecuzione Automazioni (PROSSIMA FASE)**:
-   - `AuditScreen`, `AutomationFlowScreen`, `BatchMoveScreen`, `CustomRunnerScreen`, `QuickTagScreen`, `ScanSellScreen`
-
-2. **Fase 8 — Widget Riutilizzabili & Controllo Qualità Finale**:
+1. 🔄 **Fase 8 — Widget Riutilizzabili & Controllo Qualità Finale (IN CORSO / FASE FINALE)**:
    - `DynamicFieldRenderer` (Rendering dinamico di tutti i tipi di campo)
    - Widget grafici: `ProductCard`, `StatCard`, `BarcodeWidget`, `LuxuryBottomSheet`
    - Test automatici e verifica build finale
