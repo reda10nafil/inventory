@@ -215,25 +215,36 @@ class InventoryNotifier extends Notifier<InventoryState> {
     await _saveAlerts();
   }
 
-  Future<void> updateProduct(String id, Product updated) async {
+  Future<void> updateProduct(dynamic idOrProduct, [Product? updated]) async {
+    final String id;
+    final Product updatedProd;
+    if (idOrProduct is Product) {
+      id = idOrProduct.id;
+      updatedProd = idOrProduct;
+    } else {
+      id = idOrProduct.toString();
+      if (updated == null) return;
+      updatedProd = updated;
+    }
+
     final oldProduct = getProductById(id);
     if (oldProduct == null) return;
 
     final changes = <String>[];
-    if (updated.location != oldProduct.location) {
-      changes.add('Posizione: ${oldProduct.location} → ${updated.location}');
+    if (updatedProd.location != oldProduct.location) {
+      changes.add('Posizione: ${oldProduct.location} → ${updatedProd.location}');
     }
-    if (updated.sellPrice != oldProduct.sellPrice) {
+    if (updatedProd.sellPrice != oldProduct.sellPrice) {
       changes.add(
-          'Prezzo vendita: €${oldProduct.sellPrice ?? 0} → €${updated.sellPrice}');
+          'Prezzo vendita: €${oldProduct.sellPrice ?? 0} → €${updatedProd.sellPrice}');
     }
-    if (updated.purchasePrice != oldProduct.purchasePrice) {
+    if (updatedProd.purchasePrice != oldProduct.purchasePrice) {
       changes.add(
-          'Prezzo acquisto: €${oldProduct.purchasePrice ?? 0} → €${updated.purchasePrice}');
+          'Prezzo acquisto: €${oldProduct.purchasePrice ?? 0} → €${updatedProd.purchasePrice}');
     }
 
     final updatedProducts = state.products.map((p) {
-      if (p.id == id) return updated.copyWith(updatedAt: DateTime.now());
+      if (p.id == id) return updatedProd.copyWith(updatedAt: DateTime.now());
       return p;
     }).toList();
 
@@ -392,13 +403,50 @@ class InventoryNotifier extends Notifier<InventoryState> {
     await _saveTimeline();
   }
 
+  Future<void> associateNfcTag(String productId, String tagId) async {
+    final product = getProductById(productId);
+    if (product == null) return;
+    final updated = product.copyWith(
+      nfcTag: tagId,
+      updatedAt: DateTime.now(),
+    );
+    final updatedProducts =
+        state.products.map((p) => p.id == productId ? updated : p).toList();
+    state = state.copyWith(products: updatedProducts);
+    await _saveProducts();
+  }
+
+  Future<void> deleteProduct(String id) async {
+    await softDeleteProduct(id);
+  }
+
+  Future<void> emptyTrash() async {
+    final activeProducts =
+        state.products.where((p) => p.deletedAt == null).toList();
+    state = state.copyWith(products: activeProducts);
+    await _saveProducts();
+  }
+
   Future<void> permanentlyDeleteProduct(String id) async {
     final updatedProducts = state.products.where((p) => p.id != id).toList();
     state = state.copyWith(products: updatedProducts);
     await _saveProducts();
   }
 
-  Future<void> addLibrary(String name, String icon) async {
+  Future<void> updateLibrary(LibraryModel updated) async {
+    final updatedLibs =
+        state.libraries.map((l) => l.id == updated.id ? updated : l).toList();
+    state = state.copyWith(libraries: updatedLibs);
+    await _saveLibraries();
+  }
+
+  Future<void> addLibrary(dynamic libraryOrName, [String? icon]) async {
+    if (libraryOrName is LibraryModel) {
+      state = state.copyWith(libraries: [...state.libraries, libraryOrName]);
+      await _saveLibraries();
+      return;
+    }
+    final name = libraryOrName.toString();
     final slug = name
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
@@ -406,7 +454,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
     final newLib = LibraryModel(
       id: slug,
       name: name,
-      icon: icon,
+      icon: icon ?? 'folder',
       fields: const [],
       createdAt: DateTime.now(),
     );

@@ -42,4 +42,11 @@ class AppColors {
   static const Color showcase = Color(0xFFD4AF37);
   static const Color workshop = Color(0xFF8B5CF6);
   static const Color stand = Color(0xFF10B981);
+
+  /// Parse a hex color string (e.g. '#D4AF37' or 'D4AF37') into a Color.
+  static Color fromHex(String hex) {
+    hex = hex.replaceAll('#', '');
+    if (hex.length == 6) hex = 'FF$hex';
+    return Color(int.parse(hex, radix: 16));
+  }
 }

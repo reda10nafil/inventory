@@ -156,18 +156,18 @@ class CustomAutomation {
   final DateTime? lastUsedAt;
   final int usageCount;
 
-  const CustomAutomation({
+  CustomAutomation({
     required this.id,
     required this.name,
-    required this.icon,
-    required this.color,
-    required this.description,
-    required this.qrValue,
-    required this.steps,
-    required this.createdAt,
+    this.icon = 'auto_awesome',
+    this.color = '#3B82F6',
+    this.description = '',
+    this.qrValue = '',
+    this.steps = const [],
+    DateTime? createdAt,
     this.lastUsedAt,
     this.usageCount = 0,
-  });
+  }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() {
     return {

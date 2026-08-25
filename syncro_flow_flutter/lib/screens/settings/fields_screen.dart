@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../models/custom_field.dart';
 import '../../providers/custom_fields_provider.dart';
-import '../../services/sound_service.dart';
 
 class FieldsScreen extends ConsumerStatefulWidget {
   const FieldsScreen({super.key});
@@ -119,7 +118,6 @@ class _FieldsScreenState extends ConsumerState<FieldsScreen> {
                     );
                   }
 
-                  SoundService.playBeep();
                   Navigator.pop(context);
                 },
                 child: Text(isEditing ? 'Salva' : 'Crea'),
@@ -146,7 +144,6 @@ class _FieldsScreenState extends ConsumerState<FieldsScreen> {
             tooltip: 'Ripristina Campi di Sistema',
             onPressed: () {
               ref.read(customFieldsProvider.notifier).resetToDefaults();
-              SoundService.playBeep();
             },
           ),
         ],
@@ -214,7 +211,6 @@ class _FieldsScreenState extends ConsumerState<FieldsScreen> {
                       icon: const Icon(Icons.delete_outline, color: AppColors.error),
                       onPressed: () {
                         ref.read(customFieldsProvider.notifier).softDeleteField(field.id);
-                        SoundService.playBeep();
                       },
                     ),
                   ],

@@ -1,4 +1,4 @@
-enum ScanMode { nfcOnly, qrOnly, both }
+enum ScanMode { nfcOnly, qrOnly, barcodeOnly, both }
 
 class HardwareConfig {
   final ScanMode scanMode;

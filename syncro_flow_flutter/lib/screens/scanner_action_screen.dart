@@ -252,7 +252,7 @@ class _ScannerActionScreenState extends ConsumerState<ScannerActionScreen> {
               Card(
                 color: AppColors.surface,
                 child: ListTile(
-                  leading: Icon(Icons.location_on, size: 36, color: AppColors.fromHex(location.color)),
+                  leading: Icon(Icons.location_on, size: 36, color: location.color),
                   title: Text(location.label, style: AppTypography.titleLarge),
                   subtitle: Text('Capacità: ${location.capacity ?? "Illimitata"}'),
                 ),

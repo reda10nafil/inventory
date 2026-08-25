@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../models/library.dart';
 import '../../providers/inventory_provider.dart';
-import '../../services/sound_service.dart';
 
 class FoldersScreen extends ConsumerStatefulWidget {
   const FoldersScreen({super.key});
@@ -109,7 +108,6 @@ class _FoldersScreenState extends ConsumerState<FoldersScreen> {
                     );
                   }
 
-                  SoundService.playBeep();
                   Navigator.pop(context);
                 },
                 child: Text(isEditing ? 'Salva' : 'Crea'),
@@ -140,7 +138,6 @@ class _FoldersScreenState extends ConsumerState<FoldersScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               ref.read(inventoryProvider.notifier).deleteLibrary(folder.id);
-              SoundService.playBeep();
               Navigator.pop(context);
             },
             child: const Text('Elimina'),

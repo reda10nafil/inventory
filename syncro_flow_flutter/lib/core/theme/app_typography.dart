@@ -95,6 +95,31 @@ class AppTypography {
         letterSpacing: 0.5,
       );
 
+  static TextStyle get headlineMedium => GoogleFonts.inter(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      );
+
+  static TextStyle get headlineSmall => GoogleFonts.inter(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      );
+
+  static TextStyle get labelMedium => GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondary,
+      );
+
+  static TextStyle get labelSmall => GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondary,
+        letterSpacing: 0.5,
+      );
+
   static TextStyle get buttonPrimary => GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w600,

@@ -8,6 +8,7 @@ enum FieldDataType {
   singleChoice,
   multiChoice,
   document,
+  dropdown,
 }
 
 enum FieldUIType {
@@ -116,6 +117,8 @@ class CustomField {
         return 'multi_choice';
       case FieldDataType.document:
         return 'document';
+      case FieldDataType.dropdown:
+        return 'dropdown';
     }
   }
 
@@ -139,6 +142,8 @@ class CustomField {
         return FieldDataType.multiChoice;
       case 'document':
         return FieldDataType.document;
+      case 'dropdown':
+        return FieldDataType.dropdown;
       default:
         return FieldDataType.textShort;
     }

@@ -51,14 +51,16 @@ class Product {
   final String? libraryId;
   final String? gs1DigitalLink;
   final bool? isFragile;
+  final String? barcode;
+  final String? nfcTag;
 
   const Product({
     required this.id,
     required this.sku,
     required this.furType,
     required this.location,
-    required this.status,
-    required this.images,
+    this.status = ProductStatusType.available,
+    this.images = const [],
     this.purchasePrice,
     this.sellPrice,
     this.length,
@@ -68,14 +70,16 @@ class Product {
     this.technicalNotes,
     this.customData = const [],
     required this.createdAt,
-    required this.updatedAt,
+    DateTime? updatedAt,
     this.lastScannedAt,
     this.soldAt,
     this.deletedAt,
     this.libraryId,
     this.gs1DigitalLink,
     this.isFragile,
-  });
+    this.barcode,
+    this.nfcTag,
+  }) : updatedAt = updatedAt ?? createdAt;
 
   Map<String, dynamic> get customFields => {
         for (final cd in customData) cd.fieldSnapshot.id: cd.value
@@ -105,6 +109,8 @@ class Product {
       if (libraryId != null) 'libraryId': libraryId,
       if (gs1DigitalLink != null) 'gs1DigitalLink': gs1DigitalLink,
       if (isFragile != null) 'isFragile': isFragile,
+      if (barcode != null) 'barcode': barcode,
+      if (nfcTag != null) 'nfcTag': nfcTag,
     };
   }
 
@@ -151,6 +157,8 @@ class Product {
       libraryId: json['libraryId'] as String?,
       gs1DigitalLink: json['gs1DigitalLink'] as String?,
       isFragile: json['isFragile'] as bool?,
+      barcode: json['barcode'] as String?,
+      nfcTag: json['nfcTag'] as String?,
     );
   }
 
@@ -177,6 +185,8 @@ class Product {
     String? libraryId,
     String? gs1DigitalLink,
     bool? isFragile,
+    String? barcode,
+    String? nfcTag,
   }) {
     return Product(
       id: id ?? this.id,
@@ -201,6 +211,8 @@ class Product {
       libraryId: libraryId ?? this.libraryId,
       gs1DigitalLink: gs1DigitalLink ?? this.gs1DigitalLink,
       isFragile: isFragile ?? this.isFragile,
+      barcode: barcode ?? this.barcode,
+      nfcTag: nfcTag ?? this.nfcTag,
     );
   }
 }

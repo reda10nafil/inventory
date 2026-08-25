@@ -7,6 +7,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 import '../models/product.dart';
 import '../models/location.dart';
+import '../models/timeline_event.dart';
 import '../providers/inventory_provider.dart';
 import '../providers/locations_provider.dart';
 import '../providers/custom_fields_provider.dart';
@@ -113,7 +114,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     sb.writeln('SKU: ${product.sku}');
     sb.writeln('ID: ${product.id}');
     sb.writeln('TIPO: ${product.furType}');
-    sb.writeln('STATO: ${product.status == 'available' ? 'Disponibile' : 'Venduto'}');
+    sb.writeln('STATO: ${product.status == ProductStatusType.available ? 'Disponibile' : 'Venduto'}');
     sb.writeln('POSIZIONE: ${location?.label ?? product.location}');
     sb.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     sb.writeln('📐 MISURE:');
@@ -163,7 +164,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       value: loc.id,
                       child: Row(
                         children: [
-                          Icon(Icons.location_on, color: AppColors.fromHex(loc.color), size: 18),
+                          Icon(Icons.location_on, color: loc.color, size: 18),
                           const SizedBox(width: 8),
                           Text(loc.label, style: AppTypography.bodyMedium),
                         ],
@@ -382,7 +383,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               ref.read(inventoryProvider.notifier).deleteProduct(product.id);
               Navigator.pop(context); // Close dialog
               Navigator.pop(context); // Go back to product list
-              SoundService().playBeep();
+              SoundService.playBeep();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Prodotto spostato nel cestino')),
               );
@@ -502,7 +503,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.black70,
+                          color: const Color(0xB3000000),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
@@ -672,7 +673,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     _buildSectionHeader('CAMPI PERSONALIZZATI', Icons.tune),
                     const SizedBox(height: 12),
                     ...customFields.map((field) {
-                      final value = product.customData[field.id];
+                      final value = product.customFields[field.id];
                       if (value == null || value.toString().isEmpty) return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
@@ -708,7 +709,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             backgroundColor: AppColors.surfaceElevated,
                             child: Icon(_getEventIcon(event.type), size: 18, color: AppColors.accentGold),
                           ),
-                          title: Text(event.details, style: AppTypography.bodyMedium),
+                          title: Text(_getEventTitle(event), style: AppTypography.bodyMedium),
                           subtitle: Text(
                             '${event.timestamp.day}/${event.timestamp.month}/${event.timestamp.year} ${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
                             style: AppTypography.bodySmall,
@@ -773,20 +774,45 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  IconData _getEventIcon(String type) {
+  String _getEventTitle(TimelineEvent event) {
+    switch (event.type) {
+      case TimelineEventType.created:
+        return 'Prodotto inserito a inventario';
+      case TimelineEventType.moved:
+        return 'Spostato: ${event.details.from ?? "N/D"} → ${event.details.to ?? "N/D"}';
+      case TimelineEventType.sold:
+        return 'Venduto ${event.details.finalPrice != null ? "(€${event.details.finalPrice!.toStringAsFixed(2)})" : ""}';
+      case TimelineEventType.modified:
+        return event.details.changes?.join(', ') ?? 'Modifica dati';
+      case TimelineEventType.deleted:
+        return 'Spostato nel cestino';
+      case TimelineEventType.restored:
+        return 'Ripristinato dal cestino';
+      case TimelineEventType.scanned:
+        return 'Scansione effettuata';
+      case TimelineEventType.photoAdded:
+        return 'Foto aggiornate';
+    }
+  }
+
+  IconData _getEventIcon(TimelineEventType type) {
     switch (type) {
-      case 'created':
+      case TimelineEventType.created:
         return Icons.add_circle_outline;
-      case 'moved':
+      case TimelineEventType.moved:
         return Icons.swap_horiz;
-      case 'sold':
+      case TimelineEventType.sold:
         return Icons.shopping_bag_outlined;
-      case 'edited':
+      case TimelineEventType.modified:
         return Icons.edit_note;
-      case 'nfc_tagged':
-        return Icons.nfc;
-      default:
-        return Icons.info_outline;
+      case TimelineEventType.deleted:
+        return Icons.delete_outline;
+      case TimelineEventType.restored:
+        return Icons.restore;
+      case TimelineEventType.scanned:
+        return Icons.qr_code_scanner;
+      case TimelineEventType.photoAdded:
+        return Icons.camera_alt_outlined;
     }
   }
 }

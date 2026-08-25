@@ -4,7 +4,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../models/gs1_config.dart';
 import '../../providers/gs1_config_provider.dart';
-import '../../services/sound_service.dart';
 
 class GS1ConfigScreen extends ConsumerStatefulWidget {
   const GS1ConfigScreen({super.key});
@@ -83,7 +82,6 @@ class _GS1ConfigScreenState extends ConsumerState<GS1ConfigScreen> {
                   value: gs1Config.enableSerial,
                   onChanged: (val) {
                     ref.read(gs1ConfigProvider.notifier).updateConfig(enableSerial: val);
-                    SoundService.playBeep();
                   },
                 ),
                 if (gs1Config.enableSerial) ...[
@@ -96,7 +94,6 @@ class _GS1ConfigScreenState extends ConsumerState<GS1ConfigScreen> {
                     onChanged: (mode) {
                       if (mode != null) {
                         ref.read(gs1ConfigProvider.notifier).updateConfig(serialMode: mode);
-                        SoundService.playBeep();
                       }
                     },
                   ),
@@ -108,7 +105,6 @@ class _GS1ConfigScreenState extends ConsumerState<GS1ConfigScreen> {
                     onChanged: (mode) {
                       if (mode != null) {
                         ref.read(gs1ConfigProvider.notifier).updateConfig(serialMode: mode);
-                        SoundService.playBeep();
                       }
                     },
                   ),
@@ -126,7 +122,6 @@ class _GS1ConfigScreenState extends ConsumerState<GS1ConfigScreen> {
               value: gs1Config.enableLotto,
               onChanged: (val) {
                 ref.read(gs1ConfigProvider.notifier).updateConfig(enableLotto: val);
-                SoundService.playBeep();
               },
             ),
           ),

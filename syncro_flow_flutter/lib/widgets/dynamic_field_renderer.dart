@@ -69,15 +69,26 @@ class DynamicFieldRenderer extends StatelessWidget {
       case FieldDataType.dropdown:
         final options = field.options ?? [];
         if (isReadOnly) return _buildReadOnlyTile(field.name, value?.toString() ?? 'N/D');
+        final currentVal = value?.toString();
+        final selected = (currentVal != null && options.contains(currentVal))
+            ? currentVal
+            : (options.isNotEmpty ? options.first.toString() : null);
         return DropdownButtonFormField<String>(
-          value: options.contains(value) ? value.toString() : (options.isNotEmpty ? options.first : null),
+          value: selected,
           dropdownColor: AppColors.surfaceElevated,
           decoration: InputDecoration(
             labelText: field.name,
             border: const OutlineInputBorder(),
           ),
-          items: options.map((opt) => DropdownMenuItem(value: opt, child: Text(opt))).toList(),
-          onChanged: onChanged,
+          items: options
+              .map<DropdownMenuItem<String>>(
+                (opt) => DropdownMenuItem<String>(
+                  value: opt.toString(),
+                  child: Text(opt.toString()),
+                ),
+              )
+              .toList(),
+          onChanged: (val) => onChanged?.call(val),
         );
 
       default:

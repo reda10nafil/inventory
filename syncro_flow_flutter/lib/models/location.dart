@@ -11,7 +11,7 @@ class Location {
   const Location({
     required this.id,
     required this.label,
-    required this.color,
+    this.color = const Color(0xFF3B82F6),
     this.capacity,
     this.barcode,
     this.nfcTag,

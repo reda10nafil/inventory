@@ -4,7 +4,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../models/layout_config.dart';
 import '../../providers/layout_provider.dart';
-import '../../services/sound_service.dart';
 
 class LayoutBuilderScreen extends ConsumerWidget {
   const LayoutBuilderScreen({super.key});
@@ -24,7 +23,6 @@ class LayoutBuilderScreen extends ConsumerWidget {
             tooltip: 'Ripristina Layout Default',
             onPressed: () {
               ref.read(layoutProvider.notifier).resetToDefault();
-              SoundService.playBeep();
             },
           ),
         ],
@@ -38,7 +36,6 @@ class LayoutBuilderScreen extends ConsumerWidget {
           final item = list.removeAt(oldIndex);
           list.insert(newIndex, item);
           ref.read(layoutProvider.notifier).updateFieldOrder(list);
-          SoundService.playBeep();
         },
         itemBuilder: (context, index) {
           final field = fields[index];
@@ -60,7 +57,7 @@ class LayoutBuilderScreen extends ConsumerWidget {
                 color: field.visible ? AppColors.accentGold : AppColors.textMuted,
               ),
               title: Text(
-                field.label ?? field.name ?? field.id,
+                field.name,
                 style: AppTypography.titleMedium.copyWith(
                   color: field.visible ? AppColors.textPrimary : AppColors.textMuted,
                 ),
@@ -81,7 +78,6 @@ class LayoutBuilderScreen extends ConsumerWidget {
                     onPressed: () {
                       final newSize = field.size == FieldSize.full ? FieldSize.half : FieldSize.full;
                       ref.read(layoutProvider.notifier).updateFieldSize(field.id, newSize);
-                      SoundService.playBeep();
                     },
                   ),
                   IconButton(
@@ -91,7 +87,6 @@ class LayoutBuilderScreen extends ConsumerWidget {
                     ),
                     onPressed: () {
                       ref.read(layoutProvider.notifier).toggleFieldVisibility(field.id);
-                      SoundService.playBeep();
                     },
                   ),
                   const Icon(Icons.drag_handle, color: AppColors.textMuted),

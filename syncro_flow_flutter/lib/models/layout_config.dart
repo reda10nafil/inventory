@@ -1,4 +1,4 @@
-enum FieldSize { small, medium, full }
+enum FieldSize { small, medium, full, half }
 
 class LayoutField {
   final String id;
@@ -7,6 +7,8 @@ class LayoutField {
   final bool visible;
   final String? label;
   final String? icon;
+
+  String get name => label ?? id;
 
   const LayoutField({
     required this.id,

@@ -4,7 +4,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../models/hardware_config.dart';
 import '../../providers/hardware_config_provider.dart';
-import '../../services/sound_service.dart';
 
 class HardwareScreen extends ConsumerWidget {
   const HardwareScreen({super.key});
@@ -45,7 +44,6 @@ class HardwareScreen extends ConsumerWidget {
                     onChanged: (mode) {
                       if (mode != null) {
                         ref.read(hardwareConfigProvider.notifier).updateConfig(scanMode: mode);
-                        SoundService.playBeep();
                       }
                     },
                   ),
@@ -58,7 +56,6 @@ class HardwareScreen extends ConsumerWidget {
                     onChanged: (mode) {
                       if (mode != null) {
                         ref.read(hardwareConfigProvider.notifier).updateConfig(scanMode: mode);
-                        SoundService.playBeep();
                       }
                     },
                   ),
@@ -71,7 +68,6 @@ class HardwareScreen extends ConsumerWidget {
                     onChanged: (mode) {
                       if (mode != null) {
                         ref.read(hardwareConfigProvider.notifier).updateConfig(scanMode: mode);
-                        SoundService.playBeep();
                       }
                     },
                   ),
@@ -93,7 +89,6 @@ class HardwareScreen extends ConsumerWidget {
               value: hwConfig.autoWriteNfcOnSave,
               onChanged: (val) {
                 ref.read(hardwareConfigProvider.notifier).updateConfig(autoWriteNfcOnSave: val);
-                SoundService.playBeep();
               },
             ),
           ),

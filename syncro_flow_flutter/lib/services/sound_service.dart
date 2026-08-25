@@ -41,7 +41,12 @@ class SoundService {
     await playAlarm();
   }
 
-  Future<void> playSuccessBeepInstance() async {
+  Future<void> playBeepInstance() async {
+    await playBeep();
+  }
+
+  // Instance method alias
+  Future<void> playBeepSound() async {
     await playBeep();
   }
 

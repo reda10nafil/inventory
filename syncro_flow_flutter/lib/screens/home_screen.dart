@@ -349,12 +349,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildStatsCards(int available, int sold, int alerts) {
     return SizedBox(
-      height: 90,
+      height: 104,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.spacingScreenPadding,
-          vertical: 8,
+          vertical: 6,
         ),
         children: [
           _buildStatCard('DISPONIBILI', available.toString(), null),
@@ -374,7 +374,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildStatCard(String label, String value, Color? borderColor) {
     return Container(
       constraints: const BoxConstraints(minWidth: 140),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
@@ -386,6 +386,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -393,18 +394,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Text(
                 value,
                 style: AppTypography.cardValue.copyWith(
-                  fontSize: 32,
+                  fontSize: 28,
                   color: AppColors.primary,
                 ),
               ),
               if (borderColor != null) ...[
                 const SizedBox(width: 8),
-                Icon(Icons.warning, size: 20, color: borderColor),
+                Icon(Icons.warning, size: 18, color: borderColor),
               ],
             ],
           ),
-          const SizedBox(height: 4),
-          Text(label, style: AppTypography.heroLabel),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTypography.heroLabel.copyWith(
+              fontSize: 11,
+              letterSpacing: 0.8,
+            ),
+          ),
         ],
       ),
     );

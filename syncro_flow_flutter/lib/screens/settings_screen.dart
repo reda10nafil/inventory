@@ -6,7 +6,6 @@ import '../core/theme/app_typography.dart';
 import '../providers/inventory_provider.dart';
 import '../providers/locations_provider.dart';
 import '../providers/custom_fields_provider.dart';
-import '../providers/hardware_config_provider.dart';
 import '../services/sound_service.dart';
 
 import 'settings/locations_screen.dart';
@@ -28,7 +27,6 @@ class SettingsScreen extends ConsumerWidget {
     final inventoryState = ref.watch(inventoryProvider);
     final locations = ref.watch(locationsProvider);
     final customFields = ref.watch(customFieldsProvider);
-    final hardwareConfig = ref.watch(hardwareConfigProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
