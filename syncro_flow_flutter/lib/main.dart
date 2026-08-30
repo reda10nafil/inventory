@@ -10,6 +10,7 @@ import 'core/theme/app_theme.dart';
 import 'core/utils/nfc_route_guard.dart';
 import 'providers/inventory_provider.dart';
 import 'providers/storage_provider.dart';
+import 'services/nfc_coordinator.dart';
 import 'services/storage_service.dart';
 import 'screens/app_shell.dart';
 import 'screens/home_screen.dart';
@@ -226,6 +227,10 @@ class _SyncroFlowAppState extends ConsumerState<SyncroFlowApp> {
   }
 
   void _navigateForSku(String sku, Uri uri) {
+    if (NfcCoordinator.isInhibited) {
+      debugPrint('[DeepLink] NFC inhibited. Ignoring deep link for sku: $sku');
+      return;
+    }
     final inv = ref.read(inventoryProvider);
     final match = inv.products.where((p) => p.deletedAt == null && (p.sku.toLowerCase() == sku.toLowerCase() || p.id == sku || p.barcode == sku || p.nfcTag == sku || p.nfcTag == uri.toString() || p.gs1DigitalLink == uri.toString())).toList();
     final ctx = _rootNavigatorKey.currentContext;

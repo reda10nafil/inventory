@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../services/global_nfc_service.dart';
 import '../../services/nfc_coordinator.dart';
 import '../../services/nfc_service.dart';
 import '../../services/sound_service.dart';
@@ -30,7 +29,6 @@ class _NfcToolsScreenState extends ConsumerState<NfcToolsScreen> with SingleTick
     _tab = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await NfcCoordinator.acquire(NfcMode.tools, 'nfc_tools');
-      await GlobalNfcService.pause();
       await NfcCoordinator.forceStop();
     });
   }

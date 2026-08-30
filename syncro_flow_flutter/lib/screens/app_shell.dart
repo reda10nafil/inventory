@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
-import '../widgets/global_nfc_listener.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
@@ -43,9 +42,8 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
 
-    return GlobalNfcListener(
-      child: Scaffold(
-        body: child,
+    return Scaffold(
+      body: child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.backgroundSecondary,
@@ -104,7 +102,6 @@ class AppShell extends StatelessWidget {
             ),
           ),
         ),
-      ),
       ),
     );
   }

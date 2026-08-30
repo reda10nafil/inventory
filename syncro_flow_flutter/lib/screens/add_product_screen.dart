@@ -14,7 +14,6 @@ import '../providers/locations_provider.dart';
 import '../providers/custom_fields_provider.dart';
 import '../providers/gs1_config_provider.dart';
 import '../providers/layout_provider.dart';
-import '../services/global_nfc_service.dart';
 import '../services/nfc_coordinator.dart';
 import '../services/gs1_service.dart';
 import '../services/nfc_service.dart';
@@ -71,11 +70,9 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     _weightController = TextEditingController();
     _notesController = TextEditingController();
 
-    // OFF continuo su add: solo esplicito via popup — async via postFrame per garantire pause efectiva
+    // OFF continuo su add: solo esplicito via popup
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await NfcCoordinator.acquire(NfcMode.tools, 'add_product_screen');
-      await GlobalNfcService.pause();
-      await NfcCoordinator.forceStop();
     });
 
     // Auto generate default SKU after first frame
@@ -88,7 +85,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
   @override
   void dispose() {
     NfcCoordinator.release('add_product_screen');
-    GlobalNfcService.resume();
     _skuController.dispose();
     _furTypeController.dispose();
     _purchasePriceController.dispose();
@@ -187,10 +183,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     if (data != null) await SoundService.playNfcRead();
     await Future.delayed(const Duration(milliseconds: 600));
     await NfcCoordinator.release(token);
-    // ri-blocca globale per tutta la permanenza su /add (evita Home redirect)
+    // ri-blocca per tutta la permanenza su /add
     await NfcCoordinator.acquire(NfcMode.tools, 'add_product_screen');
-    await GlobalNfcService.pause();
-    await NfcCoordinator.forceStop();
     if (!mounted) return;
     Navigator.pop(context);
     setState(() => _nfcBusy = false);
@@ -234,7 +228,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     await Future.delayed(const Duration(milliseconds: 600));
     await NfcCoordinator.release(token);
     await NfcCoordinator.acquire(NfcMode.tools, 'add_product_screen');
-    await GlobalNfcService.pause();
     await NfcCoordinator.forceStop();
     if (!mounted) return;
     Navigator.pop(context);
@@ -260,7 +253,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     await Future.delayed(const Duration(milliseconds: 600));
     await NfcCoordinator.release(token);
     await NfcCoordinator.acquire(NfcMode.tools, 'add_product_screen');
-    await GlobalNfcService.pause();
     await NfcCoordinator.forceStop();
     if (!mounted) return;
     Navigator.pop(context);

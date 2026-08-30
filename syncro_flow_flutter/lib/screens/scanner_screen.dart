@@ -9,7 +9,6 @@ import '../providers/inventory_provider.dart';
 import '../providers/locations_provider.dart';
 import '../providers/automations_provider.dart';
 import '../services/barcode_decoder_service.dart';
-import '../services/global_nfc_service.dart';
 import '../services/nfc_foreground_dispatch.dart';
 import '../services/nfc_service.dart';
 import 'scanner_action_screen.dart';
@@ -81,7 +80,6 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
       torchEnabled: false,
       returnImage: false,
     );
-    GlobalNfcService.pause();
     _startNfcListening();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -126,7 +124,6 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
     _manualInputController.dispose();
     NfcForegroundDispatch.disable();
     NfcService().stopNfcSession();
-    GlobalNfcService.resume();
     super.dispose();
   }
 

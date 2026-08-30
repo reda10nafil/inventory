@@ -6,7 +6,6 @@ import '../core/theme/app_typography.dart';
 import '../providers/inventory_provider.dart';
 import '../providers/locations_provider.dart';
 import '../providers/custom_fields_provider.dart';
-import '../services/global_nfc_service.dart';
 import '../services/nfc_coordinator.dart';
 
 import 'settings/locations_screen.dart';
@@ -33,7 +32,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await NfcCoordinator.acquire(NfcMode.tools, 'settings_screen');
-      await GlobalNfcService.pause();
       await NfcCoordinator.forceStop();
     });
   }
@@ -41,7 +39,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     NfcCoordinator.release('settings_screen');
-    GlobalNfcService.resume();
     super.dispose();
   }
 

@@ -16,7 +16,6 @@ import '../providers/inventory_provider.dart';
 import '../providers/locations_provider.dart';
 import '../providers/custom_fields_provider.dart';
 import '../providers/gs1_config_provider.dart';
-import '../services/global_nfc_service.dart';
 import '../services/nfc_coordinator.dart';
 import '../services/nfc_service.dart';
 import '../services/sound_service.dart';
