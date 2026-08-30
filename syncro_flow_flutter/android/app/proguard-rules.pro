@@ -1,0 +1,4 @@
+-keep class dev.steenbakker.mobile_scanner.** { *; }
+-keep interface dev.steenbakker.mobile_scanner.** { *; }
+-keep class com.google.mlkit.** { *; }
+-keep interface com.google.mlkit.** { *; }
