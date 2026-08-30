@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  app_links
   audioplayers_windows
   battery_plus
   connectivity_plus
@@ -10,6 +11,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_windows
   geolocator_windows
   local_auth_windows
+  permission_handler_windows
   printing
   share_plus
   url_launcher_windows

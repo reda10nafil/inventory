@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 import '../models/product.dart';
@@ -12,8 +16,11 @@ import '../providers/inventory_provider.dart';
 import '../providers/locations_provider.dart';
 import '../providers/custom_fields_provider.dart';
 import '../providers/gs1_config_provider.dart';
+import '../services/global_nfc_service.dart';
+import '../services/nfc_coordinator.dart';
 import '../services/nfc_service.dart';
 import '../services/sound_service.dart';
+import '../widgets/app_image.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productId;
@@ -188,7 +195,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             onPressed: () {
               ref.read(inventoryProvider.notifier).moveProduct(product.id, selectedLocId);
               Navigator.pop(context);
-              SoundService.playBeep();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Prodotto spostato con successo!')),
               );
@@ -233,7 +239,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 );
               }
               Navigator.pop(context);
-              SoundService.playBeep();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Stato prodotto aggiornato a: ${isAvailable ? 'Venduto' : 'Disponibile'}')),
               );
@@ -245,49 +250,156 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  void _showNfcWriterModal(Product product) {
+  void _showNfcModal(Product product) {
+    final gs1Config = ref.read(gs1ConfigProvider);
+    final isGS1 = gs1Config.isEnabled;
+    final gs1Link = isGS1 ? (product.gs1DigitalLink ?? '${gs1Config.domain}/${product.sku}') : 'syncroflow://product/${product.sku}';
+    final nfcPayload = isGS1 ? gs1Link : 'syncroflow://product/${product.sku}';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => Padding(
+      builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Icon(Icons.nfc, size: 64, color: AppColors.accentGold),
-            const SizedBox(height: 16),
-            Text('Scrivi Tag NFC', style: AppTypography.titleLarge),
-            const SizedBox(height: 8),
+            const Icon(Icons.nfc, size: 56, color: AppColors.accentGold),
+            const SizedBox(height: 12),
+            Text('Gestione NFC', style: AppTypography.titleLarge),
+            const SizedBox(height: 4),
             Text(
-              'Avvicina il tag NFC al retro dello smartphone per associare lo SKU ${product.sku}.',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodySmall,
+              'SKU: ${product.sku}',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.sensors),
-              label: const Text('Avvia Scrittura NFC'),
-              onPressed: () async {
-                final success = await NfcService().writeNfcTag(product.id);
-                if (mounted) {
-                  Navigator.pop(context);
-                  if (success) {
-                    ref.read(inventoryProvider.notifier).associateNfcTag(product.id, product.id);
-                    SoundService.playSuccessBeep();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tag NFC scritto e associato con successo!')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Errore o operazione NFC annullata')),
-                    );
+            if (product.nfcTag != null && product.nfcTag!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Tag associato: ${product.nfcTag}',
+                style: AppTypography.caption.copyWith(color: AppColors.success),
+              ),
+            ],
+            const SizedBox(height: 20),
+
+            // Read NFC
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.contactless_outlined, color: AppColors.accentGold),
+                label: const Text('Leggi Tag NFC'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  side: const BorderSide(color: AppColors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  const token = 'detail_read';
+                  await NfcCoordinator.acquire(NfcMode.explicitRead, token);
+                  _showNfcProgress('Avvicina il tag NFC per leggere — solo Lettura attiva...');
+                  final data = await NfcService().readTag();
+                  NfcCoordinator.inhibitAfterExplicit();
+                  await SoundService.playNfcRead();
+                  await Future.delayed(const Duration(milliseconds: 1000));
+                  await NfcCoordinator.release(token);
+                  // resta in scheda prodotto, non riattivare globale se eri in detail view (globale ON ma inibito 4000ms)
+                  await NfcCoordinator.forceStop();
+                  if (mounted) {
+                    Navigator.pop(context); // Close progress
+                    if (data != null) {
+                      _showNfcResult('Dati letti dal tag', data);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Nessun dato trovato o lettura annullata')),
+                      );
+                    }
                   }
-                }
-              },
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Write NFC — rispetta toggle GS1 (SKU testo vs URI GS1)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.edit_note_rounded),
+                label: Text(isGS1 ? 'Scrivi GS1 Digital Link' : 'Scrivi SKU su Tag'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accentGold,
+                  foregroundColor: AppColors.background,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  const token = 'detail_write';
+                  await NfcCoordinator.acquire(NfcMode.explicitWrite, token);
+                  _showNfcProgress('Avvicina il tag NFC per scrivere: $nfcPayload — solo Scrittura attiva...');
+                  final isUri = nfcPayload.startsWith('http') || nfcPayload.startsWith('syncroflow://');
+                  final success = isUri ? await NfcService().writeGS1Uri(nfcPayload) : await NfcService().writeNfcTag(nfcPayload);
+                  NfcCoordinator.inhibitAfterExplicit();
+                  if (success) await SoundService.playNfcWrite();
+                  await Future.delayed(const Duration(milliseconds: 1000));
+                  await NfcCoordinator.release(token);
+                  await NfcCoordinator.forceStop();
+                  if (mounted) {
+                    Navigator.pop(context); // Close progress
+                    if (success) {
+                      ref.read(inventoryProvider.notifier).associateNfcTag(product.id, nfcPayload);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Tag NFC scritto: $nfcPayload')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Errore: tag non scrivibile o operazione annullata — prova Cancella/Formatta')),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Clean NFC
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.error),
+                label: const Text('Cancella Tag NFC'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  const token = 'detail_clean';
+                  await NfcCoordinator.acquire(NfcMode.explicitClean, token);
+                  _showNfcProgress('Avvicina il tag NFC per cancellare — solo Cancellazione attiva...');
+                  final success = await NfcService().cleanTag();
+                  NfcCoordinator.inhibitAfterExplicit();
+                  if (success) await SoundService.playNfcClean();
+                  await Future.delayed(const Duration(milliseconds: 1000));
+                  await NfcCoordinator.release(token);
+                  await NfcCoordinator.forceStop();
+                  if (mounted) {
+                    Navigator.pop(context); // Close progress
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Tag NFC cancellato con successo!')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Errore cancellazione tag')),
+                      );
+                    }
+                  }
+                },
+              ),
             ),
           ],
         ),
@@ -295,9 +407,285 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
+  void _showNfcProgress(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 60, height: 60,
+              child: CircularProgressIndicator(color: AppColors.accentGold, strokeWidth: 3),
+            ),
+            const SizedBox(height: 20),
+            Text(message, style: AppTypography.bodyMedium, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () async {
+                await NfcService().stopSession();
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Annulla', style: TextStyle(color: AppColors.error)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNfcResult(String title, String data) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(title, style: AppTypography.titleLarge),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundSecondary,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: SelectableText(data, style: AppTypography.bodyMedium),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: data));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Dati copiati negli appunti')),
+              );
+            },
+            child: const Text('Copia'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Chiudi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Generate and print/share a PDF product sheet
+  Future<void> _printProductPDF(Product product, Location? location) async {
+    final doc = pw.Document();
+    final gs1Config = ref.read(gs1ConfigProvider);
+    final gs1Link = product.gs1DigitalLink ?? '${gs1Config.domain}/${product.sku}';
+    final customFields = ref.read(customFieldsProvider);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) => [
+          // Header
+          pw.Container(
+            padding: const pw.EdgeInsets.all(16),
+            decoration: pw.BoxDecoration(
+              color: const PdfColor.fromInt(0xFF1A1A1A),
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      product.furType.toUpperCase(),
+                      style: pw.TextStyle(
+                        fontSize: 22,
+                        fontWeight: pw.FontWeight.bold,
+                        color: const PdfColor.fromInt(0xFFD4AF37),
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'SKU: ${product.sku}',
+                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey400),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      'ID: ${product.id}',
+                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500),
+                    ),
+                  ],
+                ),
+                pw.BarcodeWidget(
+                  barcode: pw.Barcode.qrCode(),
+                  data: gs1Link,
+                  width: 80,
+                  height: 80,
+                  color: PdfColors.white,
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 20),
+
+          // Status badge
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: pw.BoxDecoration(
+              color: product.status == ProductStatusType.available
+                  ? const PdfColor.fromInt(0xFF10B981)
+                  : const PdfColor.fromInt(0xFFEF4444),
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Text(
+              product.status == ProductStatusType.available ? 'DISPONIBILE' : 'VENDUTO',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+            ),
+          ),
+          pw.SizedBox(height: 20),
+
+          // Specifiche Tecniche
+          _pdfSectionHeader('SPECIFICHE TECNICHE & MISURE'),
+          pw.SizedBox(height: 8),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            children: [
+              _pdfTableRow('Lunghezza', product.length != null ? '${product.length} cm' : 'N/D'),
+              _pdfTableRow('Larghezza / Spalla', product.width != null ? '${product.width} cm' : 'N/D'),
+              _pdfTableRow('Peso', product.weight != null ? '${product.weight} kg' : 'N/D'),
+              _pdfTableRow('Posizione', location?.label ?? product.location),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+
+          // Prezzi
+          _pdfSectionHeader('ANALISI PREZZI'),
+          pw.SizedBox(height: 8),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            children: [
+              _pdfTableRow('Prezzo Acquisto', product.purchasePrice != null ? '€${product.purchasePrice!.toStringAsFixed(2)}' : 'N/D'),
+              _pdfTableRow('Prezzo Vendita', product.sellPrice != null ? '€${product.sellPrice!.toStringAsFixed(2)}' : 'N/D'),
+              if (product.purchasePrice != null && product.sellPrice != null)
+                _pdfTableRow('Margine', () {
+                  final margin = product.sellPrice! - product.purchasePrice!;
+                  final pct = (margin / product.purchasePrice!) * 100;
+                  return '€${margin.toStringAsFixed(2)} (${pct.toStringAsFixed(1)}%)';
+                }()),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+
+          // Tag & Codici
+          _pdfSectionHeader('TAG & CODICI DIGITALI'),
+          pw.SizedBox(height: 8),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            children: [
+              _pdfTableRow('Barcode/QR', product.barcode ?? product.sku),
+              _pdfTableRow('NFC Tag', product.nfcTag ?? 'Non associato'),
+              _pdfTableRow('GS1 Digital Link', gs1Link),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+
+          // Campi Personalizzati
+          if (product.customData.isNotEmpty) ...[
+            _pdfSectionHeader('CAMPI PERSONALIZZATI'),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+              children: product.customData.map((cd) {
+                final fieldName = cd.fieldSnapshot?.name ?? cd.fieldSnapshot?.id ?? 'Campo';
+                return _pdfTableRow(fieldName, cd.value?.toString() ?? 'N/D');
+              }).toList(),
+            ),
+            pw.SizedBox(height: 16),
+          ],
+
+          // Note Tecniche
+          if (product.technicalNotes != null && product.technicalNotes!.isNotEmpty) ...[
+            _pdfSectionHeader('NOTE TECNICHE'),
+            pw.SizedBox(height: 8),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Text(product.technicalNotes!, style: const pw.TextStyle(fontSize: 11)),
+            ),
+            pw.SizedBox(height: 16),
+          ],
+
+          // Footer
+          pw.Divider(color: PdfColors.grey300),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Generato da SyncroFlow Pro',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
+              ),
+              pw.Text(
+                'Data: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => doc.save(),
+      name: 'Scheda_${product.sku}',
+    );
+  }
+
+  pw.Widget _pdfSectionHeader(String title) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(bottom: pw.BorderSide(color: PdfColor.fromInt(0xFFD4AF37), width: 1.5)),
+      ),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(
+          fontSize: 12,
+          fontWeight: pw.FontWeight.bold,
+          color: const PdfColor.fromInt(0xFFD4AF37),
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
+  pw.TableRow _pdfTableRow(String label, String value) {
+    return pw.TableRow(children: [
+      pw.Padding(
+        padding: const pw.EdgeInsets.all(8),
+        child: pw.Text(label, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+      ),
+      pw.Padding(
+        padding: const pw.EdgeInsets.all(8),
+        child: pw.Text(value, style: const pw.TextStyle(fontSize: 11)),
+      ),
+    ]);
+  }
+
   void _showQRModal(Product product) {
     final gs1Config = ref.read(gs1ConfigProvider);
-    final link = product.gs1DigitalLink ?? '${gs1Config.domain}/${product.sku}';
+    final link = gs1Config.isEnabled ? (product.gs1DigitalLink ?? '${gs1Config.domain}/${product.sku}') : product.sku;
 
     showModalBottomSheet(
       context: context,
@@ -383,7 +771,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               ref.read(inventoryProvider.notifier).deleteProduct(product.id);
               Navigator.pop(context); // Close dialog
               Navigator.pop(context); // Go back to product list
-              SoundService.playBeep();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Prodotto spostato nel cestino')),
               );
@@ -445,13 +832,41 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             pinned: true,
             backgroundColor: AppColors.surface,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.share, color: AppColors.accentGold),
-                onPressed: () => _shareProduct(product, location),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.edit_rounded, color: AppColors.accentGold),
+                  tooltip: 'Modifica Prodotto',
+                  onPressed: () => context.push('/product/${product.id}/edit'),
+                ),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                onPressed: () => _deleteProduct(product),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.share_rounded, color: AppColors.accentGold),
+                  tooltip: 'Condividi',
+                  onPressed: () => _shareProduct(product, location),
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.only(right: 4, left: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                  tooltip: 'Elimina',
+                  onPressed: () => _deleteProduct(product),
+                ),
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -466,11 +881,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     },
                     itemBuilder: (context, index) {
                       final imgPath = images[index];
-                      if (imgPath.startsWith('assets/')) {
-                        return Image.asset(imgPath, fit: BoxFit.cover);
-                      }
-                      return Image.network(
-                        imgPath,
+                      return AppImage(
+                        path: imgPath,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: AppColors.surfaceElevated,
@@ -627,7 +1039,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       IconButton(
                         icon: const Icon(Icons.nfc, color: AppColors.accentGold),
                         style: IconButton.styleFrom(backgroundColor: AppColors.surfaceElevated),
-                        onPressed: () => _showNfcWriterModal(product),
+                        onPressed: () => _showNfcModal(product),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.accentGold),
+                        style: IconButton.styleFrom(backgroundColor: AppColors.surfaceElevated),
+                        tooltip: 'Stampa Scheda PDF',
+                        onPressed: () => _printProductPDF(product, location),
                       ),
                     ],
                   ),

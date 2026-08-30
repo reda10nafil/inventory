@@ -100,4 +100,54 @@ Questo documento riassume il completamento totale del processo di migrazione del
 - ✅ **Fase 7**: Esecuzione Automazioni (`AuditScreen`, `BatchMoveScreen`, `ScanSellScreen`, `QuickTagScreen`, `CustomRunnerScreen`, `AutomationFlowScreen`)
 - ✅ **Fase 8**: Widget Riutilizzabili & Controllo Qualità (`DynamicFieldRenderer`, `ProductCardWidget`, `StatCardWidget`, Unit Tests Passati)
 
-🎉 **LA MIGRAZIONE A FLUTTER È COMPLETA AL 100%!**
+🎉 ~~LA MIGRAZIONE A FLUTTER È COMPLETA AL 100%!~~ ⚠️ **CORREZIONE DEL 25/08/2026 — VEDI SOTTO**
+
+---
+
+## 🔴 25/08/2026 — Diagnosi post-test su dispositivo: la dicitura "100%" era ERRATA
+
+Test su telefono dell'app Flutter: la versione testata era solo "l'involucro". Analisi completa in `docs/diagnosi_gap_flutter.md`. Sintesi:
+
+1. **Causa principale**: sul PC esistono DUE progetti Flutter. Quella compilata/testata è `flutter_app/` (creata/ricreata il 25/08, dati **mock in memoria senza persistenza**, nessuna schermata impostazioni/automazioni/edit, automazioni con messaggio "sarà disponibile nella prossima versione" = la "filigrana" segnalata).
+2. **`syncro_flow_flutter/` è la migrazione reale ma incompleta**: routing con rotte placeholder "(Fase 5)" per dettaglio prodotto e scanner, nessuna schermata di modifica prodotto, campi dinamici supportati solo in 4 tipi su ~10, automazioni con runner che non esegue gli step, template settore che non importano campi, barcode decoder da galleria assente.
+3. **Creato piano di completamento**: `docs/piano_gap_implementazione.md` (fasi G0–G6, effort ~10-14gg).
+4. Decisione pendente: eliminazione di `flutter_app/` per evitare confusione doppia.
+
+### Cronologia delle modifiche (25/08/2026)
+- Creata diagnosi: `docs/diagnosi_gap_flutter.md`
+- Creato piano implementazione gap: `docs/piano_gap_implementazione.md`
+- Aggiornato il grafo del progetto (`graphify update .`)
+- ✅ **Fase G0 completata** (approvata dall'utente):
+  - `lib/main.dart`: rimosse rotte placeholder "(Fase 5)"; `/product/:id` → `ProductDetailScreen` reale, `/scanner` → `ScannerScreen` reale (camera + NFC).
+  - `lib/screens/automations_screen.dart`: aggiunto bottone scanner in AppBar (entry-point come in RN `automations.tsx:77`).
+  - Eliminata la cartella `flutter_app/` (shell con dati mock, fonte del test "involucro" sul telefono).
+  - Verifica: `flutter analyze` 0 errori (solo info), `flutter test` 2/2 passed.
+- ✅ **Fase G1 parziale (campi dinamici + edit prodotto) — completata e compilante**:
+  - `lib/widgets/dynamic_field_renderer.dart` **riscritto da zero**: nuovo widget `DynamicFieldEditor` che porta a parità TUTTI i tipi di campo RN (`components/DynamicFieldRenderer.tsx`): text_short (con bottone scansione barcode integrato via `mobile_scanner` per campi `isBarcode`), text_long, number/currency, **date** (DatePicker dark), **images** (image_picker multiplo + rimozione), **document** (file_picker), **stepper** (min/max/step da dataset), chips **grid/segmented** single-choice, **multi_choice**, **picker/modal_list** (bottom sheet), opzioni risolte da `options`, `dataset` o `linkTo` (locations/libraries/furType). Mantenuto `DynamicFieldRenderer` read-only per retrocompatibilità.
+  - Nuova schermata **`lib/screens/product_edit_screen.dart`** (porting di `app/product/edit/[id].tsx`): form precompilato, layout dinamico, foto reali, campi custom con snapshot, rigenerazione GS1 Digital Link, validazione required.
+  - `lib/main.dart`: nuova sotto-rotta `/product/:id/edit`.
+  - `lib/screens/product_detail_screen.dart`: aggiunto pulsante **Modifica** in AppBar + fix rendering foto da file locale (`Image.file`).
+  - `lib/screens/add_product_screen.dart` (anticipo G2): campi custom ora renderizzati davvero (prima `default: SizedBox.shrink()`), foto reali da galleria/fotocamera (prima percorsi finti `sample_fur_N.jpg`), salvataggio `customData` con `fieldSnapshot` + **GS1 Digital Link al salvataggio**, validazione campi required.
+  - `pubspec.yaml`: aggiunto `file_picker: ^12.1.0` (NOTA: in v12 l'API è statica `FilePicker.pickFiles()` che ritorna `List<PlatformFile>?` — non `FilePicker.platform.pickFiles()` come nelle versioni ≤10).
+  - Verifica finale: `flutter analyze` **0 errori**, `flutter test` 2/2 passed.
+
+---
+
+## 📋 STATO PER LA PROSSIMA SESSIONE (handoff 25/08/2026)
+
+**Fatto:** Fase G0 (routing + pulizia) ✅ | Fase G1 (renderer campi + schermata edit) ✅ | Parte di G2 già dentro add_product (foto, customData, GS1) ✅
+
+**Resta da fare (riprendere da qui, in ordine):**
+1. **G2 residuo**: verificare su dispositivo che la creazione prodotto con foto/custom funzioni; controllare entry-point completa
+2. **G3 Impostazioni a parità** (vedi `docs/piano_gap_implementazione.md`):
+   - `sector_templates_screen.dart`: oggi mostra solo SnackBar "applicato" — deve IMPORTARE i campi nel `customFieldsProvider` (rif. RN `app/settings/sector-templates.tsx:59`)
+   - `layout_builder_screen.dart`: mancano sezioni, size "small", icon picker, modali
+   - `fields_screen.dart`: editor campi completo (dataset, options, linkTo, isBarcode)
+   - `share_screen.dart`: export/import JSON reale + stampa PDF
+3. **G4 Automazioni eseguibili** (PRIORITÀ alta — motivo originale della segnalazione):
+   - **Riscrivere `custom_runner_screen.dart`**: oggi è solo un pager; deve eseguire davvero gli step (scan prodotto/posizione, move_to, mark_sold, add_tag, set_field) come RN `app/automations/custom-runner.tsx`
+   - audit/batch-move/scan-sell/quick-tag/automation-flow a parità con RN
+4. **G5**: `barcode_decoder_service.dart` (decode da foto galleria, rif. `utils/barcodeDecoder.ts`)
+5. **G6**: build APK + test su telefono
+
+**File di riferimento:** diagnosi completa in `docs/diagnosi_gap_flutter.md`, piano in `docs/piano_gap_implementazione.md`.

@@ -5,6 +5,7 @@ enum StepType {
   markSold,
   addTag,
   setField,
+  writeNfc,
 }
 
 class StepTypeMeta {
@@ -19,6 +20,44 @@ class StepTypeMeta {
   });
 }
 
+const Map<StepType, StepTypeMeta> stepTypeMetaMap = {
+  StepType.scanProduct: StepTypeMeta(
+    label: 'Scansiona Prodotto',
+    icon: 'qr-code-scanner',
+    color: '#3B82F6',
+  ),
+  StepType.scanLocation: StepTypeMeta(
+    label: 'Scansiona Posizione',
+    icon: 'location-on',
+    color: '#10B981',
+  ),
+  StepType.moveTo: StepTypeMeta(
+    label: 'Sposta Prodotto',
+    icon: 'move-to-inbox',
+    color: '#8B5CF6',
+  ),
+  StepType.markSold: StepTypeMeta(
+    label: 'Segna Venduto',
+    icon: 'shopping-cart-checkout',
+    color: '#EF4444',
+  ),
+  StepType.addTag: StepTypeMeta(
+    label: 'Aggiungi Tag',
+    icon: 'label',
+    color: '#F59E0B',
+  ),
+  StepType.setField: StepTypeMeta(
+    label: 'Imposta Campo',
+    icon: 'edit',
+    color: '#6366F1',
+  ),
+  StepType.writeNfc: StepTypeMeta(
+    label: 'Scrivi NFC',
+    icon: 'nfc',
+    color: '#06B6D4',
+  ),
+};
+
 class AutomationStepConfig {
   final String? locationId;
   final String? locationName;
@@ -27,6 +66,8 @@ class AutomationStepConfig {
   final String? fieldValue;
   final bool? pricePrompt;
   final bool? useLastScannedLocation;
+  final String? nfcData;
+  final bool? nfcUseSku;
 
   const AutomationStepConfig({
     this.locationId,
@@ -36,6 +77,8 @@ class AutomationStepConfig {
     this.fieldValue,
     this.pricePrompt,
     this.useLastScannedLocation,
+    this.nfcData,
+    this.nfcUseSku,
   });
 
   Map<String, dynamic> toJson() {
@@ -48,6 +91,8 @@ class AutomationStepConfig {
       if (pricePrompt != null) 'pricePrompt': pricePrompt,
       if (useLastScannedLocation != null)
         'useLastScannedLocation': useLastScannedLocation,
+      if (nfcData != null) 'nfcData': nfcData,
+      if (nfcUseSku != null) 'nfcUseSku': nfcUseSku,
     };
   }
 
@@ -60,6 +105,8 @@ class AutomationStepConfig {
       fieldValue: json['fieldValue'] as String?,
       pricePrompt: json['pricePrompt'] as bool?,
       useLastScannedLocation: json['useLastScannedLocation'] as bool?,
+      nfcData: json['nfcData'] as String?,
+      nfcUseSku: json['nfcUseSku'] as bool?,
     );
   }
 }
@@ -115,6 +162,8 @@ class AutomationStep {
         return 'add_tag';
       case StepType.setField:
         return 'set_field';
+      case StepType.writeNfc:
+        return 'write_nfc';
     }
   }
 
@@ -138,6 +187,9 @@ class AutomationStep {
       case 'set_field':
       case 'setField':
         return StepType.setField;
+      case 'write_nfc':
+      case 'writeNfc':
+        return StepType.writeNfc;
       default:
         return StepType.scanProduct;
     }

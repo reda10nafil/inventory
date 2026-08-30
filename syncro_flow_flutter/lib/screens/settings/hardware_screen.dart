@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../models/hardware_config.dart';
 import '../../providers/hardware_config_provider.dart';
+import 'nfc_tools_screen.dart';
 
 class HardwareScreen extends ConsumerWidget {
   const HardwareScreen({super.key});
@@ -90,6 +91,23 @@ class HardwareScreen extends ConsumerWidget {
               onChanged: (val) {
                 ref.read(hardwareConfigProvider.notifier).updateConfig(autoWriteNfcOnSave: val);
               },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            color: AppColors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: const Color(0xFF06B6D4).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.nfc, color: Color(0xFF06B6D4)),
+              ),
+              title: Text('NFC Tools Avanzati', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+              subtitle: Text('Lettura, Scrittura, Cancellazione e Formattazione — come NFC Tools (test diretto)', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+              trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NfcToolsScreen())),
             ),
           ),
         ],

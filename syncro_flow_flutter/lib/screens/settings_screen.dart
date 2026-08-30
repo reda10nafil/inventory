@@ -6,7 +6,8 @@ import '../core/theme/app_typography.dart';
 import '../providers/inventory_provider.dart';
 import '../providers/locations_provider.dart';
 import '../providers/custom_fields_provider.dart';
-import '../services/sound_service.dart';
+import '../services/global_nfc_service.dart';
+import '../services/nfc_coordinator.dart';
 
 import 'settings/locations_screen.dart';
 import 'settings/fields_screen.dart';
@@ -19,11 +20,33 @@ import 'settings/share_screen.dart';
 import 'settings/sector_templates_screen.dart';
 import 'settings/automation_builder_screen.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await NfcCoordinator.acquire(NfcMode.tools, 'settings_screen');
+      await GlobalNfcService.pause();
+      await NfcCoordinator.forceStop();
+    });
+  }
+
+  @override
+  void dispose() {
+    NfcCoordinator.release('settings_screen');
+    GlobalNfcService.resume();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final inventoryState = ref.watch(inventoryProvider);
     final locations = ref.watch(locationsProvider);
     final customFields = ref.watch(customFieldsProvider);
@@ -217,31 +240,41 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () async {
-                            await SoundService.playBeep();
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Audio disponibile solo durante le automazioni (requisito 3000 Hz).'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
+                            foregroundColor: AppColors.textMuted,
+                            side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          icon: const Icon(Icons.volume_up_rounded, size: 18),
-                          label: const Text('Test Bip Audio'),
+                          icon: const Icon(Icons.volume_off_rounded, size: 18),
+                          label: const Text('Audio Automazioni'),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () async {
-                            await SoundService.playAlarm();
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Allarme disponibile solo durante le automazioni.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFEF4444),
-                            side: const BorderSide(color: Color(0xFFEF4444)),
+                            foregroundColor: AppColors.textMuted,
+                            side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          icon: const Icon(Icons.warning_amber_rounded, size: 18),
-                          label: const Text('Test Allarme'),
+                          icon: const Icon(Icons.notifications_off_rounded, size: 18),
+                          label: const Text('Allarme Automazioni'),
                         ),
                       ),
                     ],
@@ -295,10 +328,7 @@ class SettingsScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return InkWell(
-      onTap: () {
-        SoundService.playBeep();
-        onTap();
-      },
+      onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

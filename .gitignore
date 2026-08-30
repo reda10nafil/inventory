@@ -38,3 +38,23 @@ yarn-error.*
 
 app-example
 .env
+
+# Ruflo / Swarm / Claude Flow (local runtime, do not commit)
+.swarm/
+.claude-flow/
+.opencode/
+
+# Graphify generated caches & snapshots (keep main graph.json/GRAPH_REPORT, ignore caches & dated snapshots)
+graphify-out/cache/
+graphify-out/2026-*/
+syncro_flow_flutter/graphify-out/
+
+# Flutter / Dart build artifacts
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+syncro_flow_flutter/build/
+syncro_flow_flutter/android/build/
+syncro_flow_flutter/android/app/build/
+syncro_flow_flutter/.dart_tool/

@@ -9,10 +9,12 @@ import '../../services/sound_service.dart';
 
 class AutomationBuilderScreen extends ConsumerStatefulWidget {
   final CustomAutomation? existingAutomation;
+  final String? automationId;
 
   const AutomationBuilderScreen({
     super.key,
     this.existingAutomation,
+    this.automationId,
   });
 
   @override
@@ -23,14 +25,17 @@ class _AutomationBuilderScreenState extends ConsumerState<AutomationBuilderScree
   late TextEditingController _nameController;
   late TextEditingController _descController;
   List<AutomationStep> _steps = [];
+  CustomAutomation? _existingAutomation;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.existingAutomation?.name ?? '');
-    _descController = TextEditingController(text: widget.existingAutomation?.description ?? '');
-    _steps = widget.existingAutomation?.steps != null
-        ? List.from(widget.existingAutomation!.steps)
+    _existingAutomation = widget.existingAutomation;
+
+    _nameController = TextEditingController(text: _existingAutomation?.name ?? '');
+    _descController = TextEditingController(text: _existingAutomation?.description ?? '');
+    _steps = _existingAutomation?.steps != null
+        ? List.from(_existingAutomation!.steps)
         : [
             const AutomationStep(
               id: 'step_1',
@@ -40,6 +45,20 @@ class _AutomationBuilderScreenState extends ConsumerState<AutomationBuilderScree
               label: 'Scansiona Capo',
             ),
           ];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_existingAutomation == null && widget.automationId != null) {
+        final auto = ref.read(automationsProvider.notifier).getAutomationById(widget.automationId!);
+        if (auto != null) {
+          setState(() {
+            _existingAutomation = auto;
+            _nameController.text = auto.name;
+            _descController.text = auto.description;
+            _steps = List.from(auto.steps);
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -53,60 +72,161 @@ class _AutomationBuilderScreenState extends ConsumerState<AutomationBuilderScree
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Aggiungi Step di Automazione', style: AppTypography.titleLarge),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.qr_code_scanner, color: AppColors.accentGold),
-              title: const Text('Scansiona Prodotto'),
-              onTap: () {
-                Navigator.pop(context);
-                _insertStep(StepType.scanProduct, 'Scansiona Capo');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.location_on, color: AppColors.accentGold),
-              title: const Text('Sposta in Posizione Specifica'),
-              onTap: () {
-                Navigator.pop(context);
-                _insertStep(StepType.moveTo, 'Sposta in Posizione Target');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_bag, color: AppColors.accentGold),
-              title: const Text('Segna come Venduto'),
-              onTap: () {
-                Navigator.pop(context);
-                _insertStep(StepType.markSold, 'Registra Vendita');
-              },
-            ),
-          ],
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Aggiungi Step di Automazione', style: AppTypography.titleLarge),
+              const SizedBox(height: 8),
+              Text('Scegli il tipo di azione reale che verrà eseguita.', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.qr_code_scanner, color: Color(0xFF3B82F6)),
+                title: const Text('Scansiona Prodotto'),
+                subtitle: const Text('Barcode / SKU / NFC', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _insertStep(StepType.scanProduct, 'Scansiona Capo');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.location_on, color: Color(0xFF10B981)),
+                title: const Text('Scansiona Posizione'),
+                subtitle: const Text('QR scaffale / ubicazione', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _insertStep(StepType.scanLocation, 'Scansiona Posizione');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.move_to_inbox, color: Color(0xFF8B5CF6)),
+                title: const Text('Sposta in Posizione'),
+                subtitle: const Text('Usa ultima posizione scansita', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _insertStep(StepType.moveTo, 'Sposta Prodotto', config: const AutomationStepConfig(useLastScannedLocation: true));
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.shopping_bag, color: Color(0xFFEF4444)),
+                title: const Text('Segna come Venduto'),
+                subtitle: const Text('Con richiesta prezzo', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _insertStep(StepType.markSold, 'Registra Vendita', config: const AutomationStepConfig(pricePrompt: true));
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.label, color: Color(0xFFF59E0B)),
+                title: const Text('Aggiungi Tag'),
+                subtitle: const Text('Aggiunge [Tag] a note', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _promptForTag();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit, color: Color(0xFF6366F1)),
+                title: const Text('Imposta Campo'),
+                subtitle: const Text('Campo custom → valore', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _promptForField();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.nfc, color: Color(0xFF06B6D4)),
+                title: const Text('Scrivi NFC'),
+                subtitle: const Text('Scrive SKU/GS1 su tag', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _promptForNfc();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _insertStep(StepType type, String label) {
+  void _insertStep(StepType type, String label, {AutomationStepConfig? config}) {
     setState(() {
       _steps.add(
         AutomationStep(
           id: const Uuid().v4(),
           order: _steps.length,
           type: type,
-          config: const AutomationStepConfig(),
+          config: config ?? const AutomationStepConfig(),
           label: label,
         ),
       );
     });
     SoundService.playBeep();
+  }
+
+  void _promptForTag() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Tag da aggiungere'),
+        content: TextField(controller: ctrl, decoration: const InputDecoration(hintText: 'Es. Da Pulire', border: OutlineInputBorder()), autofocus: true),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annulla')),
+          ElevatedButton(onPressed: () { final t = ctrl.text.trim(); Navigator.pop(ctx); if (t.isNotEmpty) _insertStep(StepType.addTag, 'Aggiungi Tag: $t', config: AutomationStepConfig(tag: t)); }, child: const Text('Aggiungi')),
+        ],
+      ),
+    );
+  }
+
+  void _promptForField() {
+    final nameCtrl = TextEditingController();
+    final valueCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Imposta Campo'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nome campo', border: OutlineInputBorder())),
+          const SizedBox(height: 12),
+          TextField(controller: valueCtrl, decoration: const InputDecoration(labelText: 'Valore', border: OutlineInputBorder())),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annulla')),
+          ElevatedButton(onPressed: () { final n = nameCtrl.text.trim(); final v = valueCtrl.text.trim(); Navigator.pop(ctx); if (n.isNotEmpty) _insertStep(StepType.setField, 'Imposta $n=$v', config: AutomationStepConfig(fieldName: n, fieldValue: v)); }, child: const Text('Aggiungi')),
+        ],
+      ),
+    );
+  }
+
+  void _promptForNfc() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Payload NFC'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          TextField(controller: ctrl, decoration: const InputDecoration(hintText: 'Lascia vuoto per SKU automatico', border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          const Text('Vuoto = SKU o GS1 Digital Link del prodotto scansito', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annulla')),
+          ElevatedButton(onPressed: () { final d = ctrl.text.trim(); Navigator.pop(ctx); _insertStep(StepType.writeNfc, d.isEmpty ? 'Scrivi NFC (SKU)' : 'Scrivi NFC: $d', config: AutomationStepConfig(nfcData: d.isEmpty ? null : d)); }, child: const Text('Aggiungi')),
+        ],
+      ),
+    );
   }
 
   void _saveAutomation() {
@@ -118,7 +238,7 @@ class _AutomationBuilderScreenState extends ConsumerState<AutomationBuilderScree
       return;
     }
 
-    final id = widget.existingAutomation?.id ?? const Uuid().v4();
+    final id = _existingAutomation?.id ?? const Uuid().v4();
     final automation = CustomAutomation(
       id: id,
       name: name,
@@ -127,10 +247,10 @@ class _AutomationBuilderScreenState extends ConsumerState<AutomationBuilderScree
       description: _descController.text.trim(),
       qrValue: 'AUTO:$id',
       steps: _steps,
-      createdAt: widget.existingAutomation?.createdAt ?? DateTime.now(),
+      createdAt: _existingAutomation?.createdAt ?? DateTime.now(),
     );
 
-    if (widget.existingAutomation != null) {
+    if (_existingAutomation != null) {
       ref.read(automationsProvider.notifier).updateAutomation(automation);
     } else {
       ref.read(automationsProvider.notifier).addAutomation(automation);
@@ -142,7 +262,7 @@ class _AutomationBuilderScreenState extends ConsumerState<AutomationBuilderScree
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.existingAutomation != null;
+    final isEditing = _existingAutomation != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,

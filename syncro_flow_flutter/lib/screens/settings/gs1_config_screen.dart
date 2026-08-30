@@ -40,6 +40,36 @@ class _GS1ConfigScreenState extends ConsumerState<GS1ConfigScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // Master toggle + guida
+          Card(
+            color: AppColors.surface,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Abilita GS1 Digital Link', style: AppTypography.titleMedium),
+                  subtitle: Text(gs1Config.enableGS1 ? 'QR e NFC scrivono link https (apre Chrome)' : 'QR e NFC usano solo SKU (consigliato senza sito)', style: AppTypography.bodySmall),
+                  value: gs1Config.enableGS1,
+                  activeColor: AppColors.primary,
+                  onChanged: (v) => ref.read(gs1ConfigProvider.notifier).updateConfig(enableGS1: v),
+                ),
+                const Divider(color: AppColors.border),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: AppColors.backgroundSecondary, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [const Icon(Icons.info_outline, size: 16, color: AppColors.accentGold), const SizedBox(width: 6), Text('Come funziona', style: AppTypography.labelSmall.copyWith(color: AppColors.accentGold, fontWeight: FontWeight.bold))]),
+                    const SizedBox(height: 6),
+                    Text('• SPENTO (consigliato ora): QR = solo SKU. NFC = Text con SKU. Scanner mostra prodotto senza aprire Chrome.\n• ACCESO: QR/NFC = https://tuo-dominio/01/GTIN/21/SERIALE . Richiede sito con Digital Link Resolver. Scrivendo come URI, Android apre Chrome automaticamente.', style: AppTypography.caption.copyWith(color: AppColors.textSecondary, height: 1.4)),
+                    const SizedBox(height: 8),
+                    Text('Anteprima: ${gs1Config.isEnabled ? "${gs1Config.baseUrl}/01/.../21/..." : "SKU-2026-001"}', style: AppTypography.caption.copyWith(color: gs1Config.isEnabled ? AppColors.success : AppColors.textMuted, fontWeight: FontWeight.bold)),
+                  ]),
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             color: AppColors.surface,
             child: Padding(
@@ -49,18 +79,19 @@ class _GS1ConfigScreenState extends ConsumerState<GS1ConfigScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.qr_code_2, color: AppColors.accentGold),
+                      Icon(Icons.qr_code_2, color: gs1Config.isEnabled ? AppColors.accentGold : AppColors.textMuted),
                       const SizedBox(width: 8),
-                      Text('Dominio Base Resolver GS1', style: AppTypography.titleMedium),
+                      Text('Dominio Base Resolver GS1', style: AppTypography.titleMedium.copyWith(color: gs1Config.isEnabled ? Colors.white : AppColors.textMuted)),
                     ],
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _urlController,
-                    decoration: const InputDecoration(
+                    enabled: gs1Config.isEnabled,
+                    decoration: InputDecoration(
                       hintText: 'https://id.syncroflow.app/01',
-                      border: OutlineInputBorder(),
-                      helperText: 'URL base utilizzato per la risoluzione dei QR Code GS1 Digital Link',
+                      border: const OutlineInputBorder(),
+                      helperText: gs1Config.isEnabled ? 'URL base utilizzato per la risoluzione dei QR Code GS1 Digital Link' : 'Disabilitato — attiva GS1 sopra per modificare',
                     ),
                     onChanged: (val) {
                       ref.read(gs1ConfigProvider.notifier).updateConfig(baseUrl: val.trim());

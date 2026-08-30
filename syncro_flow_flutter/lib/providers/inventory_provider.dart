@@ -173,7 +173,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
   String generateSKU() {
     final year = DateTime.now().year;
-    final prefix = 'FUR-$year-';
+    final prefix = 'SKU-$year-';
     final existingSKUs = state.products
         .where((p) => p.deletedAt == null && p.sku.startsWith(prefix))
         .map((p) => p.sku)
@@ -182,13 +182,13 @@ class InventoryNotifier extends Notifier<InventoryState> {
     int nextNum = 1;
     if (existingSKUs.isNotEmpty) {
       final numbers = existingSKUs.map((sku) {
-        final match = RegExp(r'FUR-\d{4}-(\d+)').firstMatch(sku);
+        final match = RegExp(r'SKU-\d{4}-(\d+)').firstMatch(sku);
         return match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
       });
       nextNum = (numbers.reduce((a, b) => a > b ? a : b)) + 1;
     }
 
-    return 'FUR-$year-${nextNum.toString().padLeft(3, '0')}';
+    return 'SKU-$year-${nextNum.toString().padLeft(3, '0')}';
   }
 
   Future<void> addProduct(Product product) async {
@@ -476,6 +476,32 @@ class InventoryNotifier extends Notifier<InventoryState> {
     }).toList();
     state = state.copyWith(alerts: updatedAlerts);
     await _saveAlerts();
+  }
+
+  Future<void> importBackup(Map<String, dynamic> backup) async {
+    try {
+      final productsRaw = backup['products'] as List<dynamic>?;
+      final timelineRaw = backup['timeline'] as List<dynamic>?;
+      final librariesRaw = backup['libraries'] as List<dynamic>?;
+      List<Product> products = state.products;
+      List<TimelineEvent> timeline = state.timeline;
+      List<LibraryModel> libraries = state.libraries;
+      if (productsRaw != null) {
+        products = productsRaw.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+      }
+      if (timelineRaw != null) {
+        timeline = timelineRaw.map((e) => TimelineEvent.fromJson(e as Map<String, dynamic>)).toList();
+      }
+      if (librariesRaw != null) {
+        libraries = librariesRaw.map((e) => LibraryModel.fromJson(e as Map<String, dynamic>)).toList();
+      }
+      state = InventoryState(products: products, timeline: timeline, alerts: state.alerts, libraries: libraries);
+      state = _generateAlertsForState(state);
+      await _saveProducts();
+      await _saveTimeline();
+      await _saveLibraries();
+      await _saveAlerts();
+    } catch (_) {}
   }
 
   Product? getProductById(String id) {

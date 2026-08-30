@@ -21,6 +21,7 @@ class GS1ConfigNotifier extends Notifier<GS1Config> {
     SerialMode? serialMode,
     bool? enableLotto,
     String? lottoFieldId,
+    bool? enableGS1,
   }) async {
     final storage = ref.read(storageServiceProvider);
     state = state.copyWith(
@@ -29,6 +30,7 @@ class GS1ConfigNotifier extends Notifier<GS1Config> {
       serialMode: serialMode,
       enableLotto: enableLotto,
       lottoFieldId: lottoFieldId,
+      enableGS1: enableGS1,
     );
     await storage.setJson(_gs1ConfigStorageKey, state.toJson());
   }

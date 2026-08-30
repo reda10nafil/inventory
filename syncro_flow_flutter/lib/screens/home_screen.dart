@@ -8,6 +8,7 @@ import '../core/theme/app_theme.dart';
 import '../models/product.dart';
 import '../models/alert_model.dart';
 import '../providers/inventory_provider.dart';
+import '../widgets/app_image.dart';
 
 enum _FilterType { all, available, sold, alert, trash }
 
@@ -201,7 +202,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: AppTypography.buttonSecondary.copyWith(fontSize: 14),
                   ),
                 )
-              else
+              else ...[
+                IconButton(
+                  tooltip: 'Scanner',
+                  onPressed: () => context.push('/scanner'),
+                  icon: const Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
                 IconButton(
                   onPressed: () {
                     setState(() {
@@ -218,6 +228,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     size: 24,
                   ),
                 ),
+              ],
             ],
           ),
         ],
@@ -493,11 +504,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   width: double.infinity,
                   color: AppColors.backgroundSecondary,
                   child: product.images.isNotEmpty
-                      ? Image.network(
-                          product.images.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
-                        )
+                      ? _buildProductImage(product.images.first)
                       : _buildImagePlaceholder(),
                 ),
 
@@ -629,6 +636,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProductImage(String path) {
+    return AppImage(
+      path: path,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
     );
   }
 

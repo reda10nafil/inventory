@@ -5,7 +5,7 @@ import '../../core/theme/app_typography.dart';
 import '../../models/product.dart';
 import '../../providers/inventory_provider.dart';
 import '../../services/sound_service.dart';
-import '../scanner_screen.dart';
+import '../../widgets/barcode_scanner_view.dart';
 
 class ScanSellScreen extends ConsumerStatefulWidget {
   const ScanSellScreen({super.key});
@@ -15,16 +15,85 @@ class ScanSellScreen extends ConsumerStatefulWidget {
 }
 
 class _ScanSellScreenState extends ConsumerState<ScanSellScreen> {
-  final List<Product> _soldProducts = [];
+  int _scannedCount = 0;
   double _totalRevenue = 0.0;
+  String? _lastSoldProduct;
+  bool _showScanner = false;
+  bool _showPriceModal = false;
+  Product? _pendingProduct;
+  final TextEditingController _priceInputController = TextEditingController();
 
-  void _recordSale(Product product) {
-    ref.read(inventoryProvider.notifier).sellProduct(product.id);
+  @override
+  void dispose() {
+    _priceInputController.dispose();
+    super.dispose();
+  }
+
+  void _handleProductScan(String data) {
+    final inventory = ref.read(inventoryProvider);
+    Product? product;
+    try {
+      product = inventory.products.firstWhere(
+        (p) =>
+            p.deletedAt == null &&
+            (p.id == data ||
+                p.sku.toLowerCase() == data.toLowerCase() ||
+                p.barcode == data ||
+                p.nfcTag == data),
+      );
+    } catch (_) {
+      product = null;
+    }
+
+    if (product != null) {
+      setState(() => _showScanner = false);
+
+      if (product.status == ProductStatusType.sold) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Questo prodotto risulta già venduto.')),
+        );
+        return;
+      }
+
+      setState(() {
+        _pendingProduct = product;
+        _priceInputController.text = product!.sellPrice != null ? product.sellPrice.toString() : '';
+        _showPriceModal = true;
+      });
+    } else {
+      SoundService.playBlockingError(isAutomation: true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Prodotto non trovato: $data'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _confirmSale() async {
+    if (_pendingProduct == null) return;
+
+    final price = double.tryParse(_priceInputController.text.trim());
+    await ref.read(inventoryProvider.notifier).sellProduct(_pendingProduct!.id, price);
+
     setState(() {
-      _soldProducts.add(product);
-      _totalRevenue += product.sellPrice ?? 0.0;
+      _scannedCount++;
+      _totalRevenue += (price ?? 0.0);
+      _lastSoldProduct = '${_pendingProduct!.sku} - €${price ?? 0.0}';
+      _showPriceModal = false;
+      _pendingProduct = null;
+      _priceInputController.clear();
     });
-    SoundService.playSuccessBeep();
+
+    await SoundService.playSuccess(isAutomation: true);
+
+    // Auto-reopen scanner for next sale
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() => _showScanner = true);
+      }
+    });
   }
 
   @override
@@ -32,67 +101,194 @@ class _ScanSellScreenState extends ConsumerState<ScanSellScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Scansiona & Vendi a Raffica', style: AppTypography.titleMedium),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary),
-              ),
-              child: Column(
-                children: [
-                  Text('TOTALE VENDITE SESSIONE', style: AppTypography.labelMedium.copyWith(color: AppColors.accentGold)),
-                  const SizedBox(height: 8),
-                  Text('€${_totalRevenue.toStringAsFixed(2)}', style: AppTypography.headlineMedium.copyWith(color: AppColors.accentGoldLight)),
-                  const SizedBox(height: 4),
-                  Text('Capi venduti: ${_soldProducts.length}', style: AppTypography.bodySmall),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Avvia Fotocamera Scanner'),
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ScannerScreen()));
-              },
-            ),
-            const SizedBox(height: 24),
-            Text('CAPI REGISTRATI COME VENDUTI', style: AppTypography.titleSmall.copyWith(color: AppColors.accentGold)),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _soldProducts.isEmpty
-                  ? const Center(child: Text('Nessuna vendita registrata nella sessione corrente.'))
-                  : ListView.builder(
-                      itemCount: _soldProducts.length,
-                      itemBuilder: (context, index) {
-                        final p = _soldProducts[index];
-                        return Card(
-                          color: AppColors.surface,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: const CircleAvatar(
-                              backgroundColor: AppColors.success,
-                              child: Icon(Icons.check, color: Colors.white),
-                            ),
-                            title: Text(p.furType.toUpperCase(), style: AppTypography.titleMedium),
-                            subtitle: Text('SKU: ${p.sku}', style: AppTypography.bodySmall),
-                            trailing: Text('€${p.sellPrice?.toStringAsFixed(2) ?? "0.00"}', style: AppTypography.titleSmall.copyWith(color: AppColors.accentGold)),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+        title: const Text('Vendita Flash', style: TextStyle(fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
         ),
+      ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                // Stats row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.success),
+                        ),
+                        child: Column(
+                          children: [
+                            Text('$_scannedCount', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.success)),
+                            const SizedBox(height: 4),
+                            Text('Capi Venduti', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.accentGold),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '€ ${_totalRevenue.toStringAsFixed(0)}',
+                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.accentGold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text('Totale', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                if (_lastSoldProduct != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF064E3B),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: AppColors.success),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text('Venduto: $_lastSoldProduct', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                const SizedBox(height: 12),
+                const Icon(Icons.shopping_cart_checkout, size: 72, color: AppColors.success),
+                const SizedBox(height: 16),
+                Text(
+                  'Scansiona i prodotti in uscita per segnarli come VENDUTI e registrare il prezzo finale.',
+                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 32),
+
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 28),
+                  label: const Text('Scansiona Prodotto', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                  ),
+                  onPressed: () => setState(() => _showScanner = true),
+                ),
+              ],
+            ),
+          ),
+
+          // Scanner Overlay
+          if (_showScanner)
+            Positioned.fill(
+              child: BarcodeScannerView(
+                instructions: 'Inquadra Prodotto da Vendere',
+                onScan: _handleProductScan,
+                onClose: () => setState(() => _showScanner = false),
+              ),
+            ),
+
+          // Price Modal
+          if (_showPriceModal)
+            Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Conferma Vendita', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        if (_pendingProduct != null) ...[
+                          Text(_pendingProduct!.sku, style: AppTypography.headlineSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                          Text(_pendingProduct!.furType, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                        ],
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _priceInputController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: '0.00',
+                            prefixText: '€ ',
+                            prefixStyle: const TextStyle(fontSize: 26, color: AppColors.accentGold),
+                            filled: true,
+                            fillColor: AppColors.backgroundSecondary,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          autofocus: true,
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => setState(() {
+                                  _showPriceModal = false;
+                                  _pendingProduct = null;
+                                }),
+                                child: const Text('Annulla', style: TextStyle(color: AppColors.textSecondary)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                onPressed: _confirmSale,
+                                child: const Text('CONFERMA VENDITA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -6,6 +6,7 @@ class GS1Config {
   final SerialMode serialMode;
   final bool enableLotto;
   final String lottoFieldId;
+  final bool enableGS1; // master toggle: se false usa solo SKU, non apre Chrome
 
   const GS1Config({
     this.baseUrl = 'https://syncroflow.app/id',
@@ -13,9 +14,11 @@ class GS1Config {
     this.serialMode = SerialMode.uuid,
     this.enableLotto = false,
     this.lottoFieldId = '',
+    this.enableGS1 = false, // default spento finché non hai sito
   });
 
   String get domain => baseUrl;
+  bool get isEnabled => enableGS1 && baseUrl.isNotEmpty;
 
   Map<String, dynamic> toJson() {
     return {
@@ -24,6 +27,7 @@ class GS1Config {
       'serialMode': serialMode.name,
       'enableLotto': enableLotto,
       'lottoFieldId': lottoFieldId,
+      'enableGS1': enableGS1,
     };
   }
 
@@ -36,6 +40,7 @@ class GS1Config {
           : SerialMode.uuid,
       enableLotto: json['enableLotto'] as bool? ?? false,
       lottoFieldId: json['lottoFieldId'] as String? ?? '',
+      enableGS1: json['enableGS1'] as bool? ?? false,
     );
   }
 
@@ -45,6 +50,7 @@ class GS1Config {
     SerialMode? serialMode,
     bool? enableLotto,
     String? lottoFieldId,
+    bool? enableGS1,
   }) {
     return GS1Config(
       baseUrl: baseUrl ?? this.baseUrl,
@@ -52,6 +58,7 @@ class GS1Config {
       serialMode: serialMode ?? this.serialMode,
       enableLotto: enableLotto ?? this.enableLotto,
       lottoFieldId: lottoFieldId ?? this.lottoFieldId,
+      enableGS1: enableGS1 ?? this.enableGS1,
     );
   }
 }
