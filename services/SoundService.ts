@@ -1,9 +1,15 @@
-import { Audio } from 'expo-av';
 import { Vibration } from 'react-native';
+let Audio: any = null;
+try { Audio = require('expo-av').Audio; } catch {
+  try { Audio = require('../src/lib/sound'); } catch {}
+}
+if (!Audio || !Audio.Sound) {
+  try { const mod = require('../src/lib/sound'); Audio = { Sound: mod.SoundWrapper }; } catch {}
+}
 
 class SoundService {
-    private shortBeep: Audio.Sound | null = null;
-    private longBeep: Audio.Sound | null = null;
+    private shortBeep: any = null;
+    private longBeep: any = null;
 
     constructor() {
         this.loadSounds();

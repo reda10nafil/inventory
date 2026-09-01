@@ -14,12 +14,8 @@ import { soundService } from './services/SoundService';
 import RootNavigator from './src/navigation/RootNavigator';
 import { linking } from './src/navigation/linking';
 
-// BatteryMonitor — identico a app/_layout.tsx:15, sostituito expo-battery con device-info in Fase 4
-// Per Fase 1 mantiamo expo-battery se presente, altrimenti fallback no-op via try import
-let Battery: any = null;
-try {
-  Battery = require('expo-battery');
-} catch {}
+// BatteryMonitor — Fase 4: expo-battery -> react-native-device-info
+import * as Battery from './src/lib/battery';
 
 function BatteryMonitor() {
   const [lastAlertTime, setLastAlertTime] = useState(0);
