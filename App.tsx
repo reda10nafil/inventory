@@ -52,17 +52,6 @@ function BatteryMonitor() {
 }
 
 export default function App() {
-  // Fase 1: wrapping NavigationContainer con linking syncroflow://
-  // Fase 2: RootNavigator conterrà lo Stack migrato da expo-router
-  // Fallback temporaneo se RootNavigator non esiste ancora (Fase 1) → renderizza null con provider
-  const Nav = (() => {
-    try {
-      return <RootNavigator />;
-    } catch {
-      return null;
-    }
-  })();
-
   return (
     <SafeAreaProvider>
       <AutomationsProvider>
@@ -74,7 +63,7 @@ export default function App() {
                   <InventoryProvider>
                     <BatteryMonitor />
                     <NavigationContainer linking={linking as any} fallback={null}>
-                      {Nav}
+                      <RootNavigator />
                     </NavigationContainer>
                   </InventoryProvider>
                 </GS1ConfigProvider>
