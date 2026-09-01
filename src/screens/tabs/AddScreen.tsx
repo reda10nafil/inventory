@@ -47,7 +47,7 @@ export default function AddProductScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { width: screenWidth } = useWindowDimensions();
-  const imageWidth = Math.max(1, screenWidth - 32);
+  const imageWidth = Math.max(1, screenWidth - insets.left - insets.right - spacing.screenPadding * 2);
 
   // Auto-generate SKU if empty
   const generateSKU = (): string => {
@@ -275,11 +275,11 @@ export default function AddProductScreen() {
     }
   };
 
-  // Size to flex style mapping for dynamic fields
+  // Size to flex style mapping for dynamic fields - fix overflow con gap 12px
   const getSizeStyle = (size: 'small' | 'medium' | 'full') => {
     switch (size) {
-      case 'small': return { width: '30%' as const }; // ~1/3 minus gap (16px)
-      case 'medium': return { width: '47%' as const }; // ~1/2 minus gap (16px)
+      case 'small': return { width: '31%' as const }; // 31*3=93% +2*gap ~98%
+      case 'medium': return { width: '48%' as const }; // 48*2=96% +gap ~100%
       case 'full': return { width: '100%' as const };
     }
   };
@@ -889,7 +889,7 @@ export default function AddProductScreen() {
   const visibleFields = getVisibleFields();
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1011,7 +1011,9 @@ const styles = StyleSheet.create({
   dynamicFieldsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16, // Increased gap to replace marginBottom
+    gap: 12,
+    rowGap: 16,
+    columnGap: 12,
     marginBottom: 24,
   },
   qrButton: {

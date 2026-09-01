@@ -238,7 +238,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -519,12 +519,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statsScroll: {
-    maxHeight: 100,
+    maxHeight: 115,
   },
   statsContainer: {
     paddingHorizontal: spacing.screenPadding,
-    gap: 12,
     paddingVertical: 8,
+    gap: 12,
   },
   statCard: {
     backgroundColor: theme.surface,
@@ -553,13 +553,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   filterScroll: {
-    maxHeight: 50,
+    maxHeight: 64,
     marginTop: 8,
   },
   filterContainer: {
     paddingHorizontal: spacing.screenPadding,
+    paddingVertical: 4,
     gap: 8,
-    paddingVertical: 8,
   },
   filterChip: {
     paddingHorizontal: 20,
@@ -721,11 +721,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   libraryScroll: {
-    maxHeight: 50,
+    maxHeight: 62,
     marginTop: 12,
   },
   libraryContainer: {
     paddingHorizontal: spacing.screenPadding,
+    paddingVertical: 4,
     gap: 8,
   },
   libraryChip: {
