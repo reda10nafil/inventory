@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../navigation/compat';
-import { Image } from 'expo-image';
+import { Image } from '../lib/ExpoImage';
 import { theme, typography, shadows, borderRadius, spacing } from '../../constants/theme';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations } from '../../contexts/LocationsContext';

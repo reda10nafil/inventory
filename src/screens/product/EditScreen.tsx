@@ -4,11 +4,11 @@ import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, KeyboardAvoid
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
-import { Image } from 'expo-image';
+import * as ImagePicker from '../../lib/imagePicker';
+import * as DocumentPicker from '../../lib/documentPicker';
+import { Image } from '../../lib/ExpoImage';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Sharing from 'expo-sharing';
+import * as Sharing from '../../lib/sharing';
 import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';

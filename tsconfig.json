@@ -5,6 +5,7 @@
     "allowJs": true,
     "jsx": "react-native",
     "strict": true,
+    "noImplicitAny": false,
     "module": "preserve",
     "moduleDetection": "force",
     "moduleResolution": "bundler",

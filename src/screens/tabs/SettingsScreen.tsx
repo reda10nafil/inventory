@@ -4,8 +4,8 @@ import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-nati
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
+import * as FileSystem from '../../lib/fileSystem';
+import * as Sharing from '../../lib/sharing';
 import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 

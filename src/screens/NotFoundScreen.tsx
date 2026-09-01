@@ -4,7 +4,7 @@
 
 // Powered by OnSpace.AI
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from '../lib/LinearGradient';
 import { useRouter } from '../navigation/compat';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

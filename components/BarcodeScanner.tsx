@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Button, Dimensions } from 'react-native';
-import { CameraView, Camera } from 'expo-camera';
+import { CameraView, Camera } from '../src/lib/camera';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme, borderRadius } from '../constants/theme';
 

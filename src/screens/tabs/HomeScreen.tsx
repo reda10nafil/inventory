@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
+import { Image } from '../../lib/ExpoImage';
 import { theme, typography, shadows, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { isDormant, needsPromotion } from '../../../services/mockData';

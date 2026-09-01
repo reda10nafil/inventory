@@ -3,7 +3,7 @@
  * Uses external APIs with optimized image preprocessing
  */
 
-import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImageManipulator from '../src/lib/imageManipulator';
 
 export interface BarcodeDecodeResult {
     success: boolean;
