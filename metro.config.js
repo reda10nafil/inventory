@@ -29,8 +29,10 @@ if (svgTransformerPath) {
   });
 }
 
+config.transformer = { ...config.transformer, assetRegistryPath: '@react-native/assets-registry/registry' };
 if (withNativeWind) {
   module.exports = withNativeWind(config, {input: './global.css'});
 } else {
   module.exports = config;
 }
+

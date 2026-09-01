@@ -10,6 +10,7 @@ import com.facebook.react.ReactPackage
 import com.facebook.react.ReactHost
 import com.facebook.react.common.ReleaseLevel
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
+import com.facebook.react.defaults.DefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 
 class MainApplication : Application(), ReactApplication {
@@ -27,7 +28,7 @@ class MainApplication : Application(), ReactApplication {
   }
 
   override val reactHost: ReactHost
-    get() = ReactNativeHost.createReactHost(applicationContext, reactNativeHost)
+    get() = DefaultReactHost.getDefaultReactHost(applicationContext, reactNativeHost)
 
   override fun onCreate() {
     super.onCreate()

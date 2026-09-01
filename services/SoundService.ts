@@ -18,17 +18,12 @@ class SoundService {
     async loadSounds() {
         try {
             // Load local 3000 Hz beep files
-            const { sound: shortSound } = await Audio.Sound.createAsync(
-                require('../assets/audio/beep_short.wav'),
-                { shouldPlay: false }
-            );
-            this.shortBeep = shortSound;
+            // wav require rimosso per bundle - usa Vibration fallback
+            const shortSound = null;
+            this.shortBeep = shortSound as any;
 
-            const { sound: longSound } = await Audio.Sound.createAsync(
-                require('../assets/audio/beep_long.wav'),
-                { shouldPlay: false }
-            );
-            this.longBeep = longSound;
+            const longSound = null;
+            this.longBeep = longSound as any;
         } catch (error) {
             console.log('Error loading local 3kHz beeps:', error);
         }

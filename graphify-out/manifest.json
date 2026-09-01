@@ -12,26 +12,26 @@
     "semantic_hash": ""
   },
   "android/app/build.gradle": {
-    "mtime": 1788264103.4338758,
-    "seen": 1788278945.9062128,
-    "ast_hash": "3e60f382b7eab472ca927de556c0c381",
+    "mtime": 1788293697.6060972,
+    "seen": 1788294758.8269012,
+    "ast_hash": "f3e9af64d20448cd8df0a7bd75a69172",
     "semantic_hash": ""
   },
   "android/app/src/main/java/com/redako35/syncroflow/MainActivity.kt": {
-    "mtime": 1787720076.0069847,
-    "seen": 1787788858.6077387,
-    "ast_hash": "5de466d7ad65da0c2c83dbe64e9372c8",
+    "mtime": 1788281755.4512596,
+    "seen": 1788281889.6057758,
+    "ast_hash": "114d90237f887796cb2129c3a258d0c3",
     "semantic_hash": ""
   },
   "android/app/src/main/java/com/redako35/syncroflow/MainApplication.kt": {
-    "mtime": 1787720076.007862,
-    "seen": 1787788858.6077387,
-    "ast_hash": "4617e759e6540fdb233d2afdb7f0c164",
+    "mtime": 1788289574.3849888,
+    "seen": 1788294758.8269012,
+    "ast_hash": "f3f1f6c1f9452b696a11a27a2c8a68ca",
     "semantic_hash": ""
   },
   "android/build.gradle": {
     "mtime": 1787720076.03693,
-    "seen": 1787788858.6077387,
+    "seen": 1788294758.8269012,
     "ast_hash": "55cec08c744fbe7b1f1294009fe3f65d",
     "semantic_hash": ""
   },
@@ -43,7 +43,7 @@
   },
   "android/settings.gradle": {
     "mtime": 1787720076.0445178,
-    "seen": 1787788858.6077387,
+    "seen": 1788294758.8269012,
     "ast_hash": "94001794ea941052bb8618bc2d512b75",
     "semantic_hash": ""
   },
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "babel.config.js": {
-    "mtime": 1788279351.6694632,
-    "seen": 1788280232.4964168,
-    "ast_hash": "ddc3d10045443681b2394c2a50a1d89e",
+    "mtime": 1788290918.85114,
+    "seen": 1788294758.8269012,
+    "ast_hash": "72ab6446cf900930046a53bbb5789bee",
     "semantic_hash": ""
   },
   "components/Barcode.tsx": {
@@ -311,12 +311,6 @@
     "ast_hash": "c150f6d6a8ff029718b0027ef83a9c4a",
     "semantic_hash": ""
   },
-  "eas.json": {
-    "mtime": 1787720076.112521,
-    "seen": 1787788858.6077387,
-    "ast_hash": "7ef904e8cdc0b3ef60ba4bfe18d3938c",
-    "semantic_hash": ""
-  },
   "eslint.config.js": {
     "mtime": 1788279388.78095,
     "seen": 1788280232.4964168,
@@ -354,9 +348,9 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1788279488.8810225,
-    "seen": 1788280232.4964168,
-    "ast_hash": "047d5a999ceae3b7900d3767ad966c54",
+    "mtime": 1788290855.5225768,
+    "seen": 1788294758.8269012,
+    "ast_hash": "4d3d95b97a2e0ad02c468ee513f69461",
     "semantic_hash": ""
   },
   "scripts/reset-project.js": {
@@ -366,9 +360,9 @@
     "semantic_hash": ""
   },
   "services/SoundService.ts": {
-    "mtime": 1788281619.0910635,
-    "seen": 1788281665.592277,
-    "ast_hash": "f94e8ab51531711f950172e10887aff1",
+    "mtime": 1788291036.694519,
+    "seen": 1788294758.8269012,
+    "ast_hash": "d5e488d4146cd791861e722214a0268b",
     "semantic_hash": ""
   },
   "services/mockData.ts": {
@@ -1896,9 +1890,9 @@
     "semantic_hash": ""
   },
   "metro.config.js": {
-    "mtime": 1788279429.6699607,
-    "seen": 1788280232.4964168,
-    "ast_hash": "4251085244d84e71f0295584051c55bf",
+    "mtime": 1788294227.4555087,
+    "seen": 1788294758.8269012,
+    "ast_hash": "aa36d69cb747b3939dcd9b9ea30908e7",
     "semantic_hash": ""
   },
   "react-native.config.js": {
@@ -2199,6 +2193,72 @@
     "mtime": 1788281567.4995756,
     "seen": 1788281665.592277,
     "ast_hash": "a7fa6a0a511f13b4f7505bde4c2ec63c",
+    "semantic_hash": ""
+  },
+  "scripts/clean_pkg.js": {
+    "mtime": 1788281789.020945,
+    "seen": 1788281889.6057758,
+    "ast_hash": "6398cfe5810dc4b4c9ba03655b5db4a7",
+    "semantic_hash": ""
+  },
+  "docs/audit/screenshots/05-nativa-fase5.png": {
+    "mtime": 1788281849.671489,
+    "seen": 1788281889.6057758,
+    "ast_hash": "0283236c85dd2b8a55935e72251687fe",
+    "semantic_hash": ""
+  },
+  "fix_main.js": {
+    "mtime": 1788289471.885666,
+    "seen": 1788294758.8269012,
+    "ast_hash": "ece6696d423a3f5f842be2a53dc4a1e8",
+    "semantic_hash": ""
+  },
+  "fix_main2.js": {
+    "mtime": 1788289570.4878495,
+    "seen": 1788294758.8269012,
+    "ast_hash": "a20ccbe19e1169e4f643cbd5da92089e",
+    "semantic_hash": ""
+  },
+  "fix_sound.js": {
+    "mtime": 1788291031.3245966,
+    "seen": 1788294758.8269012,
+    "ast_hash": "2aca67b59c2822a9840d8b812199a408",
+    "semantic_hash": ""
+  },
+  "write_cmd.js": {
+    "mtime": 1788282482.6835303,
+    "seen": 1788294758.8279076,
+    "ast_hash": "338a62e4796f70ef1093c7232d3049c4",
+    "semantic_hash": ""
+  },
+  "docs/audit/screenshots/pixel-home.png": {
+    "mtime": 1788290552.4353077,
+    "seen": 1788294758.8279076,
+    "ast_hash": "5467d02000d9f5645f12cb341ec7e39d",
+    "semantic_hash": ""
+  },
+  "docs/audit/screenshots/pixel-launcher.png": {
+    "mtime": 1788290561.0274699,
+    "seen": 1788294758.8279076,
+    "ast_hash": "77cadc69b9e1b7608f0216103a45b2d7",
+    "semantic_hash": ""
+  },
+  "docs/audit/screenshots/pixel10pro_deeplink.png": {
+    "mtime": 1788294642.397736,
+    "seen": 1788294758.8279076,
+    "ast_hash": "4c1eef44c00ba9635fe350e1f90e6c2e",
+    "semantic_hash": ""
+  },
+  "docs/audit/screenshots/pixel10pro_main.png": {
+    "mtime": 1788294621.884793,
+    "seen": 1788294758.8279076,
+    "ast_hash": "fcc56212ce11c27a6e55e477f5cf5afa",
+    "semantic_hash": ""
+  },
+  "docs/audit/screenshots/s25_main.png": {
+    "mtime": 1788294626.882848,
+    "seen": 1788294758.8279076,
+    "ast_hash": "6500336e9da409e99479f0e620ec852a",
     "semantic_hash": ""
   }
 }

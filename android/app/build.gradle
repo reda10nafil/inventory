@@ -11,6 +11,7 @@ react {
     codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
     enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()
     autolinkLibrariesWithApp()
+    debuggableVariants = []
 }
 
 def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
@@ -76,3 +77,4 @@ dependencies {
         implementation jscFlavor
     }
 }
+
