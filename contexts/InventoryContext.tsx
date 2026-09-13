@@ -153,21 +153,22 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   const generateSKU = (): string => {
     const year = new Date().getFullYear();
+    const prefix = `LOG-${year}-`;
     const existingSKUs = products
       .filter((p) => !p.deletedAt)
       .map((p) => p.sku)
-      .filter((sku) => sku.startsWith(`FUR-${year}-`));
+      .filter((sku) => sku.startsWith(prefix));
 
     let nextNumber = 1;
     if (existingSKUs.length > 0) {
       const numbers = existingSKUs.map((sku) => {
-        const match = sku.match(/FUR-\d{4}-(\d+)/);
+        const match = sku.match(/LOG-\d{4}-(\d+)/);
         return match ? parseInt(match[1], 10) : 0;
       });
       nextNumber = Math.max(...numbers) + 1;
     }
 
-    return `FUR-${year}-${String(nextNumber).padStart(3, '0')}`;
+    return `LOG-${year}-${String(nextNumber).padStart(3, '0')}`;
   };
 
   const addProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {

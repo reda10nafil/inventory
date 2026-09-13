@@ -22,6 +22,7 @@ function parseHref(href: Href): { name: string; params?: any } {
       return { name: 'ScannerAction' };
     }
     if (href === '/scanner') return { name: 'Scanner' };
+    if (href === '/chat') return { name: 'Chat' };
     if (href.startsWith('/settings/')) {
       const map: Record<string,string> = {
         '/settings/locations': 'SettingsLocations',
@@ -33,6 +34,7 @@ function parseHref(href: Href): { name: string; params?: any } {
         '/settings/trash': 'SettingsTrash',
         '/settings/share': 'SettingsShare',
         '/settings/sector-templates': 'SettingsSector',
+        '/settings/team': 'SettingsTeam',
         '/settings/automation-builder': 'SettingsAutomationBuilder',
       };
       return { name: map[href.split('?')[0]] || href };

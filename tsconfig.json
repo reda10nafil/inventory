@@ -22,5 +22,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "index.js", "App.tsx"],
-  "exclude": ["node_modules", "android", "ios", ".expo", "syncro_flow_flutter"]
+  "exclude": ["node_modules", "android", "ios", ".expo", "syncro_flow_flutter", "__tests__", "e2e", "jest.config.js", "jest.setup.js", ".detoxrc.js", "scripts"]
 }

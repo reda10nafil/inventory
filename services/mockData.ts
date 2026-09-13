@@ -5,7 +5,7 @@ export const mockProducts: Product[] = [
   {
     id: '1',
     sku: 'VIS-001-2024',
-    furType: 'visone',
+    furType: 'elettronica',
     location: 'vetrina',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&h=800&fit=crop'],
@@ -24,7 +24,7 @@ export const mockProducts: Product[] = [
   {
     id: '2',
     sku: 'VOL-045-2024',
-    furType: 'volpe',
+    furType: 'meccanica',
     location: 'magazzino',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1544923408-75c5cef46f14?w=800&h=800&fit=crop'],
@@ -43,7 +43,7 @@ export const mockProducts: Product[] = [
   {
     id: '3',
     sku: 'ZIB-012-2024',
-    furType: 'zibellino',
+    furType: 'tessile',
     location: 'stand_a',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&h=800&fit=crop'],
@@ -62,7 +62,7 @@ export const mockProducts: Product[] = [
   {
     id: '4',
     sku: 'CIN-007-2023',
-    furType: 'cincilla',
+    furType: 'chimica',
     location: 'vetrina',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1558769132-cb1aea8f-8a70?w=800&h=800&fit=crop'],
@@ -81,7 +81,7 @@ export const mockProducts: Product[] = [
   {
     id: '5',
     sku: 'VIS-022-2024',
-    furType: 'visone',
+    furType: 'elettronica',
     location: 'magazzino',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1512990414788-d97cb4a25db3?w=800&h=800&fit=crop'],
@@ -100,7 +100,7 @@ export const mockProducts: Product[] = [
   {
     id: '6',
     sku: 'VOL-058-2023',
-    furType: 'volpe',
+    furType: 'meccanica',
     location: 'stand_b',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&h=800&fit=crop'],
@@ -119,7 +119,7 @@ export const mockProducts: Product[] = [
   {
     id: '7',
     sku: 'ERM-003-2024',
-    furType: 'ermellino',
+    furType: 'farmaceutica',
     location: 'vetrina',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=800&fit=crop'],
@@ -138,7 +138,7 @@ export const mockProducts: Product[] = [
   {
     id: '8',
     sku: 'VIS-035-2023',
-    furType: 'visone',
+    furType: 'elettronica',
     location: 'magazzino',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=800&fit=crop'],
@@ -157,7 +157,7 @@ export const mockProducts: Product[] = [
   {
     id: '9',
     sku: 'AST-001-2024',
-    furType: 'astrakan',
+    furType: 'imballaggio',
     location: 'sartoria',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1558769132-cb1aea8f-f5e8?w=800&h=800&fit=crop'],
@@ -176,7 +176,7 @@ export const mockProducts: Product[] = [
   {
     id: '10',
     sku: 'ZIB-018-2024',
-    furType: 'zibellino',
+    furType: 'tessile',
     location: 'vetrina',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=800&h=800&fit=crop'],
@@ -195,7 +195,7 @@ export const mockProducts: Product[] = [
   {
     id: '11',
     sku: 'VOL-072-2023',
-    furType: 'volpe',
+    furType: 'meccanica',
     location: 'stand_c',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&h=800&fit=crop'],
@@ -214,7 +214,7 @@ export const mockProducts: Product[] = [
   {
     id: '12',
     sku: 'VIS-048-2024',
-    furType: 'visone',
+    furType: 'elettronica',
     location: 'magazzino',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&h=800&fit=crop'],
@@ -233,7 +233,7 @@ export const mockProducts: Product[] = [
   {
     id: '13',
     sku: 'CIN-015-2023',
-    furType: 'cincilla',
+    furType: 'chimica',
     location: 'vetrina',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1558769132-cb1aea8f-8a70?w=800&h=800&fit=crop'],
@@ -252,7 +252,7 @@ export const mockProducts: Product[] = [
   {
     id: '14',
     sku: 'VOL-089-2024',
-    furType: 'volpe',
+    furType: 'meccanica',
     location: 'magazzino',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1544923408-75c5cef46f14?w=800&h=800&fit=crop'],
@@ -271,7 +271,7 @@ export const mockProducts: Product[] = [
   {
     id: '15',
     sku: 'VIS-061-2023',
-    furType: 'visone',
+    furType: 'elettronica',
     location: 'stand_a',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&h=800&fit=crop'],
@@ -290,7 +290,7 @@ export const mockProducts: Product[] = [
   {
     id: '16',
     sku: 'ZIB-025-2024',
-    furType: 'zibellino',
+    furType: 'tessile',
     location: 'vetrina',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=800&h=800&fit=crop'],
@@ -309,7 +309,7 @@ export const mockProducts: Product[] = [
   {
     id: '17',
     sku: 'ERM-008-2024',
-    furType: 'ermellino',
+    furType: 'farmaceutica',
     location: 'sartoria',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=800&fit=crop'],
@@ -328,7 +328,7 @@ export const mockProducts: Product[] = [
   {
     id: '18',
     sku: 'VOL-102-2024',
-    furType: 'volpe',
+    furType: 'meccanica',
     location: 'magazzino',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&h=800&fit=crop'],
@@ -347,7 +347,7 @@ export const mockProducts: Product[] = [
   {
     id: '19',
     sku: 'VIS-074-2023',
-    furType: 'visone',
+    furType: 'elettronica',
     location: 'stand_b',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1512990414788-d97cb4a25db3?w=800&h=800&fit=crop'],
@@ -366,7 +366,7 @@ export const mockProducts: Product[] = [
   {
     id: '20',
     sku: 'CIN-022-2024',
-    furType: 'cincilla',
+    furType: 'chimica',
     location: 'vetrina',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1558769132-cb1aea8f-8a70?w=800&h=800&fit=crop'],
@@ -385,7 +385,7 @@ export const mockProducts: Product[] = [
   {
     id: '21',
     sku: 'VIS-087-2024',
-    furType: 'visone',
+    furType: 'elettronica',
     location: 'magazzino',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=800&fit=crop'],
@@ -404,7 +404,7 @@ export const mockProducts: Product[] = [
   {
     id: '22',
     sku: 'AST-005-2024',
-    furType: 'astrakan',
+    furType: 'imballaggio',
     location: 'stand_c',
     status: 'available',
     images: ['https://images.unsplash.com/photo-1558769132-cb1aea8f-f5e8?w=800&h=800&fit=crop'],

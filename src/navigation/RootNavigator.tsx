@@ -19,6 +19,8 @@ import TrashScreen from '../screens/settings/TrashScreen';
 import ShareScreen from '../screens/settings/ShareScreen';
 import SectorTemplatesScreen from '../screens/settings/SectorTemplatesScreen';
 import AutomationBuilderScreen from '../screens/settings/AutomationBuilderScreen';
+import TeamScreen from '../screens/settings/TeamScreen';
+import ChatScreen from '../screens/ChatScreen';
 
 import AutomationFlowScreen from '../screens/automations/AutomationFlowScreen';
 import CustomRunnerScreen from '../screens/automations/CustomRunnerScreen';
@@ -42,6 +44,8 @@ export type RootStackParamList = {
   SettingsTrash: undefined;
   SettingsShare: undefined;
   SettingsSector: undefined;
+  SettingsTeam: undefined;
+  Chat: undefined;
   SettingsAutomationBuilder: { editId?: string } | undefined;
   AutomationFlow: { id: string } | undefined;
   CustomRunner: { id: string } | undefined;
@@ -81,6 +85,8 @@ export default function RootNavigator() {
       <Stack.Screen name="SettingsTrash" component={TrashScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsShare" component={ShareScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsSector" component={SectorTemplatesScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="SettingsTeam" component={TeamScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsAutomationBuilder" component={AutomationBuilderScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AutomationFlow" component={AutomationFlowScreen} options={{ headerShown: false }} />
       <Stack.Screen name="CustomRunner" component={CustomRunnerScreen} options={{ headerShown: false }} />

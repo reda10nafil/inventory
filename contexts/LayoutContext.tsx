@@ -30,7 +30,7 @@ const DEFAULT_LAYOUT: LayoutConfig = {
 
         // Sezione Dati Prodotto
         { id: 'section_prodotto', type: 'section', size: 'full', visible: true, label: 'DATI PRODOTTO' },
-        { id: 'sku', type: 'base', size: 'medium', visible: true },
+        { id: 'sku', type: 'base', size: 'full', visible: true },
         { id: 'furType', type: 'base', size: 'full', visible: true },
         { id: 'location', type: 'base', size: 'medium', visible: true },
         { id: 'folder', type: 'base', size: 'medium', visible: true },
@@ -50,7 +50,7 @@ const DEFAULT_LAYOUT: LayoutConfig = {
         { id: 'section_note', type: 'section', size: 'full', visible: true, label: 'NOTE' },
         { id: 'technicalNotes', type: 'base', size: 'full', visible: true },
     ],
-    version: 3, // Incrementata versione per forzare update
+    version: 4, // Fix sku full per banda nera in Add
 };
 
 const STORAGE_KEY = 'furinventory_layout_config';

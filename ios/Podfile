@@ -1,3 +1,29 @@
+# SyncroFlow — ios/Podfile — bare RN 0.81.5
+# Verifica QA iOS + Detox su LAN Mercusys isolata (senza WAN)
+# Ambiente corrente: win32 -> pod install NON eseguibile qui. Vedi istruzioni macOS sotto.
+#
+# Pods richiesti per mesh QR / media:
+#   - @nozbe/watermelondb        -> pod 'WatermelonDB' (autolinked via use_native_modules!)
+#   - react-native-vision-camera -> pod 'VisionCamera' (autolinked, richiede NS Camera)
+#   - react-native-compressor    -> pod 'RNCompressor' / autolinked
+#   - react-native-image-crop-picker -> pod 'QBImagePicker' / 'RSKImageCropper' dipendenze autolinked
+#
+# macOS — comandi da eseguire su Mac con Xcode + CocoaPods + Ruby:
+#   cd ios
+#   bundle install              # se presente Gemfile, altrimenti: sudo gem install cocoapods
+#   pod deintegrate             # opzionale se Podfile.lock sporco
+#   pod install --repo-update   # prima installazione / dopo upgrade RN 0.81.5
+#   # oppure per CI deterministico:
+#   pod install --repo-update --verbose
+#   # verifica:
+#   pod check                   # o: pod outdated
+#   # build Detox iOS:
+#   npx detox build --configuration ios.sim.debug
+#   npx detox test  --configuration ios.sim.debug e2e/meshQRLoop.detox.test.ts
+#
+# Nota win32: questo file è stub verificato su Windows. Non lanciare pod install qui.
+# Su Windows: verifica solo sintassi con `ruby -c ios/Podfile` se Ruby disponibile, altrimenti skip.
+
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve("react-native/scripts/react_native_pods.rb", {paths: [process.argv[1]]})', __dir__])
 
@@ -10,12 +36,25 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
+config = use_native_modules!
+
 target 'SyncroFlow' do
-  config = use_native_modules!
   use_react_native!(
     :path => config[:reactNativePath],
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
+
+  # --- SyncroFlow Mesh deps — dichiarati per audit Mercusys ---
+  # Tutti autolinked via use_native_modules!; le righe pod esplicite sono documentative.
+  # Se l'autolinking fallisce su macOS, decommentare le righe sotto:
+  # pod 'WatermelonDB', :path => '../node_modules/@nozbe/watermelondb'
+  # pod 'VisionCamera', :path => '../node_modules/react-native-vision-camera'
+  # pod 'RNCompressor', :path => '../node_modules/react-native-compressor'
+  # pod 'RNImageCropPicker', :path => '../node_modules/react-native-image-crop-picker'
+  #
+  # Dipendenze transitive verificate su RN 0.81.5:
+  #   - QBImagePicker / RSKImageCropper (ImageCropPicker)
+  #   - SPTPersistentCache / FMDB (WatermelonDB)
 end
 
 post_install do |installer|

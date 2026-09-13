@@ -165,7 +165,7 @@ export function DynamicFieldRenderer({
                     <Text style={styles.label}>SKU / Codice</Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="FUR-2024-001"
+                        placeholder="LOG-2024-001"
                         placeholderTextColor={theme.textSecondary}
                         value={formData.sku}
                         onChangeText={(value) => updateField('sku', value)}

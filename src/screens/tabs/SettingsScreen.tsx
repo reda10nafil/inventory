@@ -53,7 +53,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: spacing.screenPadding,
@@ -305,7 +305,7 @@ export default function SettingsScreen() {
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => showComingSoon('Gestione multi-utente')}
+          onPress={() => router.push('/settings/team')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
@@ -314,7 +314,7 @@ export default function SettingsScreen() {
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Accesso Multi-Utente</Text>
               <Text style={styles.settingDescription}>
-                Gestisci permessi team (Pro)
+                Mesh LAN • QR Host/Client • Sync 100%
               </Text>
             </View>
           </View>

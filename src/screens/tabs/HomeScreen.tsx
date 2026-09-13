@@ -68,13 +68,13 @@ export default function HomeScreen() {
     if (activeFilter === 'alert') return activeAlerts.some((a) => a.productId === p.id);
     if (activeFilter === 'all' && p.deletedAt) return false;
 
-    // Search Query
+    // Search Query — guard null (CSV import legacy)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
-        p.sku.toLowerCase().includes(query) ||
-        p.furType.toLowerCase().includes(query) ||
-        p.location.toLowerCase().includes(query)
+        String(p.sku || '').toLowerCase().includes(query) ||
+        String(p.furType || '').toLowerCase().includes(query) ||
+        String(p.location || '').toLowerCase().includes(query)
       );
     }
     return true;
@@ -89,12 +89,7 @@ export default function HomeScreen() {
   ];
 
   const toggleSelection = (id: string) => {
-    if (selectedIds.includes(id)) {
-      const newIds = selectedIds.filter(selectedId => selectedId !== id);
-      setSelectedIds(newIds);
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
   const handleLongPress = (product: any) => {
@@ -407,9 +402,11 @@ export default function HomeScreen() {
         data={filteredProducts}
         renderItem={renderProductCard}
         numColumns={2}
+        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: spacing.screenPadding,
           paddingBottom: insets.bottom + 16,
+          paddingTop: 8,
         }}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id}
@@ -519,7 +516,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statsScroll: {
-    maxHeight: 115,
+    flexGrow: 0,
   },
   statsContainer: {
     paddingHorizontal: spacing.screenPadding,
@@ -553,12 +550,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   filterScroll: {
-    maxHeight: 64,
+    flexGrow: 0,
     marginTop: 8,
   },
   filterContainer: {
     paddingHorizontal: spacing.screenPadding,
-    paddingVertical: 4,
+    paddingVertical: 6,
     gap: 8,
   },
   filterChip: {
@@ -721,12 +718,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   libraryScroll: {
-    maxHeight: 62,
+    flexGrow: 0,
     marginTop: 12,
   },
   libraryContainer: {
     paddingHorizontal: spacing.screenPadding,
-    paddingVertical: 4,
+    paddingVertical: 6,
     gap: 8,
   },
   libraryChip: {

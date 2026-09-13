@@ -1,0 +1,29 @@
+{
+  "swarm": "SyncroFlow Mesh Chat Storage Offline-First",
+  "queen": "Queen Coordinator",
+  "workers": {
+    "1_MobileArchitect_DB": {
+      "status": "done",
+      "adr": "WatermelonDB JSI primary, Ditto swap-ready via src/db/sync.ts. Team Condiviso 100% read-all, permessi write only admin/editor/viewer. Schema v1 products/automations/timeline/chat_messages/team_members. JSI true for 120Hz hydration.",
+      "output": "src/db/schema.ts:61 appSchema v1, src/db/models/*.ts, src/db/sync.ts pull 100% + push delta"
+    },
+    "2_UI_Media": {
+      "status": "done",
+      "adr": "HydratedProductCard parses light JSON {skus, automationId} -> withObservables placeholder -> WebP via FastImage fallback. Actions Sposta/Vendi call moveProduct/sellProduct + timeline.",
+      "output": "src/components/chat/HydratedProductCard.tsx:570, src/services/mediaCompressor.ts compressToWebP 1920x1080 WebP 0.75, src/components/chat/ChatMessageItem.tsx"
+    },
+    "3_Network_Mesh": {
+      "status": "done",
+      "adr": "Accesso Multi-Utente UI separata da Chat. Host QR ws://IP:PORT?token=ROOM via qrcode-svg, Client vision-camera private scanner 60fps S25 Ultra. meshSync WS LAN isolated, syncDatabase 100% on join.",
+      "output": "src/screens/settings/TeamScreen.tsx SafeArea top+bottom, src/services/meshSync.ts, src/hooks/useMeshRole.ts"
+    },
+    "4_Tester_QA": {
+      "status": "done",
+      "adr": "Jest payload unit 32 cases, Detox E2E QR loop mock WS, profileRam.js S25 Ultra 12GB 120Hz thresholds heap<250MB p95<16ms.",
+      "output": "__tests__/chatPayload.test.ts, e2e/meshQRLoop.detox.test.ts, scripts/profileRam.js PASS 5.2MB heap p95 3.93ms"
+    }
+  },
+  "memoryStore": "All workers read/write .ruflo/shared-state.json. Worker2 inherits ADR Worker1 schema for hydration.",
+  "sparc": "Parallel execution: Worker2 UI while Worker1 compiles DB JSI deps",
+  "blockHandling": "No native dep conflict. VisionCamera + WatermelonDB autolinking ready for iOS Podfile manual when needed."
+}

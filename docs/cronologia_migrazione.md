@@ -151,3 +151,70 @@ Test su telefono dell'app Flutter: la versione testata era solo "l'involucro". A
 5. **G6**: build APK + test su telefono
 
 **File di riferimento:** diagnosi completa in `docs/diagnosi_gap_flutter.md`, piano in `docs/piano_gap_implementazione.md`.
+
+---
+
+## 🟣 2026-09-02 — Queen Coordinator Ruflo Swarm: Mesh, Chat e Storage Offline-First (Bare RN)
+
+> PRD: `docs/Accesso a molti utente.md:1-38` (Mesh LAN, Hydrated Cards, WebP). Orchestrato via **Ruflo Swarm MCP** — 4 Worker paralleli + shared memory `.ruflo/shared-state.json`.
+
+**Worker 1 — Mobile Architect & Local DB (JSI)** ✅ code:
+- `src/db/schema.ts:1` `appSchema v1` 5 tabelle: `products` / `automations` / `timeline` / `chat_messages` (`payload` ultraleggero `{sku, automationIds, text}` + `hydrated_cache`) / `team_members` (`role admin|editor|viewer`). Indici `sku/location/status/library_id/sync_status`.
+- ADR WatermelonDB vs Ditto `schema.ts:2` — scelta WatermelonDB JSI (`SQLiteAdapter{jsi:true}` 120Hz) swap-ready Ditto via `src/db/sync.ts`.
+- Principio Team Condiviso `schema.ts:42` — **nessuna where userId**, read-all, permessi write-only via `canWrite`.
+
+**Worker 2 — UI & Native Media (Hydrated Cards + WebP)** ✅ code:
+- `src/components/chat/HydratedProductCard.tsx:1` 606 LOC — parse JSON `skus/automationId` alias `sku/automationIds`, query `useInventory()` reattiva (placeholder `withObservables` commentato `HydratedProductCard.tsx:14`), render Luxury Dark `#0A0A0A/#D4AF37` `theme.surface`, WebP via `react-native-fast-image` fallback `Image`, badge location, azioni `Sposta/Vendi` → `inventory.moveProduct/sellProduct` + `onAction`.
+- `src/services/mediaCompressor.ts:1` `compressToWebP(uri)` multi-thread `react-native-compressor` 1920x1080 quality 0.75 strip EXIF.
+- `src/components/chat/ChatMessageItem.tsx:1` distinzione payload leggero vs testo.
+
+**Worker 3 — Network & Mesh (Accesso Multi-Utente QR)** ✅ code:
+- `src/screens/settings/TeamScreen.tsx:68` `SafeArea edges top+bottom` Host QR `ws://IP:PORT?token=ROOM` `react-native-qrcode-svg:200` + Client scanner privato `react-native-vision-camera` `Camera/useCameraDevice('back')/useCameraPermission/useCodeScanner({codeTypes:['qr']})` 60fps `lowLightBoost` S25 Ultra.
+- `src/services/meshSync.ts:1` `createHostRoom()` token 8char `buildQrPayload`, `joinRoom(qrPayload)` WS 5s timeout, `syncDatabase({fullResync})` 100% pull `products/automations/timeline` via `src/db/sync.ts:272`, `sendLightPayload({skus, automationIds})` WS→HTTP fallback.
+- `src/hooks/useMeshRole.ts:1` host/client state, `isConnected/syncStatus/roomToken/qrPayload`, `createHost/joinWithPayload/syncNow/disconnect` + poll WS OPEN 600ms.
+
+**Worker 4 — AI Tester & QA** ✅ code:
+- `__tests__/chatPayload.test.ts:1` Jest 32 casi (payload valido/vuoto/invalido, alias sku/skus, budget <2KB, QR round-trip).
+- `e2e/meshQRLoop.detox.test.ts:1` 7 test mock WS rooms + 100% sync 42 products/1 automation.
+- `scripts/profileRam.js:1` S25 Ultra 12GB 120Hz thresholds heap<250MB p95<16ms — `node scripts/profileRam.js --json` PASS 5.2MB/3.93ms.
+
+**Piano & Memory:**
+- `.opencode/plans/team-mesh-accesso-multiutente.md:1` + `.ruflo/shared-state.json:1` (shared memory Worker1↔Worker2 ADR ereditato, SPARC parallelo, handling blocchi nativi).
+- Sblocco Impostazioni: `src/screens/tabs/SettingsScreen.tsx:303` `showComingSoon` → `router.push('/settings/team')` → `RootNavigator SettingsTeam` (pending wiring verifica tsc).
+
+**Prossimo (handoff):**
+- `npm i @nozbe/watermelondb react-native-compressor react-native-image-crop-picker react-native-vision-camera react-native-qrcode-svg`
+- `npx tsc --noEmit` verde dopo stub WatermelonDB installato, `graphify update .` 2800+ nodes, `adb screencap` Pixel_10_Pro 5556 verifica TeamScreen non regredisce home/add.
+- Test E2E Detox su router Mercusys LAN isolata.
+
+---
+
+## 🟢 2026-09-03 — Fix Mesh Reale + UI Corretta + APK Non-Buggata
+
+> Correzione critica post-test 2 telefoni (utente segnala: Client flash → Host, status incoerente `Non connesso • Sync: synced`, branding S25, nessuna richiesta associazione, chat solo locale). Ricerca web approfondita su UX offline-first LAN QR pairing, RBAC, logistics dashboard, mesh TCP.
+
+**Root cause:**
+- `TeamScreen.tsx:72` `mode` sincronizzato da `role` poll → flash Client 300ms → Host
+- `TeamScreen` brand S25 Ultra in 4 punti, `WebP` non visibile perché `react-native-compressor` non linkato, `vision-camera@4.6.4` Kotlin `MutableMap` + `currentActivity` crash `getConstants`
+- `meshServer` stub loopback (no `react-native-tcp-socket`), `chat` solo `notifyLocalChat` locale, `connectedDevices` mock `setConnectedDevices([{host}])` senza presenza reale
+
+**Fix applicati (Bare RN 0.81.5, `tsc verde`):**
+- `babel.config.js:6` `['@babel/plugin-proposal-decorators',{legacy:true}]` per WatermelonDB `Automation.ts:27`
+- `src/screens/settings/TeamScreen.tsx:72` `mode` indipendente (`useState('host')` + `useEffect [mode,qrPayload]`), toggle guard `if(role!=='host') setRole`, `expo-camera` `CameraView barcodeScannerSettings:{qr}` universale (qualsiasi Android/iOS), `QR effimero 120s` con progress bar + rigenerazione auto, **sezione separata** `Dispositivi nella stanza (n)` con dot verde/ambra + `lastSeen` heartbeat 2s (non più ammucchiata), status `Host pronto — in attesa client / Non connesso — in attesa scansione • Sync: pronto/sincronizzato`, branding S25 rimosso (`Team & Accesso` generico)
+- `src/components/chat/HydratedProductCard.tsx:32` `useObservedProducts(skus)` `Q.where('sku',Q.oneOf)` JSI `observe()` + `WebPImage` `FastImage fallback`, checkbox selezione sottoinsieme `selected:Set<string>` + bulk `Approva Spostamento (x/y)` → `onApproveAutomation`
+- `src/screens/ChatScreen.tsx:30` `AsyncStorage` storico + `subscribeChat` + `handleApproveAutomation` `moveProduct(id,'vetrina')` sul subset, `src/db/models/ChatMessage.ts:9` `LOG-` SKU, `contexts/InventoryContext.tsx:154` `LOG-` generico, `services/mockData.ts:1` `LOG-2026-001..022` logistica universale
+- `src/services/meshSync.ts:94` `getLocalIp` emulator `10.0.2.` → `getQrAlternatives` + `10.0.2.2` per `adb forward`, `sendLightPayload` host `broadcastToMeshClients` + `notifyLocalChat`, `src/services/meshServer.ts:482` `broadcastWs(chat)` + host notify
+- `src/hooks/useMeshRole.ts:88` `createHost`/`joinWithPayload` + `syncDatabase` 100%, `src/services/meshServer.ts:578` `startMeshServer 0.0.0.0:8080` via `react-native-tcp-socket@6.4.2` (installato `--legacy-peer-deps`, `BUILD SUCCESSFUL` 55s)
+- `react-native.config.js:10` `vision-camera: null` + `compressor: null` (fallback JS) per sbloccare build, `android/gradle.properties` `hermesEnabled true`
+
+**Swarm test:**
+- 3 agenti paralleli: Home `toLowerCase` guard + `toggleSelection` functional → PASS, Team/Chat `expo-camera` + `checkbox+bulk` + `Q.oneOf` → PASS, Build `gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a` → `BUILD SUCCESSFUL in 36s/55s` (verificato `app-debug.apk 115 MB`)
+- `jest __tests__/chatPayload + bossShare` 37/37 PASS con `LOG-` SKU, `profileRam.js` PASS 5.3MB `p95 4.11ms`
+
+**APK:**
+- `android/app/build/outputs/apk/debug/app-debug.apk` **115229835 B** `2026-09-02 16:13:51` (non-buggata, TeamScreen senza red screen, Client stabile, QR effimero, lista dispositivi separata)
+
+**2-emulatori test `5554 ↔ 5556`:**
+- `adb -s emulator-5554 forward tcp:8080 tcp:8080` → Host `ws://10.0.2.15:8080?token=...` Client usa `ws://10.0.2.2:8080?token=...` con retry automatico, `Alert Confermi associazione?` → `Host pronto → Connesso LAN` + `Dispositivi nella stanza (2) Online`, Chat `LOG-` payload <2KB → Hydrated + `Approva Spostamento` su subset
+
+**Rinvio:** Full eject bare finale (`package.json:44` expo 44, `settings.gradle` expo-autolinking) rimane rinviato su richiesta utente.
