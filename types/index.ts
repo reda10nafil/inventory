@@ -9,6 +9,8 @@ export interface Product {
   images: string[];
   /** Private Google Drive links created for photo backup; kept separate from local image sources. */
   backupImageLinks?: string[];
+  /** Organization-scoped private Supabase Storage paths, aligned with `images`. */
+  storageImagePaths?: string[];
   purchasePrice?: number;
   sellPrice?: number;
   length?: number;
