@@ -20,6 +20,7 @@
 - Workspace locale: branch feature/auth-and-sync a 73f6d3b.
 - GitHub live: main a [7386308](https://github.com/reda10nafil/inventory/commit/7386308a012806df9e28955d6cd1f995178499a4); feature/auth-and-sync a 73f6d3b.
 - I branch divergono: main ha 27 commit non presenti nel feature e il feature ha 4 commit non presenti in main; base comune 741f2b1.
+- Dopo la pubblicazione dei documenti, il branch remoto feature/auth-and-sync è avanzato a 8f40e4568ce98b15733c91d1d253948615adf95f. Il checkout locale è rimasto a 73f6d3b perché il worktree Git locale non è riconosciuto correttamente.
 - main live include modifiche in App.tsx, contexts/AuthContext.tsx, schermate Auth, context inventario tenant, media privati, sync LAN, backend-auth/google/driveApi.ts e utils/csv.ts. Include test automatici CSV e mesh auth, non eseguiti qui.
 - git status non funziona nel workspace: “not a work tree”. Lo stato pulito/modificato non è verificabile. Non eseguire merge/commit locale basandosi su uno stato pulito presunto.
 - La protezione branch di main risulta disabilitata al controllo.

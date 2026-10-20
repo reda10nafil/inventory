@@ -6,6 +6,7 @@ Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecc
 
 - Creati README, piano di implementazione e cronologia nella cartella piani di implementazione.
 - Pubblicati su GitHub nel branch feature/auth-and-sync con commit 859f387722a7014dda08928b3438d1b494c266ac.
+- Aggiornata la cronologia e pubblicata la verifica finale con commit 8f40e4568ce98b15733c91d1d253948615adf95f.
 - La cronologia descrive lo stato iniziale verificato; le funzioni applicative e le prove restano aperte come indicato nel piano.
 
 ## 20 ottobre 2026 — Analisi e decisioni SaaS/backup
