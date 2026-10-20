@@ -2,6 +2,12 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 20 ottobre 2026 — Documenti creati e pubblicati
+
+- Creati README, piano di implementazione e cronologia nella cartella piani di implementazione.
+- Pubblicati su GitHub nel branch feature/auth-and-sync con commit 859f387722a7014dda08928b3438d1b494c266ac.
+- La cronologia descrive lo stato iniziale verificato; le funzioni applicative e le prove restano aperte come indicato nel piano.
+
 ## 20 ottobre 2026 — Analisi e decisioni SaaS/backup
 
 ### Attività documentali completate
