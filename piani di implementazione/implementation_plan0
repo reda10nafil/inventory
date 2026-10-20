@@ -1,0 +1,166 @@
+# Fase 4 — Schermate Tab Principali (UI)
+
+Migrazione delle 5 schermate di navigazione tab dal codice React Native/Expo originale a Flutter, utilizzando il tema Luxury Dark + Oro, i provider Riverpod 3 e `go_router` per la navigazione.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Navigazione con `go_router`**: Useremo `go_router` (già in `pubspec.yaml`) con `ShellRoute` per implementare il bottom tab bar con 5 tab. Questo approccio gestisce correttamente le route annidate (tab + stack), necessarie per le fasi successive (dettaglio prodotto, impostazioni, scanner).
+
+> [!NOTE]
+> **AddProductScreen semplificata**: In questa fase, il form di aggiunta prodotto gestirà i campi base del layout (`LayoutConfig`). Il rendering dei campi custom dinamici (`DynamicFieldRenderer`) è previsto per la Fase 8. Per ora il form supporterà: immagini, SKU, furType, posizione, cartella, prezzi, misure e note tecniche.
+
+> [!NOTE]
+> **Placeholder per azioni future**: Alcune azioni (es. navigazione a dettaglio prodotto, esecuzione automazioni, scanner) avranno route placeholder che puntano a schermate `TODO`, poiché saranno implementate nelle Fasi 5-7.
+
+---
+
+## Proposed Changes
+
+### 🧭 Navigazione & Entry Point
+
+#### [MODIFY] [main.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/main.dart)
+- Sostituire il contenuto demo (`MyApp` + `MyHomePage`) con:
+  - Inizializzazione di `StorageService` nel `main()` e override del `storageServiceProvider` nel `ProviderScope`
+  - Wrapping dell'app con `ProviderScope` di Riverpod
+  - Applicazione del tema `AppTheme.darkTheme`
+  - Configurazione di `GoRouter` con:
+    - `ShellRoute` per il layout tab con `NavigationShell`
+    - 5 route annidate: `/` (Home), `/timeline`, `/automations`, `/add`, `/settings`
+    - Route placeholder per fasi future: `/product/:id`, `/scanner`
+
+#### [NEW] [app_shell.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/screens/app_shell.dart)
+- Widget shell con `Scaffold` + `BottomNavigationBar` (5 tab)
+- Tab: Home (`grid_view`), Cronologia (`timeline`), Automazioni (`account_tree`), Aggiungi (`add_circle`), Impostazioni (`settings`)
+- Stile coerente con il tema dark + oro
+
+---
+
+### 🏠 HomeScreen — Dashboard Prodotti
+
+#### [NEW] [home_screen.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/screens/home_screen.dart)
+
+Porting fedele del [index.tsx](file:///c:/Users/Primo/Desktop/inventory/app/(tabs)/index.tsx) originale:
+
+- **Header**: Titolo "SyncroFlow Pro" + contatore prodotti filtrati + pulsante ricerca
+- **Barra ricerca**: Ricerca full-text su SKU, furType, location (toggle visibilità)
+- **Library/Folder selector**: Chip orizzontali per filtrare per libreria/cartella (Tutti + librerie personalizzate)
+- **Stat Cards**: 3 card orizzontali scrollabili (Disponibili, Venduti, Richiedono Attenzione)
+- **Filter Chips**: Filtri per stato: Tutti, Disponibili, Venduti, Attenzione, Cestino
+- **Product Grid**: `GridView` a 2 colonne con card prodotto contenenti:
+  - Immagine prodotto (placeholder se vuota)
+  - Badge stato (VENDUTO / ALERT)
+  - Info: SKU, tipo pelliccia, posizione, prezzo
+- **Selezione multipla**: Long-press per entrare in modalità selezione con checkbox, barra azioni in basso (sposta in cartella, elimina, deseleziona)
+- **Modal azioni**: Dialog per spostamento in cartella
+
+---
+
+### ⏱ TimelineScreen — Cronologia
+
+#### [NEW] [timeline_screen.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/screens/timeline_screen.dart)
+
+Porting del [timeline.tsx](file:///c:/Users/Primo/Desktop/inventory/app/(tabs)/timeline.tsx):
+
+- **Header**: "Cronologia Completa" + contatore eventi filtrati
+- **Filtri tipo evento**: Chip orizzontali (Tutti, Creati, Spostati, Modificati, Venduti, Foto)
+- **Filtri data**: Chip orizzontali (Tutti i Periodi, Oggi, Questa Settimana, Questo Mese)
+- **Lista eventi**: Card con icona colorata, titolo evento, descrizione opzionale, timestamp formattato italiano
+- **Empty state**: Icona timeline + messaggio "Nessun evento trovato"
+- Helper functions: `getEventIcon()`, `getEventColor()`, `getEventTitle()` — mappatura da `TimelineEventType`
+
+---
+
+### ⚡ AutomationsScreen — Centro Automazioni
+
+#### [NEW] [automations_screen.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/screens/automations_screen.dart)
+
+Porting del [automations.tsx](file:///c:/Users/Primo/Desktop/inventory/app/(tabs)/automations.tsx):
+
+- **Header**: "Centro Automazioni" + pulsante scanner (icona QR)
+- **Sezione "Le Mie Automazioni"**:
+  - Header con label + pulsante "Crea Nuova" (dorato)
+  - Se vuota: card dashed "Nessuna automazione personalizzata" con hint
+  - Se presenti: lista card con icona colorata, nome, conteggio step/utilizzi, chevron
+  - Long-press per eliminare con dialog conferma
+- **Sezione "Template Predefiniti"**: 4 automazioni built-in:
+  - Spostamento Rapido, Vendita Flash, Audit Posizione, Tagging di Massa
+- **Pro Tip card**: Suggerimento stampabile QR code per automazioni
+- Route placeholder per automation flow e builder
+
+---
+
+### ➕ AddProductScreen — Form Inserimento
+
+#### [NEW] [add_product_screen.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/screens/add_product_screen.dart)
+
+Implementazione del form di inserimento prodotto basata sul `LayoutConfig`:
+
+- **Header**: "Nuovo Prodotto" + pulsante salva
+- **Sezione immagini**: Area tap per aggiungere immagini (usa `image_picker`), preview grid
+- **Form dinamico**: Iterazione su `layoutProvider.visibleFields` per generare i campi:
+  - `sku`: campo testo auto-generato (con possibilità di sovrascrittura)
+  - `furType`: dropdown con opzioni da `AppConfig.furTypes`
+  - `location`: dropdown con opzioni da `locationsProvider`
+  - `folder`: dropdown con opzioni dalle librerie in `inventoryProvider`
+  - `purchasePrice` / `sellPrice`: campi numerici con prefisso €
+  - `length` / `width` / `weight`: campi numerici con unità (cm/kg)
+  - `technicalNotes`: campo testo multilinea
+  - `section_*`: intestazioni di sezione (label bold separatori)
+- **Validazione**: Minimo furType e location richiesti
+- **Salvataggio**: Chiama `inventoryProvider.addProduct()` con SKU auto-generato
+
+---
+
+### ⚙ SettingsScreen — Impostazioni
+
+#### [NEW] [settings_screen.dart](file:///c:/Users/Primo/Desktop/inventory/syncro_flow_flutter/lib/screens/settings_screen.dart)
+
+Porting del [settings.tsx](file:///c:/Users/Primo/Desktop/inventory/app/(tabs)/settings.tsx):
+
+- **Header**: "Impostazioni"
+- **Sezioni con raggruppamento**:
+  - **CONFIGURAZIONE HARDWARE**: GS1 Digital Link, Scanner & NFC
+  - **GESTIONE INVENTARIO**: Gestisci Cartelle, Campi Personalizzati, Configura Layout, Cestino, Gestisci Posizioni
+  - **CONDIVISIONE**: Configurazione Condivisione
+  - **ALERT E NOTIFICHE**: Alert Prodotti Dormienti, Suggerimenti AI
+  - **DATI E BACKUP**: Esporta Inventario, Backup Cloud
+  - **TEAM E ACCESSO**: Accesso Multi-Utente
+  - **INFO**: Card versione app con info database locale
+- **Setting rows**: Icona colorata in contenitore + titolo + descrizione + chevron
+- **Route**: Navigazione a schermate impostazioni specifiche (Fase 6). Per ora, le voci non implementate mostrano `SnackBar` "Prossimamente".
+
+---
+
+## Struttura File Risultante
+
+```
+lib/
+├── main.dart                          [MODIFY]
+├── screens/
+│   ├── app_shell.dart                 [NEW]
+│   ├── home_screen.dart               [NEW]
+│   ├── timeline_screen.dart           [NEW]
+│   ├── automations_screen.dart        [NEW]
+│   ├── add_product_screen.dart        [NEW]
+│   └── settings_screen.dart           [NEW]
+├── core/
+├── models/
+├── providers/
+└── services/
+```
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+cd c:\Users\Primo\Desktop\inventory\syncro_flow_flutter
+flutter analyze
+```
+
+### Manual Verification
+- Conferma che `flutter analyze` restituisce 0 errori e 0 avvisi
+- Verifica visiva che la struttura delle schermate corrisponda all'app React Native originale
+- Commit Git: `feat(flutter): Phase 4 - Main tab screens UI`

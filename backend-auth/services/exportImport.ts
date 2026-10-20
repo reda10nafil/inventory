@@ -1,6 +1,6 @@
 import { supabase } from '../supabase/client';
 import { exportToSheets, importFromSheets } from '../google/sheets';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 /**
@@ -34,7 +34,7 @@ export async function exportToCSV(products: any[], filename = 'inventory_export.
  */
 export async function importFromCSV(csvContent: string, operatorId: string) {
   const lines = csvContent.split('\n');
-  const products = [];
+  const products: any[] = [];
 
   // Salta header
   for (let i = 1; i < lines.length; i++) {
@@ -74,7 +74,15 @@ export async function exportToGoogleSheets(accessToken: string, operatorId: stri
 
   if (!products) return null;
 
-  const spreadsheetId = await exportToSheets(accessToken, products);
+  const formattedProducts = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description || '',
+    image_url: p.image_url || '',
+    quantity: p.quantity || 0,
+  }));
+
+  const spreadsheetId = await exportToSheets(accessToken, formattedProducts);
   return spreadsheetId;
 }
 

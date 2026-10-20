@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../backend-auth/supabase/client';
@@ -33,7 +33,7 @@ export async function importProductsFromCSV(fileUri: string, operatorId: string)
   try {
     const csvContent = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
     const lines = csvContent.split('\n').filter((line) => line.trim());
-    const products = [];
+    const products: any[] = [];
 
     for (let i = 1; i < lines.length; i++) {
       const columns = parseCSVLine(lines[i]);

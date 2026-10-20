@@ -807,7 +807,7 @@ export async function stopMeshServer(): Promise<void> {
 
 // Helpers for inspection / WS send externally
 export function getMeshServerInfo() {
-  return { port: activePort, token: activeToken, mode: serverMode, clientCount: clients.size, listening: !!(server || httpFallbackServer || serverMode === 'shim') };
+  return { port: activePort, token: activeToken, mode: serverMode, clientCount: clients.size, listening: !!(server || httpFallbackServer) };
 }
 export function broadcastToMeshClients(obj: any) { broadcastWs(obj); }
 export function sendToMeshClient(socket: any, obj: any) { sendWs(socket, obj); }

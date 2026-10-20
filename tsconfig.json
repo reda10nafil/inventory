@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["DOM", "ESNext"],
+    "lib": [
+      "DOM",
+      "ESNext"
+    ],
     "allowJs": true,
     "jsx": "react-native",
     "strict": true,
@@ -9,18 +12,45 @@
     "module": "preserve",
     "moduleDetection": "force",
     "moduleResolution": "bundler",
-    "customConditions": ["react-native"],
+    "customConditions": [
+      "react-native"
+    ],
     "noEmit": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["react-native"],
+    "types": [
+      "react-native"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "index.js", "App.tsx"],
-  "exclude": ["node_modules", "android", "ios", ".expo", "syncro_flow_flutter", "__tests__", "e2e", "jest.config.js", "jest.setup.js", ".detoxrc.js", "scripts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts",
+    "index.js",
+    "App.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "android",
+    "ios",
+    ".expo",
+    "syncro_flow_flutter",
+    "__tests__",
+    "e2e",
+    "jest.config.js",
+    "jest.setup.js",
+    ".detoxrc.js",
+    "scripts"
+  ],
+  "extends": "expo/tsconfig.base"
 }

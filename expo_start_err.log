@@ -1,0 +1,13 @@
+The following packages should be updated for best compatibility with the installed expo version:
+  expo@54.0.35 - expected version: ~54.0.37
+  expo-constants@18.0.13 - expected version: ~18.0.14
+  expo-file-system@19.0.23 - expected version: ~19.0.24
+  expo-local-authentication@17.0.8 - expected version: ~17.0.9
+  expo-modules-autolinking@56.0.14 - expected version: ~3.0.22
+  expo-screen-capture@8.0.9 - expected version: ~8.0.10
+Your project may not work correctly until you install the expected versions of the packages.
+› The expo-dev-client package is installed, but a development build is not installed on S25_Ultra_API35.
+Launching in Expo Go. If you want to use a development build, you need to create and install one first.
+Learn more: https://docs.expo.dev/development/build/
+TypeError: fetch failed
+TypeError: fetch failed

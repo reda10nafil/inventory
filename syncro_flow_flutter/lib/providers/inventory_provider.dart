@@ -269,6 +269,23 @@ class InventoryNotifier extends Notifier<InventoryState> {
     await _saveTimeline();
   }
 
+  Future<void> batchMoveToLibrary(List<String> productIds, String? libraryId) async {
+    final now = DateTime.now();
+    final updatedProducts = state.products.map((p) {
+      if (productIds.contains(p.id)) {
+        return p.copyWith(
+          libraryId: libraryId,
+          clearLibraryId: libraryId == null,
+          updatedAt: now,
+        );
+      }
+      return p;
+    }).toList();
+
+    state = state.copyWith(products: updatedProducts);
+    await _saveProducts();
+  }
+
   Future<void> moveProduct(String id, String newLocation) async {
     final product = getProductById(id);
     if (product == null) return;

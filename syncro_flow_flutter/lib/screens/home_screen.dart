@@ -924,18 +924,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  void _handleMoveToLibrary(String? libraryId) {
-    // TODO: Implement batch move when updateProduct supports libraryId update
+  void _handleMoveToLibrary(String? libraryId) async {
+    final count = _selectedIds.length;
+    await ref.read(inventoryProvider.notifier).batchMoveToLibrary(_selectedIds, libraryId);
+    if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     if (libraryId == null) {
       messenger.showSnackBar(
-        SnackBar(content: Text('${_selectedIds.length} prodotti rimossi dalla cartella')),
+        SnackBar(content: Text('$count prodotti rimossi dalla cartella')),
       );
     } else {
       final libraries = ref.read(inventoryProvider).libraries;
-      final libName = libraries.firstWhere((l) => l.id == libraryId).name;
+      final libName = libraries.firstWhere(
+        (l) => l.id == libraryId,
+        orElse: () => LibraryModel(id: libraryId, name: libraryId, icon: '', fields: [], createdAt: DateTime.now()),
+      ).name;
       messenger.showSnackBar(
-        SnackBar(content: Text('${_selectedIds.length} prodotti spostati in "$libName"')),
+        SnackBar(content: Text('$count prodotti spostati in "$libName"')),
       );
     }
     _exitSelectionMode();

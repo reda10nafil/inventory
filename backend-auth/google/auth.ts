@@ -1,8 +1,10 @@
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
-const REDIRECT_URI = makeRedirectUri({
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const REDIRECT_URI = AuthSession.makeRedirectUri({
   scheme: 'com.synchroflow',
   path: 'oauth/callback'
 });
@@ -19,20 +21,32 @@ export const discovery = {
  * Inizia il flusso di login con Google
  */
 export async function signInWithGoogle() {
-  const result = await Google.signInAsync({
-    clientId: GOOGLE_CLIENT_ID,
-    redirectUri: REDIRECT_URI,
-    scopes: ['profile', 'email', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/spreadsheets']
-  });
+  try {
+    const request = new AuthSession.AuthRequest({
+      clientId: GOOGLE_CLIENT_ID,
+      redirectUri: REDIRECT_URI,
+      scopes: [
+        'profile',
+        'email',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/spreadsheets'
+      ],
+      responseType: AuthSession.ResponseType.Token
+    });
 
-  if (result.type === 'success') {
-    const { idToken, accessToken } = result.params;
-    return {
-      success: true,
-      idToken,
-      accessToken,
-      user: result.user
-    };
+    const result = await request.promptAsync(discovery);
+
+    if (result.type === 'success' && result.params) {
+      const { id_token, access_token } = result.params;
+      return {
+        success: true,
+        idToken: id_token,
+        accessToken: access_token,
+        user: undefined
+      };
+    }
+  } catch (error) {
+    console.error('Errore signInWithGoogle:', error);
   }
 
   return { success: false };
@@ -42,7 +56,11 @@ export async function signInWithGoogle() {
  * Logout da Google
  */
 export async function signOut() {
-  await Google.signOutAsync();
+  try {
+    await AuthSession.dismiss();
+  } catch (error) {
+    console.warn('Errore durante signOut:', error);
+  }
 }
 
 export default { signInWithGoogle, signOut, discovery };

@@ -54,10 +54,12 @@ export class OperatorSync {
    * Ottieni tutti gli operatori collegati allo stesso account
    */
   async getLinkedOperators() {
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return [];
     const { data } = await supabase
       .from('operators')
       .select('*, users(*)')
-      .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+      .eq('user_id', user.id);
 
     return data || [];
   }

@@ -1,0 +1,47 @@
+const fs=require('fs');
+const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+const toRemove=[
+  "@expo-google-fonts/inter",
+  "@expo/metro-runtime",
+  "@expo/styleguide-native",
+  "expo-application",
+  "expo-asset",
+  "expo-audio",
+  "expo-blur",
+  "expo-calendar",
+  "expo-constants",
+  "expo-contacts",
+  "expo-crypto",
+  "expo-dev-client",
+  "expo-device",
+  "expo-font",
+  "expo-gl",
+  "expo-haptics",
+  "expo-linking",
+  "expo-local-authentication",
+  "expo-localization",
+  "expo-location",
+  "expo-mail-composer",
+  "expo-manifests",
+  "expo-media-library",
+  "expo-modules-autolinking",
+  "expo-navigation-bar",
+  "expo-network",
+  "expo-notifications",
+  "expo-screen-capture",
+  "expo-screen-orientation",
+  "expo-secure-store",
+  "expo-sensors",
+  "expo-speech",
+  "expo-splash-screen",
+  "expo-sqlite",
+  "expo-status-bar",
+  "expo-store-review",
+  "expo-symbols",
+  "expo-system-ui",
+  "expo-task-manager",
+  "expo-video"
+];
+for(const k of toRemove) delete pkg.dependencies[k];
+fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+console.log('removed',toRemove.length);

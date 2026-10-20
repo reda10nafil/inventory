@@ -187,6 +187,7 @@ class Product {
     bool? isFragile,
     String? barcode,
     String? nfcTag,
+    bool clearLibraryId = false,
   }) {
     return Product(
       id: id ?? this.id,
@@ -208,7 +209,7 @@ class Product {
       lastScannedAt: lastScannedAt ?? this.lastScannedAt,
       soldAt: soldAt ?? this.soldAt,
       deletedAt: deletedAt ?? this.deletedAt,
-      libraryId: libraryId ?? this.libraryId,
+      libraryId: clearLibraryId ? null : (libraryId ?? this.libraryId),
       gs1DigitalLink: gs1DigitalLink ?? this.gs1DigitalLink,
       isFragile: isFragile ?? this.isFragile,
       barcode: barcode ?? this.barcode,

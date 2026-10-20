@@ -5,7 +5,7 @@ import { supabase } from '../backend-auth/supabase/client';
 import { useAuth as useAuthContext } from '../contexts/AuthContext';
 
 export function useOperator() {
-  const { user, operatorId } = useAuthContext;
+  const { user, operatorId } = useAuthContext();
   const [operator, setOperator] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
