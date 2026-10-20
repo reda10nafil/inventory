@@ -1,8 +1,11 @@
 // FurInventory Pro - Inventory Context
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product, TimelineEvent, Alert } from '../types';
-import { mockProducts, mockTimeline, isDormant, needsPromotion } from '../services/mockData';
+import { isDormant, needsPromotion } from '../services/mockData';
+import { useAuth } from './AuthContext';
+import { supabase } from '../backend-auth/supabase/client';
+import { ensureOrganizationDriveFolder, uploadLocalUriToDrive } from '../backend-auth/google/driveApi';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
 export interface Library {
@@ -10,6 +13,7 @@ export interface Library {
   name: string;
   icon: string;
   createdAt: string;
+  updatedAt?: string;
   barcode?: string;
   nfcTag?: string;
 }
@@ -53,60 +57,173 @@ export const useInventory = () => {
 };
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
+  const { organizationId, session, user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [libraries, setLibraries] = useState<Library[]>(DEFAULT_LIBRARIES);
+  const [deletedProductIds, setDeletedProductIds] = useState<string[]>([]);
+  const loadedOrganization = useRef<string | null>(null);
+  const lastRemoteUpdate = useRef<string | null>(null);
+  const uploadingMedia = useRef(new Set<string>());
+  const backedUpMedia = useRef(new Set<string>());
 
-  // Load data from AsyncStorage
+  // Local state is keyed by organization; no operator can read another account's cache.
   useEffect(() => {
-    loadData();
-  }, []);
-
-  // Save data to AsyncStorage
-  useEffect(() => {
-    if (products.length > 0) {
-      AsyncStorage.setItem('products', JSON.stringify(products));
+    let active = true;
+    loadedOrganization.current = null;
+    lastRemoteUpdate.current = null;
+    backedUpMedia.current.clear();
+    if (!organizationId) {
+      setProducts([]); setTimeline([]); setAlerts([]); setLibraries(DEFAULT_LIBRARIES); setDeletedProductIds([]);
+      return;
     }
-  }, [products]);
+    void loadData(organizationId).then(() => {
+      if (active) loadedOrganization.current = organizationId;
+    });
+    return () => { active = false; };
+  }, [organizationId]);
 
+  // Persist offline immediately and coalesce cloud writes while editing.
   useEffect(() => {
-    if (timeline.length > 0) {
-      AsyncStorage.setItem('timeline', JSON.stringify(timeline));
-    }
-  }, [timeline]);
+    if (!organizationId || loadedOrganization.current !== organizationId) return;
+    const prefix = `inventory:v1:${organizationId}`;
+    const serialized = { products, timeline, alerts, libraries, deleted_product_ids: deletedProductIds };
+    void Promise.all(Object.entries(serialized).map(([key, value]) =>
+      AsyncStorage.setItem(`${prefix}:${key}`, JSON.stringify(value)),
+    ));
 
-  useEffect(() => {
-    if (alerts.length > 0) {
-      AsyncStorage.setItem('alerts', JSON.stringify(alerts));
-    }
-  }, [alerts]);
+    const timer = setTimeout(() => {
+      void (supabase as any).rpc('merge_inventory_snapshot', {
+        target_organization_id: organizationId,
+        incoming_products: products,
+        incoming_timeline: timeline,
+        incoming_alerts: alerts,
+        incoming_libraries: libraries,
+        incoming_deleted_product_ids: deletedProductIds,
+      }).then(({ data, error }: { data: any; error: unknown }) => {
+          if (error) console.warn('Inventario salvato sul dispositivo; sincronizzazione cloud non riuscita.', error);
+          else if (data) {
+            lastRemoteUpdate.current = data.updated_at;
+            if (JSON.stringify(data.products) !== JSON.stringify(products)) setProducts(data.products || []);
+            if (JSON.stringify(data.timeline) !== JSON.stringify(timeline)) setTimeline(data.timeline || []);
+            if (JSON.stringify(data.alerts) !== JSON.stringify(alerts)) setAlerts(data.alerts || []);
+            if (JSON.stringify(data.libraries) !== JSON.stringify(libraries)) setLibraries(data.libraries || DEFAULT_LIBRARIES);
+            if (JSON.stringify(data.deleted_product_ids) !== JSON.stringify(deletedProductIds)) setDeletedProductIds(data.deleted_product_ids || []);
+          }
+        });
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [organizationId, products, timeline, alerts, libraries, deletedProductIds]);
 
+  // Realtime propagation keeps operator profiles in the same organization in sync.
   useEffect(() => {
-    AsyncStorage.setItem('libraries', JSON.stringify(libraries));
-  }, [libraries]);
+    if (!organizationId) return;
+    const channel = supabase.channel(`inventory:${organizationId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'organization_inventory_snapshots',
+        filter: `organization_id=eq.${organizationId}`,
+      }, (payload: any) => {
+        if (payload.eventType === 'DELETE' || !payload.new) return;
+        const incoming = payload.new;
+        if (incoming.updated_by === user?.id) return;
+        if (lastRemoteUpdate.current && incoming.updated_at <= lastRemoteUpdate.current) return;
+        lastRemoteUpdate.current = incoming.updated_at;
+        loadedOrganization.current = organizationId;
+        setProducts(Array.isArray(incoming.products) ? incoming.products : []);
+        setTimeline(Array.isArray(incoming.timeline) ? incoming.timeline : []);
+        setAlerts(Array.isArray(incoming.alerts) ? incoming.alerts : []);
+        setLibraries(Array.isArray(incoming.libraries) && incoming.libraries.length ? incoming.libraries : DEFAULT_LIBRARIES);
+        setDeletedProductIds(Array.isArray(incoming.deleted_product_ids) ? incoming.deleted_product_ids : []);
+      }).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [organizationId, user?.id]);
+
+  // Back up local product photos to the signed-in operator's private Drive.
+  useEffect(() => {
+    const token = (session as any)?.provider_token as string | undefined;
+    if (!organizationId || !token || !products.length) return;
+    const localImages = products.flatMap((product) => (product.images || [])
+      .map((uri, index) => ({ product, uri, index }))
+      .filter(({ uri }) => !/^https?:\/\//i.test(uri) && !uploadingMedia.current.has(uri) && !backedUpMedia.current.has(uri)));
+    if (!localImages.length) return;
+    let cancelled = false;
+    void ensureOrganizationDriveFolder(token, organizationId).then(async (folderId) => {
+      await Promise.all(localImages.map(async ({ product, uri, index }) => {
+        uploadingMedia.current.add(uri);
+        try {
+          const extension = uri.match(/\.([a-z0-9]{2,5})(?:[?#]|$)/i)?.[1] || 'jpg';
+          const uploaded = await uploadLocalUriToDrive(token, folderId, uri, `${product.sku}_${index + 1}.${extension}`);
+          if (cancelled) return;
+          if (!uploaded.webViewLink) throw new Error('Drive non ha restituito il link al file.');
+          backedUpMedia.current.add(uri);
+          setProducts((current) => current.map((item) => item.id !== product.id ? item : {
+            ...item,
+            backupImageLinks: Array.from(new Set([...(item.backupImageLinks || []), uploaded.webViewLink!])),
+            updatedAt: new Date().toISOString(),
+          }));
+        } catch (error) {
+          console.warn(`Backup Drive non riuscito per ${product.sku}.`, error);
+        } finally {
+          uploadingMedia.current.delete(uri);
+        }
+      }));
+    }).catch((error) => console.warn('Backup foto su Google Drive non riuscito.', error));
+    return () => { cancelled = true; };
+  }, [organizationId, session, products]);
 
   // Generate alerts for dormant products and promotion suggestions
   useEffect(() => {
     generateAlerts();
   }, [products]);
 
-  const loadData = async () => {
+  const loadData = async (orgId: string) => {
     try {
-      const productsData = await AsyncStorage.getItem('products');
-      const timelineData = await AsyncStorage.getItem('timeline');
-      const alertsData = await AsyncStorage.getItem('alerts');
-      const librariesData = await AsyncStorage.getItem('libraries');
+      const prefix = `inventory:v1:${orgId}`;
+      const keys = ['products', 'timeline', 'alerts', 'libraries', 'deleted_product_ids'] as const;
+      let localValues = await Promise.all(keys.map((key) => AsyncStorage.getItem(`${prefix}:${key}`)));
 
-      setProducts(productsData ? JSON.parse(productsData) : mockProducts);
-      setTimeline(timelineData ? JSON.parse(timelineData) : mockTimeline);
-      setAlerts(alertsData ? JSON.parse(alertsData) : []);
-      setLibraries(librariesData ? JSON.parse(librariesData) : DEFAULT_LIBRARIES);
+      // Move the pre-tenant local inventory to the first authenticated workspace once.
+      const migrationKey = `inventory:migrated:${orgId}`;
+      if (localValues.every((value) => value == null) && await AsyncStorage.getItem(migrationKey) !== 'yes') {
+        const legacy = await Promise.all(keys.slice(0, 4).map((key) => AsyncStorage.getItem(key)));
+        if (legacy.some((value) => value != null)) {
+          await Promise.all(keys.slice(0, 4).map((key, index) => legacy[index] == null
+            ? Promise.resolve()
+            : AsyncStorage.setItem(`${prefix}:${key}`, legacy[index]!)));
+          await Promise.all(keys.slice(0, 4).map((key) => AsyncStorage.removeItem(key)));
+          localValues = legacy;
+        }
+        await AsyncStorage.setItem(migrationKey, 'yes');
+      }
+
+      const { data: cloud, error: cloudError } = await (supabase as any)
+        .from('organization_inventory_snapshots').select('*').eq('organization_id', orgId).maybeSingle();
+      if (cloudError) console.warn('Uso i dati locali: il backup cloud non è raggiungibile.', cloudError);
+
+      if (cloud) {
+        lastRemoteUpdate.current = cloud.updated_at;
+        setProducts(Array.isArray(cloud.products) ? cloud.products : []);
+        setTimeline(Array.isArray(cloud.timeline) ? cloud.timeline : []);
+        setAlerts(Array.isArray(cloud.alerts) ? cloud.alerts : []);
+        setLibraries(Array.isArray(cloud.libraries) && cloud.libraries.length ? cloud.libraries : DEFAULT_LIBRARIES);
+        setDeletedProductIds(Array.isArray(cloud.deleted_product_ids) ? cloud.deleted_product_ids : []);
+        await Promise.all(keys.map((key) => AsyncStorage.setItem(`${prefix}:${key}`, JSON.stringify(cloud[key] ?? []))));
+      } else {
+        const parsed = localValues.map((value) => value ? JSON.parse(value) : null);
+        setProducts(Array.isArray(parsed[0]) ? parsed[0] : []);
+        setTimeline(Array.isArray(parsed[1]) ? parsed[1] : []);
+        setAlerts(Array.isArray(parsed[2]) ? parsed[2] : []);
+        setLibraries(Array.isArray(parsed[3]) ? parsed[3] : DEFAULT_LIBRARIES);
+        setDeletedProductIds(Array.isArray(parsed[4]) ? parsed[4] : []);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
-      setProducts(mockProducts);
-      setTimeline(mockTimeline);
+      setProducts([]);
+      setTimeline([]);
+      setAlerts([]);
       setLibraries(DEFAULT_LIBRARIES);
+      setDeletedProductIds([]);
     }
   };
 
@@ -142,10 +259,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Merge with existing non-dismissed alerts
-    const existingAlertIds = new Set(alerts.filter((a) => a.dismissed).map((a) => a.id));
+    const dismissedAlerts = new Map(alerts.filter((a) => a.dismissed).map((a) => [a.id, a]));
     const mergedAlerts = [
-      ...newAlerts,
-      ...alerts.filter((a) => existingAlertIds.has(a.id)),
+      ...newAlerts.filter((alert) => !dismissedAlerts.has(alert.id)),
+      ...Array.from(dismissedAlerts.values()),
     ];
 
     setAlerts(mergedAlerts);
@@ -280,6 +397,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   const permanentlyDeleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    setDeletedProductIds((prev) => prev.includes(id) ? prev : [...prev, id]);
   };
 
   const moveProduct = (id: string, newLocation: string) => {
@@ -363,7 +481,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   const dismissAlert = (alertId: string) => {
     setAlerts((prev) =>
-      prev.map((a) => (a.id === alertId ? { ...a, dismissed: true } : a))
+      prev.map((a) => (a.id === alertId ? { ...a, dismissed: true, updatedAt: new Date().toISOString() } : a))
     );
   };
 
@@ -437,7 +555,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   const updateLibrary = (id: string, updates: Partial<Library>) => {
     setLibraries((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, ...updates } : l))
+      prev.map((l) => (l.id === id ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l))
     );
   };
 
