@@ -5,7 +5,7 @@ import { Product, TimelineEvent, Alert } from '../types';
 import { isDormant, needsPromotion } from '../services/mockData';
 import { useAuth } from './AuthContext';
 import { supabase } from '../backend-auth/supabase/client';
-import { ensureOrganizationDriveFolder, uploadLocalUriToDrive } from '../backend-auth/google/driveApi';
+import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
 export interface Library {
@@ -21,6 +21,20 @@ export interface Library {
 const DEFAULT_LIBRARIES: Library[] = [
   { id: 'pellicce', name: 'Pellicce', icon: 'inventory', createdAt: new Date().toISOString() },
 ];
+
+async function hydrateSharedProductImages(items: Product[]): Promise<Product[]> {
+  return Promise.all(items.map(async (product) => {
+    const paths = product.storageImagePaths || [];
+    if (!paths.some(Boolean)) return product;
+    const images = [...(product.images || [])];
+    await Promise.all(paths.map(async (path, index) => {
+      if (!path) return;
+      const { data, error } = await supabase.storage.from('organization-media').createSignedUrl(path, 60 * 60 * 24 * 7);
+      if (!error && data?.signedUrl) images[index] = data.signedUrl;
+    }));
+    return { ...product, images };
+  }));
+}
 
 interface InventoryContextType {
   products: Product[];
@@ -130,7 +144,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         if (lastRemoteUpdate.current && incoming.updated_at <= lastRemoteUpdate.current) return;
         lastRemoteUpdate.current = incoming.updated_at;
         loadedOrganization.current = organizationId;
-        setProducts(Array.isArray(incoming.products) ? incoming.products : []);
+        void hydrateSharedProductImages(Array.isArray(incoming.products) ? incoming.products : []).then(setProducts);
         setTimeline(Array.isArray(incoming.timeline) ? incoming.timeline : []);
         setAlerts(Array.isArray(incoming.alerts) ? incoming.alerts : []);
         setLibraries(Array.isArray(incoming.libraries) && incoming.libraries.length ? incoming.libraries : DEFAULT_LIBRARIES);
@@ -139,27 +153,52 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return () => { void supabase.removeChannel(channel); };
   }, [organizationId, user?.id]);
 
-  // Back up local product photos to the signed-in operator's private Drive.
+  // Keep product photos in tenant-private Storage for team sync; copy them to private Drive too when authorized.
   useEffect(() => {
     const token = (session as any)?.provider_token as string | undefined;
-    if (!organizationId || !token || !products.length) return;
+    if (!organizationId || !products.length) return;
     const localImages = products.flatMap((product) => (product.images || [])
       .map((uri, index) => ({ product, uri, index }))
       .filter(({ uri }) => !/^https?:\/\//i.test(uri) && !uploadingMedia.current.has(uri) && !backedUpMedia.current.has(uri)));
     if (!localImages.length) return;
     let cancelled = false;
-    void ensureOrganizationDriveFolder(token, organizationId).then(async (folderId) => {
+    void (token ? ensureOrganizationDriveFolder(token, organizationId).catch((error) => {
+      console.warn('Cartella Google Drive non disponibile; salvo comunque le foto nel cloud del team.', error);
+      return null;
+    }) : Promise.resolve(null)).then(async (folderId) => {
       await Promise.all(localImages.map(async ({ product, uri, index }) => {
         uploadingMedia.current.add(uri);
         try {
           const extension = uri.match(/\.([a-z0-9]{2,5})(?:[?#]|$)/i)?.[1] || 'jpg';
-          const uploaded = await uploadLocalUriToDrive(token, folderId, uri, `${product.sku}_${index + 1}.${extension}`);
+          const response = await fetch(uri);
+          if (!response.ok) throw new Error('Il file locale non è leggibile.');
+          const blob = await response.blob();
+          const path = `${organizationId}/${product.id}/${Date.now()}_${index + 1}.${extension}`;
+          const [storageResult, driveResult] = await Promise.all([
+            supabase.storage.from('organization-media').upload(path, blob, {
+              contentType: blob.type || 'image/jpeg', upsert: true,
+            }).then(async ({ error }) => {
+              if (error) throw error;
+              const { data, error: signedError } = await supabase.storage.from('organization-media').createSignedUrl(path, 60 * 60 * 24 * 7);
+              if (signedError) throw signedError;
+              return { path, url: data.signedUrl };
+            }).catch((error) => ({ error })),
+            folderId && token
+              ? uploadDriveFile(token, folderId, `${product.sku}_${index + 1}.${extension}`, blob, blob.type)
+                .then((file) => ({ link: file.webViewLink }))
+                .catch((error) => ({ error }))
+              : Promise.resolve({ link: undefined }),
+          ]);
           if (cancelled) return;
-          if (!uploaded.webViewLink) throw new Error('Drive non ha restituito il link al file.');
-          backedUpMedia.current.add(uri);
+          const shared = 'url' in storageResult ? storageResult : null;
+          const driveLink = 'link' in driveResult ? driveResult.link : undefined;
+          if (!shared && !driveLink) throw new Error('Nessun backup cloud è riuscito per questa foto.');
+          if (shared) backedUpMedia.current.add(uri);
           setProducts((current) => current.map((item) => item.id !== product.id ? item : {
             ...item,
-            backupImageLinks: Array.from(new Set([...(item.backupImageLinks || []), uploaded.webViewLink!])),
+            images: item.images.map((image) => image === uri && shared ? shared.url : image),
+            storageImagePaths: shared ? item.images.map((image, imageIndex) => imageIndex === index ? shared.path : item.storageImagePaths?.[imageIndex] || '') : item.storageImagePaths,
+            backupImageLinks: driveLink ? Array.from(new Set([...(item.backupImageLinks || []), driveLink])) : item.backupImageLinks,
             updatedAt: new Date().toISOString(),
           }));
         } catch (error) {
@@ -168,7 +207,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           uploadingMedia.current.delete(uri);
         }
       }));
-    }).catch((error) => console.warn('Backup foto su Google Drive non riuscito.', error));
+    }).catch((error) => console.warn('Backup foto cloud non riuscito.', error));
     return () => { cancelled = true; };
   }, [organizationId, session, products]);
 
@@ -203,15 +242,16 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
       if (cloud) {
         lastRemoteUpdate.current = cloud.updated_at;
-        setProducts(Array.isArray(cloud.products) ? cloud.products : []);
+        const cloudProducts = await hydrateSharedProductImages(Array.isArray(cloud.products) ? cloud.products : []);
+        setProducts(cloudProducts);
         setTimeline(Array.isArray(cloud.timeline) ? cloud.timeline : []);
         setAlerts(Array.isArray(cloud.alerts) ? cloud.alerts : []);
         setLibraries(Array.isArray(cloud.libraries) && cloud.libraries.length ? cloud.libraries : DEFAULT_LIBRARIES);
         setDeletedProductIds(Array.isArray(cloud.deleted_product_ids) ? cloud.deleted_product_ids : []);
-        await Promise.all(keys.map((key) => AsyncStorage.setItem(`${prefix}:${key}`, JSON.stringify(cloud[key] ?? []))));
+        await Promise.all(keys.map((key) => AsyncStorage.setItem(`${prefix}:${key}`, JSON.stringify(key === 'products' ? cloudProducts : cloud[key] ?? []))));
       } else {
         const parsed = localValues.map((value) => value ? JSON.parse(value) : null);
-        setProducts(Array.isArray(parsed[0]) ? parsed[0] : []);
+        setProducts(await hydrateSharedProductImages(Array.isArray(parsed[0]) ? parsed[0] : []));
         setTimeline(Array.isArray(parsed[1]) ? parsed[1] : []);
         setAlerts(Array.isArray(parsed[2]) ? parsed[2] : []);
         setLibraries(Array.isArray(parsed[3]) ? parsed[3] : DEFAULT_LIBRARIES);
