@@ -1,6 +1,7 @@
 // FurInventory Pro - Locations Context with AsyncStorage persistence
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 
 const STORAGE_KEY = 'furinventory_locations';
 
@@ -38,18 +39,21 @@ interface LocationsContextType {
 const LocationsContext = createContext<LocationsContextType | undefined>(undefined);
 
 export function LocationsProvider({ children }: { children: ReactNode }) {
+    const { organizationId } = useAuth();
     const [locations, setLocations] = useState<Location[]>(DEFAULT_LOCATIONS);
     const [loading, setLoading] = useState(true);
 
     // Load locations from AsyncStorage on mount
     useEffect(() => {
-        loadLocations();
-    }, []);
+        if (organizationId) loadLocations();
+        else { setLocations(DEFAULT_LOCATIONS); setLoading(false); }
+    }, [organizationId]);
 
     const loadLocations = async () => {
         try {
             setLoading(true);
-            const stored = await AsyncStorage.getItem(STORAGE_KEY);
+            if (!organizationId) return;
+            const stored = await AsyncStorage.getItem(`${STORAGE_KEY}:${organizationId}`);
             if (stored) {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -66,7 +70,7 @@ export function LocationsProvider({ children }: { children: ReactNode }) {
     // Save locations to AsyncStorage
     const saveLocations = async (newLocations: Location[]) => {
         try {
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newLocations));
+            if (organizationId) await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(newLocations));
         } catch (error) {
             console.error('Error saving locations:', error);
         }
