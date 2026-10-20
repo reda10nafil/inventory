@@ -11,6 +11,10 @@ export interface Product {
   backupImageLinks?: string[];
   /** Organization-scoped private Supabase Storage paths, aligned with `images`. */
   storageImagePaths?: string[];
+  /** Storage object paths for custom document/image fields, keyed by custom field id. */
+  storageCustomDataPaths?: Record<string, string[]>;
+  /** Private Drive backup links for custom document/image fields, keyed by custom field id. */
+  backupCustomDataLinks?: Record<string, string[]>;
   purchasePrice?: number;
   sellPrice?: number;
   length?: number;
