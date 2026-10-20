@@ -75,7 +75,7 @@ export default function SettingsScreen() {
   const exportToCSV = async () => {
     try {
       const csvContent = stringifyCsv([
-        ['SKU', 'Tipo Pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link'],
+        ['SKU', 'Tipo Pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
         ...products.map((product) => [
           product.sku,
           product.furType,
@@ -91,6 +91,7 @@ export default function SettingsScreen() {
           JSON.stringify(product.backupImageLinks?.length ? product.backupImageLinks : (product.images || []).filter((uri) => /^https?:\/\//i.test(uri))),
           JSON.stringify(product.customData || []),
           product.gs1DigitalLink,
+          JSON.stringify(product.backupCustomDataLinks || {}),
         ]),
       ]);
 
@@ -130,12 +131,12 @@ export default function SettingsScreen() {
     setCloudBackupBusy(true);
     try {
       const values = [
-        ['SKU', 'Tipo Pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link'],
+        ['SKU', 'Tipo Pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
         ...products.map((product) => [
           product.sku, product.furType, product.location, product.status,
           product.purchasePrice, product.sellPrice, product.length, product.width, product.weight,
           product.technicalNotes, product.productionDate, JSON.stringify(product.backupImageLinks?.length ? product.backupImageLinks : (product.images || []).filter((uri) => /^https?:\/\//i.test(uri))),
-          JSON.stringify(product.customData || []), product.gs1DigitalLink,
+          JSON.stringify(product.customData || []), product.gs1DigitalLink, JSON.stringify(product.backupCustomDataLinks || {}),
         ]),
       ];
       const content = stringifyCsv(values);
@@ -191,6 +192,7 @@ export default function SettingsScreen() {
     const customDataIndex = column('dati personalizzati json', 'custom data json');
     const productionDateIndex = column('data produzione', 'production date');
     const gs1Index = column('gs1 digital link', 'gs1');
+    const backupAttachmentsIndex = column('link allegati drive json', 'drive attachments json');
 
     let imported = 0;
     let skipped = 0;
@@ -221,6 +223,7 @@ export default function SettingsScreen() {
         status,
         images: Array.isArray(images) ? images.filter((image) => !/drive\.google\.com/i.test(image)) : [],
         backupImageLinks,
+        backupCustomDataLinks: jsonAt(row, backupAttachmentsIndex, {}),
         purchasePrice: numberAt(row, column('prezzo acquisto', 'purchase price')),
         sellPrice: numberAt(row, column('prezzo vendita', 'sell price')),
         length: numberAt(row, column('lunghezza', 'length')),
@@ -586,7 +589,7 @@ export default function SettingsScreen() {
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>{cloudBackupBusy ? 'Backup in corso…' : 'Backup Google Drive'}</Text>
               <Text style={styles.settingDescription}>
-                Copia privata di CSV e foto collegate ai prodotti
+                Copia privata di CSV, fogli, foto e allegati
               </Text>
             </View>
           </View>
