@@ -1,6 +1,7 @@
 // FurInventory Pro - GS1 Digital Link Configuration Context
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 import { GS1Config, DEFAULT_GS1_CONFIG } from '../utils/gs1';
 
 const STORAGE_KEY = 'furinventory_gs1_config';
@@ -15,17 +16,20 @@ interface GS1ConfigContextType {
 const GS1ConfigContext = createContext<GS1ConfigContextType | undefined>(undefined);
 
 export function GS1ConfigProvider({ children }: { children: ReactNode }) {
+  const { organizationId } = useAuth();
   const [gs1Config, setGS1Config] = useState<GS1Config>(DEFAULT_GS1_CONFIG);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadConfig();
-  }, []);
+    if (organizationId) loadConfig();
+    else { setGS1Config(DEFAULT_GS1_CONFIG); setLoading(false); }
+  }, [organizationId]);
 
   const loadConfig = async () => {
     try {
       setLoading(true);
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      if (!organizationId) return;
+      const stored = await AsyncStorage.getItem(`${STORAGE_KEY}:${organizationId}`);
       if (stored) {
         const parsed = JSON.parse(stored);
         // Merge with defaults to handle new fields added in updates
@@ -40,7 +44,7 @@ export function GS1ConfigProvider({ children }: { children: ReactNode }) {
 
   const saveConfig = async (config: GS1Config) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      if (organizationId) await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(config));
     } catch (error) {
       console.error('Error saving GS1 config:', error);
     }
