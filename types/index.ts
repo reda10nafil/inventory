@@ -7,6 +7,8 @@ export interface Product {
   location: string;
   status: 'available' | 'sold' | 'archived';
   images: string[];
+  /** Private Google Drive links created for photo backup; kept separate from local image sources. */
+  backupImageLinks?: string[];
   purchasePrice?: number;
   sellPrice?: number;
   length?: number;
@@ -85,5 +87,6 @@ export interface Alert {
   type: 'dormant' | 'promotion_suggestion';
   message: string;
   createdAt: string;
+  updatedAt?: string;
   dismissed: boolean;
 }
