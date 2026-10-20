@@ -2,6 +2,7 @@
 // Manages the configurable layout for Add Product screen
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 
 // Types
 export type FieldSize = 'small' | 'medium' | 'full'; // 33%, 50%, 100%
@@ -84,17 +85,20 @@ interface LayoutContextType {
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
 export function LayoutProvider({ children }: { children: ReactNode }) {
+    const { organizationId } = useAuth();
     const [layout, setLayout] = useState<LayoutConfig>(DEFAULT_LAYOUT);
     const [loading, setLoading] = useState(true);
 
     // Load saved layout on mount
     useEffect(() => {
-        loadLayout();
-    }, []);
+        if (organizationId) loadLayout();
+        else { setLayout(DEFAULT_LAYOUT); setLoading(false); }
+    }, [organizationId]);
 
     const loadLayout = async () => {
         try {
-            const stored = await AsyncStorage.getItem(STORAGE_KEY);
+            if (!organizationId) return;
+            const stored = await AsyncStorage.getItem(`${STORAGE_KEY}:${organizationId}`);
             if (stored) {
                 const parsed = JSON.parse(stored);
                 // Migrate to new layout if version is outdated
@@ -102,7 +106,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
                     console.log('Migrating to new layout version...');
                     setLayout(DEFAULT_LAYOUT);
                     // Auto-save the new default
-                    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_LAYOUT));
+                    await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(DEFAULT_LAYOUT));
                 } else {
                     setLayout(parsed);
                 }
@@ -116,7 +120,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
 
     const saveLayout = async () => {
         try {
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+            if (!organizationId) return;
+            await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(layout));
         } catch (error) {
             console.error('Error saving layout:', error);
             throw error;
