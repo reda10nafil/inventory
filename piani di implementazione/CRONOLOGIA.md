@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 20 ottobre 2026 — Pubblicazione richiesta su main
+
+- Su richiesta dell'utente, pubblicati i tre documenti anche su GitHub main.
+- Nuovo commit main: 3c4ac042b3cd20bdc011c44237231c08ded1a85d, basato sul precedente head 7386308a012806df9e28955d6cd1f995178499a4.
+- La prima pubblicazione era avvenuta sul branch feature/auth-and-sync; main ora contiene la copia richiesta.
+- Il checkout locale resta sul branch feature e non è stato riallineato perché Git non riconosce il workspace come worktree.
+
 ## 20 ottobre 2026 — Documenti creati e pubblicati
 
 - Creati README, piano di implementazione e cronologia nella cartella piani di implementazione.
