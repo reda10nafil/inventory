@@ -1,6 +1,7 @@
 // FurInventory Pro - Custom Automations Context
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -78,24 +79,32 @@ const STORAGE_KEY = '@furinventory_custom_automations';
 // ── Provider ───────────────────────────────────────────────
 
 export function AutomationsProvider({ children }: { children: ReactNode }) {
+    const { organizationId } = useAuth();
     const [automations, setAutomations] = useState<CustomAutomation[]>([]);
+    const [loaded, setLoaded] = useState(false);
 
     // Load from storage on mount
     useEffect(() => {
         (async () => {
             try {
-                const raw = await AsyncStorage.getItem(STORAGE_KEY);
+                setLoaded(false);
+                if (!organizationId) { setAutomations([]); return; }
+                const raw = await AsyncStorage.getItem(`${STORAGE_KEY}:${organizationId}`);
                 if (raw) setAutomations(JSON.parse(raw));
+                else setAutomations([]);
             } catch (e) {
                 console.warn('Failed to load automations:', e);
+                setAutomations([]);
+            } finally {
+                setLoaded(true);
             }
         })();
-    }, []);
+    }, [organizationId]);
 
     // Persist whenever automations change
     useEffect(() => {
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(automations)).catch(console.warn);
-    }, [automations]);
+        if (organizationId && loaded) AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(automations)).catch(console.warn);
+    }, [automations, organizationId, loaded]);
 
     // ── CRUD ─────────────────
 
