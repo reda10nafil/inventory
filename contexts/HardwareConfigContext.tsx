@@ -1,6 +1,7 @@
 // FurInventory Pro - Hardware Config Context
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 
 const STORAGE_KEY = 'furinventory_hardware_config';
 
@@ -26,17 +27,20 @@ interface HardwareConfigContextType {
 const HardwareConfigContext = createContext<HardwareConfigContextType | undefined>(undefined);
 
 export function HardwareConfigProvider({ children }: { children: ReactNode }) {
+  const { organizationId } = useAuth();
   const [hwConfig, setHwConfig] = useState<HardwareConfig>(DEFAULT_HARDWARE_CONFIG);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadConfig();
-  }, []);
+    if (organizationId) loadConfig();
+    else { setHwConfig(DEFAULT_HARDWARE_CONFIG); setLoading(false); }
+  }, [organizationId]);
 
   const loadConfig = async () => {
     try {
       setLoading(true);
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      if (!organizationId) return;
+      const stored = await AsyncStorage.getItem(`${STORAGE_KEY}:${organizationId}`);
       if (stored) {
         const parsed = JSON.parse(stored);
         setHwConfig({ ...DEFAULT_HARDWARE_CONFIG, ...parsed });
@@ -50,7 +54,7 @@ export function HardwareConfigProvider({ children }: { children: ReactNode }) {
 
   const saveConfig = async (config: HardwareConfig) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      if (organizationId) await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(config));
     } catch (error) {
       console.error('Error saving Hardware config:', error);
     }
