@@ -1,6 +1,6 @@
 // FurInventory Pro - Edit Product Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, KeyboardAvoidingView, Platform, Alert, useWindowDimensions, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, KeyboardAvoidingView, Platform, Alert, useWindowDimensions, Modal, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
@@ -610,7 +610,7 @@ export default function EditProductScreen() {
                         <Text style={styles.label}>{field.name}{field.required && ' *'}</Text>
                         <View style={{ gap: 8 }}>
                           {docs.map((docUri: string, index: number) => (
-                            <Pressable key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: theme.border }} onPress={() => Sharing.shareAsync(docUri).catch(console.error)}>
+                            <Pressable key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: theme.border }} onPress={() => (/^https?:\/\//i.test(docUri) ? Linking.openURL(docUri) : Sharing.shareAsync(docUri)).catch(console.error)}>
                               <MaterialIcons name="insert-drive-file" size={24} color={theme.primary} />
                               <Text style={{ flex: 1, marginLeft: 12, fontSize: 14, color: theme.textPrimary }} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
                               <Pressable onPress={() => {
