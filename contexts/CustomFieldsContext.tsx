@@ -1,6 +1,7 @@
 // FurInventory Pro - Custom Fields Context with AsyncStorage persistence
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 import { CustomField, FieldUIType } from '../types';
 
 const STORAGE_KEY = 'furinventory_custom_fields';
@@ -48,6 +49,7 @@ interface CustomFieldsContextType {
 const CustomFieldsContext = createContext<CustomFieldsContextType | undefined>(undefined);
 
 export function CustomFieldsProvider({ children }: { children: ReactNode }) {
+    const { organizationId } = useAuth();
     const [allFields, setAllFields] = useState<CustomField[]>(DEFAULT_CUSTOM_FIELDS);
     const [loading, setLoading] = useState(true);
 
@@ -59,13 +61,15 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
 
     // Load custom fields from AsyncStorage on mount
     useEffect(() => {
-        loadFields();
-    }, []);
+        if (organizationId) loadFields();
+        else { setAllFields(DEFAULT_CUSTOM_FIELDS); setLoading(false); }
+    }, [organizationId]);
 
     const loadFields = async () => {
         try {
             setLoading(true);
-            const stored = await AsyncStorage.getItem(STORAGE_KEY);
+            if (!organizationId) return;
+            const stored = await AsyncStorage.getItem(`${STORAGE_KEY}:${organizationId}`);
             if (stored) {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed)) {
@@ -95,7 +99,7 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
     // Save custom fields to AsyncStorage
     const saveFields = async (fields: CustomField[]) => {
         try {
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(fields));
+            if (organizationId) await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(fields));
         } catch (error) {
             console.error('Error saving custom fields:', error);
         }
