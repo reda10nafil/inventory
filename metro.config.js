@@ -3,6 +3,7 @@ const { mergeConfig } = require('@react-native/metro-config');
 
 let withNativeWind;
 try {
+  require.resolve('tailwindcss/package.json');
   withNativeWind = require('nativewind/metro').withNativeWind;
 } catch {}
 
