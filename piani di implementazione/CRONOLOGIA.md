@@ -7,6 +7,7 @@ Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecc
 - Su richiesta dell'utente, pubblicati i tre documenti anche su GitHub main.
 - Nuovo commit main: 3c4ac042b3cd20bdc011c44237231c08ded1a85d, basato sul precedente head 7386308a012806df9e28955d6cd1f995178499a4.
 - La prima pubblicazione era avvenuta sul branch feature/auth-and-sync; main ora contiene la copia richiesta.
+- Rimossi i documenti dalla punta del branch feature per mantenerli soltanto su main; head feature risultante b1b36d6ddff1daa73df718387506c1a9d608f474.
 - Il checkout locale resta sul branch feature e non è stato riallineato perché Git non riconosce il workspace come worktree.
 
 ## 20 ottobre 2026 — Documenti creati e pubblicati
