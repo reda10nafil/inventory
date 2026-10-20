@@ -1,68 +1,26 @@
-# Setup Google Cloud API
+# Google login, Drive backup, and Sheets export
 
-## 1. Crea un progetto Google Cloud
+## Provisioned services
 
-1. Vai su [console.cloud.google.com](https://console.cloud.google.com)
-2. Crea un nuovo progetto chiamato **Synchroflow**
-3. Copia il **Project ID**
+- Google Cloud project: `syncro-flow-app-20261020` (display name: Syncro-Flow)
+- Enabled APIs: Google Drive API and Google Sheets API
+- Supabase project: `ymsnlixracwjgajldryb`
+- Supabase OAuth callback: `https://ymsnlixracwjgajldryb.supabase.co/auth/v1/callback`
+- App callback: `syncroflow://auth/callback`
+- Web development callback: `http://localhost:8081/`
 
-## 2. Abilita le API necessarie
+## One-time Google Console configuration
 
-Nel dashboard Google Cloud:
+Google requires a human to create OAuth clients and accept the OAuth consent terms in Google Cloud Console; its API does not expose OAuth client creation. In the project above:
 
-1. **Google Drive API** → Abilita
-2. **Google Sheets API** → Abilita
-3. **Google+ API** (per OAuth) → Abilita
+1. Configure the OAuth consent screen / Google Auth Platform with the app name, support email, and authorized domains. Add test users while the app is in testing.
+2. Create an OAuth client of type **Web application**.
+3. Add the exact Supabase callback above under **Authorized redirect URIs**. Add the deployed web origin under **Authorized JavaScript origins** after the production domain is known.
+4. In Supabase Dashboard → Authentication → Providers → Google, enable Google and enter that client ID and client secret. Add these scopes: `openid`, `email`, `profile`, `https://www.googleapis.com/auth/drive.file`, and `https://www.googleapis.com/auth/spreadsheets`.
+5. In Supabase Dashboard → Authentication → URL Configuration, allow `syncroflow://auth/callback`, `http://localhost:8081/`, and the production app origin when available.
+6. Add the Google account(s) as test users until OAuth verification/publishing is complete.
+7. Rebuild/restart the app and sign in again so Google returns a fresh Drive/Sheets provider token.
 
-## 3. Configura OAuth 2.0
+The app requests the narrow `drive.file` scope. Files remain private in each operator's Google Drive; the app does not grant public link access. Product photo links in CSV/Sheets open only for people who have Google Drive access to those files. Supabase stores and synchronizes organization inventory; this Google backup is a separate per-account copy.
 
-1. Vai su **API & Services** → **Credentials**
-2. Crea **OAuth 2.0 Client ID**
-3. Configura:
-   - Application type: **Web application** (o iOS/Android per mobile)
-   - Authorized redirect URIs: `com.synchroflow://oauth/callback`
-4. Copia:
-   - **Client ID**
-   - **Client Secret**
-
-## 4. Configura Google Drive
-
-1. Crea una cartella in Google Drive per le immagini
-2. Copia il **Folder ID** dall'URL:
-   - URL: `https://drive.google.com/drive/folders/1ABC...`
-   - Folder ID: `1ABC...`
-
-## 5. Configura Google Sheets
-
-1. Crea un nuovo Google Sheet per l'export
-2. Copia lo **Spreadsheet ID** dall'URL:
-   - URL: `https://docs.google.com/spreadsheets/d/1XYZ...`
-   - Spreadsheet ID: `1XYZ...`
-
-## 6. Configura le variabili ambiente
-
-In `.env.local`:
-
-```env
-GOOGLE_PROJECT_ID=your-project-id
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=com.synchroflow://oauth/callback
-GOOGLE_DRIVE_FOLDER_ID=your-folder-id
-GOOGLE_SHEETS_SPREADSHEET_ID=your-spreadsheet-id
-```
-
-## 7. Testa la connessione
-
-```typescript
-import { signInWithGoogle } from './backend-auth/google/auth';
-
-const result = await signInWithGoogle();
-console.log(result);
-```
-
-## Note
-
-- **Redirect URI**: per React Native usa `expo-auth-session` con scheme personalizzato
-- **Permessi**: richiedi solo gli scope necessari (Drive, Sheets)
-- **Security**: mai committare `.env.local` su GitHub
+Do not put the Google client secret in the app, repository, or Expo config. Store it only in the Supabase Google provider configuration. No service-role key belongs in the client either.
