@@ -113,32 +113,25 @@ export default function TeamScreen() {
     }, 1000);
     return () => clearInterval(id);
   }, [qrCreatedAt, mode]);
-  // presenza reale via meshServer (poll ogni 2s) + heartbeat mock per demo single-device
+  // Presenza dei peer che hanno completato l’handshake mesh.
   useEffect(() => {
     let id: any = null;
     const poll = async () => {
       try {
         const ms: any = require('../../services/meshServer');
         const info = ms?.getMeshServerInfo?.();
-        const count = info?.clientCount ?? 0;
+        const peers = info?.authenticatedClients ?? [];
         const modeHost = mode === 'host';
         // Host: mostra se stesso + clients
         if (modeHost) {
           const base: any[] = [{ id: 'host', name: 'Questo dispositivo (Host)', ip: qrPayload ? new URL(qrPayload).hostname : '—', role: 'admin', online: true, lastSeen: new Date().toLocaleTimeString() }];
-          // aggiungi stub per ogni client connesso (se server ha clients)
-          for (let i = 0; i < count; i++) {
-            const existing = connectedDevices.find(d => d.id === `client-${i}`);
-            if (!existing) base.push({ id: `client-${i}`, name: `Operatore ${i+1}`, ip: `192.168.1.${100+i}`, role: 'editor', online: true, lastSeen: new Date().toLocaleTimeString() });
-            else base.push({ ...existing, lastSeen: new Date().toLocaleTimeString(), online: true });
+          for (const [index, peer] of peers.entries()) {
+            base.push({ id: peer.id, name: `Dispositivo ${index + 1}`, ip: peer.address, role: 'client', online: true, lastSeen: new Date().toLocaleTimeString() });
           }
-          // se mock precedente ha più devices, mantieni
-          if (base.length !== connectedDevices.length || count > 0) {
-            // evita loop se non cambia
-            if (JSON.stringify(base.map(b=>b.id)) !== JSON.stringify(connectedDevices.map(c=>c.id))) {
-              setConnectedDevices(base);
-            } else {
-              setConnectedDevices(prev => prev.map(d => ({ ...d, lastSeen: new Date().toLocaleTimeString() })));
-            }
+          if (JSON.stringify(base.map(b=>b.id)) !== JSON.stringify(connectedDevices.map(c=>c.id))) {
+            setConnectedDevices(base);
+          } else {
+            setConnectedDevices(prev => prev.map(d => ({ ...d, lastSeen: new Date().toLocaleTimeString() })));
           }
         } else {
           // Client: mostra host + se stesso
@@ -183,7 +176,7 @@ export default function TeamScreen() {
         const info = await joinWithPayload(p);
         if (info) {
           setConnectedDevices(prev => [...prev, { id: `client-${Date.now()}`, name: `Host ${info.ip}`, ip: info.ip, role: 'host', online: true, lastSeen: new Date().toLocaleTimeString() }]);
-          Alert.alert('Connesso', `Connesso a ${info.ip}:${info.port}\nToken ${info.token}\nSync 100% avviato.`);
+          Alert.alert('Connesso', `Pairing verificato con ${info.ip}:${info.port}. La sincronizzazione è stata avviata.`);
           return true;
         }
         return false;
@@ -191,11 +184,11 @@ export default function TeamScreen() {
       // Conferma esplicita prima di associare
       if (!skipConfirm) {
         let parsed: any = null;
-        try { const u = new URL(v); parsed = { ip: u.hostname, port: u.port || '8080', token: u.searchParams.get('token') }; } catch {}
+        try { const u = new URL(v); parsed = { ip: u.hostname, port: u.port || '8080' }; } catch {}
         return new Promise<void>((resolve) => {
           Alert.alert(
             'Confermi associazione?',
-            `Vuoi connetterti a:\nHost: ${parsed?.ip ?? v.slice(0,30)}:${parsed?.port ?? ''}\nToken: ${parsed?.token ?? '—'}\n\nI dispositivi condivideranno inventario 100% su LAN isolata.`,
+            `Vuoi connetterti a:\nHost: ${parsed?.ip ?? 'indirizzo non leggibile'}:${parsed?.port ?? ''}\n\nI dispositivi condivideranno i dati supportati sulla rete locale dopo il pairing.`,
             [
               { text: 'Annulla', style: 'cancel', onPress: () => resolve() },
               { text: 'Connetti', onPress: async () => {
@@ -204,7 +197,7 @@ export default function TeamScreen() {
                 if (!ok && v.includes('10.0.2.')) {
                   const alt = v.replace(/10\.0\.2\.\d+/, '10.0.2.2');
                   if (alt !== v) {
-                    console.log('[TeamScreen] retry con alternativa emulator', alt);
+                    console.log('[TeamScreen] retry con indirizzo alternativo per emulatore');
                     ok = await tryJoin(alt);
                   }
                 }
@@ -228,7 +221,6 @@ export default function TeamScreen() {
   // expo-camera barcode handler universale — con conferma
   const handleBarCodeScanned = useCallback(({ data }: { data: string }) => {
     if (!data || scannedValue === data) return;
-    console.log('[TeamScreen:expo-camera] QR scanned', data);
     handleJoin(data, false);
   }, [scannedValue, handleJoin]);
 
@@ -237,9 +229,12 @@ export default function TeamScreen() {
   }, [handleJoin, manualPayload]);
 
   const handleTestPayload = useCallback(async () => {
-    // stub: invia light payload su WS LAN
-    await sendLightPayload({ skus: ['SKU-DEMO-001'], automationIds: [], text: 'Ciao dal mesh LAN' });
-    Alert.alert('Payload inviato', 'Inoltrato su WebSocket LAN (vedi log Metro).');
+    try {
+      await sendLightPayload({ skus: ['SKU-DEMO-001'], automationIds: [], text: 'Ciao dal mesh LAN' });
+      Alert.alert('Payload inviato', 'Inoltrato ai dispositivi accoppiati.');
+    } catch {
+      Alert.alert('Invio non riuscito', 'Verifica che il pairing mesh sia ancora attivo e riprova.');
+    }
   }, [sendLightPayload]);
 
   const requestCamPerm = useCallback(async () => {
@@ -269,8 +264,7 @@ export default function TeamScreen() {
         {/* TEAM E ACCESSO */}
         <Text style={styles.sectionTitle}>TEAM E ACCESSO</Text>
         <Text style={styles.sectionDesc}>
-          Condividi l'inventario 100% su LAN isolata (router senza internet). Host genera QR con{' '}
-          <Text style={{ color: T.gold, fontWeight: '700' }}>ws://IP:PORT?token=ROOM</Text>. Client scansiona con scanner QR universale → syncDatabase full pull (qualsiasi dispositivo).
+          Condividi i dati supportati sulla rete locale tramite pairing temporaneo. Host genera un QR e il client lo scansiona per avviare la sincronizzazione.
         </Text>
 
         {/* placeholder router.push richiesto */}
@@ -454,7 +448,7 @@ export default function TeamScreen() {
               <TextInput
                 value={manualPayload}
                 onChangeText={setManualPayload}
-                placeholder="ws://192.168.1.50:8080?token=AB12CD34"
+                placeholder="ws://192.168.1.50:8080?token=0123456789ABCDEF"
                 placeholderTextColor={T.textMuted}
                 style={styles.input}
                 autoCapitalize="none"
@@ -477,7 +471,7 @@ export default function TeamScreen() {
             <View style={styles.rowGap}>
               <Pressable style={styles.secondaryBtn} onPress={() => syncNow({ fullResync: true })}>
                 <MaterialIcons name="sync" size={18} color={T.gold} />
-                <Text style={styles.secondaryBtnText}>Sync 100% ora</Text>
+                <Text style={styles.secondaryBtnText}>Sincronizza ora</Text>
               </Pressable>
               <Pressable style={styles.secondaryBtn} onPress={handleTestPayload}>
                 <MaterialIcons name="send" size={18} color={T.gold} />
@@ -486,7 +480,7 @@ export default function TeamScreen() {
             </View>
 
             <Text style={styles.metaText}>
-              Servizio mesh: joinRoom(qrPayload) → WebSocket LAN → syncDatabase pull 100% prodotti/automazioni/timeline. Compatibile con qualsiasi Android/iOS.
+            Pairing via QR → WebSocket LAN autenticato → sincronizzazione dei delta supportati (prodotti, automazioni, timeline, chat e membri).
             </Text>
           </View>
         )}
@@ -497,7 +491,7 @@ export default function TeamScreen() {
             <MaterialIcons name="devices" size={20} color={T.gold} />
             <Text style={styles.cardTitle}>Dispositivi nella stanza ({connectedDevices.length})</Text>
           </View>
-          <Text style={styles.cardDesc}>Presenza in tempo reale su LAN isolata. I dispositivi appaiono solo dopo approvazione.</Text>
+          <Text style={styles.cardDesc}>Presenza in tempo reale sulla rete locale. I dispositivi appaiono dopo il pairing con il QR della stanza.</Text>
           {connectedDevices.length === 0 ? (
             <Text style={styles.mutedSmall}>Nessun dispositivo connesso. Host in attesa, Client scansiona QR.</Text>
           ) : (
@@ -519,8 +513,7 @@ export default function TeamScreen() {
         <View style={styles.infoCard}>
           <MaterialIcons name="security" size={20} color={T.gold} />
           <Text style={styles.infoText}>
-            LAN isolata: nessun dato esce dal router. WebSocket in chiaro su rete locale, token ROOM random a 8 char.
-            Per produzione aggiungi mDNS (SyncroFlow._ws._tcp) e TLS opzionale.
+            Pairing protetto da token temporaneo. Il traffico WebSocket resta in chiaro: usa questa funzione solo su una rete locale privata e affidabile.
           </Text>
         </View>
       </ScrollView>

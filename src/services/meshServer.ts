@@ -15,6 +15,7 @@
 
 import { Platform } from 'react-native';
 import { Buffer } from 'buffer';
+import { isMeshRequestAuthorized } from './meshAuth';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +31,7 @@ export type OnMeshMessage = (msg: MeshMessage, socket: any) => void;
 type ClientMeta = {
   socket: any;
   isWs: boolean;
+  authenticated: boolean;
   buffer: Buffer;
   addr: string;
 };
@@ -194,47 +196,59 @@ async function handleRestRequest(
 
   // --- WS upgrade già gestito prima —qui solo REST ---
   if (method === 'GET' && (pathname === '/health' || pathname === '/')) {
-    const payload = JSON.stringify({ status: 'ok', token: activeToken, port: activePort, platform: Platform.OS });
+    const payload = JSON.stringify({ status: 'ok', port: activePort, platform: Platform.OS });
     sendHttp(socket, 200, payload);
     return true;
+  }
+
+  if ((pathname === '/pull' && method === 'GET') ||
+      ((pathname === '/push' || pathname === '/chat/push') && method === 'POST')) {
+    if (!isAuthorized(url, headers)) {
+      sendHttp(socket, 401, JSON.stringify({ error: 'unauthorized' }));
+      return true;
+    }
   }
 
   if (pathname === '/pull' && method === 'GET') {
     const since = Number(url.searchParams.get('since') ?? '0');
     console.log('[meshServer] GET /pull?since=' + since);
-    const data = await buildPullResponse(since);
-    sendHttp(socket, 200, JSON.stringify(data));
+    try {
+      const data = await buildPullResponse(since);
+      sendHttp(socket, 200, JSON.stringify(data));
+    } catch (e) {
+      console.log('[meshServer] /pull failed', e);
+      sendHttp(socket, 500, JSON.stringify({ error: 'pull_failed' }));
+    }
     return true;
   }
 
   if (pathname === '/push' && method === 'POST') {
-    console.log('[meshServer] POST /push body', body.slice(0, 800));
     try {
       const json = body ? JSON.parse(body) : {};
       await applyPushPayload(json);
       // broadcast to WS clients so others get light notification
       broadcastWs({ type: 'push', ts: Date.now() });
     } catch (e) {
-      console.log('[meshServer] /push parse error', e);
+      console.log('[meshServer] /push failed', e);
+      sendHttp(socket, 500, JSON.stringify({ error: 'push_failed' }));
+      return true;
     }
     sendHttp(socket, 200, JSON.stringify({ ok: true }));
     return true;
   }
 
   if (pathname === '/chat/push' && method === 'POST') {
-    console.log('[meshServer] POST /chat/push body', body.slice(0, 800));
     try {
       const json = body ? JSON.parse(body) : {};
-      // token check opzionale
-      if (activeToken && json.token && json.token !== activeToken) {
-        console.log('[meshServer] /chat/push token mismatch', json.token);
-      }
-      await appendChatMessage(json);
+      const { token: _roomToken, ...chatPayload } = json;
+      await appendChatMessage(chatPayload);
       // persist + broadcast WS
-      broadcastWs({ type: 'chat', ...json });
-      if (onMessageCb) onMessageCb({ type: 'chat', ...json }, socket);
+      broadcastWs({ type: 'chat', ...chatPayload });
+      if (onMessageCb) onMessageCb({ type: 'chat', ...chatPayload }, socket);
     } catch (e) {
       console.log('[meshServer] /chat/push error', e);
+      sendHttp(socket, 500, JSON.stringify({ error: 'chat_push_failed' }));
+      return true;
     }
     sendHttp(socket, 200, JSON.stringify({ ok: true }));
     return true;
@@ -243,8 +257,21 @@ async function handleRestRequest(
   return false;
 }
 
+function isAuthorized(url: URL, headers: Record<string, string>): boolean {
+  return isMeshRequestAuthorized(url, headers.authorization, activeToken);
+}
+
+function sendUnauthorized(socket: any) {
+  sendHttp(socket, 401, JSON.stringify({ error: 'unauthorized' }));
+}
+
 function sendHttp(socket: any, status: number, body: string, extraHeaders: Record<string, string> = {}) {
-  const statusText = status === 200 ? 'OK' : status === 404 ? 'Not Found' : status === 101 ? 'Switching Protocols' : 'OK';
+  const statusText = status === 200 ? 'OK'
+    : status === 101 ? 'Switching Protocols'
+    : status === 401 ? 'Unauthorized'
+    : status === 404 ? 'Not Found'
+    : status === 500 ? 'Internal Server Error'
+    : 'Error';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Content-Length': String(Buffer.byteLength(body)),
@@ -286,17 +313,20 @@ function sendWsUpgrade(socket: any, accept: string) {
   }
 }
 
-function broadcastWs(obj: any) {
+function broadcastWs(obj: any): number {
   const frame = encodeWsFrame(JSON.stringify(obj));
+  let delivered = 0;
   for (const c of clients) {
     const m = clientMeta.get(c);
-    if (m?.isWs) {
-      try { c.write(frame); } catch {}
+    if (m?.isWs && m.authenticated) {
+      try { c.write(frame); delivered += 1; } catch {}
     }
   }
+  return delivered;
 }
 
 function sendWs(socket: any, obj: any) {
+  if (!clientMeta.get(socket)?.authenticated) return;
   try { socket.write(encodeWsFrame(JSON.stringify(obj))); } catch (e) { console.log('[meshServer] sendWs error', e); }
 }
 
@@ -304,7 +334,8 @@ function sendWs(socket: any, obj: any) {
 // DB helpers: pull / push / chat (lazy import per evitare cycle)
 // ---------------------------------------------------------------------------
 async function buildPullResponse(since: number): Promise<any> {
-  // Prova WatermelonDB pull — altrimenti empty + timestamp
+  // A database error must fail the request so the client can retry; an empty
+  // snapshot with a new timestamp would silently mark missing data as synced.
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const dbMod = require('../db');
@@ -338,8 +369,8 @@ async function buildPullResponse(since: number): Promise<any> {
           deleted: [],
         };
       } catch (e) {
-        console.log('[meshServer] buildPull table', t, 'error', e);
-        changes[t] = { created: [], updated: [], deleted: [] };
+        console.log('[meshServer] buildPull table failed', t, e);
+        throw e;
       }
     }
     // Ensure expected keys mapping
@@ -354,18 +385,8 @@ async function buildPullResponse(since: number): Promise<any> {
       timestamp: ts,
     };
   } catch (e) {
-    console.log('[meshServer] buildPullResponse fallback empty:', (e as Error)?.message ?? e);
-    const eEmpty = { created: [], updated: [], deleted: [] };
-    return {
-      changes: {
-        products: { ...eEmpty },
-        automations: { ...eEmpty },
-        timeline: { ...eEmpty },
-        chat_messages: { ...eEmpty },
-        team_members: { ...eEmpty },
-      },
-      timestamp: Date.now(),
-    };
+    console.log('[meshServer] buildPullResponse failed:', (e as Error)?.message ?? e);
+    throw e;
   }
 }
 
@@ -374,7 +395,7 @@ async function applyPushPayload(payload: any) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const dbMod = require('../db');
     const db = dbMod.database;
-    if (!db) return;
+    if (!db) throw new Error('database unavailable');
     // Payload shape: { products: {created,updated,deleted}, automations..., timeline..., chat_messages..., lastPulledAt }
     // Applica via DB write batch (best-effort)
     const tables = ['products', 'automations', 'timeline', 'chat_messages', 'team_members'];
@@ -394,21 +415,21 @@ async function applyPushPayload(payload: any) {
         if (!bucket) continue;
         const col = db.get(t);
         for (const raw of bucket.created ?? []) {
-          try { await col.create((rec: any) => { Object.assign(rec._raw, raw); }); } catch {}
+          await col.create((rec: any) => { Object.assign(rec._raw, raw); });
         }
         for (const raw of bucket.updated ?? []) {
-          try {
-            const rec = await col.find(raw.id);
-            await rec.update((r: any) => Object.assign(r._raw, raw));
-          } catch {}
+          const rec = await col.find(raw.id);
+          await rec.update((r: any) => Object.assign(r._raw, raw));
         }
         for (const id of bucket.deleted ?? []) {
-          try { const rec = await col.find(id); await rec.markAsDeleted(); } catch {}
+          const rec = await col.find(id);
+          await rec.markAsDeleted();
         }
       }
     });
   } catch (e) {
     console.log('[meshServer] applyPushPayload error', e);
+    throw e;
   }
 }
 
@@ -417,7 +438,7 @@ async function appendChatMessage(payload: any) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const dbMod = require('../db');
     const db = dbMod.database;
-    if (!db) return;
+    if (!db) throw new Error('database unavailable');
     if (!payload.skus && !payload.automationIds && !payload.text) return;
     await db.write(async () => {
       const col = db.get('chat_messages');
@@ -432,6 +453,7 @@ async function appendChatMessage(payload: any) {
     console.log('[meshServer] chat_messages appended');
   } catch (e) {
     console.log('[meshServer] appendChatMessage error', e);
+    throw e;
   }
 }
 
@@ -456,17 +478,25 @@ async function handleTcpData(socket: any, data: Buffer) {
       }
       let obj: any;
       try { obj = JSON.parse(m); } catch { obj = { raw: m }; }
-      console.log('[meshServer] WS message', m.slice(0, 500));
-      // token gate (se token attivo)
-      if (activeToken && obj.token && obj.token !== activeToken) {
-        console.log('[meshServer] WS token mismatch, closing');
-        sendWs(socket, { type: 'error', error: 'invalid token' });
-        continue;
-      }
-      // hello handshake
+      // Authenticate every peer before accepting any message or broadcasting it.
       if (obj.type === 'hello') {
+        if (!activeToken || obj.token !== activeToken) {
+          sendWs(socket, { type: 'error', error: 'unauthorized' });
+          try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+          clients.delete(socket);
+          clientMeta.delete(socket);
+          break;
+        }
+        meta.authenticated = true;
         sendWs(socket, { type: 'hello_ack', token: activeToken, ts: Date.now() });
         continue;
+      }
+      if (!meta.authenticated) {
+        sendWs(socket, { type: 'error', error: 'unauthorized' });
+        try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+        clients.delete(socket);
+        clientMeta.delete(socket);
+        break;
       }
       if (obj.type === 'ping') {
         sendWs(socket, { type: 'pong', ts: Date.now() });
@@ -478,25 +508,27 @@ async function handleTcpData(socket: any, data: Buffer) {
         if (obj.type === 'light_payload') {
           await appendChatMessage(obj);
           // normalize to chat for listeners
-          const chat = { type: 'chat', skus: obj.skus, automationIds: obj.automationIds, text: obj.text, ts: obj.ts, token: obj.token };
+          const chat = { type: 'chat', skus: obj.skus, automationIds: obj.automationIds, text: obj.text, ts: obj.ts };
           broadcastWs(chat);
           // notifica anche Host (server) — la sua UI non è WS client, va avvisata via meshSync
           try { const msync: any = require('./meshSync'); if (msync?.notifyLocalChat) msync.notifyLocalChat(obj); } catch {}
         } else {
           // forward to other WS clients (exclude sender)
-          const frame = encodeWsFrame(JSON.stringify(obj));
+          const { token: _roomToken, ...message } = obj;
+          const frame = encodeWsFrame(JSON.stringify(message));
           for (const c of clients) {
             if (c !== socket) {
               const cm = clientMeta.get(c);
-              if (cm?.isWs) try { c.write(frame); } catch {}
+              if (cm?.isWs && cm.authenticated) try { c.write(frame); } catch {}
             }
           }
           // anche Host riceve push/chat via notify
-          try { const msync: any = require('./meshSync'); if (msync?.notifyLocalChat && (obj.type==='chat'||obj.type==='push')) msync.notifyLocalChat(obj); } catch {}
+          try { const msync: any = require('./meshSync'); if (msync?.notifyLocalChat && (obj.type==='chat'||obj.type==='push')) msync.notifyLocalChat(message); } catch {}
         }
       }
       if (onMessageCb) {
-        try { onMessageCb(obj, socket); } catch (e) { console.log('[meshServer] onMessage error', e); }
+        const { token: _roomToken, ...message } = obj;
+        try { onMessageCb(message, socket); } catch (e) { console.log('[meshServer] onMessage error', e); }
       }
     }
     return;
@@ -550,9 +582,8 @@ async function handleTcpData(socket: any, data: Buffer) {
     try {
       const u = new URL(rawPath, 'http://localhost');
       const qToken = u.searchParams.get('token');
-      if (activeToken && qToken && qToken !== activeToken) {
-        console.log('[meshServer] WS upgrade token mismatch', qToken);
-        sendHttp(socket, 401, JSON.stringify({ error: 'invalid token' }));
+      if (!activeToken || qToken !== activeToken) {
+        sendUnauthorized(socket);
         return;
       }
     } catch {}
@@ -599,7 +630,7 @@ export async function startMeshServer(port: number, token: string, onMessage?: O
           const addr = `${socket.remoteAddress ?? 'unknown'}:${socket.remotePort ?? ''}`;
           console.log('[meshServer] TCP client connected', addr);
           clients.add(socket);
-          clientMeta.set(socket, { socket, isWs: false, buffer: Buffer.alloc(0), addr });
+          clientMeta.set(socket, { socket, isWs: false, authenticated: false, buffer: Buffer.alloc(0), addr });
 
           socket.on('data', (d: any) => {
             const buf = Buffer.isBuffer(d) ? d : Buffer.from(d);
@@ -614,7 +645,7 @@ export async function startMeshServer(port: number, token: string, onMessage?: O
         });
 
         server.listen({ port, host: '0.0.0.0' }, () => {
-          console.log(`[meshServer] TCP listening on 0.0.0.0:${port} token=${token} upgrade WS + REST /pull /push /chat/push`);
+          console.log(`[meshServer] TCP listening on 0.0.0.0:${port} upgrade WS + REST /pull /push /chat/push`);
           resolve();
         });
         server.on('error', (e: any) => {
@@ -644,10 +675,11 @@ async function startHttpFallback(port: number, token: string, onMessage?: OnMesh
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     http = require('http');
   } catch (e) {
-    console.log('[meshServer] TODO nativo: http module non disponibile — shim no-op. API identiche ma nessun listen reale.', e);
+    console.log('[meshServer] HTTP fallback unavailable', e);
     serverMode = 'shim';
-    console.log(`[meshServer] SHIM listening (no-op) on 0.0.0.0:${port} token=${token}`);
-    return;
+    activePort = null;
+    activeToken = null;
+    throw new Error('Server mesh non disponibile su questo dispositivo');
   }
 
   const crypto = (() => { try { return require('crypto'); } catch { return null; } })();
@@ -689,34 +721,58 @@ async function startHttpFallback(port: number, token: string, onMessage?: OnMesh
 
     if (method === 'GET' && (pathname === '/health' || pathname === '/')) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', token: activeToken, port: activePort, mode: 'http-fallback' }));
+      res.end(JSON.stringify({ status: 'ok', port: activePort, mode: 'http-fallback' }));
       return;
+    }
+    if ((pathname === '/pull' && method === 'GET') ||
+        ((pathname === '/push' || pathname === '/chat/push') && method === 'POST')) {
+      if (!isAuthorized(url, headers)) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'unauthorized' }));
+        return;
+      }
     }
     if (pathname === '/pull' && method === 'GET') {
       const since = Number(url.searchParams.get('since') ?? '0');
-      console.log('[meshServer] [http] GET /pull?since=' + since);
-      const data = await buildPullResponse(since);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(data));
+      try {
+        const data = await buildPullResponse(since);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(data));
+      } catch (e) {
+        console.log('[meshServer] [http] /pull failed', e);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'pull_failed' }));
+      }
       return;
     }
     if (pathname === '/push' && method === 'POST') {
-      console.log('[meshServer] [http] POST /push', body.slice(0, 800));
-      try { const j = body ? JSON.parse(body) : {}; await applyPushPayload(j); broadcastHttpWs({ type: 'push', ts: Date.now() }); } catch (e) { console.log('[meshServer] [http] /push error', e); }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true }));
+      try {
+        const j = body ? JSON.parse(body) : {};
+        await applyPushPayload(j);
+        broadcastHttpWs({ type: 'push', ts: Date.now() });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        console.log('[meshServer] [http] /push failed', e);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'push_failed' }));
+      }
       return;
     }
     if (pathname === '/chat/push' && method === 'POST') {
-      console.log('[meshServer] [http] POST /chat/push', body.slice(0, 800));
       try {
         const j = body ? JSON.parse(body) : {};
-        await appendChatMessage(j);
-        broadcastHttpWs({ type: 'chat', ...j });
-        if (onMessageCb) onMessageCb({ type: 'chat', ...j }, null);
-      } catch (e) { console.log('[meshServer] [http] /chat/push error', e); }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true }));
+        const { token: _roomToken, ...chatPayload } = j;
+        await appendChatMessage(chatPayload);
+        broadcastHttpWs({ type: 'chat', ...chatPayload });
+        if (onMessageCb) onMessageCb({ type: 'chat', ...chatPayload }, null);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        console.log('[meshServer] [http] /chat/push failed', e);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'chat_push_failed' }));
+      }
       return;
     }
 
@@ -733,15 +789,15 @@ async function startHttpFallback(port: number, token: string, onMessage?: OnMesh
     const key = req.headers['sec-websocket-key'] as string | undefined;
     if (!key || !crypto) { socket.destroy(); return; }
     const qToken = (() => { try { const u = new URL(req.url ?? '', 'http://localhost'); return u.searchParams.get('token'); } catch { return null; }})();
-    if (activeToken && qToken && qToken !== activeToken) {
+    if (!activeToken || qToken !== activeToken) {
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); socket.destroy(); return;
     }
     const accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', 'binary').digest('base64');
     socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
-    const meta: ClientMeta = { socket, isWs: true, buffer: Buffer.alloc(0), addr: (socket.remoteAddress ?? 'http') + '' };
+    const meta: ClientMeta = { socket, isWs: true, authenticated: false, buffer: Buffer.alloc(0), addr: (socket.remoteAddress ?? 'http') + '' };
     clientMeta.set(socket, meta);
     wsHttpClients.add(socket);
-    console.log('[meshServer] [http] WS upgraded', req.url);
+    console.log('[meshServer] [http] WS upgraded', req.url?.split('?')[0] ?? '/');
 
     // handle head leftover
     if (head && head.length) handleTcpData(socket, head).catch(() => {});
@@ -752,20 +808,21 @@ async function startHttpFallback(port: number, token: string, onMessage?: OnMesh
     });
     socket.on('close', () => { wsHttpClients.delete(socket); clientMeta.delete(socket); console.log('[meshServer] [http] WS close'); });
     socket.on('error', (e: any) => console.log('[meshServer] [http] WS error', e?.message ?? e));
-    // send hello_ack
-    try { socket.write(encodeWsFrame(JSON.stringify({ type: 'hello_ack', token: activeToken, ts: Date.now() }))); } catch {}
   });
 
   function broadcastHttpWs(obj: any) {
     const frame = encodeWsFrame(JSON.stringify(obj));
-    for (const c of wsHttpClients) { try { c.write(frame); } catch {} }
+    for (const c of wsHttpClients) {
+      if (!clientMeta.get(c)?.authenticated) continue;
+      try { c.write(frame); } catch {}
+    }
   }
   // expose for outer broadcastWs indirection (http mode uses wsHttpClients)
   // patch global broadcastWs reference by aliasing clients set — already done
 
   await new Promise<void>((resolve, reject) => {
     httpFallbackServer.listen(port, '0.0.0.0', () => {
-      console.log(`[meshServer] HTTP fallback listening on 0.0.0.0:${port} token=${token} (WS upgrade manuale + REST /pull /push /chat/push)`);
+      console.log(`[meshServer] HTTP fallback listening on 0.0.0.0:${port} (WS upgrade manuale + REST /pull /push /chat/push)`);
       resolve();
     });
     httpFallbackServer.on('error', (e: any) => { console.log('[meshServer] HTTP fallback error', e?.message ?? e); reject(e); });
@@ -807,7 +864,16 @@ export async function stopMeshServer(): Promise<void> {
 
 // Helpers for inspection / WS send externally
 export function getMeshServerInfo() {
-  return { port: activePort, token: activeToken, mode: serverMode, clientCount: clients.size, listening: !!(server || httpFallbackServer || serverMode === 'shim') };
+  const authenticatedClients = Array.from(clientMeta.values())
+    .filter((meta) => meta.isWs && meta.authenticated)
+    .map((meta) => ({ id: meta.addr, address: meta.addr }));
+  return {
+    port: activePort,
+    mode: serverMode,
+    clientCount: authenticatedClients.length,
+    authenticatedClients,
+    listening: !!(server || httpFallbackServer),
+  };
 }
-export function broadcastToMeshClients(obj: any) { broadcastWs(obj); }
+export function broadcastToMeshClients(obj: any) { return broadcastWs(obj); }
 export function sendToMeshClient(socket: any, obj: any) { sendWs(socket, obj); }

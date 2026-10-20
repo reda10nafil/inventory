@@ -93,7 +93,7 @@ export function useMeshRole(): UseMeshRoleReturn {
       setRoomToken(room.roomToken);
       setWsUrl(room.wsUrl);
       setQrPayload(room.qrPayload);
-      console.log('[useMeshRole:createHost] room', room);
+      console.log('[useMeshRole:createHost] room ready', { ip: room.ip, port: room.port });
       return room;
     } catch (e) {
       console.log('[useMeshRole:createHost] error', e);
@@ -111,7 +111,7 @@ export function useMeshRole(): UseMeshRoleReturn {
       setWsUrl(info.wsUrl);
       setRoomToken(info.token);
       setLastJoinInfo(info);
-      console.log('[useMeshRole:joinWithPayload] joined', info);
+      console.log('[useMeshRole:joinWithPayload] joined', { ip: info.ip, port: info.port });
 
       // auto sync 100% dopo join (pull products/automations/timeline)
       try {

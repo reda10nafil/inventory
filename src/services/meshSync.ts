@@ -6,7 +6,7 @@
  * API:
  *  - createHostRoom() -> { roomToken, wsUrl, qrPayload }
  *  - joinRoom(qrPayload) -> { wsUrl, token, ip, port }
- *  - syncDatabase({ peerUrl }) 100% pull products/automations/timeline
+ *  - syncDatabase({ peerUrl }) authenticated pull/push for supported tables
  *  - sendLightPayload({ skus, automationIds }) su WS aperto
  */
 
@@ -73,22 +73,17 @@ export function subscribeSyncStatus(cb: SyncListener): () => void {
 // ---------------------------------------------------------------------------
 // Helpers: token + IP
 // ---------------------------------------------------------------------------
-function randomToken(len = 8): string {
-  // expo-crypto se disponibile, fallback Math.random
+function randomToken(len = 16): string {
+  // Never use Math.random for a pairing credential.
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Crypto = require('expo-crypto');
-    // expo-crypto randomUUID -> take slice
     if (Crypto.randomUUID) {
-      // randomUUID estrae senza trattini
       const u: string = Crypto.randomUUID().replace(/-/g, '');
       return u.slice(0, len).toUpperCase();
     }
   } catch {}
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let out = '';
-  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
+  throw new Error('Generatore casuale sicuro non disponibile: impossibile creare la stanza mesh');
 }
 
 export async function getLocalIp(): Promise<string> {
@@ -108,7 +103,7 @@ export async function getLocalIp(): Promise<string> {
       if (v) ip = v;
     } catch {}
   }
-  if (!ip) ip = '192.168.1.100';
+  if (!ip) throw new Error('Impossibile rilevare l’indirizzo IP locale. Connetti il dispositivo a una rete Wi-Fi e riprova.');
   // Emulatori Android: 10.0.2.15 è interno VM, l'altro emulatore non lo raggiunge.
   // Per test 2-emulatori, espone 10.0.2.2 (host loopback) + avvisa di fare adb forward.
   if (ip.startsWith('10.0.2.')) {
@@ -139,7 +134,7 @@ export function parseQrPayload(payload: string): JoinInfo {
   try {
     url = new URL(raw);
   } catch {
-    throw new Error(`QR payload non valido: ${raw}`);
+    throw new Error('QR payload non valido');
   }
   if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
     throw new Error(`Protocollo atteso ws://, ricevuto ${url.protocol}`);
@@ -183,7 +178,7 @@ function createWs(url: string): WebSocket {
   activeWsUrl = url;
 
   ws.onopen = () => {
-    console.log('[meshSync] WS open', url);
+    console.log('[meshSync] WS open', redactPairingUrl(url));
   };
   ws.onclose = (e) => {
     console.log('[meshSync] WS close', e.code, e.reason);
@@ -198,9 +193,9 @@ function createWs(url: string): WebSocket {
   };
   ws.onmessage = (e) => {
     const raw = (e.data as string) ?? '';
-    console.log('[meshSync] WS message', raw.slice(0, 500));
     try {
       const msg = JSON.parse(raw);
+      console.log('[meshSync] WS message', msg?.type ?? 'unknown');
       // notifica listener chat se è light_payload
       if (msg && msg.type === 'light_payload' && msg.skus) {
         chatListeners.forEach(cb => { try { cb({ payload: msg, raw }); } catch {} });
@@ -211,6 +206,16 @@ function createWs(url: string): WebSocket {
     } catch {}
   };
   return ws;
+}
+
+function redactPairingUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    if (url.searchParams.has('token')) url.searchParams.set('token', '[redacted]');
+    return url.toString();
+  } catch {
+    return '[mesh-url]';
+  }
 }
 
 // Chat listeners — per ChatScreen real sync
@@ -231,7 +236,7 @@ export function notifyLocalChat(payload: any) {
 export async function createHostRoom(opts?: { port?: number }): Promise<HostRoom> {
   const port = opts?.port ?? DEFAULT_PORT;
   const ip = await getLocalIp();
-  const roomToken = randomToken(8);
+  const roomToken = randomToken();
   const qrPayload = buildQrPayload(ip, port, roomToken);
   const wsUrl = qrPayload;
 
@@ -244,7 +249,7 @@ export async function createHostRoom(opts?: { port?: number }): Promise<HostRoom
   try {
     const { startMeshServer } = await import('./meshServer');
     await startMeshServer(port, roomToken, (msg: any) => {
-      console.log('[meshSync] meshServer onMessage', JSON.stringify(msg).slice(0, 500));
+      console.log('[meshSync] meshServer message', msg?.type ?? 'unknown');
       // I messaggi light_payload/chat sono già persistiti in meshServer (appendChatMessage)
       // Qui notifichiamo solo eventuali listener UI via getActiveSocket().onmessage compat
       // Mantieni compatibilità con joinRoom client (WebSocket client -> server TCP)
@@ -252,22 +257,12 @@ export async function createHostRoom(opts?: { port?: number }): Promise<HostRoom
         // opzionale: trigger sync listener
       }
     });
-    console.log('[meshSync:createHostRoom] meshServer avviato', { ip, port, roomToken, qrPayload });
+    console.log('[meshSync:createHostRoom] meshServer avviato', { ip, port });
   } catch (e) {
-    console.log('[meshSync:createHostRoom] startMeshServer failed, fallback stub loopback', e);
-    // Fallback stub per dev senza nativo — tenta loopback WS client verso se stesso
-    try {
-      createWs(wsUrl);
-      setTimeout(() => {
-        if (activeSocket && activeSocket.readyState !== WebSocket.OPEN) {
-          try {
-            activeSocket.close();
-          } catch {}
-          activeSocket = null;
-          activeWsUrl = wsUrl; // mantieni url per QR anche se socket non aperto
-        }
-      }, 800);
-    } catch {}
+    console.log('[meshSync:createHostRoom] server mesh non disponibile', e);
+    disconnect();
+    setSyncStatus('error');
+    throw new Error('Impossibile avviare il server mesh su questo dispositivo');
   }
 
   return { roomToken, ip, port, wsUrl, qrPayload };
@@ -281,36 +276,59 @@ export async function joinRoom(qrPayload: string): Promise<JoinInfo> {
   activeRole = 'client';
   activeRoomToken = info.token;
 
-  console.log('[meshSync:joinRoom] connecting to', info.wsUrl);
+  console.log('[meshSync:joinRoom] connecting to', redactPairingUrl(info.wsUrl));
   const ws = createWs(info.wsUrl);
 
-  // attesa open con timeout 5s
-  await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Timeout WS Host non raggiungibile (LAN isolata?)')), 5000);
-    ws.onopen = () => {
-      clearTimeout(timeout);
-      console.log('[meshSync:joinRoom] WS connected');
-      // handshake leggero con token
-      try {
-        ws.send(JSON.stringify({ type: 'hello', token: info.token, platform: Platform.OS }));
-      } catch {}
-      resolve();
-    };
-    ws.onerror = (e: any) => {
-      clearTimeout(timeout);
-      reject(new Error('WS error: ' + (e?.message ?? 'unknown')));
-    };
-  }).catch((e) => {
-    console.log('[meshSync:joinRoom] warn (stub LAN):', (e as Error).message);
-    // non blocchiamo il flusso — in stub LAN il syncDatabase farà fetch HTTP
-    // manteniamo wsUrl per retry
-  });
+  // Require a valid hello_ack before reporting the pairing as successful.
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Timeout di autenticazione con l’host mesh')), 8000);
+      const previousOnMessage = ws.onmessage;
+      const previousOnClose = ws.onclose;
+      const finish = (error?: Error) => {
+        clearTimeout(timeout);
+        ws.onmessage = previousOnMessage;
+        ws.onclose = previousOnClose;
+        if (error) reject(error);
+        else resolve();
+      };
+      ws.onopen = () => {
+        try {
+          ws.send(JSON.stringify({ type: 'hello', token: info.token, platform: Platform.OS }));
+        } catch {
+          finish(new Error('Impossibile inviare la richiesta di autenticazione mesh'));
+        }
+      };
+      ws.onmessage = (event) => {
+        previousOnMessage?.call(ws, event);
+        try {
+          const message = JSON.parse(String(event.data));
+          if (message.type === 'hello_ack' && message.token === info.token) {
+            console.log('[meshSync:joinRoom] authenticated');
+            finish();
+          } else if (message.type === 'error') {
+            finish(new Error('L’host mesh ha rifiutato l’autenticazione'));
+          }
+        } catch {}
+      };
+      ws.onerror = (e: any) => {
+        finish(new Error('Connessione mesh non riuscita: ' + (e?.message ?? 'errore WebSocket')));
+      };
+      ws.onclose = (event) => {
+        previousOnClose?.call(ws, event);
+        finish(new Error('La connessione mesh si è chiusa prima dell’autenticazione'));
+      };
+    });
+  } catch (error) {
+    disconnect();
+    throw error;
+  }
 
   return info;
 }
 
 // ---------------------------------------------------------------------------
-// syncDatabase 100% — pull products/automations/timeline (e chat/team)
+// syncDatabase — pull/push for the supported inventory tables
 // Chiamato dopo joinRoom, oppure su "Sincronizza ora" del Client.
 // Nessun filtro userId — full dump quando lastPulledAt === null.
 // ---------------------------------------------------------------------------
@@ -319,14 +337,13 @@ export async function syncDatabase(params: { peerUrl?: string; fullResync?: bool
   const url = peerUrl ?? activeWsUrl?.replace(/^ws/, 'http').split('?')[0] ?? null;
 
   if (!url) {
-    console.log('[meshSync:syncDatabase] no peerUrl, skip (Host non ancora joinato)');
-    return;
+    throw new Error('Nessun peer mesh connesso: sincronizzazione annullata');
   }
 
   // Normalizza httpUrl (togli query)
   const httpBase = url.replace(/\/$/, '').split('?')[0].replace(/^ws/, 'http');
   setSyncStatus('syncing');
-  console.log('[meshSync:syncDatabase] 100% pull from', httpBase, fullResync ? '(fullResync)' : '');
+  console.log('[meshSync:syncDatabase] syncing from', httpBase, fullResync ? '(fullResync)' : '(delta)');
 
   try {
     // Import lazy per evitare cycle
@@ -334,9 +351,9 @@ export async function syncDatabase(params: { peerUrl?: string; fullResync?: bool
     const { sync, syncOnMeshJoin } = await import('../db/sync');
 
     if (fullResync) {
-      await syncOnMeshJoin(database, httpBase);
+      await syncOnMeshJoin(database, httpBase, activeRoomToken ?? '');
     } else {
-      await sync(database, httpBase);
+      await sync(database, httpBase, activeRoomToken ?? '');
     }
     setSyncStatus('synced');
     console.log('[meshSync:syncDatabase] done');
@@ -358,7 +375,6 @@ export async function sendLightPayload(payload: LightPayload): Promise<void> {
     automationIds: payload.automationIds,
     text: payload.text ?? '',
     ts: Date.now(),
-    token: activeRoomToken,
   };
   const msg = JSON.stringify(msgObj);
 
@@ -391,11 +407,12 @@ export async function sendLightPayload(payload: LightPayload): Promise<void> {
   const httpBase = activeWsUrl?.replace(/^ws/, 'http').split('?')[0];
   if (httpBase) {
     try {
-      await fetch(`${httpBase.replace(/\/$/, '')}/chat/push`, {
+      const response = await fetch(`${httpBase.replace(/\/$/, '')}/chat/push`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeRoomToken ?? ''}` },
         body: msg,
       });
+      if (!response.ok) throw new Error(`chat push ${response.status}`);
       console.log('[meshSync:sendLightPayload] sent over HTTP fallback');
       chatListeners.forEach(cb => { try { cb({ payload: msgObj, raw: msg }); } catch {} });
       return;
@@ -404,9 +421,7 @@ export async function sendLightPayload(payload: LightPayload): Promise<void> {
     }
   }
 
-  console.log('[meshSync:sendLightPayload] STUB — nessun WS aperto, payload loggato:', payload);
-  // mostra comunque in locale per test single-device
-  chatListeners.forEach(cb => { try { cb({ payload: msgObj, raw: msg }); } catch {} });
+  throw new Error('Invio mesh non riuscito: nessuna connessione attiva');
 }
 
 // ---------------------------------------------------------------------------

@@ -28,8 +28,8 @@
  *   - Se ping fallisce: disattiva AP isolation / Client Isolation nel pannello Mercusys.
  *
  * Token ROOM:
- *   - Host genera roomToken 8 char [A-Z2-9] (es. X7K9PQ2M) via createHostRoom()
- *   - QR payload = ws://<HOST_IP>:8080?token=<ROOM>  (es. ws://192.168.1.100:8080?token=X7K9PQ2M)
+ *   - Host genera roomToken temporaneo di 16 caratteri esadecimali via createHostRoom()
+ *   - QR payload = ws://<HOST_IP>:8080?token=<ROOM>  (es. ws://192.168.1.100:8080?token=0123456789ABCDEF)
  *   - Client scansiona QR -> parseQrPayload() estrae ip/port/token -> joinRoom(wsUrl)
  *   - Validazione: MockWebSocket.rooms.size == 2 per quel token (host+client)
  *
@@ -45,7 +45,7 @@
  *     adb -s <HOST_SERIAL> reverse tcp:8080 tcp:8080  # se serve reverse per WS
  *     npx detox test --configuration android.device.debug --device-name "SM-S938" e2e/meshQRLoop.detox.test.ts --testNamePattern="Host: createHostRoom"
  *   Terminal 2 — Client (Pixel 10 Pro o secondo S25):
- *     adb -s <CLIENT_SERIAL> shell am start -n com.syncroflow/.MainActivity --es qrPayload "ws://192.168.1.100:8080?token=X7K9PQ2M"
+ *     adb -s <CLIENT_SERIAL> shell am start -n com.syncroflow/.MainActivity --es qrPayload "ws://192.168.1.100:8080?token=0123456789ABCDEF"
  *     npx detox test --configuration android.device.debug --device-name "Pixel_10_Pro" e2e/meshQRLoop.detox.test.ts --testNamePattern="Client: parseQrPayload"
  *   Alternativa script unificato: ./scripts/test_detox_mercusys.sh (vedi file)
  *   Log attesi su entrambi: "WS OPEN", "roomSize 2", "pulled 42", "chat_message received"
