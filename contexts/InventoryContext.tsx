@@ -25,15 +25,40 @@ const DEFAULT_LIBRARIES: Library[] = [
 async function hydrateSharedProductImages(items: Product[]): Promise<Product[]> {
   return Promise.all(items.map(async (product) => {
     const paths = product.storageImagePaths || [];
-    if (!paths.some(Boolean)) return product;
+    const customPaths = product.storageCustomDataPaths || {};
+    if (!paths.some(Boolean) && !Object.values(customPaths).some((items) => items.some(Boolean))) return product;
     const images = [...(product.images || [])];
     await Promise.all(paths.map(async (path, index) => {
       if (!path) return;
       const { data, error } = await supabase.storage.from('organization-media').createSignedUrl(path, 60 * 60 * 24 * 7);
       if (!error && data?.signedUrl) images[index] = data.signedUrl;
     }));
-    return { ...product, images };
+    const customData = await Promise.all((product.customData || []).map(async (entry) => {
+      const fieldId = entry.fieldSnapshot?.id;
+      const documentPaths = fieldId ? customPaths[fieldId] || [] : [];
+      if (!documentPaths.length || !Array.isArray(entry.value)) return entry;
+      const values = [...entry.value];
+      await Promise.all(documentPaths.map(async (path, index) => {
+        if (!path) return;
+        const { data, error } = await supabase.storage.from('organization-media').createSignedUrl(path, 60 * 60 * 24 * 7);
+        if (!error && data?.signedUrl) values[index] = data.signedUrl;
+      }));
+      return { ...entry, value: values };
+    }));
+    return { ...product, images, customData };
   }));
+}
+
+function inferMediaType(uri: string, detectedType?: string) {
+  if (detectedType) return detectedType;
+  const extension = uri.match(/\.([a-z0-9]{2,8})(?:[?#]|$)/i)?.[1]?.toLowerCase();
+  const known: Record<string, string> = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', heic: 'image/heic',
+    mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', pdf: 'application/pdf',
+    csv: 'text/csv', xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  };
+  return (extension && known[extension]) || 'application/octet-stream';
 }
 
 interface InventoryContextType {
@@ -157,16 +182,22 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const token = (session as any)?.provider_token as string | undefined;
     if (!organizationId || !products.length) return;
-    const localImages = products.flatMap((product) => (product.images || [])
-      .map((uri, index) => ({ product, uri, index }))
-      .filter(({ uri }) => !/^https?:\/\//i.test(uri) && !uploadingMedia.current.has(uri) && !backedUpMedia.current.has(uri)));
-    if (!localImages.length) return;
+    const localAssets = products.flatMap((product) => [
+      ...(product.images || []).map((uri, index) => ({ product, uri, index, fieldId: undefined as string | undefined })),
+      ...(product.customData || []).flatMap((entry) => {
+        const fieldId = entry.fieldSnapshot?.id;
+        const fieldType = entry.fieldSnapshot?.type;
+        if (!fieldId || (fieldType !== 'images' && fieldType !== 'document') || !Array.isArray(entry.value)) return [];
+        return entry.value.map((uri: string, index: number) => ({ product, uri, index, fieldId }));
+      }),
+    ]).filter(({ uri }) => typeof uri === 'string' && !/^https?:\/\//i.test(uri) && !uploadingMedia.current.has(uri) && !backedUpMedia.current.has(uri));
+    if (!localAssets.length) return;
     let cancelled = false;
     void (token ? ensureOrganizationDriveFolder(token, organizationId).catch((error) => {
       console.warn('Cartella Google Drive non disponibile; salvo comunque le foto nel cloud del team.', error);
       return null;
     }) : Promise.resolve(null)).then(async (folderId) => {
-      await Promise.all(localImages.map(async ({ product, uri, index }) => {
+      await Promise.all(localAssets.map(async ({ product, uri, index, fieldId }) => {
         uploadingMedia.current.add(uri);
         try {
           const extension = uri.match(/\.([a-z0-9]{2,5})(?:[?#]|$)/i)?.[1] || 'jpg';
@@ -174,9 +205,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           if (!response.ok) throw new Error('Il file locale non è leggibile.');
           const blob = await response.blob();
           const path = `${organizationId}/${product.id}/${Date.now()}_${index + 1}.${extension}`;
+          const contentType = inferMediaType(uri, blob.type);
           const [storageResult, driveResult] = await Promise.all([
             supabase.storage.from('organization-media').upload(path, blob, {
-              contentType: blob.type || 'image/jpeg', upsert: true,
+              contentType, upsert: true,
             }).then(async ({ error }) => {
               if (error) throw error;
               const { data, error: signedError } = await supabase.storage.from('organization-media').createSignedUrl(path, 60 * 60 * 24 * 7);
@@ -184,7 +216,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
               return { path, url: data.signedUrl };
             }).catch((error) => ({ error })),
             folderId && token
-              ? uploadDriveFile(token, folderId, `${product.sku}_${index + 1}.${extension}`, blob, blob.type)
+              ? uploadDriveFile(token, folderId, `${product.sku}_${index + 1}.${extension}`, blob, contentType)
                 .then((file) => ({ link: file.webViewLink }))
                 .catch((error) => ({ error }))
               : Promise.resolve({ link: undefined }),
@@ -196,9 +228,24 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           if (shared) backedUpMedia.current.add(uri);
           setProducts((current) => current.map((item) => item.id !== product.id ? item : {
             ...item,
-            images: item.images.map((image) => image === uri && shared ? shared.url : image),
-            storageImagePaths: shared ? item.images.map((image, imageIndex) => imageIndex === index ? shared.path : item.storageImagePaths?.[imageIndex] || '') : item.storageImagePaths,
-            backupImageLinks: driveLink ? Array.from(new Set([...(item.backupImageLinks || []), driveLink])) : item.backupImageLinks,
+            ...(fieldId ? {
+              customData: item.customData.map((entry) => entry.fieldSnapshot?.id !== fieldId || !Array.isArray(entry.value) ? entry : {
+                ...entry, value: entry.value.map((value: string) => value === uri && shared ? shared.url : value),
+              }),
+              storageCustomDataPaths: shared ? {
+                ...(item.storageCustomDataPaths || {}),
+                [fieldId]: (item.customData.find((entry) => entry.fieldSnapshot?.id === fieldId)?.value || []).map((_: unknown, dataIndex: number) =>
+                  dataIndex === index ? shared.path : item.storageCustomDataPaths?.[fieldId]?.[dataIndex] || ''),
+              } : item.storageCustomDataPaths,
+              backupCustomDataLinks: driveLink ? {
+                ...(item.backupCustomDataLinks || {}),
+                [fieldId]: Array.from(new Set([...(item.backupCustomDataLinks?.[fieldId] || []), driveLink])),
+              } : item.backupCustomDataLinks,
+            } : {
+              images: item.images.map((image) => image === uri && shared ? shared.url : image),
+              storageImagePaths: shared ? item.images.map((_, imageIndex) => imageIndex === index ? shared.path : item.storageImagePaths?.[imageIndex] || '') : item.storageImagePaths,
+              backupImageLinks: driveLink ? Array.from(new Set([...(item.backupImageLinks || []), driveLink])) : item.backupImageLinks,
+            }),
             updatedAt: new Date().toISOString(),
           }));
         } catch (error) {
