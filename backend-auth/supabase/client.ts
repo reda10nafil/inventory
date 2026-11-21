@@ -3,8 +3,11 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'react-native-url-polyfill/auto';
 import type { Database } from './types';
+import appConfig from '../../app.json';
 
-const extra = Constants.expoConfig?.extra ?? {};
+// Sul web expo-constants non riceve il manifest (Babel usa il preset React Native, non quello Expo),
+// quindi si ricade sui valori pubblici di app.json → expo.extra.
+const extra: Record<string, any> = Constants.expoConfig?.extra ?? appConfig.expo?.extra ?? {};
 const supabaseUrl = extra.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseKey = extra.supabasePublishableKey || process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 

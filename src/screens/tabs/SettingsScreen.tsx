@@ -11,7 +11,7 @@ import { theme, typography, borderRadius, spacing } from '../../../constants/the
 import { useInventory } from '../../../contexts/InventoryContext';
 import { Product } from '../../../types';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
-import { useAuth } from '../../../contexts/AuthContext';
+import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
 
@@ -496,6 +496,7 @@ export default function SettingsScreen() {
               <Text style={styles.settingDescription}>{organization.role}{organization.id === organizationId ? ' · attiva' : ''}</Text>
             </Pressable>
           ))}
+          {LOGIN_ENABLED ? <>
           {(activeOrganization?.role === 'owner' || activeOrganization?.role === 'admin') && <>
             <TextInput
               value={inviteEmail}
@@ -522,6 +523,9 @@ export default function SettingsScreen() {
             <Text style={styles.teamButtonText}>{inviteBusy ? 'Attendi…' : 'Unisciti a un team'}</Text>
           </Pressable>
           <Text style={styles.settingDescription}>Gli inviti sono legati all’email indicata e scadono dopo 7 giorni.</Text>
+          </> : (
+            <Text style={styles.settingDescription}>Accesso con Google disattivato: i dati restano su questo dispositivo. Team e inviti tornano disponibili quando l’accesso verrà riattivato.</Text>
+          )}
         </View>
 
         {/* DATI E BACKUP */}
@@ -596,7 +600,7 @@ export default function SettingsScreen() {
           <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
         </Pressable>
 
-        <Pressable
+        {LOGIN_ENABLED && <Pressable
           style={styles.settingRow}
           onPress={() => Alert.alert('Esci dall’account?', user?.email || 'Google', [
             { text: 'Annulla', style: 'cancel' },
@@ -613,7 +617,7 @@ export default function SettingsScreen() {
             </View>
           </View>
           <MaterialIcons name="logout" size={22} color={theme.textSecondary} />
-        </Pressable>
+        </Pressable>}
 
         {/* TEAM E ACCESSO */}
         <Text style={styles.sectionTitle}>TEAM E ACCESSO</Text>

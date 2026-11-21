@@ -97,6 +97,8 @@ export const useInventory = () => {
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const { organizationId, session, user } = useAuth();
+  // Senza sessione (login disattivato) l'inventario resta solo locale: niente Supabase, Storage o Drive.
+  const cloudEnabled = !!session;
   const [products, setProducts] = useState<Product[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -117,11 +119,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       setProducts([]); setTimeline([]); setAlerts([]); setLibraries(DEFAULT_LIBRARIES); setDeletedProductIds([]);
       return;
     }
-    void loadData(organizationId).then(() => {
+    void loadData(organizationId, cloudEnabled).then(() => {
       if (active) loadedOrganization.current = organizationId;
     });
     return () => { active = false; };
-  }, [organizationId]);
+  }, [organizationId, cloudEnabled]);
 
   // Persist offline immediately and coalesce cloud writes while editing.
   useEffect(() => {
@@ -131,6 +133,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     void Promise.all(Object.entries(serialized).map(([key, value]) =>
       AsyncStorage.setItem(`${prefix}:${key}`, JSON.stringify(value)),
     ));
+    if (!cloudEnabled) return;
 
     const timer = setTimeout(() => {
       void (supabase as any).rpc('merge_inventory_snapshot', {
@@ -153,11 +156,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         });
     }, 900);
     return () => clearTimeout(timer);
-  }, [organizationId, products, timeline, alerts, libraries, deletedProductIds]);
+  }, [organizationId, cloudEnabled, products, timeline, alerts, libraries, deletedProductIds]);
 
   // Realtime propagation keeps operator profiles in the same organization in sync.
   useEffect(() => {
-    if (!organizationId) return;
+    if (!organizationId || !cloudEnabled) return;
     const channel = supabase.channel(`inventory:${organizationId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'organization_inventory_snapshots',
@@ -176,12 +179,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         setDeletedProductIds(Array.isArray(incoming.deleted_product_ids) ? incoming.deleted_product_ids : []);
       }).subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [organizationId, user?.id]);
+  }, [organizationId, cloudEnabled, user?.id]);
 
   // Keep product photos in tenant-private Storage for team sync; copy them to private Drive too when authorized.
   useEffect(() => {
     const token = (session as any)?.provider_token as string | undefined;
-    if (!organizationId || !products.length) return;
+    if (!organizationId || !cloudEnabled || !products.length) return;
     const localAssets = products.flatMap((product) => [
       ...(product.images || []).map((uri, index) => ({ product, uri, index, fieldId: undefined as string | undefined })),
       ...(product.customData || []).flatMap((entry) => {
@@ -263,7 +266,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     generateAlerts();
   }, [products]);
 
-  const loadData = async (orgId: string) => {
+  const loadData = async (orgId: string, useCloud: boolean) => {
     try {
       const prefix = `inventory:v1:${orgId}`;
       const keys = ['products', 'timeline', 'alerts', 'libraries', 'deleted_product_ids'] as const;
@@ -283,8 +286,9 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         await AsyncStorage.setItem(migrationKey, 'yes');
       }
 
-      const { data: cloud, error: cloudError } = await (supabase as any)
-        .from('organization_inventory_snapshots').select('*').eq('organization_id', orgId).maybeSingle();
+      const { data: cloud, error: cloudError } = useCloud
+        ? await (supabase as any).from('organization_inventory_snapshots').select('*').eq('organization_id', orgId).maybeSingle()
+        : { data: null, error: null };
       if (cloudError) console.warn('Uso i dati locali: il backup cloud non è raggiungibile.', cloudError);
 
       if (cloud) {

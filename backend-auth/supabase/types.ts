@@ -28,6 +28,7 @@ export interface Database {
           email?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       operators: {
         Row: {
@@ -51,6 +52,7 @@ export interface Database {
           role?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       products: {
         Row: {
@@ -83,6 +85,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       sync_logs: {
         Row: {
@@ -106,9 +109,12 @@ export interface Database {
           data?: Json | null;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
-    Views: {};
-    Functions: {};
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

@@ -2,6 +2,22 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 21 novembre 2026 — Allineamento locale, verifica RN e avvio web
+
+- Branch / SHA: main a 42dc07e (fast-forward di 46 commit da b3fc44d). Anche la copia `onspace-9b4wtn-11197` portata a 42dc07e. Modifiche locali non committate.
+- Fatto:
+  - Da `feature/auth-and-sync` (commit 60e8068 e 35a5ada, non presenti su main) recuperati solo i fix TypeScript di `backend-auth/` e la configurazione Metro (`@expo/metro-config` + controllo di tailwindcss). Log, script `fix_*` e screenshot del branch non presi.
+  - Web: `index.js` monta l'app con `registerRootComponent` solo sul web (Android/iOS invariati con `AppRegistry.registerComponent('main')`); `app.json` web output `single`.
+  - WatermelonDB: nuovo `src/db/adapter.ts` (SQLite, nativo) e `adapter.web.ts` (LokiJS + IndexedDB), perché l'adapter SQLite rompeva il bundle web.
+  - `backend-auth/supabase/client.ts`: se `expo-constants` non ha il manifest (web) legge URL e chiave publishable da `app.json`.
+  - Expo ha riscritto `tsconfig.json` all'avvio (`extends: expo/tsconfig.base`), come già sul branch feature.
+- Verifiche e risultato: `tsc --noEmit` 0 errori (prima 12, tutti in `backend-auth/`); eslint ok; jest 46/46 superati (jest non è nei devDependencies: eseguito con `npx jest@29.7.0`); bundle Android `react-native bundle` compilato; web su http://localhost:8081 mostra la schermata di accesso senza errori in console.
+- Problemi/rischi: login Google, dati Supabase, NFC, mesh LAN e build APK non provati. Su web l'NFC non esiste (solo avviso). Il redirect OAuth web (`http://localhost:8081`) deve essere tra gli URL consentiti in Supabase: non verificato.
+- Login Google disattivato su richiesta dell'utente (non funzionante): `LOGIN_ENABLED = false` in `contexts/AuthContext.tsx`. L'app parte senza schermata di accesso, con lo spazio di lavoro locale `local`; `InventoryContext` salta Supabase (snapshot, realtime, Storage, Drive) quando non c'è sessione; in Impostazioni team/inviti e "Esci" sono nascosti. Verificato sul web: Home, Aggiungi e Impostazioni si aprono; tsc, eslint e jest ok.
+  - Nota per la riattivazione: al primo avvio i vecchi dati locali pre-tenant migrano nello spazio `local`, non nel futuro workspace cloud.
+- Restano solo sul branch feature: schermate `app/(auth)`, `app/(tabs)/export.tsx`, `hooks/useAuth.ts`, `utils/exportImport.ts` (commit 3411a65, non usate dall'`App.tsx` attuale) e i fix Flutter di 60e8068 (`product.dart`, `inventory_provider.dart`, `home_screen.dart`).
+- Ancora da fare: aggiungere `jest` ai devDependencies; valutare `babel-preset-expo` (usato sul branch feature) per il web; provare l'app su telefono.
+
 ## 20 ottobre 2026 — Pubblicazione richiesta su main
 
 - Su richiesta dell'utente, pubblicati i tre documenti anche su GitHub main.

@@ -14,7 +14,7 @@ import { HardwareConfigProvider } from './contexts/HardwareConfigContext';
 import { soundService } from './services/SoundService';
 import RootNavigator from './src/navigation/RootNavigator';
 import { linking } from './src/navigation/linking';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, LOGIN_ENABLED, useAuth } from './contexts/AuthContext';
 import AuthScreen from './src/screens/AuthScreen';
 
 // BatteryMonitor — Fase 4: expo-battery -> react-native-device-info
@@ -56,7 +56,7 @@ function SignedInApp() {
   if (loading || (session && !organizationId && !authError)) {
     return <View style={styles.center}><ActivityIndicator color="#D4AF37" /><Text style={styles.loadingText}>Caricamento spazio di lavoro…</Text></View>;
   }
-  if (!session) return <AuthScreen />;
+  if (!session && LOGIN_ENABLED) return <AuthScreen />;
   if (!organizationId) return <View style={styles.center}>
     <Text style={styles.loadingText}>{authError || 'Impossibile aprire lo spazio di lavoro.'}</Text>
     <Pressable onPress={() => void signOut()}><Text style={styles.signOut}>Esci e riprova</Text></Pressable>

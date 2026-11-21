@@ -8,6 +8,16 @@ import { supabase } from '../backend-auth/supabase/client';
 
 WebBrowser.maybeCompleteAuthSession();
 
+/**
+ * Interruttore del login Google/Supabase.
+ * false = l'app parte senza schermata di accesso e usa uno spazio di lavoro locale
+ * (dati solo sul dispositivo/browser, nessuna sincronizzazione cloud né team).
+ * Rimettere a true quando OAuth Google e Supabase saranno configurati e provati.
+ */
+export const LOGIN_ENABLED = false;
+export const LOCAL_ORGANIZATION_ID = 'local';
+const LOCAL_ORGANIZATIONS = [{ id: LOCAL_ORGANIZATION_ID, name: 'Spazio locale', role: 'owner' }];
+
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
@@ -46,9 +56,9 @@ async function consumeCallback(url: string) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string; role: string }>>([]);
-  const [loading, setLoading] = useState(true);
+  const [organizationId, setOrganizationId] = useState<string | null>(LOGIN_ENABLED ? null : LOCAL_ORGANIZATION_ID);
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string; role: string }>>(LOGIN_ENABLED ? [] : LOCAL_ORGANIZATIONS);
+  const [loading, setLoading] = useState(LOGIN_ENABLED);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const resolveOrganization = useCallback(async (activeSession: Session | null) => {
@@ -78,6 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Login disattivato: nessuna sessione Supabase, nessun ascolto dei callback OAuth.
+    if (!LOGIN_ENABLED) return;
     let mounted = true;
     const initialize = async () => {
       try {
@@ -120,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [resolveOrganization]);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!LOGIN_ENABLED) throw new Error('L’accesso con Google è momentaneamente disattivato.');
     setAuthError(null);
     const redirectTo = callbackUrl();
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -142,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (!LOGIN_ENABLED) return;
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setSession(null);
@@ -150,6 +164,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const switchOrganization = useCallback(async (nextOrganizationId: string) => {
+    if (!LOGIN_ENABLED) {
+      if (nextOrganizationId !== LOCAL_ORGANIZATION_ID) throw new Error('Con l’accesso disattivato è disponibile solo lo spazio locale.');
+      return;
+    }
     if (!session?.user.id) throw new Error('Account non autenticato.');
     const { data, error } = await (supabase as any).from('organization_members')
       .select('organization_id, role, organizations(id, name)').eq('organization_id', nextOrganizationId).eq('user_id', session.user.id).maybeSingle();
