@@ -1,9 +1,10 @@
 // FurInventory Pro - Root App (ejected from expo-router)
 // Estratto da app/_layout.tsx:1 — mantiene identici provider + BatteryMonitor + theme
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import type { Theme as NavigationTheme } from '@react-navigation/native';
 import { InventoryProvider } from './contexts/InventoryContext';
 import { LocationsProvider } from './contexts/LocationsContext';
 import { CustomFieldsProvider } from './contexts/CustomFieldsContext';
@@ -20,6 +21,9 @@ import AuthScreen from './src/screens/AuthScreen';
 
 // BatteryMonitor — Fase 4: expo-battery -> react-native-device-info
 import * as Battery from './src/lib/battery';
+import { Text } from './components/ui/Text';
+import { makeStyles, useTheme } from './contexts/ThemeContext';
+import type { AppTheme } from './constants/themes';
 
 function BatteryMonitor() {
   const [lastAlertTime, setLastAlertTime] = useState(0);
@@ -51,11 +55,30 @@ function BatteryMonitor() {
   return null;
 }
 
+// Tema di React Navigation costruito dallo stile attivo: intestazioni native, fondo delle schermate, barra.
+function navigationTheme(t: AppTheme): NavigationTheme {
+  return {
+    dark: t.dark,
+    colors: {
+      primary: t.colors.accent,
+      background: t.colors.background,
+      card: t.colors.backgroundSecondary,
+      text: t.colors.textPrimary,
+      border: t.colors.border,
+      notification: t.colors.notification,
+    },
+    fonts: DefaultTheme.fonts,
+  };
+}
+
 function SignedInApp() {
   const { session, organizationId, loading, authError, signOut } = useAuth();
+  const t = useTheme();
+  const styles = useStyles();
+  const navTheme = React.useMemo(() => navigationTheme(t), [t]);
 
   if (loading || (session && !organizationId && !authError)) {
-    return <View style={styles.center}><ActivityIndicator color="#D4AF37" /><Text style={styles.loadingText}>Caricamento spazio di lavoro…</Text></View>;
+    return <View style={styles.center}><ActivityIndicator color={t.colors.accent} /><Text style={styles.loadingText}>Caricamento spazio di lavoro…</Text></View>;
   }
   if (!session && LOGIN_ENABLED) return <AuthScreen />;
   if (!organizationId) return <View style={styles.center}>
@@ -72,7 +95,7 @@ function SignedInApp() {
               <GS1ConfigProvider>
                 <InventoryProvider>
                   <BatteryMonitor />
-                  <NavigationContainer linking={linking as any} fallback={null}>
+                  <NavigationContainer linking={linking as any} fallback={null} theme={navTheme}>
                     <RootNavigator />
                   </NavigationContainer>
                 </InventoryProvider>
@@ -89,8 +112,8 @@ export default function App() {
   return <SafeAreaProvider><ThemeProvider><AuthProvider><SignedInApp /></AuthProvider></ThemeProvider></SafeAreaProvider>;
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#0A0A0A' },
+const useStyles = makeStyles((t) => ({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: t.colors.background },
   loadingText: { color: '#D4D4D8', marginTop: 12, textAlign: 'center' },
-  signOut: { color: '#D4AF37', marginTop: 20, fontWeight: '600' },
-});
+  signOut: { color: t.colors.accentInk, marginTop: 20, fontWeight: '600' },
+}));
