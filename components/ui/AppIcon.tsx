@@ -13,8 +13,21 @@ type IconProps = Omit<React.ComponentProps<typeof MaterialIcons>, 'name'> & {
 
 type Replacement = { family: 'community'; name: string; activeName?: string };
 
-/** Nome MaterialIcons di oggi → icona nuova. Vuota finché il lavoro L4 non la riempie. */
-export const ICON_REPLACEMENTS: Record<string, Replacement> = {};
+/** Nome MaterialIcons di oggi → icona nuova (ticket 07), uguale in tutti gli stili e in ogni punto dell'app. */
+export const ICON_REPLACEMENTS: Record<string, Replacement> = {
+  // barra in basso (la versione piena per la voce attiva)
+  'grid-view': { family: 'community', name: 'view-grid-outline', activeName: 'view-grid' },
+  timeline: { family: 'community', name: 'history' },
+  'account-tree': { family: 'community', name: 'lightning-bolt-outline', activeName: 'lightning-bolt' },
+  'add-circle': { family: 'community', name: 'plus-circle-outline', activeName: 'plus-circle' },
+  settings: { family: 'community', name: 'cog-outline', activeName: 'cog' },
+  // campi e misure
+  'fitness-center': { family: 'community', name: 'weight' },
+  straighten: { family: 'community', name: 'tape-measure' },
+  'width-wide': { family: 'community', name: 'arrow-expand-horizontal' },
+  // «Tutti» delle cartelle
+  apps: { family: 'community', name: 'folder-multiple' },
+};
 
 const FALLBACK = 'label-outline';
 

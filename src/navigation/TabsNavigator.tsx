@@ -37,11 +37,11 @@ export default function TabsNavigator() {
         tabBarLabelStyle: { fontSize: t.tab.labelSize, fontWeight: t.tab.activeWeight },
       }}
     >
-      <Tab.Screen name="index" component={HomeScreen} options={{ title: 'Home', tabBarIcon: ({ color, size }) => <AppIcon name="grid-view" size={24} color={color} /> }} />
-      <Tab.Screen name="timeline" component={TimelineScreen} options={{ title: 'Cronologia', tabBarIcon: ({ color }) => <AppIcon name="timeline" size={24} color={color} /> }} />
-      <Tab.Screen name="automations" component={AutomationsScreen} options={{ title: 'Automazioni', tabBarIcon: ({ color }) => <AppIcon name="account-tree" size={24} color={color} /> }} />
-      <Tab.Screen name="add" component={AddScreen} options={{ title: 'Aggiungi', tabBarIcon: ({ color }) => <AppIcon name="add-circle" size={24} color={color} /> }} />
-      <Tab.Screen name="settings" component={SettingsScreen} options={{ title: 'Impostazioni', tabBarIcon: ({ color }) => <AppIcon name="settings" size={24} color={color} /> }} />
+      <Tab.Screen name="index" component={HomeScreen} options={{ title: 'Home', tabBarIcon: ({ color, focused }) => <AppIcon name="grid-view" active={focused} size={24} color={color} /> }} />
+      <Tab.Screen name="timeline" component={TimelineScreen} options={{ title: 'Cronologia', tabBarIcon: ({ color, focused }) => <AppIcon name="timeline" active={focused} size={24} color={color} /> }} />
+      <Tab.Screen name="automations" component={AutomationsScreen} options={{ title: 'Automazioni', tabBarIcon: ({ color, focused }) => <AppIcon name="account-tree" active={focused} size={24} color={color} /> }} />
+      <Tab.Screen name="add" component={AddScreen} options={{ title: 'Aggiungi', tabBarIcon: ({ color, focused }) => <AppIcon name="add-circle" active={focused} size={24} color={color} /> }} />
+      <Tab.Screen name="settings" component={SettingsScreen} options={{ title: 'Impostazioni', tabBarIcon: ({ color, focused }) => <AppIcon name="settings" active={focused} size={24} color={color} /> }} />
     </Tab.Navigator>
   );
 }

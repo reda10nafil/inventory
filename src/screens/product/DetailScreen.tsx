@@ -889,7 +889,7 @@ export default function ProductDetailScreen() {
                 )}
                 {product.weight && (
                   <View style={styles.measureCard}>
-                    <AppIcon name="scale" size={20} color={t.colors.textSecondary} />
+                    <AppIcon name="fitness-center" size={20} color={t.colors.textSecondary} />
                     <Text style={styles.measureLabel}>Peso</Text>
                     <Text style={styles.measureValue}>{product.weight} kg</Text>
                   </View>

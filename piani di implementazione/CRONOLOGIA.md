@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L4: icone nuove
+
+- Branch / SHA: `ui-ux/stili`, commit di L4 dopo 0f227c9.
+- Fatto: `ICON_REPLACEMENTS` in `components/ui/AppIcon.tsx` con la tabella del ticket 07 (barra in basso con la versione piena per la voce attiva, `active={focused}` in `TabsNavigator`; Peso `weight`, misure `tape-measure`, «Tutti» `folder-multiple`). In più, come nella tavola Scheda della tela: Larghezza delle misure (`width-wide`) → `arrow-expand-horizontal`, e il Peso delle misure della Scheda usa il nome dell'icona del campo Peso (`fitness-center` → `weight`) invece di `scale`. La tabella vale ovunque: i nomi salvati nei dati non cambiano. Nel modulo Aggiungi la Larghezza resta `tape-measure`, perché l'icona viene dal campo salvato (`straighten`).
+- Verifiche: tsc 0, eslint 0, jest 52 verdi. Controllo dei cataloghi (10, 8, 39, 106 icone), delle 76 icone dei dati (modelli, campi di sistema) e dei 104 nomi scritti nel codice: tutte hanno una resa, nessun doppione nei cataloghi dopo le sostituzioni. Schermate (30, contro la 8081 a L0): cambiano solo le icone sostituite e la riga sotto le intestazioni (già nota dal G1); la Scheda intera è 1 px più alta per l'altezza dei glifi nuovi.
+- Ancora da fare: L5a, L3, L5b-e, L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L2 e controllo G1: schermate sul tema attivo
 
 - Branch / SHA: `ui-ux/stili`, un commit per corsia (L2a-L2e) e uno per G1, dopo a9e479e.
