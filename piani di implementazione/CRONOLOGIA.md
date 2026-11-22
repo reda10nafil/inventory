@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C14: una sola copia delle posizioni predefinite (D21)
+
+- Branch `funzioni/magazzino`.
+- **D21**: le posizioni predefinite erano scritte tre volte (`constants/config.ts`, `contexts/LocationsContext.tsx`, `hooks/useLocations.ts`). Le due copie fuori dal contesto non avevano importatori (controllato con grep su tutto il progetto, `app/` compresa): tolti `hooks/useLocations.ts` e `LOCATIONS` da `constants/config.ts`; resta solo quella del contesto. Nessun cambio di comportamento.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 121 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+- Correzioni C01-C14 della prova chiuse. Restano per dopo (in `prova-funzioni.md`): D16, D19, P16, P17, P20, P23, P26-P30, il messaggio di LokiJS al primo avvio web.
+
 ## 22 novembre 2026 — Fase B, C13: dominio GS1, numeri della Scheda, Svuota cestino, visore delle foto (P10, P19, P24, P21)
 
 - Branch `funzioni/magazzino`.

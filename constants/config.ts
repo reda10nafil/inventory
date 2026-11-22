@@ -11,14 +11,7 @@ export const FIELD_TYPES = {
   MULTI_CHOICE: 'multi_choice',
 } as const;
 
-export const LOCATIONS = [
-  { id: 'magazzino', label: 'Magazzino', color: '#3B82F6' },
-  { id: 'vetrina', label: 'Vetrina', color: '#D4AF37' },
-  { id: 'stand_a', label: 'Stand A', color: '#10B981' },
-  { id: 'stand_b', label: 'Stand B', color: '#10B981' },
-  { id: 'stand_c', label: 'Stand C', color: '#10B981' },
-  { id: 'sartoria', label: 'Sartoria', color: '#8B5CF6' },
-] as const;
+// Posizioni predefinite: in contexts/LocationsContext.tsx (D21, prima erano scritte anche qui e in hooks/useLocations.ts).
 
 export const FUR_TYPES = [
   { id: 'visone', label: 'Visone' },
