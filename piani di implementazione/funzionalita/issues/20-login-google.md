@@ -11,9 +11,36 @@ Il login Google è spento dal commit `cfcdecb` (`LOGIN_ENABLED = false` in `cont
 - **Login Google da riaccendere, a patto che funzioni**: prima va provato che funziona, su web e su Android; poi si riaccende il cloud per lo spazio.
 - Ogni account ha il proprio spazio e il proprio backup; le foto restano private dello spazio (ticket 11).
 
-## L0 — ricerca in sola lettura
+## L0 — ricerca in sola lettura (chiusa il 22 novembre sera)
 
-Perché è stato spento, quale configurazione OAuth e Supabase esiste (progetto `ymsnlixracwjgajldryb`), che cosa serve nella Google Cloud Console (client web e client Android con la SHA-1 della chiave di debug) e che cosa può fare solo l'utente. Avviata il 22 novembre sera; l'esito va riportato qui.
+Resoconto completo, con file e righe: [`ricerche/L0-login.md`](../ricerche/L0-login.md). In breve:
+
+- **Perché era spento**: non è documentato. Il 21 novembre l'utente disse solo «non funziona» (web su `:8081`). Nessun errore registrato e nessuna prova che il login abbia mai funzionato.
+- **Causa più probabile, verificata il 22 sera**: in Supabase il **provider Google è spento** (acceso solo l'accesso via email). In più il progetto era **in pausa** (piano gratuito).
+- **Supabase** (`ymsnlixracwjgajldryb`): riattivato il 22 sera con il sì dell'utente. 13 tabelle pubbliche con RLS e zero righe, 19 migrazioni. Sul piano gratuito torna in pausa dopo circa una settimana senza uso; in pausa si riattiva solo entro 90 giorni.
+- **Lo schema vero non è nel repository**: `backend-auth/supabase/schema.sql` e `types.ts` sono quelli vecchi. Una copia fedele delle migrazioni è nelle note dell'orchestratore (`supabase-schema/`) e va portata nel repository in L1.
+- **Flusso nel codice**: `supabase.auth.signInWithOAuth` con PKCE, via browser, uguale su web e Android. **Basta un client OAuth «Web application»**: il client Android e la SHA-1 non servono. Client ID e secret stanno solo in Supabase, mai nel repository.
+
+Spetta all'utente (l'agente non inserisce credenziali né segreti):
+
+1. Google Cloud Console, progetto `syncro-flow-app-20261020`: schermata di consenso con il proprio account tra i tester; client «Web application» con il redirect `https://ymsnlixracwjgajldryb.supabase.co/auth/v1/callback`.
+2. Supabase › Authentication › Providers › Google: abilitare, incollare client ID e secret.
+3. Supabase › Authentication › URL Configuration: `http://localhost:8082`, `http://localhost:8082/**` e `syncroflow://auth/callback`.
+4. Fare l'accesso, prima sul web poi sul telefono.
+
+Da fare nel codice in L1:
+
+- **accesso facoltativo** da Impostazioni: lo spazio `local` resta usabile senza account, così un login rotto non blocca più l'app (proposta dell'orchestratore, da confermare);
+- mostrare gli errori di ritorno (`error_description`) e l'accesso annullato;
+- tenere `syncroflow://auth/callback` fuori dalla navigazione su Android;
+- schema nel repository e `types.ts` rigenerato; documenti aggiornati alla porta 8082.
+
+Avvisi per le fette dopo:
+
+- L2: la copia dei dati locali va fatta **prima** del primo caricamento dello spazio dell'account. Dopo 900 ms l'app salva nel cloud lo stato vuoto, e al caricamento successivo la riga del cloud sovrascrive il locale.
+- L2: nel cloud va solo l'inventario (prodotti, cronologia, avvisi, cartelle, eliminati). Posizioni, categorie, contatti, campi, layout, automazioni, GS1 e hardware no.
+- I2: il caricamento delle foto su `organization-media` è già scritto in `InventoryContext`, mai provato.
+- I3: il permesso Drive dura circa un'ora e Supabase non lo rinnova.
 
 ## L1 — login funzionante
 

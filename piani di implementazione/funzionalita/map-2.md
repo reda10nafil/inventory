@@ -47,7 +47,7 @@ Un elenco di fette pronte da eseguire, una per task, che porta nell'app React Na
 
 ## Fette da eseguire
 
-Ordine: M10 e difetti della fase B (se l'utente conferma), poi C1 → S1 → S2 → S3 → N1 → N2 → I1 → L1 → L2 → I2 → I3. L0 e N0 sono ricerche in sola lettura, avviate il 22 sera.
+Ordine: M10 (**fatta** il 22 sera, `df4f3e5`), poi C1 → S1 → S2 → S3 → N1 → N2 → I1 → L1 → L2 → I2 → I3. L0 e N0 sono ricerche in sola lettura, **chiuse** il 22 sera: resoconti in `ricerche/`, sintesi nei ticket 20 e 17. I difetti rimasti della fase B (elenco in `PASSAGGIO.md`) non sono in nessuna fetta: da proporre all'utente come fetta a sé.
 
 | Fetta | Ticket | Cosa | Dipende da | File principali |
 | --- | --- | --- | --- | --- |
@@ -71,7 +71,8 @@ Prova sul telefono, quando l'utente lo collega: L1 su Android, N1 e N2 (l'NFC si
 ## Da confermare con l'utente (una domanda quando la fetta è la prossima)
 
 - S2: soglie del riempimento (verde sotto il 50%, blu dal 50 all'80%, rosso dall'80%).
-- N1 e N2: le proposte dei ticket 17 e 18 e l'esito della ricerca N0 (un «silenziatore» tiene comunque il lettore NFC all'app mentre è aperta).
+- N1 e N2: le proposte dei ticket 17 e 18 e le quattro decisioni uscite dalla ricerca N0 (ticket 17): il «silenziatore» tiene il lettore NFC all'app mentre è aperta, e in quel tempo il telefono non paga con Wallet.
+- L1: accesso facoltativo da Impostazioni, con lo spazio `local` usabile senza account (ticket 20). Prima di L1 l'utente deve accendere il provider Google in Supabase.
 - L2: come passano i dati locali allo spazio dell'account.
 - I3: con Drive le foto stanno nel Drive dell'amministratore e gli operatori ricevono la condivisione per email.
 

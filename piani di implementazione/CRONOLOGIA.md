@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 sera — Ricerche L0 (login) e N0 (NFC), Supabase riattivato (solo documenti)
+
+- Branch `funzioni/magazzino`. Nessun codice toccato. Resoconti completi in `funzionalita/ricerche/L0-login.md` e `N0-nfc.md`; sintesi nei ticket 20 e 17; `map-2.md` aggiornata (M10 fatta, ricerche chiuse).
+- **L0**: il motivo dello spegnimento del login non è documentato (l'utente disse «non funziona», web su `:8081`). Il flusso è `signInWithOAuth` via browser, uguale su web e Android: basta un client OAuth «Web application», client Android e SHA-1 non servono. Lo schema vero di Supabase non è nel repository.
+- **Supabase** (`ymsnlixracwjgajldryb`): era in pausa; riattivato con il sì dell'utente (`restore_project`). Verificato dopo: stato `ACTIVE_HEALTHY`, 13 tabelle pubbliche con RLS e zero righe, 19 migrazioni, **provider Google spento** (`GET /auth/v1/settings`: acceso solo `email`). Sul piano gratuito torna in pausa dopo circa una settimana senza uso.
+- **N0**: Android si può zittire con un reader mode fisso senza ascoltatore (il tag va all'app, che lo scarta). Non provato su telefono. Rischio: `react-native-nfc-manager` 3.17.2 è dichiarata per la vecchia architettura e il progetto ha `newArchEnabled=true`. Difetto di oggi trovato in Scheda › Programma NFC (gara tra «pulisci» e «scrivi»): si corregge in N1.
+- Controllo dell'orchestratore su M10 (`df4f3e5`): diff senza file riscritti per il fine riga, foglio `stili-m10.jpg` guardato, prova `m10-contatti.cjs` rilanciata una volta.
+- Aperto: quattro decisioni NFC e l'accesso facoltativo da confermare con l'utente (ticket 17 e 20); accendere il provider Google spetta all'utente; nessuna prova su Android.
+
 ## 22 novembre 2026 sera — Fase B, M10: fornitori e clienti (ticket 07)
 
 - Branch `funzioni/magazzino`. Forma dei dati secondo il parere del revisore già dato (sessione di M07-M09); parere chiesto di nuovo prima di scrivere, su prezzo e nomi, e seguito: un solo significato di `finalPrice`, nomi dei contatti solo a schermo e nel CSV, etichette nuove col prefisso «Contatto», nulla di nuovo nella finestra per chi non ha contatti.
