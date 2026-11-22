@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L9: verifica finale nei 5 stili (tema chiuso)
+
+- Branch / SHA: `ui-ux/stili`, commit di L9 dopo L7.
+- Verifiche: tsc 0; eslint 0; jest 73 verdi; regole degli hook senza violazioni; bundle Android `--dev false` riuscito (5,1 MB, 62 asset); **31 schermate × 5 stili** (in sequenza) senza errori, carattere dello stile su ogni testo; in console solo il messaggio già noto di WatermelonDB al primo avvio in un browser vuoto (una volta su cinque giri, vedi L7); cambio di stile dal selettore con riavvio: 6 prove su 6 (`cambio-stile.cjs`, attuale → babilonia e attuale → minimal); ogni tipo di campo a 1/3, 1/2 e intera guardato nei 5 stili in L6c; tutte le icone dei cataloghi e dei dati con una resa (L4); colori delle posizioni su card, pillole e Scheda. `graphify update .`: 3533 nodi, 6872 archi.
+- Schermate «dopo»: `ui-ux/schermate-dopo/` con un foglio JPEG per ognuna delle 9 schermate del campionario (prima a sinistra, poi Attuale rifinito, Babilonia Vetro, Ishtar Lab, Ardesia e rame, Minimal), 2,2 MB in tutto; fatte con `campionario/affianca.py`. Le 31 × 5 schermate intere restano fuori dal repository (pubblico, troppo pesanti).
+- Non verificabile da qui: prova su un telefono Android (caratteri, vetro sfocato, ombre, barra di stato e di navigazione, cambio di stile e riavvio): da chiedere all'utente.
+- Il tema è chiuso: L0-L7 e L9 fatti (L8 non si fa).
+
 ## 22 novembre 2026 — UI/UX L7: difetti del ticket 09
 
 - Branch / SHA: `ui-ux/stili`, commit di L7 dopo L6f.

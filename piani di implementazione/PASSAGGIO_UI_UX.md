@@ -119,3 +119,16 @@ La sessione precedente ha aperto Claude Design e disegnato schermate nuove **pri
 **Strumenti nuovi**: `schermate.cjs` con `SOLO=<passi>` e `FONT=<famiglia>` (controlla che ogni testo usi il carattere dello stile); `campionario/cambio-stile.cjs` (cambio di stile senza perdere schermata e dati, scelta che resta dopo il riavvio). Regole comuni delle corsie L6: `side-session-notes/local_8f4027c5-…/brief-l6.md` (fuori dal repository).
 
 **Prossimi passi**: L6 in cinque corsie con subagenti a file separati (a Home; b Scheda; c+d Aggiungi, Modifica e `components/ui/formStyles.ts`; e Impostazioni; f Cronologia, Automazioni, scanner, chat, intestazioni native), poi controllo complessivo 31 × 5 con `FONT` e `cambio-stile.cjs`, commit per corsia; L7 (D04, D06, D07, D11, D17, D22-D24); L9 (verifica finale, bundle Android, `graphify update .`, schermate «dopo» nel repository in formato leggero, resoconto e richiesta di prova su Android).
+
+## Aggiornamento del 22 novembre 2026, settima parte (tema chiuso: L6, L7, L9 fatti)
+
+**Stato**: tutti i lavori del grafo sono fatti e pubblicati su `ui-ux/stili` (L8 non si fa). I 5 stili sono nell'app, scelti in Impostazioni › Aspetto, predefinito Attuale rifinito; tutte le schermate seguono le tavole della tela; difetti del ticket 09 corretti. Dettagli e verifiche in CRONOLOGIA; scelte prese senza l'utente in `DECISIONI_DA_RIVEDERE.md`.
+
+**Schermate «dopo»**: `ui-ux/schermate-dopo/` (un foglio per schermata del campionario: prima, poi i 5 stili), fatte con `campionario/affianca.py`.
+
+**Resta all'utente**: provare su un telefono Android (caratteri, vetro sfocato della barra e della barra Indietro/Modifica, ombre, barra di stato e pulsanti della barra di navigazione, scelta dello stile e riavvio); decidere se e quando unire `ui-ux/stili` in `main` (prima vanno scartati in main i documenti del piano non committati, vedi quarta parte).
+
+**Note aperte per dopo** (non bloccano): ruoli mancanti (testo sopra `error` e sopra i riempimenti di stato, pulsanti disattivati, raggio delle finestre dal basso); messaggio di WatermelonDB al primo avvio web in un browser vuoto; nel visore della Scheda la foto mostrata può non essere quella del contatore; numeri non in formato italiano nei pesi («2.1 kg»); la ricerca dell'Inventario confronta l'id della posizione.
+
+**Dopo il tema** (istruzioni della notte, `NOTTE_22_23.md`, fase B): funzionalità di magazzino su un branch nuovo `funzioni/magazzino` tagliato da `ui-ux/stili`, con i documenti in `piani di implementazione/funzionalita/`.
+
