@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L5e: Minimal (i 5 stili ci sono tutti)
+
+- Branch / SHA: `ui-ux/stili`, commit di L5e dopo il commit di L5d.
+- Fatto: `constants/themes/minimal.ts` generato e registrato. Ordine del selettore: Attuale rifinito (predefinito), Babilonia Vetro, Ishtar Lab, Ardesia e rame, Minimal.
+- Verifiche: tsc 0, eslint 0, jest 63 verdi; 31 schermate in Minimal senza errori, `FONT=Inter` pulito (campioni degli altri stili in Aspetto, voluti). Contrasti ≥ 4,58 (segnaposto sul campo) tranne il bianco sui colori di dati delle posizioni (2,1).
+- Per L6: in Minimal superficie e fondo sono tutti e due bianchi; le card di oggi non hanno bordo, quindi statistiche, righe dei Campi e card dei prodotti si distinguono solo per lo spazio. La tela le disegna con `surface-border` (in Minimal `#E7E6E3`): il bordo delle card va aggiunto nei ritocchi, in tutti gli stili.
+- Ancora da fare: L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L5d: Ishtar Lab
 
 - Branch / SHA: `ui-ux/stili`, commit di L5d dopo il commit di L5c.
