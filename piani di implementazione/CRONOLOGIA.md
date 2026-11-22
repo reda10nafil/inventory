@@ -2,6 +2,57 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX: mappa chiusa, branch `ui-ux/stili`
+
+- Branch / SHA: nuovo branch `ui-ux/stili` da main a cfcdecb, con un commit dei soli documenti del piano; pubblicato su GitHub (repository pubblico) con il sì dell'utente. Il checkout principale resta su main.
+- Risposte dell'utente: sì al branch locale e alla pubblicazione su GitHub; sì ai ritocchi comuni, con la regola «il modo più giusto e corretto e semplificato».
+- Fatto: ticket 07 (8 icone da sostituire, 13 nomi controllati nel glyphmap), 08 (ritocchi), 09 (difetti: entrano D01, D04-D11, D17, D22-D24, divisione dell'agente su delega dell'utente) e 10 (stampa invariata, L8 tolto) risolti; mappa chiusa; `grafo-lavori.md` aggiornato.
+- Nota per il merge futuro: nel checkout principale (main) i documenti del piano restano come modifiche non committate, identiche a quelle del branch; prima di unire `ui-ux/stili` in main vanno scartate lì (con il sì dell'utente).
+- Ancora da fare: esecuzione da L0 nel branch `ui-ux/stili`.
+
+## 22 novembre 2026 — UI/UX: tutti e 5 gli stili, scelti in Impostazioni
+
+- Branch / SHA: main a cfcdecb. Nessuna modifica al codice dell'app, nessun commit.
+- Decisione dell'utente: vuole tutti e 5 gli stili della tela nell'app, con la scelta in Impostazioni. Il cambio tema dall'app, prima fuori ambito, entra nel lavoro.
+- Fatto:
+  - ticket 08 risolto per la parte sullo stile; predefinito proposto Attuale rifinito; scelta salvata sul dispositivo, fuori dallo spazio di lavoro;
+  - estratti dalla tela i 93 token di ogni stile in `ui-ux/temi/token-stili.json` (dalle tavole Inventario; stessi nomi nei 5 stili; per Babilonia controllato che Scheda e Aggiungi abbiano gli stessi valori, per gli altri 4 non controllato);
+  - `map.md` aggiornata (destinazione, tema scelto dall'app al posto del tema statico, ambito); `grafo-lavori.md` riscritto: fornitore del tema e `makeStyles` in L1-L2, nuovo L3 selettore «Aspetto», L5 diviso in 5 temi (prima gli scuri), ritocchi L6 una volta per tutti gli stili, verifica L9 nei 5 stili; ticket 10 riformulato (proposta: stampa indipendente dallo stile).
+- Misure: 40 file con `StyleSheet.create` (31 importano il tema), circa 250 righe che leggono il tema fuori dagli stili.
+- Ancora da fare: risposta dell'utente sui ritocchi comuni (ticket 08) e sui difetti (09); permesso per un branch locale; poi l'esecuzione da L0.
+
+## 22 novembre 2026 — UI/UX: campionario, ricerche e 5 prototipi (ticket 03-06)
+
+- Branch / SHA: main a cfcdecb. Nessuna modifica al codice dell'app, nessun commit.
+- Fatto:
+  - ticket 03: campionario di prova come seed solo per sviluppo in `piani di implementazione/ui-ux/campionario/` (16 campi personalizzati di ogni tipo, layout con 1/3, 1/2 e intera, 6 capi con foto di pubblico dominio da Wikimedia Commons); 18 schermate a 375 px in `ui-ux/schermate-attuali/`, fatte in un Chromium isolato (lo spazio locale dell'utente non è stato toccato);
+  - ticket 04 (subagente): MaterialCommunityIcons per le sole sostituzioni, MaterialIcons per il resto;
+  - ticket 05 (subagente): vetro solo su barra, intestazioni e finestre; carattere globale con un `Text` dell'app; `Text.defaultProps` non funziona con React 19;
+  - ticket 06: tela Claude Design nuova https://claude.ai/artifact/GSuFD111jGM9FSNt5W5fHK con le schermate di oggi e 5 stili (Babilonia Vetro, Ishtar Lab, Attuale rifinito con `unslop`, Ardesia e rame, Minimal) su una struttura comune, barra in basso nuova e schede dei token.
+- Verifiche: le schermate del campionario mostrano tutti i 16 campi nella Scheda; nomi delle icone proposte controllati nel glyphmap; affermazioni chiave del ticket 05 controllate nei sorgenti (`Text` è un componente funzione, `experimentalBlurMethod` esiste). La tela non è stata aperta a vista.
+- Problemi: il server Playwright MCP si è bloccato due volte per 30 minuti; sostituito da `campionario/schermate.cjs` con Playwright da shell.
+- Ancora da fare: ticket 08 (scelta dello stile, con l'utente), 07 (icone da sostituire), 09 e 10; poi l'esecuzione secondo `grafo-lavori.md`.
+
+## 22 novembre 2026 — UI/UX: app capita e lavoro pianificato (fasi 1 e 2)
+
+- Branch / SHA: main a cfcdecb. Nessuna modifica al codice dell'app, nessun commit.
+- Fatto:
+  - letto il codice di tipi, campi personalizzati, layout builder, modelli, Aggiungi, Scheda, Modifica, Inventario, tema; tre agenti in sola lettura hanno letto le altre schermate, i servizi e misurato colori e icone;
+  - viste sul web (porta 8081, già avviata) Inventario vuoto, Aggiungi, Automazioni, Impostazioni, Cronologia;
+  - scritti `docs/design/mappa-funzionale.md` (sostituisce `regole-temi.md`, ora solo un rimando), `piani di implementazione/ui-ux/` con `map.md` (Wayfinder, tracker locale), 10 ticket in `issues/`, `grafo-lavori.md`, `audit-tema.md`, `difetti-trovati.md`.
+- Correzioni alla bozza del 21 novembre: il layout governa solo Aggiungi (Scheda e Modifica hanno struttura fissa); `segmented` = `grid` e `picker` = finestra dal basso; il tema è importato da 31 file, non 58; i colori scritti a mano sono 423 in 39 file (esclusa `app/`, codice morto).
+- Verifiche: nessuna prova di build (nessun codice cambiato). Sul web: pillole di Cronologia gonfie, pillole di Posizione tagliate a ½, inventario vuoto senza messaggio.
+- Risposte dell'utente: «Redex» = pannello Ishtar Lab (`C:\Users\reda_\Desktop\redx`, token nel ticket 01); tela Claude Design nuova; uno stile è l'attuale nero e oro rifinito con `unslop`; barra in basso da ridisegnare in tutti gli stili.
+- Ancora da fare: campionario di prova, ricerche su icone ed effetti, 5 prototipi sulla tela nuova, scelta dello stile, esecuzione secondo il grafo.
+
+## 21 novembre 2026 — Proposte di stile fermate, passaggio a nuova sessione
+
+- Branch / SHA: main a cfcdecb (pubblicato). Nessuna modifica al codice dell'app.
+- Fatto: aperta in Claude Design la tela «Syncro Flow · 5 stili» e disegnate alcune schermate in 4 stili. L'utente ha fermato il lavoro: le proposte erano state fatte senza leggere come funzionano Campi personalizzati e Layout builder e si allontanavano dalla versione attuale.
+- Decisione dell'utente: l'interfaccia va aggiornata, non cambiata. Ordine: capire l'app, piani di implementazione, proposte UI/UX, agenti esecutori.
+- File: `PASSAGGIO_UI_UX.md` (consegne complete), `docs/design/regole-temi.md` (prima mappa, da verificare).
+- Ancora da fare: tutto il lavoro UI/UX, nella nuova sessione.
+
 ## 21 novembre 2026 — Allineamento locale, verifica RN e avvio web
 
 - Branch / SHA: main a 42dc07e (fast-forward di 46 commit da b3fc44d). Anche la copia `onspace-9b4wtn-11197` portata a 42dc07e. Modifiche locali non committate.
