@@ -3,6 +3,7 @@ import { StyleSheet, Text as RNText, TextInput as RNTextInput } from 'react-nati
 import type { StyleProp, TextInputProps, TextProps, TextStyle } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { AppTheme } from '../../constants/themes';
+import type { FontWeight } from '../../constants/themes/types';
 
 // `Text` e `TextInput` dell'app (ticket 05, opzione b): le schermate li importano da qui invece che da
 // `react-native`, così il carattere dello stile attivo arriva a ogni testo in un punto solo.
@@ -15,15 +16,24 @@ const InsideText = createContext(false);
 
 const WEIGHTS: Record<string, string> = { normal: '400', bold: '700', '100': '400', '200': '400', '300': '400', '900': '800' };
 
+/**
+ * Carattere dello stile attivo per un peso, per i testi che non passano da questo `Text` (intestazioni e barra di
+ * React Navigation). Senza famiglia (tema `oggi`) resta il solo peso, come prima.
+ */
+export function fontStyle(t: AppTheme, weight: string | number = '400'): TextStyle {
+  const raw = String(weight);
+  const w = (WEIGHTS[raw] ?? raw) as FontWeight;
+  const file = t.font.family ? t.font.files[w] ?? t.font.files['400'] : undefined;
+  return file ? { fontFamily: file, fontWeight: 'normal' } : { fontWeight: w };
+}
+
 function withFont(t: AppTheme, style: StyleProp<TextStyle>, nested: boolean): StyleProp<TextStyle> {
   if (!t.font.family) return style;
   const flat = StyleSheet.flatten(style) || {};
   if (flat.fontFamily) return style;
   if (nested && flat.fontWeight === undefined) return style;
-  const raw = flat.fontWeight === undefined ? '400' : String(flat.fontWeight);
-  const weight = (WEIGHTS[raw] ?? raw) as keyof AppTheme['font']['files'];
-  const file = t.font.files[weight] ?? t.font.files['400'];
-  return file ? [style, { fontFamily: file, fontWeight: 'normal' }] : style;
+  const font = fontStyle(t, flat.fontWeight ?? '400');
+  return font.fontFamily ? [style, font] : style;
 }
 
 export const Text = forwardRef<RNText, TextProps>(function AppText({ style, ...props }, ref) {

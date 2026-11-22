@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L5a: caratteri e Attuale rifinito predefinito
+
+- Branch / SHA: `ui-ux/stili`, commit di L5a dopo il commit di L4.
+- Fatto: installati `@expo-google-fonts/outfit`, `/urbanist` e `/manrope` (OFL, `npm install --legacy-peer-deps`); 14 TTF in `android/app/src/main/assets/fonts/` (Inter e Outfit 400-600, Urbanist e Manrope 400-700, 1,8 MB) con le licenze; `constants/themes/fonts.web.ts` carica con `expo-font` solo i file dello stile attivo, `fonts.ts` (telefono) non fa nulla. `ThemeProvider`: al primo avvio aspetta scelta e carattere; cambiando stile carica il carattere e solo dopo applica lo stile, senza smontare l'app (vince l'ultima scelta). `fontStyle(t, peso)` in `Text.tsx` per i testi di React Navigation (caratteri del tema di navigazione, etichette della barra). Barra di stato chiara o scura secondo lo stile (`expo-status-bar`), pulsanti della barra di navigazione Android con `expo-navigation-bar` (edge-to-edge attivo: si cambia solo il colore dei pulsanti), fondo e carattere della pagina web. Generato `constants/themes/attuale.ts` e registrato in `THEMES`: **è il predefinito**.
+- Verifiche: tsc 0, eslint 0, jest 55 verdi (nuovi: predefinito, file del carattere presenti per Android e nel registro web, chiavi tipografiche). Web: 30 schermate nello stile `attuale`, nessun errore; nuovo controllo `FONT=Inter` in `schermate.cjs`: tutti i testi su `Inter_*` con peso normale, tranne la zona di trascinamento del CSV (un `div` HTML in Times New Roman, corretta col carattere della pagina). Contrasti di `attuale`: tutti ≥ 5,2 tranne il bianco sui colori di dati delle posizioni (2,1 sull'oro, come oggi). Bundle Android `--dev false` riuscito: 5,0 MB, 62 asset come in L0 (i TTF dei caratteri non passano da Metro). `newArchEnabled=true`: le `boxShadow` dei temi valgono anche su Android.
+- Non verificabile da qui: caratteri, barra di stato e barra di navigazione su un telefono Android; iOS non ha i caratteri (servirebbero in `Info.plist`, fuori dal lavoro).
+- Per L6e: il catalogo icone del Layout builder ha `timeline` (ora `history` della famiglia community) e `history` (MaterialIcons): due icone quasi uguali.
+- Ancora da fare: L3, L5b-e, L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L4: icone nuove
 
 - Branch / SHA: `ui-ux/stili`, commit di L4 dopo 0f227c9.

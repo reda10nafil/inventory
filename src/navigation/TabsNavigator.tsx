@@ -10,6 +10,7 @@ import AutomationsScreen from '../screens/tabs/AutomationsScreen';
 import AddScreen from '../screens/tabs/AddScreen';
 import SettingsScreen from '../screens/tabs/SettingsScreen';
 import { AppIcon } from '../../components/ui/AppIcon';
+import { fontStyle } from '../../components/ui/Text';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const Tab = createBottomTabNavigator();
@@ -34,7 +35,7 @@ export default function TabsNavigator() {
         tabBarStyle,
         tabBarActiveTintColor: t.tab.activeColor,
         tabBarInactiveTintColor: t.tab.color,
-        tabBarLabelStyle: { fontSize: t.tab.labelSize, fontWeight: t.tab.activeWeight },
+        tabBarLabelStyle: { fontSize: t.tab.labelSize, ...fontStyle(t, t.tab.activeWeight) },
       }}
     >
       <Tab.Screen name="index" component={HomeScreen} options={{ title: 'Home', tabBarIcon: ({ color, focused }) => <AppIcon name="grid-view" active={focused} size={24} color={color} /> }} />

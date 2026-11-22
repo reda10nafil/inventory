@@ -27,7 +27,29 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
     });
     return m;
   });
-  const shot = async (name) => { await page.waitForTimeout(700); await page.screenshot({ path: path.join(DIR, name) }); log('ok', name); };
+  // FONT=Inter (o Outfit, Urbanist, Manrope): dopo ogni schermata controlla che ogni testo usi un file di quella
+  // famiglia con peso normale (un file per peso: un peso diverso da 400 sarebbe un finto grassetto del browser).
+  const fontAudit = async (name) => {
+    if (!process.env.FONT) return;
+    const bad = await page.evaluate((fam) => {
+      const out = {};
+      document.querySelectorAll('body *').forEach((el) => {
+        if (el.offsetParent === null) return;
+        const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+        if (!own) return;
+        const s = getComputedStyle(el);
+        const f = s.fontFamily.replace(/"/g, '');
+        if (/material|monospace|ionicons|fontawesome|feather/i.test(f)) return;
+        if (f.startsWith(fam + '_') && s.fontWeight === '400') return;
+        const k = `${f.split(',')[0]} ${s.fontWeight}`;
+        if (!out[k]) out[k] = el.textContent.trim().slice(0, 30);
+      });
+      return out;
+    }, process.env.FONT);
+    const keys = Object.keys(bad);
+    log(keys.length ? 'CARATTERE' : 'carattere ok', name, keys.map((k) => `${k} «${bad[k]}»`).join(' | '));
+  };
+  const shot = async (name) => { await page.waitForTimeout(700); await page.screenshot({ path: path.join(DIR, name) }); log('ok', name); await fontAudit(name); };
   const tall = async (name) => {
     let h = await extra();
     if (h > 0) { await page.setViewportSize({ width: W, height: H + h }); await page.waitForTimeout(900); const h2 = await extra(); if (h2 > 0) { h += h2; await page.setViewportSize({ width: W, height: H + h }); await page.waitForTimeout(700); } }

@@ -3,7 +3,8 @@
 - `types.ts`: il tipo `AppTheme` (un solo proprietario, lavoro L1).
 - `oggi.ts`: l'aspetto di prima del restyling, con i valori di `constants/theme.ts` (che resta com'era, solo per `app/` e `components/DynamicFieldRenderer.tsx`, codice morto). Base del controllo G1, non compare nel selettore.
 - `index.ts`: i temi pronti (`THEMES`), lo stile predefinito (`DEFAULT_STYLE`), `themeFor`.
-- Un file per stile (`attuale.ts`, `babilonia.ts`, …), scritto dai 93 token di `piani di implementazione/ui-ux/temi/token-stili.json` (lavoro L5).
+- Un file per stile (`attuale.ts`, `babilonia.ts`, …), scritto dai 93 token di `piani di implementazione/ui-ux/temi/token-stili.json` con `piani di implementazione/ui-ux/temi/genera_temi.py` (lavoro L5); in testa al file le regole dei valori ricavati.
+- Caratteri: un file per peso, con il nome dei valori di `font.files` (es. `Inter_600SemiBold`). Android li ha in `android/app/src/main/assets/fonts/` (14 file, con le licenze OFL), quindi `fonts.ts` non carica nulla; sul web `fonts.web.ts` carica con `expo-font` solo la famiglia dello stile attivo, prima di applicarlo. I testi fuori dal `Text` dell'app (intestazioni e barra di React Navigation) prendono il carattere con `fontStyle(t, peso)` di `components/ui/Text.tsx`. Uno stile con una famiglia nuova vuole i suoi file in tutti e due i posti (lo controlla `__tests__/theme.test.ts`).
 
 Nelle schermate: `const useStyles = makeStyles((t) => ({ … }))` a livello di modulo e `const styles = useStyles()` in ogni componente; fuori dagli stili `const t = useTheme()` (entrambi da `contexts/ThemeContext.tsx`). Trasparenze con `withAlpha(colore, alfa)` da `utils/color.ts`; icone con `AppIcon` (`components/ui/AppIcon.tsx`); testi con `Text` e `TextInput` di `components/ui/Text.tsx`.
 

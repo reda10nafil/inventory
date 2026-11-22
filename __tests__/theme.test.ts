@@ -1,5 +1,5 @@
 import { withAlpha } from '../utils/color';
-import { oggi } from '../constants/themes';
+import { DEFAULT_STYLE, THEMES, isStyleId, oggi, themeFor } from '../constants/themes';
 import { theme as today } from '../constants/theme';
 
 describe('withAlpha', () => {
@@ -34,5 +34,30 @@ describe('tema oggi', () => {
     for (const key of ['caption', 'cardTitle', 'body', 'sectionHeader', 'buttonPrimary', 'cardValue', 'buttonSecondary', 'h3', 'heroLabel', 'overline', 'h2', 'bodySecondary'] as const) {
       expect(oggi.typography[key]).toBeDefined();
     }
+  });
+});
+
+describe('stili pronti', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require('fs') as typeof import('fs');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const path = require('path') as typeof import('path');
+  const root = path.join(__dirname, '..');
+  const webFonts = fs.readFileSync(path.join(root, 'constants/themes/fonts.web.ts'), 'utf8');
+
+  it('chi non ha scelto vede lo stile predefinito', () => {
+    expect(themeFor(null).id).toBe(DEFAULT_STYLE);
+    expect(isStyleId('oggi')).toBe(false);
+  });
+
+  it.each(Object.values(THEMES))('$name: ogni file del carattere è nell\'app Android e nel registro web', (t) => {
+    for (const file of new Set(Object.values(t!.font.files))) {
+      expect(fs.existsSync(path.join(root, 'android/app/src/main/assets/fonts', `${file}.ttf`))).toBe(true);
+      expect(webFonts).toContain(`import { ${file} } from`);
+    }
+  });
+
+  it.each(Object.values(THEMES))('$name: ha tutte le chiavi tipografiche', (t) => {
+    for (const key of Object.keys(oggi.typography)) expect(t!.typography[key as keyof typeof oggi.typography]).toBeDefined();
   });
 });

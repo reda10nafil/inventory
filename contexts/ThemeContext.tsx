@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isStyleId, oggi, themeFor } from '../constants/themes';
+import { loadThemeFonts } from '../constants/themes/fonts';
 import type { AppTheme, StyleId } from '../constants/themes';
 
 // Stile attivo dell'app (Impostazioni › Aspetto). La scelta è del dispositivo: chiave fuori dallo spazio di
@@ -18,27 +19,38 @@ interface ThemeContextValue {
 // Fuori dal fornitore (jest, componenti isolati) vale il tema `oggi`.
 const ThemeContext = createContext<ThemeContextValue>({ theme: oggi, styleId: null, setStyle: () => {} });
 
+// Carattere dello stile (solo web, vedi `constants/themes/fonts.web.ts`); se non si carica si disegna lo stesso.
+const fontsOf = (id: StyleId | null) => loadThemeFonts(themeFor(id)).catch(() => {});
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [styleId, setStyleId] = useState<StyleId | null>(null);
   const [ready, setReady] = useState(false);
+  const wanted = useRef<StyleId | null>(null);
 
   useEffect(() => {
     let alive = true;
     AsyncStorage.getItem(STYLE_STORAGE_KEY)
-      .then((value) => { if (alive && isStyleId(value)) setStyleId(value); })
-      .catch(() => {})
-      .finally(() => { if (alive) setReady(true); });
+      .catch(() => null)
+      .then(async (value) => {
+        const id = isStyleId(value) ? value : null;
+        await fontsOf(id);
+        if (alive) { setStyleId(id); setReady(true); }
+      });
     return () => { alive = false; };
   }, []);
 
+  // Il nuovo stile si applica quando il suo carattere è pronto; intanto resta quello di prima, così l'app non si
+  // smonta e la schermata aperta resta dov'è. Se l'utente tocca due stili di fila vince l'ultimo.
   const setStyle = useCallback((id: StyleId) => {
-    setStyleId(id);
+    wanted.current = id;
     AsyncStorage.setItem(STYLE_STORAGE_KEY, id).catch(() => {});
+    fontsOf(id).then(() => { if (wanted.current === id) setStyleId(id); });
   }, []);
 
   const value = useMemo(() => ({ theme: themeFor(styleId), styleId, setStyle }), [styleId, setStyle]);
 
-  // Finché la scelta non è letta non si disegna nulla, così non si vede lo stile sbagliato per un istante.
+  // Solo al primo avvio, finché scelta e carattere non sono pronti, non si disegna nulla: niente stile sbagliato
+  // per un istante. Dopo il provider non torna mai a `null`.
   if (!ready) return null;
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
