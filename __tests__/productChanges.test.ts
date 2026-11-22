@@ -14,6 +14,10 @@ describe('describeChanges (P13)', () => {
     expect(describeChanges(before, { ...before })).toEqual([]);
   });
 
+  it('testo vuoto e assente sono uguali (note dei prodotti importati)', () => {
+    expect(describeChanges({ ...before, technicalNotes: '' }, { technicalNotes: undefined })).toEqual([]);
+  });
+
   it('peso, cartella e prezzo in formato italiano', () => {
     expect(describeChanges(before, { weight: 2.5, libraryId: undefined, sellPrice: 4500 })).toEqual([
       'Cartella: pellicce → —',

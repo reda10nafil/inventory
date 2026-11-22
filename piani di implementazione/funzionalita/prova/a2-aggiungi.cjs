@@ -1,5 +1,6 @@
 // A2 - Aggiungi: salvataggio completo, SKU generato, obbligatori, scanner finto (D02), foto (D18), svuotamento (D22).
 const { scenario } = require('./lib.cjs');
+const { scan } = require('./a3-util.cjs');
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64');
 const CITES = 'Scansiona o scrivi il codice';
@@ -62,7 +63,9 @@ const cf = (p, name) => (p.customData || []).find((c) => c.fieldSnapshot && c.fi
     await skuInput.fill('A2-MANUALE');
     const cites = h.page.getByPlaceholder(CITES);
     await cites.locator('xpath=../following-sibling::div[1]').click();
-    await h.page.waitForTimeout(400);
+    await h.page.waitForTimeout(600);
+    // Dopo C11 (D02) il pulsante apre il lettore: lettura simulata come in A3
+    await scan(h, 'IT-CITES-A2');
     const citesDopoQR = await cites.inputValue();
     await compilaMinimo(h);
     await submit(h);

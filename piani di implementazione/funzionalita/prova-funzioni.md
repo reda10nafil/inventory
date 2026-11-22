@@ -1,5 +1,30 @@
 # Prova delle funzioni sul web (fase B, punto 1)
 
+## Stato attuale (22 novembre, mattina, dopo le correzioni)
+
+La prova qui sotto descrive l'app **prima** delle correzioni. Le correzioni C01-C14 (un commit ciascuna, dettagli in `../CRONOLOGIA.md`) hanno chiuso:
+
+| Correzione | Chiude | Commit |
+| --- | --- | --- |
+| C01 numeri in formato italiano | P03 | d3128a6 |
+| C02 Modifica salva i dati giusti | P01, P02, P04 | 7baa3f8 |
+| C03 niente vendite doppie né dal cestino | P05, P06, P25 | bdf04fa |
+| C04 spostamenti registrati come tali, percentuale dell'Audit | D15, P22 | 913e7cd |
+| C05 posizioni e cartelle eliminate senza orfani | P08, P09 | cb7e9c7 |
+| C06 export CSV con cartella e senza cestino, import col pulsante sul web | P07, P18 | e1fbbd1 |
+| C07 modelli e campi nuovi nel modulo, Modelli di settore in Impostazioni | D12, D13, P11 | 6a56c73 |
+| C08 Modifica mostra i campi del modulo anche vuoti | D03 | ee53296 |
+| C09 ricerca per nome della posizione, Attenzione, filtro della cartella | P14, P15, D14 | e2b30fd |
+| C10 Cronologia completa | P13 | ffc17bc |
+| C11 pulsante QR con il lettore vero | D02 | 844e986 |
+| C12 niente immagine d'esempio senza foto | D18 | 77c0549 |
+| C13 dominio GS1, numeri della Scheda, Svuota cestino, visore delle foto | P10, P19, P24, P21 | a71ef0a |
+| C14 una sola copia delle posizioni predefinite | D21 | 42301ae |
+
+**Restano aperti**: D16 (PDF senza campi personalizzati, codici da servizi esterni), D19 (preferenze Scanner & NFC non lette), P12 (modifiche del Layout builder non salvate ma già applicate), P16-P17 (esecuzione delle automazioni), P20 (foto `blob:` sul web), P23 (esito dell'Audit non salvato), P26 (lettura da fotocamera senza «scansionato»), P27 (etichetta per i capi con link GS1; PDF ed etichetta sul web), P28 (Chat), P29 (Team sul web), P30 (voci «Prossimamente»), il messaggio di LokiJS al primo avvio web. Non verificabili da qui: fotocamera, NFC, stampa, condivisione del telefono, mesh LAN, Drive.
+
+## La prova (prima delle correzioni)
+
 22 novembre 2026, notte. Branch `funzioni/magazzino` dopo F00 (conferme del browser al posto di `Alert.alert`, che su react-native-web non fa nulla). App web su `localhost:8082`, campionario di `ui-ux/campionario/seed.json` (6 capi), finestra 375×812, **un browser pulito per ogni scenario**.
 
 **Metodo.** «Funziona» vuol dire che **lo stato salvato** (localStorage: prodotti, cronologia, liste) cambia come deve, non solo che la schermata compare. Ogni riga dei dettagli cita lo scenario che lo prova. Script Playwright in `prova/` (`lib.cjs` più `a1-…` `a4-…`), riepiloghi per area in `prova/esito-a1.md` … `esito-a4.md` con file:riga per ogni difetto. Le prove delle 4 aree sono state fatte da 4 subagenti in parallelo e poi **rilanciate tutte** dalla sessione principale (vedi in fondo).

@@ -12,7 +12,7 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { formatPrice } from '../../../utils/price';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
-import { parseNumber } from '../../../utils/number';
+import { formatNumberInput, parseNumber } from '../../../utils/number';
 
 export default function ScanSellScreen() {
     const styles = useStyles();
@@ -56,7 +56,7 @@ export default function ScanSellScreen() {
 
             // Open price confirmation modal
             setPendingProduct(product);
-            setPriceInput(product.sellPrice ? product.sellPrice.toString() : '');
+            setPriceInput(formatNumberInput(product.sellPrice)); // «3800,5»: si rilegge con parseNumber
             setShowPriceModal(true);
         } else {
             // Debounce error for 400ms

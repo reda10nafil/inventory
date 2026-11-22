@@ -2,6 +2,16 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B: rilettura finale delle correzioni (numeri del CSV, note vuote, prove)
+
+- Branch `funzioni/magazzino`.
+- Trovato dal revisore: con C01 `parseNumber` leggeva «2.125» (e «0.125») come migliaia, quindi un CSV esportato con un peso a 3 decimali, reimportato, valeva 1000 volte tanto (il campionario non ha valori così). Ora l'import CSV usa `parseStoredNumber` (il punto da solo è il decimale scritto dalla macchina; le forme con la virgola come prima) e nei moduli «0.125» non è mai 125; in Vendita flash il prezzo proposto si scrive con la virgola. Test nuovi (5).
+- `describeChanges`: testo vuoto e assente sono uguali, così i prodotti importati da CSV (note `''`) non scrivono «Note aggiornate» al primo salvataggio. Test nuovo.
+- Prove: `c13-svuota.cjs` (Svuota elimina per sempre i 2 prodotti del cestino, `deleted_product_ids` aggiornato, gli altri 4 restano); `a2-campi-crea` aggiornato al comportamento di C07; rilancio di tutti gli script delle 4 aree sul codice finale, confrontato con il primo rilancio (vedi sotto).
+- Rilancio di tutti gli script delle 4 aree sul codice finale (85 scenari), confrontato scenario per scenario con il rilancio di prima delle correzioni: 40 scenari cambiano, tutti per effetto delle correzioni (prezzi in formato italiano in Cronologia, «Svuota», link GS1 invariato, eventi «spostato», niente evento «vetrina → vetrina» dalla Chat, CSV con la cartella, voce Modelli di settore…); `a2-add-sku-scanner` aggiornato perché il pulsante QR ora apre il lettore (lettura simulata).
+- Parti nuove nei 5 stili (`prova/stili-fase-b.cjs`, foglio `prova/stili-fase-b.jpg`): card e Scheda senza foto, Cestino con «Svuota», voce Modelli di settore; nessun errore in console.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 126 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C14: una sola copia delle posizioni predefinite (D21)
 
 - Branch `funzioni/magazzino`.

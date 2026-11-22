@@ -1,4 +1,22 @@
-import { formatNumber, formatNumberInput, parseNumber } from '../utils/number';
+import { formatNumber, formatNumberInput, parseNumber, parseStoredNumber } from '../utils/number';
+
+describe('parseStoredNumber (CSV)', () => {
+  it('il punto da solo è il decimale della macchina', () => {
+    expect(parseStoredNumber('2.125')).toBe(2.125);
+    expect(parseStoredNumber('0.125')).toBe(0.125);
+    expect(parseStoredNumber('1234.5')).toBe(1234.5);
+  });
+  it('le forme italiane valgono come nei moduli', () => {
+    expect(parseStoredNumber('1234,50')).toBe(1234.5);
+    expect(parseStoredNumber('4.500,50')).toBe(4500.5);
+    expect(parseStoredNumber('')).toBeUndefined();
+  });
+});
+
+describe('parseNumber: primo gruppo 0', () => {
+  it('«0.125» non è mai 125', () => expect(parseNumber('0.125')).toBe(0.125));
+  it('nei moduli «2.125» resta il punto delle migliaia', () => expect(parseNumber('2.125')).toBe(2125));
+});
 
 describe('formatNumber (P19)', () => {
   it('formato italiano', () => {

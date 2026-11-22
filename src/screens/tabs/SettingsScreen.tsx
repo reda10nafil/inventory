@@ -19,7 +19,7 @@ import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput, fontStyle } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
-import { parseNumber } from '../../../utils/number';
+import { parseStoredNumber } from '../../../utils/number';
 
 export default function SettingsScreen() {
   const t = useTheme();
@@ -162,7 +162,7 @@ export default function SettingsScreen() {
     if (skuIndex < 0) throw new Error('Manca la colonna SKU. Esporta prima un CSV dall’app per vedere il formato supportato.');
 
     const valueAt = (row: string[], index: number) => index < 0 ? '' : (row[index] || '').trim();
-    const numberAt = (row: string[], index: number) => parseNumber(valueAt(row, index));
+    const numberAt = (row: string[], index: number) => parseStoredNumber(valueAt(row, index)); // «2.125» dell'export = 2,125
     const jsonAt = <T,>(row: string[], index: number, fallback: T): T => {
       if (index < 0 || !valueAt(row, index)) return fallback;
       try { return JSON.parse(valueAt(row, index)) as T; } catch { return fallback; }

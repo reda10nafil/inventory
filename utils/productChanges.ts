@@ -10,7 +10,10 @@ const show = (value: unknown): string => {
   const text = Array.isArray(value) ? value.map((v) => (v && typeof v === 'object' && 'label' in v ? (v as any).label : String(v))).join(', ') : String(value);
   return text.length > 40 ? `${text.slice(0, 39)}…` : text;
 };
-const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+// Vuoto e assente valgono uguale: un testo '' (es. note dei prodotti importati da CSV) contro undefined
+// non è una modifica.
+const empty = (v: unknown) => (v === '' || (Array.isArray(v) && v.length === 0) ? null : v ?? null);
+const same = (a: unknown, b: unknown) => JSON.stringify(empty(a)) === JSON.stringify(empty(b));
 const num = (v?: number) => (v == null ? '—' : formatNumberInput(v));
 const price = (v?: number) => (v == null ? '—' : formatPrice(v));
 
