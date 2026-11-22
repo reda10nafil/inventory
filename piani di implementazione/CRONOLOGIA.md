@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti
+
+- Branch / SHA: `ui-ux/stili`, commit di L1 dopo faf0f3a.
+- Fatto: `constants/themes/` (tipo `AppTheme` con ruoli per ciò su cui stanno, tema `oggi` che importa i valori di `constants/theme.ts`, lasciato com'era; registro `THEMES` vuoto, predefinito `attuale` appena c'è; `README.md` con la regola dei ruoli e la tabella oggi → ruolo → token); `contexts/ThemeContext.tsx` (fornitore montato in `App.tsx`, chiave del dispositivo `@syncro/stile` letta come id semplice, nulla disegnato finché non è letta; `useTheme`, `useStyleChoice`, `makeStyles` con un foglio per tema); `utils/color.ts` (`withAlpha`, uscita `rgba()`); `components/ui/AppIcon.tsx` (tabella vuota, icona di riserva `label-outline` per i nomi sconosciuti); `components/ui/Text.tsx` (`Text` e `TextInput` che per ora passano lo stile); `h2`, `h3`, `overline` definiti nel tema (D08).
+- Scelte: il piano chiamava `onPrimary` il nero sopra l'oro e `onAccent` il bianco sui riquadri colorati; ora sono `onAccent` (come `on-accent` della tela) e `onData`. Un ruolo si usa in L2 solo se nel tema `oggi` ha esattamente il valore di quel punto; altrimenti resta il nome generico fino a L6.
+- Verifiche: tsc 0 errori; eslint 0; jest 5 suite, 52 test (6 nuovi in `__tests__/theme.test.ts`); 18 schermate identiche a L0 a soglia zero (confronto sul canale più diverso).
+- Scoperto: `eslint.config.js` non ha configurazione per `.ts`/`.tsx`, quindi `npx eslint .` controlla solo i `.js`; il «verde» di eslint non dice nulla sulle schermate. La regola `no-restricted-imports` del controllo G1 avrà un blocco TypeScript proprio (`@typescript-eslint/parser` 8.67 è già installato).
+- Ancora da fare: L2 (cinque corsie).
+
 ## 22 novembre 2026 — UI/UX L0: punto di partenza
 
 - Branch / SHA: `ui-ux/stili` da 81d78aa, worktree `D:\FurInventory Pro\inventory-stili` (copia di `node_modules` del checkout principale). Versione web del worktree sulla porta 8082 (configurazione `syncro-flow-stili-web` in `D:\FurInventory Pro\.claude\launch.json`; la 8081 è occupata dal checkout principale), seed su 8765 (`campionario-seed`).

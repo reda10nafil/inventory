@@ -15,6 +15,7 @@ import { soundService } from './services/SoundService';
 import RootNavigator from './src/navigation/RootNavigator';
 import { linking } from './src/navigation/linking';
 import { AuthProvider, LOGIN_ENABLED, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import AuthScreen from './src/screens/AuthScreen';
 
 // BatteryMonitor — Fase 4: expo-battery -> react-native-device-info
@@ -85,7 +86,7 @@ function SignedInApp() {
 }
 
 export default function App() {
-  return <SafeAreaProvider><AuthProvider><SignedInApp /></AuthProvider></SafeAreaProvider>;
+  return <SafeAreaProvider><ThemeProvider><AuthProvider><SignedInApp /></AuthProvider></ThemeProvider></SafeAreaProvider>;
 }
 
 const styles = StyleSheet.create({
