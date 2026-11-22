@@ -1,8 +1,9 @@
 // FurInventory Pro - Layout Context
 // Manages the configurable layout for Add Product screen
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
+import { appendLayoutFields } from '../utils/templateFields';
 
 // Types
 export type FieldSize = 'small' | 'medium' | 'full'; // 33%, 50%, 100%
@@ -80,6 +81,7 @@ interface LayoutContextType {
     updateFieldSize: (fieldId: string, size: FieldSize) => void;
     toggleFieldVisibility: (fieldId: string) => void;
     addFieldToLayout: (field: LayoutField) => void;
+    appendToLayout: (ids: string[], size?: FieldSize) => Promise<LayoutField[]>;
     removeFieldFromLayout: (fieldId: string) => void;
     applyTemplate: (templateFields: LayoutField[]) => void;
 
@@ -102,6 +104,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
     const { organizationId } = useAuth();
     const [layout, setLayout] = useState<LayoutConfig>(DEFAULT_LAYOUT);
     const [loading, setLoading] = useState(true);
+    const layoutRef = useRef(layout);
+    layoutRef.current = layout;
 
     // Load saved layout on mount
     useEffect(() => {
@@ -177,6 +181,16 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
         }));
     };
 
+    // Mette in fondo al layout i campi che mancano e lo salva subito (campi nuovi e modelli: D12, P11).
+    // Parte dal layout più recente (`layoutRef`), così più chiamate di seguito non si sovrascrivono.
+    const appendToLayout = async (ids: string[], size: FieldSize = 'medium') => {
+        const next = { ...layoutRef.current, fields: appendLayoutFields(layoutRef.current.fields, ids, size) };
+        layoutRef.current = next;
+        setLayout(next);
+        if (organizationId) await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(next));
+        return next.fields;
+    };
+
     const removeFieldFromLayout = (fieldId: string) => {
         setLayout(prev => ({
             ...prev,
@@ -248,6 +262,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
                 updateFieldSize,
                 toggleFieldVisibility,
                 addFieldToLayout,
+                appendToLayout,
                 removeFieldFromLayout,
                 applyTemplate,
                 addSectionHeader,

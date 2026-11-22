@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Pressable, ScrollView, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCustomFields, FieldType, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
+import { useLayout } from '../../../contexts/LayoutContext';
 import { FieldUIType, CustomField } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -25,6 +26,7 @@ export default function CustomFieldsScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { customFields, loading, addField, deleteField, updateField } = useCustomFields();
+  const { appendToLayout } = useLayout();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingField, setEditingField] = useState<CustomField | null>(null);
@@ -135,9 +137,10 @@ export default function CustomFieldsScreen() {
       await updateField(editingField.id, payload);
       Alert.alert('Successo', `Campo "${name}" aggiornato!`);
     } else {
-      // Add new field
-      await addField(payload);
-      Alert.alert('Successo', `Campo "${name}" creato nel Registro!`);
+      // Campo nuovo: nel registro e in fondo al modulo Aggiungi, così si vede subito (P11)
+      const created = await addField(payload);
+      await appendToLayout([created.id]);
+      Alert.alert('Successo', `Campo "${name}" creato e aggiunto in fondo al modulo Aggiungi. Puoi spostarlo da Configura Layout Aggiungi.`);
     }
 
     resetForm();

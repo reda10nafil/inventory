@@ -24,6 +24,7 @@ export const linking = {
       SettingsTrash: 'settings/trash',
       SettingsShare: 'settings/share',
       SettingsAppearance: 'settings/appearance',
+      SettingsSector: 'settings/sector-templates',
       Audit: 'automations/audit',
       BatchMove: 'automations/batch-move',
       ScanSell: 'automations/scan-sell',

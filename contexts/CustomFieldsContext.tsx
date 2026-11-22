@@ -1,5 +1,5 @@
 // FurInventory Pro - Custom Fields Context with AsyncStorage persistence
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { CustomField, FieldUIType } from '../types';
@@ -34,7 +34,7 @@ interface CustomFieldsContextType {
     customFields: CustomField[];
     allFieldsIncludingDeleted: CustomField[];
     loading: boolean;
-    addField: (field: Omit<CustomField, 'id' | 'order'>) => Promise<void>;
+    addField: (field: Omit<CustomField, 'id' | 'order'>) => Promise<CustomField>;
     updateField: (id: string, updates: Partial<CustomField>) => Promise<void>;
     deleteField: (id: string) => Promise<void>;
     restoreField: (id: string) => Promise<void>;
@@ -52,6 +52,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
     const { organizationId } = useAuth();
     const [allFields, setAllFields] = useState<CustomField[]>(DEFAULT_CUSTOM_FIELDS);
     const [loading, setLoading] = useState(true);
+    const fieldsRef = useRef(allFields);
+    fieldsRef.current = allFields;
 
     // Active (non-deleted) fields
     const customFields = useMemo(() =>
@@ -108,19 +110,22 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
     // Generate unique ID
     const generateId = () => `field_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    // Add a new field
+    // Add a new field. Parte dall'elenco più recente (`fieldsRef`), non da quello letto quando la schermata
+    // è stata disegnata: chiamata più volte di seguito (i modelli) salvava solo l'ultimo campo (D12).
     const addField = useCallback(async (field: Omit<CustomField, 'id' | 'order'>) => {
-        const activeFields = allFields.filter(f => !f.deletedAt);
+        const current = fieldsRef.current;
         const newField: CustomField = {
             ...field,
             id: generateId(),
-            order: activeFields.length,
+            order: current.filter(f => !f.deletedAt).length,
             isSystem: false,
         };
-        const newFields = [...allFields, newField];
+        const newFields = [...current, newField];
+        fieldsRef.current = newFields;
         setAllFields(newFields);
         await saveFields(newFields);
-    }, [allFields]);
+        return newField;
+    }, [organizationId]); // saveFields scrive nella chiave dello spazio attivo
 
     // Update an existing field
     const updateField = useCallback(async (id: string, updates: Partial<CustomField>) => {

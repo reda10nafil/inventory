@@ -391,6 +391,25 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
+        {/* Modelli di settore: campi pronti per abbigliamento, elettronica, alimentari… (D13) */}
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/sector-templates')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
+              <AppIcon name="store" size={24} color={t.colors.onData} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Modelli di settore</Text>
+              <Text style={styles.settingDescription}>
+                Campi pronti per il tuo tipo di prodotti
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
         <Pressable
           style={styles.settingRow}
           onPress={() => router.push('/settings/trash')}

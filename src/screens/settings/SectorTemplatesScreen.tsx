@@ -13,13 +13,15 @@ import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { useInstallFields } from '../../../hooks/useInstallFields';
 
 export default function SectorTemplatesScreen() {
     const styles = useStyles();
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { customFields, addField } = useCustomFields();
+    const { customFields } = useCustomFields();
+    const installFields = useInstallFields();
     const [selectedTemplate, setSelectedTemplate] = useState<SectorTemplate | null>(null);
     const [userTemplates, setUserTemplates] = useState<SectorTemplate[]>([]);
 
@@ -56,19 +58,10 @@ export default function SectorTemplatesScreen() {
                 {
                     text: 'Importa',
                     onPress: async () => {
-                        let imported = 0;
-                        for (const field of template.fields) {
-                            // Check if a field with the same name already exists
-                            const exists = customFields.some(f =>
-                                f.name.toLowerCase() === field.name.toLowerCase() && !f.deletedAt
-                            );
-                            if (!exists) {
-                                await addField(field);
-                                imported++;
-                            }
-                        }
+                        // Tutti i campi che mancano, poi in fondo al layout di Aggiungi (D12)
+                        const { created: imported, existing } = await installFields(template.fields);
                         if (imported > 0) {
-                            Alert.alert('Successo', `${imported} campi importati con successo! ${template.fields.length - imported > 0 ? `(${template.fields.length - imported} già esistenti)` : ''}`);
+                            Alert.alert('Successo', `${imported} campi importati e aggiunti in fondo al modulo Aggiungi.${existing > 0 ? ` (${existing} già esistenti)` : ''}`);
                         } else {
                             Alert.alert('Info', 'Tutti i campi di questo modello sono già presenti nel tuo registro.');
                         }

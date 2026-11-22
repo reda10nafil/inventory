@@ -15,6 +15,7 @@ import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { useInstallFields } from '../../../hooks/useInstallFields';
 
 const SIZE_OPTIONS: { value: FieldSize; label: string; width: string }[] = [
     { value: 'small', label: '1/3', width: '33%' },
@@ -86,9 +87,9 @@ export default function LayoutBuilderScreen() {
         updateSectionLabel,
         updateFieldIcon,
         saveLayout,
-        applyTemplate,
     } = useLayout();
-    const { customFields, addField } = useCustomFields();
+    const { customFields } = useCustomFields();
+    const installFields = useInstallFields();
 
     const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
     const [hasChanges, setHasChanges] = useState(false);
@@ -148,47 +149,18 @@ export default function LayoutBuilderScreen() {
 
         Alert.alert(
             'Carica Modello',
-            `Inietto il modello "${template.name}"? Verranno aggiunti i campi personalizzati (se non esistono già).`,
+            `Applico il modello "${template.name}"? I campi che mancano vengono creati e tutti i campi del modello vanno in fondo al layout.`,
             [
                 { text: 'Annulla', style: 'cancel' },
                 {
                     text: 'Applica Modello',
                     onPress: async () => {
                         try {
-                            for (const f of template.customFields) {
-                                if (!customFields.some(existing => existing.name === f.name)) {
-                                    await addField(f);
-                                }
-                            }
-                            // Construct new layout fields for the template
-                            let templateFields: LayoutField[] = [];
-                            if (template.layoutFields && template.layoutFields.length > 0) {
-                                templateFields = template.layoutFields.map((lf: any) => ({
-                                    ...lf,
-                                    id: lf.id || lf._tempId || 'temp'
-                                })) as LayoutField[];
-                            } else {
-                                // Fallback: just add the template custom fields to the bottom of the current layout
-                                const currentLayout = [...localFields];
-                                for (const f of template.customFields) {
-                                    const matchingCustomField = customFields.find(cf => cf.name === f.name);
-                                    if (matchingCustomField && !currentLayout.some(lf => lf.id === matchingCustomField.id)) {
-                                        currentLayout.push({
-                                            id: matchingCustomField.id,
-                                            type: 'custom',
-                                            size: 'medium',
-                                            visible: true
-                                        });
-                                    }
-                                }
-                                templateFields = currentLayout;
-                            }
-
-                            applyTemplate(templateFields);
-                            setLocalFields(templateFields);
+                            // Campi nuovi nel registro e tutti i campi del modello in fondo al layout, salvato (D12)
+                            const { created, existing, layoutFields } = await installFields(template.customFields);
+                            setLocalFields(layoutFields);
                             setShowTemplatesModal(false);
-                            setHasChanges(true);
-                            Alert.alert('Modello Caricato', 'Layout sostituito con successo!');
+                            Alert.alert('Modello Caricato', `${created} campi nuovi${existing ? `, ${existing} già presenti` : ''}: sono in fondo al layout.`);
                         } catch (e) {
                             Alert.alert('Errore', 'Impossibile applicare il modello');
                         }
@@ -458,8 +430,8 @@ export default function LayoutBuilderScreen() {
                     </View>
                     <ScrollView style={{ flex: 1, padding: t.spacing.screenPadding }}>
                         <Text style={{ ...t.typography.caption, color: t.colors.textSecondary, marginBottom: 24, fontSize: 13, lineHeight: 18 }}>
-                            Carica un modello predefinito per iniettare automaticamente nel tuo database i campi più comuni usati nel tuo settore.
-                            Questa azione SOSTITUIRÀ l'intero layout attuale con una configurazione pulita per il settore scelto.
+                            Carica un modello predefinito per aggiungere i campi più comuni del tuo settore.
+                            I campi che mancano vengono creati e messi in fondo al layout attuale, che viene salvato; quelli che hai già non cambiano.
                         </Text>
                         {PREDEFINED_TEMPLATES.map(template => (
                             <Pressable

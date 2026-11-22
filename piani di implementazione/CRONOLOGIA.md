@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C07: modelli e campi nuovi nel modulo Aggiungi, Modelli di settore raggiungibili (D12, D13, P11)
+
+- Branch `funzioni/magazzino`.
+- **D12**: MODELLI del Layout builder salvava un solo campo (ogni `addField` del ciclo ripartiva dall'elenco vecchio), non lo metteva nel layout e diceva «Layout sostituito con successo!». Stesso ciclo nei Modelli di settore. Ora `addField` parte dall'elenco più recente e restituisce il campo creato; `useInstallFields` (`hooks/`) crea i campi del modello che mancano (stesso nome = già presente), li mette tutti in fondo al layout e lo salva (`appendToLayout` in `LayoutContext`). Il modello non sostituisce più il layout: i testi della finestra e il messaggio dicono cosa succede. Logica pura in `utils/templateFields.ts` (test, 3).
+- **D13**: voce «Modelli di settore» in Impostazioni (sotto Configura Layout Aggiungi) e indirizzo `settings/sector-templates` in `linking.ts`. «Salva campi attuali come modello» resta solo per iOS (usa `Alert.prompt`): da rivedere.
+- **P11**: un campo creato in Campi personalizzati ora va subito in fondo al modulo Aggiungi (layout salvato) e il messaggio lo dice.
+- Prova sul web: `a2-layout-modello` 4 campi nel registro e nel layout, tutti in Aggiungi (prima 1 e nessuno); la seconda volta «4 campi nuovi, 1 già presenti»; `a2-modelli-settore` la voce c'è e l'indirizzo apre la schermata (prima «Page Not Found»); `c07-campi-modelli.cjs`: campo nuovo nel layout salvato e in Aggiungi anche dopo la ricarica; «Abbigliamento & Moda» importa 4 campi (2 già presenti), tutti nel layout.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 110 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C06: export CSV con la cartella e senza cestino, import col pulsante sul web (P07, P18)
 
 - Branch `funzioni/magazzino`.
