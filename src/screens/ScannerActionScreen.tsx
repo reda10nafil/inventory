@@ -7,6 +7,7 @@ import { Image } from '../lib/ExpoImage';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations } from '../../contexts/LocationsContext';
 import { useCategories } from '../../contexts/CategoriesContext';
+import { useContacts } from '../../contexts/ContactsContext';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
@@ -37,6 +38,7 @@ export default function ScannerActionScreen() {
   const { getProductById, moveProduct, sellProduct, libraries } = useInventory();
   const { locations } = useLocations();
   const { labelOf } = useCategories();
+  const { labelOf: contactLabel } = useContacts();
 
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -186,14 +188,17 @@ export default function ScannerActionScreen() {
     const where = !stocked ? placeName(product.location)
       : isOutOfStock(product) ? `${placeName(product.location)} · Esaurito`
         : `${placeName(product.location)} · ${formatQty(totalStock(product), unit)}`;
-    // Dopo un movimento registrato: che cosa è stato fatto, poi si torna allo scanner come per Spostato e Venduto
+    // Dopo un movimento registrato: che cosa è stato fatto, poi si torna allo scanner come per Spostato e Venduto.
+    // Con il fornitore o cliente e il prezzo scelti nella finestra (M10); senza, il testo è quello di prima.
     const movementDone = (m: Movement) => {
       const text = m.kind === 'rettifica'
         ? `${product.sku}: rettifica in ${placeName(m.at)} a ${formatQty(m.counted, unit)}.`
         : `${product.sku} · ${describeStockEvent({
           movement: m.kind, qty: m.qty,
           ...('from' in m && { from: m.from }), ...('to' in m && { to: m.to }), ...(m.reason && { reason: m.reason }),
-        }, placeName, unit)}`;
+          ...(m.kind === 'scarico' && m.finalPrice != null && { finalPrice: m.finalPrice }),
+          ...(m.contactId && { contactId: m.contactId }),
+        }, placeName, unit, contactLabel)}`;
       Alert.alert('Movimento registrato', text, [{ text: 'OK', onPress: () => router.back() }]);
     };
     return (

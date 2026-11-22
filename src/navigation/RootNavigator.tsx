@@ -12,6 +12,7 @@ import NotFoundScreen from '../screens/NotFoundScreen';
 
 import LocationsScreen from '../screens/settings/LocationsScreen';
 import CategoriesScreen from '../screens/settings/CategoriesScreen';
+import ContactsScreen from '../screens/settings/ContactsScreen';
 import FieldsScreen from '../screens/settings/FieldsScreen';
 import FoldersScreen from '../screens/settings/FoldersScreen';
 import LayoutBuilderScreen from '../screens/settings/LayoutBuilderScreen';
@@ -41,6 +42,7 @@ export type RootStackParamList = {
   ProductEdit: { id: string };
   SettingsLocations: undefined;
   SettingsCategories: undefined;
+  SettingsContacts: undefined;
   SettingsFields: undefined;
   SettingsFolders: undefined;
   SettingsLayoutBuilder: undefined;
@@ -93,6 +95,7 @@ export default function RootNavigator() {
       <Stack.Screen name="ProductEdit" component={ProductEditScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsLocations" component={LocationsScreen} options={{ headerShown: true, headerTitle: 'Gestisci Posizioni' }} />
       <Stack.Screen name="SettingsCategories" component={CategoriesScreen} options={{ headerShown: true, headerTitle: 'Categorie' }} />
+      <Stack.Screen name="SettingsContacts" component={ContactsScreen} options={{ headerShown: true, headerTitle: 'Fornitori e clienti' }} />
       <Stack.Screen name="SettingsFields" component={FieldsScreen} options={{ headerShown: true, headerTitle: 'Campi Personalizzati' }} />
       <Stack.Screen name="SettingsFolders" component={FoldersScreen} options={{ headerShown: true, headerTitle: 'Gestisci Cartelle' }} />
       <Stack.Screen name="SettingsLayoutBuilder" component={LayoutBuilderScreen} options={{ headerShown: true, headerTitle: 'Configura Layout Aggiungi' }} />

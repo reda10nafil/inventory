@@ -1,18 +1,29 @@
 // Finestra «Movimenta» della Scheda (M04, ticket 02): carico, scarico, trasferimento o rettifica con quantità,
 // posizioni, causale e nota. Il calcolo e i rifiuti sono in `applyMovement` (utils/stock.ts); qui solo la scelta.
+// M10 (ticket 07): per carico e scarico si può scegliere un fornitore o un cliente (solo se l'anagrafica ne ha);
+// lo scarico con causale vendita ha anche un prezzo per unità facoltativo (vuoto = listino, come la Vendita flash).
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import type { MovementKind, MovementReason, Product } from '../types';
 import { useInventory } from '../contexts/InventoryContext';
 import { useLocations } from '../contexts/LocationsContext';
+import { useContacts } from '../contexts/ContactsContext';
 import { makeStyles, useTheme } from '../contexts/ThemeContext';
-import { MOVEMENT_LABELS, REASON_LABELS, formatQty, movementErrorText, parseQty, qtyAt, type Movement } from '../utils/stock';
+import {
+  MOVEMENT_LABELS, REASON_LABELS, formatQty, movementErrorText, parseQty, parseSalePrice, qtyAt, takesContact, takesPrice,
+  type Movement,
+} from '../utils/stock';
+import { salePrice } from '../utils/inventoryOps';
+import { CONTACT_KIND_ICONS, CONTACT_KIND_LABELS, contactsForMovement } from '../utils/contacts';
+import { formatNumber } from '../utils/number';
 import { formStyles } from './ui/formStyles';
 import { GradientFill } from './ui/GradientFill';
 import { AppIcon } from './ui/AppIcon';
 import { Text, TextInput } from './ui/Text';
 
 const KINDS: MovementKind[] = ['carico', 'scarico', 'trasferimento', 'rettifica'];
+/** Contatti proposti subito (poche pillole: la finestra resta corta); gli altri con «Altri N». */
+const FIRST_CONTACTS = 6;
 
 /** Causali proposte per ogni tipo (facoltative; «iniziale» la scrive solo Aggiungi). */
 export const REASONS_BY_KIND: Record<MovementKind, MovementReason[]> = {
@@ -37,6 +48,7 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
   const t = useTheme();
   const { moveStock } = useInventory();
   const { locations } = useLocations();
+  const { contacts } = useContacts();
 
   const [kind, setKind] = useState<MovementKind>(initialKind);
   const [qtyText, setQtyText] = useState('');
@@ -44,11 +56,15 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
   const [to, setTo] = useState('');
   const [reason, setReason] = useState<MovementReason | undefined>();
   const [note, setNote] = useState('');
+  const [contactId, setContactId] = useState<string | undefined>();
+  const [priceText, setPriceText] = useState('');
+  const [allContacts, setAllContacts] = useState(false);
 
   // Ogni apertura riparte pulita dal tipo chiesto e dalla posizione principale del prodotto
   useEffect(() => {
     if (!visible) return;
     setKind(initialKind); setQtyText(''); setPlace(product.location); setTo(''); setReason(undefined); setNote('');
+    setContactId(undefined); setPriceText(''); setAllContacts(false);
   }, [visible, product.location, initialKind]);
 
   const unit = product.unit || 'pz';
@@ -58,23 +74,42 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
   const places = [...locations.map((l) => ({ id: l.id, label: l.label })), ...orphan];
   const labelOf = (id: string) => places.find((p) => p.id === id)?.label ?? id;
 
+  // Fornitori e clienti (M10): prima quelli del tipo suggerito, poi gli altri; nessuno per trasferimento e rettifica
+  const contactChoices = contactsForMovement(contacts, kind);
+  const shownContacts = allContacts ? contactChoices : contactChoices.slice(0, FIRST_CONTACTS);
+  const withPrice = takesPrice(kind, reason);
+
   const chooseKind = (k: MovementKind) => {
     setKind(k);
     setReason(undefined);
+    // Causale, contatto e prezzo sono del tipo scelto: cambiando tipo si riparte senza
+    setContactId(undefined);
+    setPriceText('');
     if (k === 'trasferimento' && to === place) setTo('');
   };
 
   const submit = () => {
     const qty = parseQty(qtyText);
-    const common = { ...(reason && { reason }), ...(note.trim() && { note: note.trim() }) };
+    const common = {
+      ...(reason && { reason }),
+      ...(note.trim() && { note: note.trim() }),
+      ...(contactId && takesContact(kind) && { contactId }),
+    };
     let movement: Movement;
     if (kind === 'rettifica') {
       if (qty == null) { Alert.alert('Movimento non registrato', 'Scrivi la quantità contata (anche 0).'); return; }
       movement = { kind, at: place, counted: qty, ...common };
     } else {
       if (qty == null) { Alert.alert('Movimento non registrato', movementErrorText({ error: 'bad_qty' })); return; }
+      // Vendita: prezzo per unità scritto, altrimenti il listino (stesso evento della Vendita flash)
+      let price: number | undefined;
+      if (withPrice) {
+        const written = parseSalePrice(priceText);
+        if (written === null) { Alert.alert('Movimento non registrato', 'Scrivi un prezzo valido (es. 120 o 12,50) oppure lascia il campo vuoto.'); return; }
+        price = salePrice(product, written);
+      }
       movement = kind === 'carico' ? { kind, qty, to: place, ...common }
-        : kind === 'scarico' ? { kind, qty, from: place, ...common }
+        : kind === 'scarico' ? { kind, qty, from: place, ...common, ...(price != null && { finalPrice: price }) }
           : { kind, qty, from: place, to, ...common };
     }
     const result = moveStock(product.id, movement);
@@ -165,6 +200,52 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
                       </Pressable>
                     );
                   })}
+                </View>
+              </>
+            )}
+
+            {withPrice && (
+              <>
+                <Text style={styles.label}>Prezzo per unità (facoltativo)</Text>
+                <View style={styles.inputBox}>
+                  <TextInput
+                    style={styles.inputText}
+                    placeholder={product.sellPrice != null ? `Vuoto = listino ${formatNumber(product.sellPrice)}` : 'Vuoto = nessun prezzo'}
+                    placeholderTextColor={t.colors.placeholder}
+                    keyboardType="decimal-pad"
+                    value={priceText}
+                    onChangeText={setPriceText}
+                    accessibilityLabel="Prezzo per unità"
+                  />
+                  <Text style={styles.unit}>€/{unit}</Text>
+                </View>
+              </>
+            )}
+
+            {contactChoices.length > 0 && (
+              <>
+                <Text style={styles.label}>{kind === 'carico' ? 'Fornitore o cliente (facoltativo)' : 'Cliente o fornitore (facoltativo)'}</Text>
+                <View style={styles.chipWrap}>
+                  {shownContacts.map((c) => {
+                    const active = contactId === c.id;
+                    return (
+                      <Pressable
+                        key={c.id}
+                        style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
+                        onPress={() => setContactId(active ? undefined : c.id)}
+                        accessibilityLabel={`Contatto ${CONTACT_KIND_LABELS[c.kind]} ${c.name}`}
+                      >
+                        {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                        <AppIcon name={CONTACT_KIND_ICONS[c.kind]} size={14} color={active ? t.colors.chipActiveText : t.colors.chipText} />
+                        <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>{c.name}</Text>
+                      </Pressable>
+                    );
+                  })}
+                  {contactChoices.length > shownContacts.length && (
+                    <Pressable style={[styles.chip, styles.chipSmall]} onPress={() => setAllContacts(true)} accessibilityLabel="Mostra tutti i contatti">
+                      <Text style={[styles.chipText, styles.chipTextSmall]}>Altri {contactChoices.length - shownContacts.length}</Text>
+                    </Pressable>
+                  )}
                 </View>
               </>
             )}

@@ -134,4 +134,16 @@ describe('Report giacenze e movimenti (M08)', () => {
     ]);
     expect(rows[1][0]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
   });
+
+  it('movementCsvRows (M10): il nome del contatto; un id che il risolutore non conosce resta scritto com\'è', () => {
+    const ev = (id: string, contactId?: string): TimelineEvent => ({
+      id, productId: 'x', type: 'stock', timestamp: `2026-11-22T1${id}:00:00.000Z`,
+      details: { movement: 'carico', qty: 1, to: 'vetrina', ...(contactId && { contactId }) },
+    });
+    // Come `nameOf` del contesto: undefined per un id sconosciuto (una stringa vuota stamperebbe vuoto)
+    const contact = (id: string) => (id === 'c1' ? 'Rossi srl' : undefined);
+    const rows = movementCsvRows([ev('3'), ev('2', 'sparito'), ev('1', 'c1')], [product({ id: 'x', sku: 'A', stock: {} })], { ...labels, contact });
+    const col = MOVEMENT_CSV_HEADER.indexOf('Contatto');
+    expect(rows.slice(1).map((r) => r[col])).toEqual(['Rossi srl', 'sparito', '']);
+  });
 });

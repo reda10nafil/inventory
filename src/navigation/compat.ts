@@ -31,6 +31,7 @@ function parseHref(href: Href): { name: string; params?: any } {
       const map: Record<string,string> = {
         '/settings/locations': 'SettingsLocations',
         '/settings/categories': 'SettingsCategories',
+        '/settings/contacts': 'SettingsContacts',
         '/settings/fields': 'SettingsFields',
         '/settings/folders': 'SettingsFolders',
         '/settings/layout-builder': 'SettingsLayoutBuilder',

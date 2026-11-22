@@ -108,6 +108,7 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
       ['16-audit.png', 'automations/audit'], ['17-spostamento.png', 'automations/batch-move'], ['18-vendita.png', 'automations/scan-sell'],
       ['19-tag-rapidi.png', 'automations/quick-tag'], ['20-azione-rapida.png', 'scanner-action'], ['21-non-trovato.png', 'pagina-che-non-esiste'],
       ['22-aspetto.png', 'settings/appearance'], ['23-categorie.png', 'settings/categories'], ['24-conta.png', 'automations/count'],
+      ['25-contatti.png', 'settings/contacts'],
     ];
     for (const [name, route] of extra) {
       await step(name, async () => { await page.goto(`${APP}/${route}`); await page.waitForTimeout(2500); await shot(name); });

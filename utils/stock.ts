@@ -137,6 +137,25 @@ export function parseQty(input: string | number | null | undefined): number | un
 /** «2,5 kg», «12 pz». */
 export const formatQty = (qty: number, unit?: string): string => `${formatNumber(qty)} ${unit || DEFAULT_UNIT}`;
 
+/** Fornitore o cliente (M10): solo carico e scarico; trasferimento e rettifica sono fatti interni al magazzino. */
+export const takesContact = (kind: MovementKind): boolean => kind === 'carico' || kind === 'scarico';
+
+/** Prezzo (M10): solo lo scarico con causale vendita. È sempre un prezzo **per unità**, come il listino. */
+export const takesPrice = (kind: MovementKind, reason: MovementReason | undefined): boolean =>
+  kind === 'scarico' && reason === 'vendita';
+
+/**
+ * Prezzo per unità scritto dall'utente nello scarico con causale vendita («120», «12,50»), al centesimo.
+ * Vuoto → undefined (nessun prezzo scritto); negativo o non valido → null (da rifiutare).
+ */
+export function parseSalePrice(input: string): number | undefined | null {
+  if (!input.trim()) return undefined;
+  const value = parseNumber(input);
+  if (value == null || value < 0) return null;
+  return Math.round(value * 100) / 100;
+}
+
+// `contactId` vale solo per carico e scarico (`takesContact`); `finalPrice` è il prezzo per unità della vendita.
 type Common = { reason?: MovementReason; note?: string; contactId?: string };
 export type Movement =
   | (Common & { kind: 'carico'; qty: number; to: string })
@@ -220,7 +239,7 @@ export function applyMovement(product: Product, movement: Movement, now: string)
     ...(to && { to }),
     ...(movement.reason && { reason: movement.reason }),
     ...(movement.note?.trim() && { note: movement.note.trim() }),
-    ...(movement.contactId && { contactId: movement.contactId }),
+    ...(movement.contactId && takesContact(movement.kind) && { contactId: movement.contactId }),
     ...(movement.kind === 'scarico' && movement.finalPrice != null && { finalPrice: movement.finalPrice }),
     before: fromMilli(total(start)),
     after: fromMilli(total(next)),
@@ -252,11 +271,15 @@ export function replayStock(events: readonly Pick<TimelineEvent, 'type' | 'detai
  * Testo di un evento `stock` per la Cronologia e la Scheda: «Giacenza iniziale: +12 pz in Magazzino»,
  * «Vendita: −1 pz da Vetrina · 120 €», «Trasferimento: 2 kg Vetrina → Magazzino», «Rettifica: −1,5 kg in Vetrina».
  * `placeLabel` dà il nome della posizione (se non c'è più resta l'id), `unit` è quella del prodotto.
+ * Il prezzo è per unità: con una quantità diversa da 1 lo dice («· 120 €/pz»).
+ * `contactLabel` (M10) dà il nome del fornitore o cliente del movimento («· Fornitore Rossi»); senza risolutore,
+ * o se il contatto non è in elenco (`undefined`), il testo non lo cita: l'id non si mostra mai.
  */
 export function describeStockEvent(
   details: TimelineEvent['details'],
   placeLabel: (id: string) => string = (id) => id,
   unit?: string,
+  contactLabel?: (id: string) => string | undefined,
 ): string {
   const kind = details.movement;
   const title = (details.reason && details.reason !== 'altro' && kind !== 'trasferimento' && kind !== 'rettifica'
@@ -270,6 +293,8 @@ export function describeStockEvent(
   else if (to) body = `+${qty} in ${to}`;
   else if (from) body = kind === 'rettifica' ? `−${qty} in ${from}` : `−${qty} da ${from}`;
   else body = qty;
-  const price = details.finalPrice != null ? ` · ${formatPrice(details.finalPrice)}` : '';
-  return `${title}: ${body}${price}`;
+  const perUnit = (details.qty ?? 1) === 1 ? '' : `/${unit || DEFAULT_UNIT}`;
+  const price = details.finalPrice != null ? ` · ${formatPrice(details.finalPrice)}${perUnit}` : '';
+  const who = details.contactId ? contactLabel?.(details.contactId) : undefined;
+  return `${title}: ${body}${price}${who ? ` · ${who}` : ''}`;
 }

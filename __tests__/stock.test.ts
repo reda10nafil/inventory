@@ -9,10 +9,13 @@ import {
   mainLocation,
   movementErrorText,
   parseQty,
+  parseSalePrice,
   positionsOf,
   replayStock,
   round3,
   stockOf,
+  takesContact,
+  takesPrice,
   totalStock,
   type Movement,
 } from '../utils/stock';
@@ -94,6 +97,16 @@ describe('numeri', () => {
   it('parseQty segue i moduli: «2.125» scritto a mano è 2125 (punto delle migliaia); l\'import userà parseStoredNumber', () => {
     expect(parseQty('2.125')).toBe(2125);
   });
+  it('parseSalePrice (M10): vuoto = nessun prezzo, non valido o negativo = null, al centesimo', () => {
+    expect(parseSalePrice('')).toBeUndefined();
+    expect(parseSalePrice('   ')).toBeUndefined();
+    expect(parseSalePrice('120')).toBe(120);
+    expect(parseSalePrice('1.250,50')).toBe(1250.5);
+    expect(parseSalePrice('12,345')).toBe(12.35);
+    expect(parseSalePrice('0')).toBe(0);
+    expect(parseSalePrice('-3')).toBeNull();
+    expect(parseSalePrice('abc')).toBeNull();
+  });
   it('formatQty scrive la quantità con l\'unità', () => {
     expect(formatQty(2.5, 'kg')).toBe('2,5 kg');
     expect(formatQty(1200)).toBe('1.200 pz');
@@ -129,6 +142,34 @@ describe('applyMovement', () => {
     const { p: p2 } = run(p, [{ kind: 'carico', qty: 4, to: 'magazzino' }]);
     expect(p2.stock).toEqual({ magazzino: 4 });
     expect(p2.location).toBe('magazzino');
+  });
+
+  it('M10: il contatto entra nell\'evento solo per carico e scarico, mai per trasferimento e rettifica', () => {
+    const start = stocked({ vetrina: 5 });
+    const details = (m: Movement) => {
+      const r = applyMovement(start, m, NOW);
+      if (!r.ok) throw new Error(r.error);
+      return r.events[r.events.length - 1].details;
+    };
+    expect(details({ kind: 'carico', qty: 1, to: 'vetrina', contactId: 'c1' }).contactId).toBe('c1');
+    expect(details({ kind: 'scarico', qty: 1, from: 'vetrina', contactId: 'c2' }).contactId).toBe('c2');
+    expect(details({ kind: 'trasferimento', qty: 1, from: 'vetrina', to: 'magazzino', contactId: 'c1' })).not.toHaveProperty('contactId');
+    expect(details({ kind: 'rettifica', at: 'vetrina', counted: 2, contactId: 'c1' })).not.toHaveProperty('contactId');
+    expect(details({ kind: 'carico', qty: 1, to: 'vetrina' })).not.toHaveProperty('contactId');
+  });
+
+  it('M10: lo scarico con causale vendita porta prezzo per unità e contatto insieme', () => {
+    const r = applyMovement(stocked({ vetrina: 5 }), { kind: 'scarico', qty: 3, from: 'vetrina', reason: 'vendita', finalPrice: 120, contactId: 'c2' }, NOW);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.events[0].details).toEqual({ movement: 'scarico', qty: 3, from: 'vetrina', reason: 'vendita', contactId: 'c2', finalPrice: 120, before: 5, after: 2 });
+  });
+
+  it('M10: chi può avere un contatto e chi un prezzo', () => {
+    expect((['carico', 'scarico', 'trasferimento', 'rettifica'] as const).map(takesContact)).toEqual([true, true, false, false]);
+    expect(takesPrice('scarico', 'vendita')).toBe(true);
+    expect(takesPrice('scarico', 'danno')).toBe(false);
+    expect(takesPrice('scarico', undefined)).toBe(false);
+    expect(takesPrice('carico', 'vendita')).toBe(false);
   });
 
   it('scarica 0,3 da 0,1 + 0,2 senza rifiutarlo', () => {

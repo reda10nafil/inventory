@@ -68,7 +68,8 @@ export interface TimelineEvent {
     photoCount?: number;
     changes?: string[];
     // Movimenti di magazzino (`type: 'stock'`, ticket 02): `qty` sempre positiva, tolta da `from` e/o
-    // aggiunta a `to`; `before`/`after` = giacenza totale. Per la vendita `finalPrice` è il prezzo.
+    // aggiunta a `to`; `before`/`after` = giacenza totale. Per la vendita `finalPrice` è il prezzo per unità.
+    // `contactId` (M10): fornitore o cliente di un carico o di uno scarico, id di `utils/contacts.ts`.
     movement?: MovementKind;
     qty?: number;
     reason?: MovementReason;

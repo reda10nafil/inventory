@@ -12,6 +12,7 @@ import { parseCsv, stringifyCsv } from '../../../utils/csv';
 import { libraryIdFromCsv, movementCsvRows, parseStockCell, productCsvRows, stockCsvRows } from '../../../utils/productCsv';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCategories } from '../../../contexts/CategoriesContext';
+import { useContacts } from '../../../contexts/ContactsContext';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
@@ -31,7 +32,9 @@ export default function SettingsScreen() {
   const { products, timeline, addProduct, getProductBySku, libraries } = useInventory();
   const { getLocation } = useLocations();
   const { labelOf } = useCategories();
-  const reportLabels = { place: (id: string) => getLocation(id)?.label ?? id, category: labelOf };
+  const { nameOf: contactName } = useContacts();
+  // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
+  const reportLabels = { place: (id: string) => getLocation(id)?.label ?? id, category: labelOf, contact: contactName };
   const { session, organizationId, organizations, user, signOut, switchOrganization } = useAuth();
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -484,6 +487,24 @@ export default function SettingsScreen() {
               <Text style={styles.settingTitle}>Categorie</Text>
               <Text style={styles.settingDescription}>
                 Tipi di prodotto da scegliere in Aggiungi
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/contacts')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="people" size={24} color={t.colors.onAccent} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Fornitori e clienti</Text>
+              <Text style={styles.settingDescription}>
+                Contatti da scegliere nei carichi e negli scarichi
               </Text>
             </View>
           </View>

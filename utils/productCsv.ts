@@ -125,12 +125,13 @@ export function csvDateTime(iso: string): string {
 /**
  * Report dei movimenti: gli eventi `stock` della Cronologia (gli stessi del filtro «Movimenti»), dal più vecchio.
  * Anche quelli dei prodotti nel cestino o eliminati per sempre: senza prodotto, lo SKU è l'id rimasto.
- * `contact` dà il nome del contatto (M10); senza, resta l'id scritto nel movimento.
+ * `contact` dà il nome del contatto (M10) e `undefined` per un id che non è in elenco: in quel caso, e senza
+ * `contact`, resta l'id scritto nel movimento. Il prezzo è per unità.
  */
 export function movementCsvRows(
   timeline: readonly TimelineEvent[],
   products: readonly Product[],
-  labels: Labels & { contact?: (id: string) => string },
+  labels: Labels & { contact?: (id: string) => string | undefined },
 ): unknown[][] {
   const byId = new Map(products.map((p) => [p.id, p]));
   // La Cronologia è salvata dal più nuovo: girata prima dell'ordinamento (stabile), il carico «iniziale» resta

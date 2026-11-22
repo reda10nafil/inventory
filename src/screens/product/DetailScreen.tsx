@@ -13,6 +13,7 @@ import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCategories } from '../../../contexts/CategoriesContext';
+import { useContacts } from '../../../contexts/ContactsContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { orderByLayout } from '../../../utils/layoutOrder';
@@ -42,6 +43,7 @@ export default function ProductDetailScreen() {
   const { getProductById, getTimelineForProduct } = useInventory();
   const { locations } = useLocations();
   const { labelOf } = useCategories();
+  const { labelOf: contactLabel } = useContacts();
   const { customFields } = useCustomFields();
 
   const { layout } = useLayout();
@@ -86,7 +88,10 @@ export default function ProductDetailScreen() {
   const lowStock = isLowStock(product);
   // «Movimenta» (M04): prodotti disponibili e non nel cestino; un pezzo unico diventa articolo a quantità
   const canMoveStock = canMoveStockRule(product);
+  // Testo di un movimento per i testi condivisi e il PDF: senza il nome del fornitore o cliente, che resta nell'app
   const stockEventText = (details: Parameters<typeof describeStockEvent>[0]) => describeStockEvent(details, placeLabel, product.unit);
+  // A schermo (Cronologia dettagliata) con il contatto (M10): «· Fornitore Rossi»
+  const stockEventOnScreen = (details: Parameters<typeof describeStockEvent>[0]) => describeStockEvent(details, placeLabel, product.unit, contactLabel);
 
   const generateClientText = () => {
     let text = `✨ ${categoryName} - ${product.sku}\n\n`;
@@ -1173,7 +1178,7 @@ export default function ProductDetailScreen() {
                   else if (event.type === 'photo_added') eventText = `${event.details.photoCount} foto aggiunte`;
                   else if (event.type === 'deleted') eventText = 'Spostato nel Cestino';
                   else if (event.type === 'restored') eventText = 'Ripristinato dal Cestino';
-                  else if (event.type === 'stock') eventText = stockEventText(event.details);
+                  else if (event.type === 'stock') eventText = stockEventOnScreen(event.details);
 
                   return (
                     <View key={`${event.id || 'evt'}-${index}`} style={styles.timelineItem}>

@@ -39,6 +39,14 @@ export function moveOf(product: Product | undefined, to: string, now: string): O
   return { ok: true, patch: stockPatch(r.product), events: r.events };
 }
 
+/**
+ * Prezzo **per unità** di una vendita di un articolo a quantità: quello scritto, altrimenti il listino (come nella
+ * Vendita flash). Vale per le due strade della vendita, `saleOf` e lo scarico con causale vendita di Movimenta
+ * (M10), così `finalPrice` nell'evento ha un solo significato.
+ */
+export const salePrice = (product: Pick<Product, 'sellPrice'>, written: number | undefined): number | undefined =>
+  written ?? product.sellPrice;
+
 /** Vende: un pezzo unico diventa «venduto»; un articolo a quantità scarica `qty` dalla posizione principale. */
 export function saleOf(product: Product | undefined, finalPrice: number | undefined, qty: number, now: string): OpResult {
   if (!product) return { ok: false, reason: 'missing' };
@@ -55,8 +63,7 @@ export function saleOf(product: Product | undefined, finalPrice: number | undefi
     };
   }
   if (isOutOfStock(product)) return { ok: false, reason: 'out_of_stock' };
-  // Senza prezzo scritto vale quello di listino, come nella Vendita flash
-  const price = finalPrice ?? product.sellPrice;
+  const price = salePrice(product, finalPrice);
   const r = applyMovement(product, {
     kind: 'scarico', qty, from: product.location, reason: 'vendita', ...(price != null && { finalPrice: price }),
   }, now);

@@ -180,6 +180,71 @@ const FETTE = {
       ['pezzo-unico', async (page) => { await page.goto(`${APP}/scanner-action?type=product&id=cmp-1`); await page.waitForTimeout(1800); }],
     ],
   },
+  // M10: Fornitori e clienti (voce in Impostazioni, elenco, modulo, scheda del contatto, finestra Movimenta con
+  // contatto e prezzo, nomi in Cronologia e nella Scheda). Nomi lunghi apposta. VIS-0098 = cmp-5.
+  m10: {
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const tk = 'inventory:v1:local:timeline';
+      localStorage.setItem('furinventory_contacts:local', JSON.stringify([
+        { id: 'c-rossi', name: 'Conceria Rossi & Figli', kind: 'fornitore', phone: '333 1234567', email: 'ordini@conceriarossi.example', note: 'Consegna il martedì, bancali da 40 pezzi' },
+        { id: 'c-nord', name: 'Pellami del Nord', kind: 'fornitore' },
+        { id: 'c-bianchi', name: 'Boutique Bianchi', kind: 'cliente', phone: '02 5551234' },
+        { id: 'c-verdi', name: 'Sartoria Verdi di Maria Antonietta Verdi', kind: 'cliente' },
+      ]));
+      const list = JSON.parse(localStorage.getItem(pk));
+      const tl = JSON.parse(localStorage.getItem(tk) || '[]');
+      const vis = list.find((p) => p.sku === 'VIS-0098');
+      Object.assign(vis, { unit: 'pz', stock: { magazzino: 9 } });
+      const ev = (n, details) => tl.unshift({ id: `m10-${n}`, productId: vis.id, type: 'stock', timestamp: `2026-11-22T${String(8 + n).padStart(2, '0')}:00:00.000Z`, details });
+      ev(0, { movement: 'carico', qty: 5, to: 'magazzino', reason: 'iniziale', before: 0, after: 5 });
+      ev(1, { movement: 'carico', qty: 6, to: 'magazzino', reason: 'acquisto', contactId: 'c-rossi', before: 5, after: 11 });
+      ev(2, { movement: 'scarico', qty: 3, from: 'magazzino', reason: 'vendita', finalPrice: 120, contactId: 'c-bianchi', before: 11, after: 8 });
+      ev(3, { movement: 'carico', qty: 1, to: 'magazzino', reason: 'reso', contactId: 'c-verdi', before: 8, after: 9 });
+      localStorage.setItem(pk, JSON.stringify(list));
+      localStorage.setItem(tk, JSON.stringify(tl));
+    },
+    schermate: [
+      ['impostazioni', async (page) => {
+        await page.goto(`${APP}/settings`); await page.waitForTimeout(1800);
+        await page.getByText('Fornitori e clienti', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['contatti', async (page) => { await page.goto(`${APP}/settings/contacts`); await page.waitForTimeout(1800); }],
+      ['modulo', async (page) => {
+        await page.getByLabel('Nuovo contatto', { exact: true }).click(); await page.waitForTimeout(400);
+        await page.getByLabel('Nome', { exact: true }).fill('Lavanderia Industriale Aurora');
+        await page.getByLabel('Tipo Cliente', { exact: true }).click();
+        await page.getByLabel('Telefono (facoltativo)', { exact: true }).fill('045 8001234');
+        await page.getByLabel('Email (facoltativa)', { exact: true }).fill('amministrazione@lavanderia-aurora.example');
+        await page.getByLabel('Nota (facoltativa)', { exact: true }).fill('Ritira il giovedì');
+      }],
+      ['scheda-contatto', async (page) => {
+        await page.getByText('Annulla', { exact: true }).first().click(); await page.waitForTimeout(300);
+        await page.getByLabel('Apri Fornitore Conceria Rossi & Figli', { exact: true }).click(); await page.waitForTimeout(500);
+      }],
+      ['movimenta-carico', async (page) => {
+        await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
+        await page.getByLabel('Movimenta', { exact: true }).first().click(); await page.waitForTimeout(600);
+        await page.locator('input[placeholder="es. 2,5"]').fill('6');
+        await page.getByLabel('Causale Acquisto', { exact: true }).click();
+        await page.getByLabel('Contatto Fornitore Conceria Rossi & Figli', { exact: true }).click();
+        await page.getByPlaceholder('es. fattura 124, bancale rotto').evaluate((e) => e.scrollIntoView({ block: 'end' }));
+      }],
+      ['movimenta-vendita', async (page) => {
+        await page.getByLabel('Tipo Scarico', { exact: true }).click();
+        await page.locator('input[placeholder="es. 2,5"]').fill('3');
+        await page.getByLabel('Causale Vendita', { exact: true }).click();
+        await page.getByLabel('Prezzo per unità', { exact: true }).fill('120');
+        await page.getByLabel('Contatto Cliente Sartoria Verdi di Maria Antonietta Verdi', { exact: true }).click();
+        await page.getByPlaceholder('es. fattura 124, bancale rotto').evaluate((e) => e.scrollIntoView({ block: 'end' }));
+      }],
+      ['cronologia-movimenti', async (page) => { await page.goto(`${APP}/timeline`); await page.waitForTimeout(1800); await page.getByText('Movimenti', { exact: true }).first().click(); }],
+      ['scheda-prodotto', async (page) => {
+        await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
+        await page.getByText('Cronologia dettagliata', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

@@ -6,6 +6,7 @@ export type RootStackParamList = {
   ProductEdit: {id: string};
   'settings/locations': undefined;
   'settings/categories': undefined;
+  'settings/contacts': undefined;
   'settings/fields': undefined;
   'settings/folders': undefined;
   'settings/layout-builder': undefined;

@@ -1,6 +1,6 @@
 import type { Product, TimelineEvent } from '../types';
 import {
-  countDiffs, countOf, countRefusalText, countRows, editableUpdates, moveOf, movementOf, refusalText, saleOf, uniqueAt,
+  countDiffs, countOf, countRefusalText, countRows, editableUpdates, moveOf, movementOf, refusalText, saleOf, salePrice, uniqueAt,
   withInitialStock, withStartingStock, type OpResult,
 } from '../utils/inventoryOps';
 import { describeStockEvent, qtyAt, replayStock, stockOf, storedStock } from '../utils/stock';
@@ -190,6 +190,38 @@ describe('testi', () => {
     expect(describeStockEvent({ movement: 'trasferimento', qty: 2.5, from: 'vetrina', to: 'magazzino' }, label, 'kg')).toBe('Trasferimento: 2,5 kg Vetrina → Magazzino');
     expect(describeStockEvent({ movement: 'rettifica', qty: 1.5, from: 'vetrina', reason: 'conta' }, label, 'kg')).toBe('Rettifica: −1,5 kg in Vetrina');
     expect(describeStockEvent({ movement: 'carico', qty: 3, to: 'sparita' }, label)).toBe('Carico: +3 pz in sparita');
+  });
+  it('describeStockEvent (M10): il nome del contatto in fondo, solo se il risolutore lo conosce', () => {
+    const label = (id: string) => ({ vetrina: 'Vetrina', magazzino: 'Magazzino' } as Record<string, string>)[id] ?? id;
+    const contact = (id: string) => ({ c1: 'Fornitore Rossi', c2: 'Cliente Bianchi' } as Record<string, string>)[id];
+    const carico = { movement: 'carico' as const, qty: 3, to: 'magazzino', reason: 'acquisto' as const, contactId: 'c1' };
+    expect(describeStockEvent(carico, label, 'pz', contact)).toBe('Acquisto: +3 pz in Magazzino · Fornitore Rossi');
+    // senza risolutore (testi condivisi e PDF) o con un id che non è più in elenco: nessun nome, nessun id a schermo
+    expect(describeStockEvent(carico, label, 'pz')).toBe('Acquisto: +3 pz in Magazzino');
+    expect(describeStockEvent({ ...carico, contactId: 'sparito' }, label, 'pz', contact)).toBe('Acquisto: +3 pz in Magazzino');
+    expect(describeStockEvent({ movement: 'scarico', qty: 1, from: 'vetrina', reason: 'vendita', finalPrice: 120, contactId: 'c2' }, label, 'pz', contact))
+      .toBe('Vendita: −1 pz da Vetrina · 120 € · Cliente Bianchi');
+  });
+  it('describeStockEvent (M10): il prezzo è per unità, e con più di una unità lo dice', () => {
+    const label = (id: string) => ({ vetrina: 'Vetrina' } as Record<string, string>)[id] ?? id;
+    const vendita = { movement: 'scarico' as const, from: 'vetrina', reason: 'vendita' as const };
+    expect(describeStockEvent({ ...vendita, qty: 1, finalPrice: 120 }, label)).toBe('Vendita: −1 pz da Vetrina · 120 €');
+    expect(describeStockEvent({ ...vendita, qty: 3, finalPrice: 120 }, label)).toBe('Vendita: −3 pz da Vetrina · 120 €/pz');
+    expect(describeStockEvent({ ...vendita, qty: 2.5, finalPrice: 12.5 }, label, 'kg')).toBe('Vendita: −2,5 kg da Vetrina · 12,50 €/kg');
+  });
+  it('salePrice (M10): il prezzo per unità scritto, altrimenti il listino; lo stesso per le due strade della vendita', () => {
+    expect(salePrice(item(), 80)).toBe(80);
+    expect(salePrice(item(), 0)).toBe(0);
+    expect(salePrice(item(), undefined)).toBe(100);
+    expect(salePrice(item({ sellPrice: undefined }), undefined)).toBeUndefined();
+    // Vendita flash (saleOf) e Movimenta (movementOf con salePrice) scrivono lo stesso evento
+    const p = stocked({ vetrina: 5 });
+    const flash = saleOf(p, undefined, 2, NOW);
+    const price = salePrice(p, undefined);
+    const sheet = movementOf(p, { kind: 'scarico', qty: 2, from: 'vetrina', reason: 'vendita', ...(price != null && { finalPrice: price }) }, NOW);
+    if (!flash.ok || !sheet.ok) throw new Error('rifiutato');
+    expect(sheet.events).toEqual(flash.events);
+    expect(sheet.events[0].details.finalPrice).toBe(100);
   });
   it('qtyAt: quantità in una posizione, 0 per venduti e cestino', () => {
     expect(qtyAt(stocked({ vetrina: 2.5 }), 'vetrina')).toBe(2.5);

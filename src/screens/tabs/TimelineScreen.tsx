@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { useContacts } from '../../../contexts/ContactsContext';
 import { describeStockEvent } from '../../../utils/stock';
 import { TimelineEvent } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -44,6 +45,8 @@ export default function TimelineScreen() {
   const { timeline, getProductById } = useInventory();
   const { locations } = useLocations();
   const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
+  // Fornitore o cliente del movimento (M10): «· Fornitore Rossi» in fondo al testo
+  const { labelOf: contactLabel } = useContacts();
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
@@ -104,7 +107,7 @@ export default function TimelineScreen() {
       case 'restored':
         return `${sku} - Ripristinato dal Cestino`;
       case 'stock':
-        return `${sku} - ${describeStockEvent(event.details, placeLabel, product?.unit)}`;
+        return `${sku} - ${describeStockEvent(event.details, placeLabel, product?.unit, contactLabel)}`;
       default:
         return `${sku} - Evento`;
     }
