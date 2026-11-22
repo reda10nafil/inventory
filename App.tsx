@@ -140,6 +140,6 @@ export default function App() {
 
 const useStyles = makeStyles((t) => ({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: t.colors.background },
-  loadingText: { color: '#D4D4D8', marginTop: 12, textAlign: 'center' },
+  loadingText: { color: t.colors.textSecondary, marginTop: 12, textAlign: 'center' },
   signOut: { color: t.colors.accentInk, marginTop: 20, fontWeight: '600' },
 }));

@@ -54,6 +54,20 @@ const DEFAULT_LAYOUT: LayoutConfig = {
     version: 4, // Fix sku full per banda nera in Add
 };
 
+// Titoli delle sezioni predefinite con l'iniziale maiuscola (ritocco del ticket 08), solo quando si mostrano: i dati
+// salvati non cambiano e i titoli scritti dall'utente restano come li ha scritti. Ardesia li rimette in maiuscolo
+// con `textTransform` del suo tema.
+const DEFAULT_SECTION_LABELS: Record<string, string> = {
+    'DATI PRODOTTO': 'Dati prodotto',
+    'DATI ECONOMICI': 'Dati economici',
+    'MISURE': 'Misure',
+    'NOTE': 'Note',
+};
+
+export function sectionLabel(label: string | undefined): string {
+    return (label && DEFAULT_SECTION_LABELS[label]) || label || '';
+}
+
 const STORAGE_KEY = 'furinventory_layout_config';
 
 // Context Interface

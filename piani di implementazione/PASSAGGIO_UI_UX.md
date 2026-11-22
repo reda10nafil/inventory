@@ -111,3 +111,11 @@ La sessione precedente ha aperto Claude Design e disegnato schermate nuove **pri
 2. Un piano in `piani di implementazione/` con il grafo dei lavori e le dipendenze bloccanti. Punti già emersi: i colori scritti a mano nei componenti vanno portati a token prima di cambiare palette; le icone dei campi sono nomi Material Icons salvati nei dati e richiedono una tabella di corrispondenza.
 3. Le 5 proposte di stile, ognuna con Inventario, Scheda capo con tutti i tipi di campo e modulo Aggiungi con campi a 1/3, 1/2 e intera.
 4. Dopo la scelta dell'utente, gli agenti esecutori applicano lo stile scelto seguendo il piano.
+
+## Aggiornamento del 22 novembre 2026, sesta parte (L4, L5a, L3, L5b-e fatti; L6 in corso)
+
+**Fatto** (dettagli in CRONOLOGIA, un commit per lavoro, tutto pubblicato su `ui-ux/stili`): L4 icone nuove; L5a caratteri (14 TTF Android, caricamento web per stile, barra di stato) e **Attuale rifinito predefinito**; L3 Impostazioni › Aspetto; L5b-e Babilonia, Ardesia, Ishtar, Minimal (tutti e 5 nel selettore); base comune di L6 (`components/ui/Backdrop.tsx`, `GradientFill.tsx`, `Glass.tsx`, `surfaces.ts`, `utils/price.ts`, `sectionLabel()` in `LayoutContext`) e **barra in basso nuova** (`src/navigation/TabBar.tsx`).
+
+**Strumenti nuovi**: `schermate.cjs` con `SOLO=<passi>` e `FONT=<famiglia>` (controlla che ogni testo usi il carattere dello stile); `campionario/cambio-stile.cjs` (cambio di stile senza perdere schermata e dati, scelta che resta dopo il riavvio). Regole comuni delle corsie L6: `side-session-notes/local_8f4027c5-…/brief-l6.md` (fuori dal repository).
+
+**Prossimi passi**: L6 in cinque corsie con subagenti a file separati (a Home; b Scheda; c+d Aggiungi, Modifica e `components/ui/formStyles.ts`; e Impostazioni; f Cronologia, Automazioni, scanner, chat, intestazioni native), poi controllo complessivo 31 × 5 con `FONT` e `cambio-stile.cjs`, commit per corsia; L7 (D04, D06, D07, D11, D17, D22-D24); L9 (verifica finale, bundle Android, `graphify update .`, schermate «dopo» nel repository in formato leggero, resoconto e richiesta di prova su Android).

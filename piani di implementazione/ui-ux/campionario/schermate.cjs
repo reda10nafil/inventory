@@ -86,7 +86,7 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
   log('campionario', seeded, STILE ? `stile ${STILE}` : 'stile predefinito');
 
   await step('inventario', async () => { await home(); await shot('01-inventario.png'); await tall('01b-inventario-intero.png'); });
-  await step('scheda', async () => { await home(); await vis('VIS-0142').click(); await vis('CAMPI STRUTTURATI').waitFor(); await shot('02-scheda.png'); await tall('02b-scheda-intera.png'); });
+  await step('scheda', async () => { await home(); await vis('VIS-0142').click(); await page.getByText(/campi strutturati/i).locator('visible=true').first().waitFor(); await shot('02-scheda.png'); await tall('02b-scheda-intera.png'); });
   await step('modifica', async () => { await vis('Modifica').click(); await page.waitForTimeout(1500); await shot('05-modifica.png'); await tall('05b-modifica-intera.png'); });
   await step('aggiungi', async () => { await home(); await tab('Aggiungi'); await shot('03-aggiungi.png'); await tall('03b-aggiungi-intera.png'); });
   await step('cronologia', async () => { await home(); await tab('Cronologia'); await shot('04-cronologia.png'); });
