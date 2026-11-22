@@ -23,6 +23,7 @@ export const linking = {
       SettingsHardware: 'settings/hardware',
       SettingsTrash: 'settings/trash',
       SettingsShare: 'settings/share',
+      SettingsAppearance: 'settings/appearance',
       Audit: 'automations/audit',
       BatchMove: 'automations/batch-move',
       ScanSell: 'automations/scan-sell',

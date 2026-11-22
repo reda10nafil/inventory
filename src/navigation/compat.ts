@@ -35,6 +35,7 @@ function parseHref(href: Href): { name: string; params?: any } {
         '/settings/share': 'SettingsShare',
         '/settings/sector-templates': 'SettingsSector',
         '/settings/team': 'SettingsTeam',
+        '/settings/appearance': 'SettingsAppearance',
         '/settings/automation-builder': 'SettingsAutomationBuilder',
       };
       return { name: map[href.split('?')[0]] || href };

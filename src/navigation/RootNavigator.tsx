@@ -21,6 +21,7 @@ import ShareScreen from '../screens/settings/ShareScreen';
 import SectorTemplatesScreen from '../screens/settings/SectorTemplatesScreen';
 import AutomationBuilderScreen from '../screens/settings/AutomationBuilderScreen';
 import TeamScreen from '../screens/settings/TeamScreen';
+import AppearanceScreen from '../screens/settings/AppearanceScreen';
 import ChatScreen from '../screens/ChatScreen';
 
 import AutomationFlowScreen from '../screens/automations/AutomationFlowScreen';
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   SettingsShare: undefined;
   SettingsSector: undefined;
   SettingsTeam: undefined;
+  SettingsAppearance: undefined;
   Chat: undefined;
   SettingsAutomationBuilder: { editId?: string } | undefined;
   AutomationFlow: { id: string } | undefined;
@@ -84,6 +86,7 @@ export default function RootNavigator() {
       <Stack.Screen name="SettingsLayoutBuilder" component={LayoutBuilderScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Configura Layout Aggiungi' }} />
       <Stack.Screen name="SettingsGs1" component={Gs1ConfigScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'GS1 Digital Link' }} />
       <Stack.Screen name="SettingsHardware" component={HardwareScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Scanner & Hardware' }} />
+      <Stack.Screen name="SettingsAppearance" component={AppearanceScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Aspetto' }} />
       <Stack.Screen name="SettingsTrash" component={TrashScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsShare" component={ShareScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsSector" component={SectorTemplatesScreen} options={{ headerShown: false }} />

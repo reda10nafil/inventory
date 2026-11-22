@@ -291,6 +291,27 @@ export default function SettingsScreen() {
 
 
 
+        {/* ASPETTO: stile dell'app, scelto su questo dispositivo */}
+        <Text style={styles.sectionTitle}>ASPETTO</Text>
+
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/appearance')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#EC4899' }]}>
+              <AppIcon name="palette" size={24} color={t.colors.onData} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Aspetto</Text>
+              <Text style={styles.settingDescription}>
+                Stile: {t.name}
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
         {/* CONFIGURAZIONE HARDWARE E GS1 - NEW */}
         <Text style={styles.sectionTitle}>CONFIGURAZIONE HARDWARE</Text>
 

@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L3: Impostazioni › Aspetto
+
+- Branch / SHA: `ui-ux/stili`, commit di L3 dopo il commit di L5a.
+- Fatto: sezione «ASPETTO» in cima a Impostazioni con una riga uguale alle altre (riquadro icona `palette`, «Stile: <nome>»); nuova schermata `src/screens/settings/AppearanceScreen.tsx` (rotta `SettingsAppearance`, indirizzo `settings/appearance`) con gli stili pronti di `THEMES`: striscia con fondo, superficie e accento, campione nel carattere dello stile (sul web i file di tutti gli stili si caricano aprendo la schermata), «Predefinito», scelta a pallino; toccare uno stile lo applica (appena il carattere è pronto) e lo salva in `@syncro/stile`. Schermata 22 aggiunta a `schermate.cjs` (`EXTRA=1`).
+- Verifiche: tsc 0, eslint 0; 31 schermate senza errori, controllo `FONT=Inter` pulito. La prova del cambio di stile e del riavvio si fa con il secondo stile (L5b).
+- Ancora da fare: L5b-e, L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L5a: caratteri e Attuale rifinito predefinito
 
 - Branch / SHA: `ui-ux/stili`, commit di L5a dopo il commit di L4.
