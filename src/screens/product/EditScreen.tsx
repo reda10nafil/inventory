@@ -6,6 +6,7 @@ import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import * as ImagePicker from '../../lib/imagePicker';
 import * as DocumentPicker from '../../lib/documentPicker';
 import { Image } from '../../lib/ExpoImage';
+import BarcodeScanner from '../../../components/BarcodeScanner';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
@@ -136,6 +137,7 @@ function EditProductForm({ product }: { product: Product }) {
   };
 
   const [selectModalConfig, setSelectModalConfig] = useState<{ fieldId: string; name: string; options: any[]; isMulti: boolean } | null>(null);
+  const [scanFieldId, setScanFieldId] = useState<string | null>(null); // campo che riceve il codice letto
 
   const handleSave = () => {
     if (!formData.sku || !formData.furType || !formData.location) {
@@ -714,7 +716,7 @@ function EditProductForm({ product }: { product: Product }) {
                           </View>
                           <Pressable
                             style={styles.sideButton}
-                            onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: `SCAN-${Math.floor(Math.random() * 10000)}` }))}
+                            onPress={() => setScanFieldId(field.id)} // lettore vero (D02: prima un codice finto)
                           >
                             <AppIcon name="qr-code-scanner" size={22} color={t.colors.accentInk} />
                           </Pressable>
@@ -782,6 +784,16 @@ function EditProductForm({ product }: { product: Product }) {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Lettore del codice per i campi con scanner: il codice letto va nel campo */}
+      {scanFieldId && (
+        <Modal visible={true} animationType="slide" onRequestClose={() => setScanFieldId(null)}>
+          <BarcodeScanner
+            onScan={({ data }) => { setCustomFieldValues(prev => ({ ...prev, [scanFieldId]: data })); setScanFieldId(null); }}
+            onClose={() => setScanFieldId(null)}
+          />
+        </Modal>
+      )}
 
       {/* Select Modal */}
       {selectModalConfig && (

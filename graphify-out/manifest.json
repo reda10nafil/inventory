@@ -1854,9 +1854,9 @@
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
-    "mtime": 1795331860.3674736,
-    "seen": 1795332238.8374777,
-    "ast_hash": "132e56f416d21e675ac49724f40074e2",
+    "mtime": 1795333121.6624072,
+    "seen": 1795333571.6151557,
+    "ast_hash": "6c21fea3885ad32a3bb88b0d7cf6316e",
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
@@ -1920,9 +1920,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/AddScreen.tsx": {
-    "mtime": 1795328873.837426,
-    "seen": 1795329137.8197591,
-    "ast_hash": "e5a1a67de935d50b9fa68f9636332783",
+    "mtime": 1795333121.4691906,
+    "seen": 1795333571.6186874,
+    "ast_hash": "5ba85f9cbedb96bd8c2342db7ed437a5",
     "semantic_hash": ""
   },
   "src/screens/tabs/AutomationsScreen.tsx": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795333061.2209547,
-    "seen": 1795333076.48111,
-    "ast_hash": "3e96e2ce204dc18467956216321d69af",
+    "mtime": 1795333556.4722679,
+    "seen": 1795333571.646691,
+    "ast_hash": "6dcf4f749e2a37a23f1f375526a82597",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -3240,9 +3240,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/controllo.sh": {
-    "mtime": 1795328941.6830425,
-    "seen": 1795329137.7993882,
-    "ast_hash": "6b70769b8a1252f7278b25baffadff89",
+    "mtime": 1795333440.8244367,
+    "seen": 1795333571.5995638,
+    "ast_hash": "7c6dea9590528b20297a5c93ef77b3fd",
     "semantic_hash": ""
   },
   "utils/number.ts": {
@@ -3252,9 +3252,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795333061.2694829,
-    "seen": 1795333076.4831185,
-    "ast_hash": "4cf876095d1add1a1ff67b96476e87e7",
+    "mtime": 1795333556.5820713,
+    "seen": 1795333571.6477973,
+    "ast_hash": "c1d0f3ac04746e18debb2840562f91cc",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3447,6 +3447,12 @@
     "mtime": 1795332711.5878692,
     "seen": 1795333076.4643357,
     "ast_hash": "b652e597d83b3720e5d180185dc45cac",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/c11-lettore.cjs": {
+    "mtime": 1795333245.9325044,
+    "seen": 1795333571.5995638,
+    "ast_hash": "92681a9f789f377c8ec5d49864635b5f",
     "semantic_hash": ""
   }
 }

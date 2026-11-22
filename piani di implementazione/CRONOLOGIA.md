@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C11: il pulsante QR dei campi apre il lettore vero (D02)
+
+- Branch `funzioni/magazzino`.
+- **D02**: in Aggiungi e in Modifica il pulsante QR accanto a un campo con scanner (es. «Codice CITES») scriveva un codice finto `SCAN-<numero>`, che finiva nel prodotto. Ora apre il lettore di codici (`components/BarcodeScanner`, a tutto schermo) e il codice letto va nel campo; chiudendo il lettore il campo non cambia. Il campo resta scrivibile a mano.
+- Prova sul web (`c11-lettore.cjs`, lettura simulata come in A3: sul web la fotocamera non c'è): in Modifica il lettore si apre, il codice letto «IT-CITES-LETTO-1» va nel campo e si salva (prima «SCAN-5511»); in Aggiungi il codice letto sostituisce quello scritto e il lettore si chiude. La fotocamera vera resta da provare sul telefono.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 120 verdi, bundle Android 5,09 MB con 62 asset; console web: al primo giro una volta il messaggio noto di LokiJS al primo avvio (eccezione già registrata), al secondo giro 30 schermate senza errori. `controllo.sh` ora conta a parte quel messaggio noto.
+
 ## 22 novembre 2026 — Fase B, C10: la Cronologia registra tutte le modifiche (P13)
 
 - Branch `funzioni/magazzino`.

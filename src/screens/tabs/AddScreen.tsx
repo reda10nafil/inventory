@@ -7,6 +7,7 @@ import * as ImagePicker from '../../lib/imagePicker';
 import * as DocumentPicker from '../../lib/documentPicker';
 import { ActionSheetIOS } from 'react-native';
 import { Image } from '../../lib/ExpoImage';
+import BarcodeScanner from '../../../components/BarcodeScanner';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
@@ -173,6 +174,7 @@ export default function AddProductScreen() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectModalConfig, setSelectModalConfig] = useState<{ fieldId: string; name: string; options: any[]; isMulti: boolean } | null>(null);
+  const [scanFieldId, setScanFieldId] = useState<string | null>(null); // campo che riceve il codice letto
 
   const handleSubmit = () => {
     if (isSubmitting) return;
@@ -672,7 +674,7 @@ export default function AddProductScreen() {
               value: customFieldValues[field.id]?.toString() || '',
               onChangeText: (value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value })),
               buttonIcon: 'qr-code-scanner',
-              onButtonPress: () => setCustomFieldValues(prev => ({ ...prev, [field.id]: `SCAN-${Math.floor(Math.random() * 10000)}` })), // Simulated scanner
+              onButtonPress: () => setScanFieldId(field.id), // lettore vero (D02: prima scriveva un codice finto)
             })}
           </View>
         );
@@ -996,6 +998,16 @@ export default function AddProductScreen() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Lettore del codice per i campi con scanner: il codice letto va nel campo */}
+      {scanFieldId && (
+        <Modal visible={true} animationType="slide" onRequestClose={() => setScanFieldId(null)}>
+          <BarcodeScanner
+            onScan={({ data }) => { setCustomFieldValues(prev => ({ ...prev, [scanFieldId]: data })); setScanFieldId(null); }}
+            onClose={() => setScanFieldId(null)}
+          />
+        </Modal>
+      )}
 
       {/* Select Modal */}
       {selectModalConfig && (
