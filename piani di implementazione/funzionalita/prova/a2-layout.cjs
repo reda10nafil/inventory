@@ -22,7 +22,7 @@ const ids = (l) => l.fields.map((f) => f.id);
     await h.go('add');
     const acquisto = await h.page.getByPlaceholder('2500').boundingBox();
     const vendita = await h.page.getByPlaceholder('4200').boundingBox();
-    const pesoInAggiungi = (await h.page.getByPlaceholder('1.2').count()) > 0;
+    const pesoInAggiungi = (await h.page.getByPlaceholder('1,2').count()) > 0;
     const i = (l, id) => ids(l).indexOf(id);
     return {
       ordinePrima: [i(prima, 'purchasePrice'), i(prima, 'sellPrice')],
@@ -43,10 +43,10 @@ const ids = (l) => l.fields.map((f) => f.id);
     await h.page.goBack();
     await h.page.waitForTimeout(1200);
     await h.tab('Aggiungi');
-    const pesoInAggiungiPrimaDiRicaricare = (await h.page.getByPlaceholder('1.2').count()) > 0;
+    const pesoInAggiungiPrimaDiRicaricare = (await h.page.getByPlaceholder('1,2').count()) > 0;
     const l = await h.store(LAYOUT);
     await h.go('add');
-    const pesoInAggiungiDopoRicarica = (await h.page.getByPlaceholder('1.2').count()) > 0;
+    const pesoInAggiungiDopoRicarica = (await h.page.getByPlaceholder('1,2').count()) > 0;
     return {
       pesoVisibileSalvato: l.fields.find((f) => f.id === 'weight').visible,
       pesoInAggiungiPrimaDiRicaricare, pesoInAggiungiDopoRicarica,

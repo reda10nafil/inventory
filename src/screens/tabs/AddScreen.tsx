@@ -11,6 +11,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';
+import { parseNumber } from '../../../utils/number';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCustomFields, CustomField } from '../../../contexts/CustomFieldsContext';
 import { missingRequiredFields } from '../../../utils/formValidation';
@@ -225,11 +226,11 @@ export default function AddProductScreen() {
         location: formData.location,
         status: 'available',
         images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&h=800&fit=crop'],
-        purchasePrice: formData.purchasePrice ? parseFloat(formData.purchasePrice) : undefined,
-        sellPrice: formData.sellPrice ? parseFloat(formData.sellPrice) : undefined,
-        length: formData.length ? parseFloat(formData.length) : undefined,
-        width: formData.width ? parseFloat(formData.width) : undefined,
-        weight: formData.weight ? parseFloat(formData.weight) : undefined,
+        purchasePrice: parseNumber(formData.purchasePrice),
+        sellPrice: parseNumber(formData.sellPrice),
+        length: parseNumber(formData.length),
+        width: parseNumber(formData.width),
+        weight: parseNumber(formData.weight),
         technicalNotes: formData.technicalNotes || undefined,
         libraryId: formData.libraryId || undefined,
         gs1DigitalLink,
@@ -919,7 +920,7 @@ export default function AddProductScreen() {
           <View key="weight" style={sizeStyle}>
             {renderLabel()}
             {renderInputWithIcon({
-              placeholder: '1.2',
+              placeholder: '1,2',
               value: formData.weight,
               onChangeText: (value) => updateField('weight', value),
               keyboardType: 'numeric',

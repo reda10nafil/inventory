@@ -10,6 +10,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';
+import { formatNumberInput, parseNumber } from '../../../utils/number';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -52,11 +53,11 @@ export default function EditProductScreen() {
     sku: product?.sku || '',
     furType: product?.furType || '',
     location: product?.location || '',
-    purchasePrice: product?.purchasePrice?.toString() || '',
-    sellPrice: product?.sellPrice?.toString() || '',
-    length: product?.length?.toString() || '',
-    width: product?.width?.toString() || '',
-    weight: product?.weight?.toString() || '',
+    purchasePrice: formatNumberInput(product?.purchasePrice),
+    sellPrice: formatNumberInput(product?.sellPrice),
+    length: formatNumberInput(product?.length),
+    width: formatNumberInput(product?.width),
+    weight: formatNumberInput(product?.weight),
     technicalNotes: product?.technicalNotes || '',
     libraryId: product?.libraryId || '',
   });
@@ -147,11 +148,11 @@ export default function EditProductScreen() {
       furType: formData.furType,
       location: formData.location,
       images,
-      purchasePrice: formData.purchasePrice ? parseFloat(formData.purchasePrice) : undefined,
-      sellPrice: formData.sellPrice ? parseFloat(formData.sellPrice) : undefined,
-      length: formData.length ? parseFloat(formData.length) : undefined,
-      width: formData.width ? parseFloat(formData.width) : undefined,
-      weight: formData.weight ? parseFloat(formData.weight) : undefined,
+      purchasePrice: parseNumber(formData.purchasePrice),
+      sellPrice: parseNumber(formData.sellPrice),
+      length: parseNumber(formData.length),
+      width: parseNumber(formData.width),
+      weight: parseNumber(formData.weight),
       technicalNotes: formData.technicalNotes || undefined,
       libraryId: formData.libraryId || undefined,
       gs1DigitalLink,
@@ -459,7 +460,7 @@ export default function EditProductScreen() {
             <View style={[styles.inputGroup, styles.thirdWidth]}>
               {renderLabel('Peso (kg)')}
               {renderInput({
-                placeholder: '1.2',
+                placeholder: '1,2',
                 value: formData.weight,
                 onChangeText: (value) => updateField('weight', value),
                 numeric: true,

@@ -19,7 +19,7 @@ const newEvents = (before, after) => after.slice(0, after.length - before.length
     await openEdit(h, 'VIS-0142');
     const out = { skuNelCampo: await ph(page, 'es: VIS-001-2024').inputValue() };
     await ph(page, '4200').fill('4500');
-    await ph(page, '1.2').fill('2,5');
+    await ph(page, '1,2').fill('2,5');
     await press(page, /Sartoria$/);
     await press(page, /Pellicce$/);
     await press(page, /Salva Modifiche$/);
@@ -74,7 +74,7 @@ const newEvents = (before, after) => after.slice(0, after.length - before.length
     const { page } = h;
     const tl0 = await h.timeline(0);
     await openEdit(h, 'VIS-0142');
-    await ph(page, '1.2').fill('2.4');
+    await ph(page, '1,2').fill('2.4');
     await press(page, /Salva Modifiche$/);
     let p = (await h.products()).find((x) => x.id === 'cmp-1');
     const out = { peso: p.weight, eventiNuovi: newEvents(tl0, await h.timeline(0)) };

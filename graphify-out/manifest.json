@@ -1854,9 +1854,9 @@
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
-    "mtime": 1795321726.3551495,
-    "seen": 1795323475.1485813,
-    "ast_hash": "d257299ec3b90861980cf7847e6db56d",
+    "mtime": 1795328873.8805852,
+    "seen": 1795329137.8162796,
+    "ast_hash": "adc7abbe850335c88d34ffec2b388036",
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
@@ -1920,9 +1920,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/AddScreen.tsx": {
-    "mtime": 1795323094.0675063,
-    "seen": 1795323475.1485813,
-    "ast_hash": "796311973ae81c7edf44bb69ab2acd56",
+    "mtime": 1795328873.837426,
+    "seen": 1795329137.8197591,
+    "ast_hash": "e5a1a67de935d50b9fa68f9636332783",
     "semantic_hash": ""
   },
   "src/screens/tabs/AutomationsScreen.tsx": {
@@ -1938,9 +1938,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/SettingsScreen.tsx": {
-    "mtime": 1795323131.8486617,
-    "seen": 1795323475.1485813,
-    "ast_hash": "7fb24cff5673fb04b1654a120309e38b",
+    "mtime": 1795328708.7058043,
+    "seen": 1795329137.8207924,
+    "ast_hash": "0d9ce0453b0879e5f2819a7ba7b02e4d",
     "semantic_hash": ""
   },
   "src/screens/tabs/TimelineScreen.tsx": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795326095.1669216,
-    "seen": 1795326113.5483456,
-    "ast_hash": "0a375af8c81b98b762089c0f1bd17d5a",
+    "mtime": 1795329121.734954,
+    "seen": 1795329137.8707325,
+    "ast_hash": "e3f84b8dd9ec77a4d5c20ee99c17cd87",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2688,9 +2688,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795326095.1679218,
-    "seen": 1795326113.5483456,
-    "ast_hash": "7798952938cbcd79931f08c94cb69ae9",
+    "mtime": 1795328570.112024,
+    "seen": 1795329137.8707325,
+    "ast_hash": "8e5e31c1bff9a4114f1c51a607de8d41",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3057,6 +3057,306 @@
     "mtime": 1795323980.4628546,
     "seen": 1795326113.558681,
     "ast_hash": "8e7d0da506701e60696ea6fd18df80cb",
+    "semantic_hash": ""
+  },
+  "__tests__/number.test.ts": {
+    "mtime": 1795328694.0465405,
+    "seen": 1795329137.7798045,
+    "ast_hash": "131081325285d868b609843a4f5e72cb",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a1-cestino.cjs": {
+    "mtime": 1795327529.915142,
+    "seen": 1795329137.7993882,
+    "ast_hash": "598ef4784a217f123b355f1d54ec4be5",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a1-cronologia.cjs": {
+    "mtime": 1795327237.518369,
+    "seen": 1795329137.7993882,
+    "ast_hash": "15c70be50ebfc5656dc485e0f9af1228",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a1-inventario.cjs": {
+    "mtime": 1795327676.0278296,
+    "seen": 1795329137.7993882,
+    "ast_hash": "42f3674a7d17f0362f88d2286128ad25",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a1-modifica.cjs": {
+    "mtime": 1795328873.957128,
+    "seen": 1795329137.7993882,
+    "ast_hash": "e28f8000f52ec40ddd1043075ab5deab",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a1-scheda.cjs": {
+    "mtime": 1795328056.2946963,
+    "seen": 1795329137.7993882,
+    "ast_hash": "a0db3db76a65fb8d18a01e92645e2e56",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a1-util.cjs": {
+    "mtime": 1795326714.0637429,
+    "seen": 1795329137.7993882,
+    "ast_hash": "d66d0a65b402a1bea7cf4b2f4d784632",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a2-aggiungi.cjs": {
+    "mtime": 1795326508.2503507,
+    "seen": 1795329137.7993882,
+    "ast_hash": "344a934aa6672c304706cbd1d3f486ee",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a2-campi.cjs": {
+    "mtime": 1795326713.8089373,
+    "seen": 1795329137.7993882,
+    "ast_hash": "5b55b538059821cd1a9f7d21445401fe",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a2-csv.cjs": {
+    "mtime": 1795326961.6961832,
+    "seen": 1795329137.7993882,
+    "ast_hash": "fbef8c893471f1c636300267e799c208",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a2-layout.cjs": {
+    "mtime": 1795328873.9872403,
+    "seen": 1795329137.7993882,
+    "ast_hash": "f0112f01a888d6e97b98df3f97f56041",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a2-modelli-settore.cjs": {
+    "mtime": 1795327047.311671,
+    "seen": 1795329137.7993882,
+    "ast_hash": "32e48ac69c99368f5d542b88599088cc",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-audit.cjs": {
+    "mtime": 1795326569.5236192,
+    "seen": 1795329137.7993882,
+    "ast_hash": "1ca1465b8ebe888a53952bddd2cba07d",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-batchmove.cjs": {
+    "mtime": 1795326526.2386923,
+    "seen": 1795329137.7993882,
+    "ast_hash": "5bf74c323803119c9979d6742d872d1b",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-builder.cjs": {
+    "mtime": 1795327207.9104416,
+    "seen": 1795329137.7993882,
+    "ast_hash": "1ecee24fcf745881030f01d715e7758e",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-cestino.cjs": {
+    "mtime": 1795327174.458805,
+    "seen": 1795329137.7993882,
+    "ast_hash": "98a4f2d56d8e5bd204519aa3ff4027ac",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-chat.cjs": {
+    "mtime": 1795327147.395334,
+    "seen": 1795329137.7993882,
+    "ast_hash": "a3e8fb6137918400e5c7d2b8545ffe49",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-quicktag.cjs": {
+    "mtime": 1795326611.7347634,
+    "seen": 1795329137.7993882,
+    "ast_hash": "b78106fe8bfe2655d512ce0e33d20728",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-scanner.cjs": {
+    "mtime": 1795326693.9473596,
+    "seen": 1795329137.7993882,
+    "ast_hash": "7c990e4d6a9c6aa036983945dee2fcf9",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-scansell.cjs": {
+    "mtime": 1795326646.9507987,
+    "seen": 1795329137.7993882,
+    "ast_hash": "5b85f18db051fca6691514fb072e4d60",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a3-util.cjs": {
+    "mtime": 1795326964.6965437,
+    "seen": 1795329137.7993882,
+    "ast_hash": "a9bad8490cee03bd8e8495a42b9f3410",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-aspetto.cjs": {
+    "mtime": 1795327099.648636,
+    "seen": 1795329137.7993882,
+    "ast_hash": "05da6e385b4ac8748a14582deb3f04c8",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-cartelle.cjs": {
+    "mtime": 1795326940.911565,
+    "seen": 1795329137.7993882,
+    "ast_hash": "340788869e2e9f55a6fa626699ba8f21",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-dati.cjs": {
+    "mtime": 1795327328.1323228,
+    "seen": 1795329137.7993882,
+    "ast_hash": "01eb20a67309038323fe566c05513b75",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-esplora.cjs": {
+    "mtime": 1795326579.2322786,
+    "seen": 1795329137.7993882,
+    "ast_hash": "90baf807960ff326c8c9010876cdeaba",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-gs1.cjs": {
+    "mtime": 1795327059.3157232,
+    "seen": 1795329137.7993882,
+    "ast_hash": "b0f740487fd94fca37d6bd487a58a090",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-hardware.cjs": {
+    "mtime": 1795327099.529291,
+    "seen": 1795329137.7993882,
+    "ast_hash": "ccf1add6b136e20720c782edcb82d8e0",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-impostazioni.cjs": {
+    "mtime": 1795327286.5648036,
+    "seen": 1795329137.7993882,
+    "ast_hash": "b32e84a0db49174c549aef9a329b4ffb",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/a4-posizioni.cjs": {
+    "mtime": 1795327601.522365,
+    "seen": 1795329137.7993882,
+    "ast_hash": "e09982d62b615a3bd91a1258d3a798cc",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/c01-numeri.cjs": {
+    "mtime": 1795328909.7796268,
+    "seen": 1795329137.7993882,
+    "ast_hash": "6116036f84f3ca4111dffaf9274ea1b1",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/controllo.sh": {
+    "mtime": 1795328941.6830425,
+    "seen": 1795329137.7993882,
+    "ast_hash": "6b70769b8a1252f7278b25baffadff89",
+    "semantic_hash": ""
+  },
+  "utils/number.ts": {
+    "mtime": 1795328693.9166,
+    "seen": 1795329137.8618245,
+    "ast_hash": "a4c4e3eaa7309b22fcc83e6c5be94614",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/PASSAGGIO.md": {
+    "mtime": 1795328606.24151,
+    "seen": 1795329137.8718066,
+    "ast_hash": "2a46842cd6345514e65347fb36125341",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/grafo-lavori.md": {
+    "mtime": 1795326583.0853071,
+    "seen": 1795329137.8718066,
+    "ast_hash": "1699a269e305fe2e46731f7d1c633fb9",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/01-modello-quantita.md": {
+    "mtime": 1795326556.7037785,
+    "seen": 1795329137.8718066,
+    "ast_hash": "928d0723e8ae3845377b217617d2f976",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/02-movimenti.md": {
+    "mtime": 1795326384.131694,
+    "seen": 1795329137.8718066,
+    "ast_hash": "a97c8718553d10e02a596f1fadd0ef88",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/03-venduto-esaurito.md": {
+    "mtime": 1795326556.72951,
+    "seen": 1795329137.8718066,
+    "ast_hash": "cda52791566820fe494985155a768207",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/04-categorie.md": {
+    "mtime": 1795326556.7305324,
+    "seen": 1795329137.8718066,
+    "ast_hash": "70d128eb407f1a45c89cc61af5669bc0",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/05-scorta-minima.md": {
+    "mtime": 1795326384.132698,
+    "seen": 1795329137.8718066,
+    "ast_hash": "eadf5aebcdb7137e3a9090369b722e06",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/06-conta-fisica.md": {
+    "mtime": 1795326556.73151,
+    "seen": 1795329137.8718066,
+    "ast_hash": "7fd8de3aedfdd7164c8f5c1790017581",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/07-contatti.md": {
+    "mtime": 1795326556.7325094,
+    "seen": 1795329137.8718066,
+    "ast_hash": "e4c9fdf276d4bfe51a29863e6a3649d3",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/08-codice-a-barre.md": {
+    "mtime": 1795326384.1336832,
+    "seen": 1795329137.8718066,
+    "ast_hash": "22626dc29d636ea5d650a78a68358a55",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/09-report-csv.md": {
+    "mtime": 1795328570.1110244,
+    "seen": 1795329137.8718066,
+    "ast_hash": "3ce5d2b12642bd6d9d5d8002ac2a6dcb",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/issues/10-sincronizzazione.md": {
+    "mtime": 1795326384.13519,
+    "seen": 1795329137.8718066,
+    "ast_hash": "2f267adadfcaefe08a8b40d9c5ed17fd",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/map.md": {
+    "mtime": 1795328570.1110244,
+    "seen": 1795329137.8718066,
+    "ast_hash": "ee376bffbf4d5e62d0286d12cda06cb9",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova-funzioni.md": {
+    "mtime": 1795328570.1100225,
+    "seen": 1795329137.8718066,
+    "ast_hash": "986ffe2a996e85dd09a7ac864d652695",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/esito-a1.md": {
+    "mtime": 1795328131.3613062,
+    "seen": 1795329137.8718066,
+    "ast_hash": "7d508cc2da46854c1d5f5419e355d78a",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/esito-a2.md": {
+    "mtime": 1795327257.3955102,
+    "seen": 1795329137.8718066,
+    "ast_hash": "6e634ac065d31337efe2a90fd7dc049e",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/esito-a3.md": {
+    "mtime": 1795327413.9795806,
+    "seen": 1795329137.8718066,
+    "ast_hash": "229a7ed9dcb9951551931ec9dfab087c",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/esito-a4.md": {
+    "mtime": 1795327636.5972798,
+    "seen": 1795329137.8718066,
+    "ast_hash": "1b3629ed8be28bea424f9e799f0d6952",
     "semantic_hash": ""
   }
 }

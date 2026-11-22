@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C01: numeri in formato italiano (P03)
+
+- Branch `funzioni/magazzino`.
+- Difetto (prova A1, A2): Aggiungi e Modifica leggevano i numeri con `parseFloat`, quindi «2,5» diventava 2 e «4.500» diventava 4,5; l'import CSV non capiva «4.500,50».
+- Fatto: `utils/number.ts` con `parseNumber` (virgola decimale, punto delle migliaia solo nella forma «4.500» / «4.500,50», punto decimale dei valori vecchi e dei CSV come «2.1» o «1234.5», forme ambigue rifiutate) e `formatNumberInput` (Modifica mostra «2,1», non «2.1»). Usati per prezzi, misure e peso in Aggiungi e Modifica e nell'import CSV. Segnaposto del peso «1,2».
+- Prova sul web (`funzionalita/prova/c01-numeri.cjs`): in Aggiungi «1.800», «4.500,50», «2,5» salvati come 1800, 4500,5 e 2,5; Modifica mostra il peso «2,1»; `a1-mod-base` ora salva il peso «2,5» come 2,5 (prima 2).
+- Verifiche (`funzionalita/prova/controllo.sh`, nuovo): tsc 0, eslint 0, jest 88 verdi (10 suite, 6 test nuovi), bundle Android 5,08 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, punto 1: prova di tutte le funzioni sul web, mappa del gestionale (bozza)
 
 - Branch `funzioni/magazzino`, commit di soli documenti e script di prova (nessun file dell'app).
