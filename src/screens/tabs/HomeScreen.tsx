@@ -16,6 +16,7 @@ import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
+import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
 import { FUR_TYPES } from '../../../constants/config';
 
@@ -174,11 +175,15 @@ export default function HomeScreen() {
         delayLongPress={300}
       >
         <View style={styles.photo}>
-          <Image
-            source={{ uri: product.images[0] }}
-            style={styles.productImage}
-            contentFit="cover"
-          />
+          {product.images?.[0] ? (
+            <Image
+              source={{ uri: product.images[0] }}
+              style={styles.productImage}
+              contentFit="cover"
+            />
+          ) : (
+            <PhotoPlaceholder style={styles.productImage} />
+          )}
 
           {/* Selection Overlay */}
           {isSelectionMode && (

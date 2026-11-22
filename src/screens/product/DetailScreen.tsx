@@ -27,6 +27,7 @@ import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
+import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -804,6 +805,7 @@ export default function ProductDetailScreen() {
                 />
               </Pressable>
             ))}
+            {product.images.length === 0 && <PhotoPlaceholder size={56} style={[styles.heroImage, { width: heroWidth }]} />}
           </ScrollView>
 
           {/* Image Counter */}

@@ -227,7 +227,7 @@ export default function AddProductScreen() {
         furType: formData.furType,
         location: formData.location,
         status: 'available',
-        images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&h=800&fit=crop'],
+        images, // senza foto resta vuoto: le schermate mostrano un riquadro (D18, prima un'immagine d'esempio da internet)
         purchasePrice: parseNumber(formData.purchasePrice),
         sellPrice: parseNumber(formData.sellPrice),
         length: parseNumber(formData.length),

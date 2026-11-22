@@ -139,14 +139,19 @@ function EditProductForm({ product }: { product: Product }) {
   const [selectModalConfig, setSelectModalConfig] = useState<{ fieldId: string; name: string; options: any[]; isMulti: boolean } | null>(null);
   const [scanFieldId, setScanFieldId] = useState<string | null>(null); // campo che riceve il codice letto
 
-  const handleSave = () => {
+  // `withoutPhoto === true` solo dalla conferma qui sotto (onPress passa l'evento, che non è `true`)
+  const handleSave = (withoutPhoto?: unknown) => {
     if (!formData.sku || !formData.furType || !formData.location) {
       Alert.alert('Campi Obbligatori', 'Compila almeno SKU, Tipo di Pelle e Posizione');
       return;
     }
 
-    if (images.length === 0) {
-      Alert.alert('Attenzione', 'Aggiungi almeno una foto del prodotto');
+    // Foto facoltativa come in Aggiungi: un prodotto senza foto si deve poter modificare (D18)
+    if (images.length === 0 && withoutPhoto !== true) {
+      Alert.alert('Attenzione', 'Il prodotto non ha foto', [
+        { text: 'Salva Senza Foto', onPress: () => handleSave(true) },
+        { text: 'Aggiungi Foto', style: 'cancel' },
+      ]);
       return;
     }
 

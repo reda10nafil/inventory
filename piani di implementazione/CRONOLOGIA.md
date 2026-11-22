@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C12: prodotti senza foto senza immagine d'esempio (D18)
+
+- Branch `funzioni/magazzino`.
+- **D18**: senza foto Aggiungi salvava un'immagine d'esempio presa da Unsplash (sembrava la foto vera e senza internet non si vedeva). Ora la lista delle foto resta vuota e card dell'Inventario, Scheda e Azione rapida mostrano un riquadro «Nessuna foto» sui ruoli del tema (`components/ui/PhotoPlaceholder.tsx`, `backgroundSecondary` e `textMuted`). Modifica non blocca più un prodotto senza foto: chiede «Salva senza foto», come Aggiungi.
+- Prova sul web (`c12-senza-foto.cjs`): prodotto nuovo senza foto con `images: []`, riquadro nella card e nella Scheda, prezzo cambiato in Modifica e salvato dopo la conferma.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 120 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console (una volta il messaggio noto di LokiJS al primo avvio).
+
 ## 22 novembre 2026 — Fase B, C11: il pulsante QR dei campi apre il lettore vero (D02)
 
 - Branch `funzioni/magazzino`.

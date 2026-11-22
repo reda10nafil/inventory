@@ -12,7 +12,7 @@ Aggiornato il 22 novembre 2026, notte, dalla prima sessione della fase B. Le reg
 
 ## Stato delle correzioni (aggiornato a ogni task)
 
-- C01 fatto (d3128a6 + 908c316 per i fine riga), C02 fatto (7baa3f8 + 50c60d4), C03 fatto (bdf04fa), C04 fatto (913e7cd), C05 fatto (cb7e9c7), C06 fatto (e1fbbd1), C07 fatto (6a56c73), C08 fatto (ee53296), C09 fatto (e2b30fd), C10 fatto (ffc17bc), C11 fatto. Prossimo: **C12**.
+- C01 fatto (d3128a6 + 908c316 per i fine riga), C02 fatto (7baa3f8 + 50c60d4), C03 fatto (bdf04fa), C04 fatto (913e7cd), C05 fatto (cb7e9c7), C06 fatto (e1fbbd1), C07 fatto (6a56c73), C08 fatto (ee53296), C09 fatto (e2b30fd), C10 fatto (ffc17bc), C11 fatto (844e986), C12 fatto. Prossimo: **C13**.
 - Fine riga: alcuni file sono CRLF nell'indice (`EditScreen.tsx`, `InventoryContext.tsx`…), gli altri LF. Mettere in stage con `bash "piani di implementazione/funzionalita/prova/stage.sh" <file>…` (conserva lo stile del repository) e controllare con `git diff --cached --numstat` che il numero di righe cambiate sia piccolo. Per modificare i file usare lo strumento Edit (conserva i fine riga), non script Python che riscrivono il file.
 - Chiusura di un task: `bash "piani di implementazione/funzionalita/prova/controllo.sh" <cartella scratch>` (tsc, eslint, jest, bundle, 30 schermate).
 

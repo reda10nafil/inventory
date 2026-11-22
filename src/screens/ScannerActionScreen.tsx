@@ -14,6 +14,7 @@ import { Backdrop } from '../../components/ui/Backdrop';
 import { GradientFill } from '../../components/ui/GradientFill';
 import { cardSurface, tileSurface } from '../../components/ui/surfaces';
 import { parseNumber } from '../../utils/number';
+import { PhotoPlaceholder } from '../../components/ui/PhotoPlaceholder';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
@@ -177,11 +178,15 @@ export default function ScannerActionScreen() {
         >
           {/* Product Preview */}
           <View style={styles.productPreview}>
-            <Image
-              source={{ uri: product.images[0] }}
-              style={styles.productImage}
-              contentFit="cover"
-            />
+            {product.images?.[0] ? (
+              <Image
+                source={{ uri: product.images[0] }}
+                style={styles.productImage}
+                contentFit="cover"
+              />
+            ) : (
+              <PhotoPlaceholder size={28} style={styles.productImage} />
+            )}
             <View style={styles.productDetails}>
               <Text style={styles.productSku}>{product.sku}</Text>
               <Text style={styles.productType}>
