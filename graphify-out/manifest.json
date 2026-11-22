@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "contexts/InventoryContext.tsx": {
-    "mtime": 1795332712.021216,
-    "seen": 1795333076.3974047,
-    "ast_hash": "3b74455898f0aaa38402e4646bc7765b",
+    "mtime": 1795339031.8661184,
+    "seen": 1795340419.3222594,
+    "ast_hash": "ea75cf131ec32c72c81addc98902bdda",
     "semantic_hash": ""
   },
   "contexts/LayoutContext.tsx": {
@@ -360,9 +360,9 @@
     "semantic_hash": ""
   },
   "services/mockData.ts": {
-    "mtime": 1795315120.0362003,
-    "seen": 1795323475.1485813,
-    "ast_hash": "199a95040f0517eb80e703ad2753085e",
+    "mtime": 1795338981.8455153,
+    "seen": 1795340419.345227,
+    "ast_hash": "79f46327d6e2ed6841d5f20a0d0cf66b",
     "semantic_hash": ""
   },
   "syncro_flow_flutter/android/app/build.gradle.kts": {
@@ -1794,9 +1794,9 @@
     "semantic_hash": ""
   },
   "src/screens/ScannerActionScreen.tsx": {
-    "mtime": 1795336363.3030787,
-    "seen": 1795337616.4751496,
-    "ast_hash": "9eea356e8ce5c73370f2d8e337a2c35e",
+    "mtime": 1795339172.2675211,
+    "seen": 1795340419.3520215,
+    "ast_hash": "48eadc1a1a239b3a72e79adb61b73ebb",
     "semantic_hash": ""
   },
   "src/screens/ScannerScreen.tsx": {
@@ -1806,9 +1806,9 @@
     "semantic_hash": ""
   },
   "src/screens/automations/AuditScreen.tsx": {
-    "mtime": 1795336363.3010488,
-    "seen": 1795337616.4751496,
-    "ast_hash": "948727da38c043609be43774cd2811c8",
+    "mtime": 1795339156.7603352,
+    "seen": 1795340419.353621,
+    "ast_hash": "ffdb7a5d734c23538a73b73a8affb669",
     "semantic_hash": ""
   },
   "src/screens/automations/AutomationFlowScreen.tsx": {
@@ -1818,9 +1818,9 @@
     "semantic_hash": ""
   },
   "src/screens/automations/BatchMoveScreen.tsx": {
-    "mtime": 1795336363.3015563,
-    "seen": 1795337616.4751496,
-    "ast_hash": "062a26ad91e3ba32120cdd3541424823",
+    "mtime": 1795339172.2144017,
+    "seen": 1795340419.353621,
+    "ast_hash": "4464ccfbee3c0cff6a7dae24753e403d",
     "semantic_hash": ""
   },
   "src/screens/automations/CustomRunnerScreen.tsx": {
@@ -1836,21 +1836,21 @@
     "semantic_hash": ""
   },
   "src/screens/automations/ScanSellScreen.tsx": {
-    "mtime": 1795336363.302073,
-    "seen": 1795337616.4751496,
-    "ast_hash": "8904bd5ae57dc1fdf9729c141c8d18d0",
+    "mtime": 1795339172.3203292,
+    "seen": 1795340419.353621,
+    "ast_hash": "b9365f04f38febf2e131d524d8f5cb89",
     "semantic_hash": ""
   },
   "src/screens/product/DetailScreen.tsx": {
-    "mtime": 1795336334.5799565,
-    "seen": 1795337616.4751496,
-    "ast_hash": "b6d29061b829c6f6f511e9514ee6af17",
+    "mtime": 1795339269.9772396,
+    "seen": 1795340419.353621,
+    "ast_hash": "91e782bd19316ac3fa39a5e9899c1fdc",
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
-    "mtime": 1795336972.168397,
-    "seen": 1795337616.4751496,
-    "ast_hash": "d6d0a0c1f36f470cca943c4cfce1ea19",
+    "mtime": 1795339347.2228975,
+    "seen": 1795340419.353621,
+    "ast_hash": "1ea0aa90f1ebb42b38a7fbbb42b41089",
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/AddScreen.tsx": {
-    "mtime": 1795336972.168397,
-    "seen": 1795337616.4784427,
-    "ast_hash": "c02ff65c0a82d9d334479a6ababc849d",
+    "mtime": 1795339376.1563315,
+    "seen": 1795340419.3546495,
+    "ast_hash": "0383785760818ea860b516f29bce6ddf",
     "semantic_hash": ""
   },
   "src/screens/tabs/AutomationsScreen.tsx": {
@@ -1926,9 +1926,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/HomeScreen.tsx": {
-    "mtime": 1795336363.3010488,
-    "seen": 1795337616.4784427,
-    "ast_hash": "d359793c4a961e2ba1483d6e5ee09e65",
+    "mtime": 1795339192.4533134,
+    "seen": 1795340419.3546495,
+    "ast_hash": "3b6f8317643d2b43cc4a3cd5e128b740",
     "semantic_hash": ""
   },
   "src/screens/tabs/SettingsScreen.tsx": {
@@ -1938,9 +1938,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/TimelineScreen.tsx": {
-    "mtime": 1795320828.3008356,
-    "seen": 1795323475.1485813,
-    "ast_hash": "47bc3f2fc84e257e702de18675753909",
+    "mtime": 1795339282.3410265,
+    "seen": 1795340419.3546495,
+    "ast_hash": "8fa6811b7287a95da92f1d70affa49c5",
     "semantic_hash": ""
   },
   "docs/audit/screenshots/01-tabs-index-fase2.png": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795338213.8134897,
-    "seen": 1795338271.0158005,
-    "ast_hash": "43bf81d167477ebc3f5e7905e0224b74",
+    "mtime": 1795340374.0987256,
+    "seen": 1795340419.3964427,
+    "ast_hash": "7ba2d9896a6e2f38e63e9ebf3728fe40",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795338213.8144884,
-    "seen": 1795338271.0158005,
-    "ast_hash": "3f361329f55460a185e0943679e9538c",
+    "mtime": 1795340227.8305027,
+    "seen": 1795340419.3964427,
+    "ast_hash": "718cceebfd13c3bb649e63a0b83e44ce",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795338249.235613,
-    "seen": 1795338271.0158005,
-    "ast_hash": "0eeda1142dfd364dc962e63e3d38daaf",
+    "mtime": 1795340255.9243503,
+    "seen": 1795340419.3974452,
+    "ast_hash": "bb2bcb62e76420f8138f5094abf6278b",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3360,9 +3360,9 @@
     "semantic_hash": ""
   },
   "__tests__/productRules.test.ts": {
-    "mtime": 1795336172.4057355,
-    "seen": 1795337616.4285288,
-    "ast_hash": "3df86d45c39e9214f59b4a07094fbd3f",
+    "mtime": 1795339079.124503,
+    "seen": 1795340419.2924602,
+    "ast_hash": "095e67ff97eee513f5af882694afffe1",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stage.sh": {
@@ -3372,9 +3372,9 @@
     "semantic_hash": ""
   },
   "utils/productRules.ts": {
-    "mtime": 1795336172.4047532,
-    "seen": 1795337616.5082436,
-    "ast_hash": "2937a4911ae248feb7373b5f4074ef05",
+    "mtime": 1795338974.6767573,
+    "seen": 1795340419.3850653,
+    "ast_hash": "dde1a52e46a55ac2ee3825caa2e9fe44",
     "semantic_hash": ""
   },
   "__tests__/productCsv.test.ts": {
@@ -3420,15 +3420,15 @@
     "semantic_hash": ""
   },
   "__tests__/inventoryFilter.test.ts": {
-    "mtime": 1795332275.3730335,
-    "seen": 1795332665.1698914,
-    "ast_hash": "995c7fe4b5580ce00f809698a401e41d",
+    "mtime": 1795339079.12601,
+    "seen": 1795340419.2907147,
+    "ast_hash": "f69c94210666e027c8457b54f3051c1d",
     "semantic_hash": ""
   },
   "utils/inventoryFilter.ts": {
-    "mtime": 1795332275.2577865,
-    "seen": 1795332665.2664132,
-    "ast_hash": "8a00352935a9d0ab38ae498f4e836031",
+    "mtime": 1795338974.7190585,
+    "seen": 1795340419.3834226,
+    "ast_hash": "9f4b949d145811505561564887e2d0dd",
     "semantic_hash": ""
   },
   "__tests__/productChanges.test.ts": {
@@ -3504,9 +3504,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-fette.cjs": {
-    "mtime": 1795336861.9962554,
-    "seen": 1795337616.463562,
-    "ast_hash": "3464d6888a185b224661fc8e2c038bd1",
+    "mtime": 1795340057.828459,
+    "seen": 1795340419.3400059,
+    "ast_hash": "a7d2ed21babfe5d3877aca57512fe255",
     "semantic_hash": ""
   },
   "src/screens/settings/CategoriesScreen.tsx": {
@@ -3534,9 +3534,33 @@
     "semantic_hash": ""
   },
   "utils/stock.ts": {
-    "mtime": 1795337938.5473254,
-    "seen": 1795338271.0102897,
-    "ast_hash": "034d4ba094396d54a83ec1e03d2d33e6",
+    "mtime": 1795338906.3304157,
+    "seen": 1795340419.3850653,
+    "ast_hash": "beb248647c164d0ac295e6403148a6e8",
+    "semantic_hash": ""
+  },
+  "__tests__/inventoryOps.test.ts": {
+    "mtime": 1795339078.1116836,
+    "seen": 1795340419.2907147,
+    "ast_hash": "3fb042bd9097db643036fc8dcfd86d31",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/m03-giacenza.cjs": {
+    "mtime": 1795339535.419784,
+    "seen": 1795340419.3394854,
+    "ast_hash": "0989d4b753e27bdb69f1bde39b087e9e",
+    "semantic_hash": ""
+  },
+  "utils/inventoryOps.ts": {
+    "mtime": 1795338960.7811437,
+    "seen": 1795340419.3834226,
+    "ast_hash": "cd08e0f7611dd7c3c584544968a08bde",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-m03.jpg": {
+    "mtime": 1795340174.4488328,
+    "seen": 1795340419.414685,
+    "ast_hash": "2ec2b5a7804fd185f008d93e3359a672",
     "semantic_hash": ""
   }
 }
