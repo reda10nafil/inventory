@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L5c: Ardesia e rame
+
+- Branch / SHA: `ui-ux/stili`, commit di L5c dopo il commit di L5b.
+- Fatto: `constants/themes/ardesia.ts` generato e registrato.
+- Verifiche: tsc 0, eslint 0, jest 59 verdi; 31 schermate in Ardesia senza errori, `FONT=Manrope` pulito (in Aspetto i campioni degli altri stili, voluti). Contrasti ≥ 5,5 tranne il bianco sui colori di dati delle posizioni (2,1). Le 9 schermate si leggono; i titoli di sezione in maiuscolo color rame vengono dal token (`section-transform`), le pillole a raggio 10 dal token `chip-radius`.
+- Ancora da fare: L5d-e, L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L5b: Babilonia Vetro
 
 - Branch / SHA: `ui-ux/stili`, commit di L5b dopo il commit di L3.
