@@ -1,4 +1,4 @@
-import { canMove, canSell, usage } from '../utils/productRules';
+import { canMove, canMoveStock, canSell, usage } from '../utils/productRules';
 
 describe('usage (P08, P09)', () => {
   const list = [
@@ -42,4 +42,13 @@ describe('canMove', () => {
   it('sposta in un\'altra posizione', () => expect(canMove(p(), 'magazzino')).toBe(true));
   it('non sposta nella stessa posizione', () => expect(canMove(p(), 'vetrina')).toBe(false));
   it('non sposta dal cestino', () => expect(canMove(p({ deletedAt: 'x' }), 'magazzino')).toBe(false));
+});
+
+describe('canMoveStock (M04, M09)', () => {
+  it('solo prodotti disponibili e non nel cestino', () => {
+    expect(canMoveStock({ status: 'available', location: 'vetrina' })).toBe(true);
+    expect(canMoveStock({ status: 'sold', location: 'vetrina' })).toBe(false);
+    expect(canMoveStock({ status: 'available', location: 'vetrina', deletedAt: 'x' })).toBe(false);
+    expect(canMoveStock(undefined)).toBe(false);
+  });
 });

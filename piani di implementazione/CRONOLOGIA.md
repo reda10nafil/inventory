@@ -2,6 +2,17 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, M09: Carico e Scarico dall'Azione rapida (ticket 08)
+
+- Branch `funzioni/magazzino`.
+- Azione rapida di un prodotto (dopo la lettura o il codice scritto a mano nello Scanner): voci nuove **Carico** e **Scarico** che aprono la finestra «Movimenta» della Scheda con il tipo già scelto (`MovementSheet` ha `initialKind`, applicato a ogni apertura, e `onDone`, chiamata solo dopo un movimento registrato). Dopo la registrazione l'avviso «Movimento registrato — VIS-0098 · Acquisto: +3 pz in Magazzino» e il ritorno allo scanner. Compaiono per i prodotti disponibili e non nel cestino (regola condivisa `canMoveStock` in `utils/productRules.ts`, con test, usata anche dalla Scheda).
+- Nell'Azione rapida la posizione ha il nome e, per gli articoli a quantità, la giacenza totale («Magazzino · 5 pz») o «Esaurito»; «Venduto» di un articolo a quantità dice «Scarica 1 pz con causale vendita».
+- Prova sul web `prova/m09-azione.cjs` (4 scenari, tutti come atteso), sempre dallo Scanner col codice scritto a mano: VIS-0098 Carico 3 (Acquisto) e Scarico 2 → 6 pz, giacenza salvata = eventi rigiocati, ritorno allo scanner dopo ognuno; Scarico 9 rifiutato (la finestra resta), Annulla senza scritture, poi Carico 1 registrato come carico; pezzo unico VIS-0142 Carico 2 in Magazzino → articolo a quantità con il carico iniziale di 1 in Vetrina; venduto VOL-0087 senza Carico né Scarico, LIN-0021 (pezzo unico disponibile) con Carico e il testo di Venduto di prima.
+- Regressione: `a3-scanner` e `a3-scansell` uguali agli esiti dopo M03 (tolti orari e id); `m04-movimenta` (stessa finestra) uguale al rilancio dopo M07.
+- Nei 5 stili: `FETTA=m09` (Azione rapida, finestra di Carico, di Scarico, pezzo unico) → `prova/stili-m09.jpg`, 0 errori in console.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 217 verdi, bundle Android 5,15 MB con 62 asset, 33 schermate senza errori in console.
+- Decisioni prese al posto dell'utente: 3 righe M09 in `DECISIONI_DA_RIVEDERE.md`.
+
 ## 22 novembre 2026 — Fase B, M07: Conta di magazzino (ticket 06)
 
 - Branch `funzioni/magazzino`. Parere del revisore chiesto prima di scrivere: seguite le sue indicazioni (pezzi unici fuori, vuota = non contata, una sola scrittura, esito dato dal risultato della chiamata).

@@ -17,6 +17,10 @@ import { cardSurface, tileSurface } from '../../components/ui/surfaces';
 import { parseNumber } from '../../utils/number';
 import { PhotoPlaceholder } from '../../components/ui/PhotoPlaceholder';
 import { moveOf, refusalText, saleOf } from '../../utils/inventoryOps';
+import { canMoveStock } from '../../utils/productRules';
+import { describeStockEvent, formatQty, isOutOfStock, isStocked, totalStock, type Movement } from '../../utils/stock';
+import { MovementSheet } from '../../components/MovementSheet';
+import type { MovementKind } from '../../types';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
@@ -37,6 +41,8 @@ export default function ScannerActionScreen() {
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [finalPrice, setFinalPrice] = useState('');
+  // Carico o Scarico (M09): la finestra «Movimenta» della Scheda aperta con il tipo già scelto
+  const [sheetKind, setSheetKind] = useState<MovementKind | null>(null);
 
   // Resolve entity based on type
   const product = type === 'product' ? getProductById(entityId) : null;
@@ -174,6 +180,22 @@ export default function ScannerActionScreen() {
   // --- PRODUCT RENDER (Existing logic adapted) ---
   // Explicit check for Product Render
   if (type === 'product' && product) {
+    const unit = product.unit || 'pz';
+    const placeName = (placeId: string) => locations.find((l) => l.id === placeId)?.label ?? placeId;
+    const stocked = isStocked(product);
+    const where = !stocked ? placeName(product.location)
+      : isOutOfStock(product) ? `${placeName(product.location)} · Esaurito`
+        : `${placeName(product.location)} · ${formatQty(totalStock(product), unit)}`;
+    // Dopo un movimento registrato: che cosa è stato fatto, poi si torna allo scanner come per Spostato e Venduto
+    const movementDone = (m: Movement) => {
+      const text = m.kind === 'rettifica'
+        ? `${product.sku}: rettifica in ${placeName(m.at)} a ${formatQty(m.counted, unit)}.`
+        : `${product.sku} · ${describeStockEvent({
+          movement: m.kind, qty: m.qty,
+          ...('from' in m && { from: m.from }), ...('to' in m && { to: m.to }), ...(m.reason && { reason: m.reason }),
+        }, placeName, unit)}`;
+      Alert.alert('Movimento registrato', text, [{ text: 'OK', onPress: () => router.back() }]);
+    };
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
         <Backdrop />
@@ -199,9 +221,7 @@ export default function ScannerActionScreen() {
               </Text>
               <View style={styles.locationBadge}>
                 <AppIcon name="location-on" size={14} color={t.colors.accentInk} />
-                <Text style={styles.locationText}>
-                  {product.location.replace('_', ' ').toUpperCase()}
-                </Text>
+                <Text style={styles.locationText}>{where}</Text>
               </View>
             </View>
           </View>
@@ -273,7 +293,7 @@ export default function ScannerActionScreen() {
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>VENDUTO</Text>
               <Text style={styles.actionDescription}>
-                Segna come venduto e archivia
+                {stocked ? `Scarica 1 ${unit} con causale vendita` : 'Segna come venduto e archivia'}
               </Text>
             </View>
             <AppIcon
@@ -295,6 +315,32 @@ export default function ScannerActionScreen() {
                 onChangeText={setFinalPrice}
               />
             </View>
+          )}
+
+          {/* Carico e Scarico con quantità (M09): stessa finestra e stessa logica di «Movimenta» nella Scheda */}
+          {canMoveStock(product) && (
+            <>
+              <Pressable style={styles.actionButton} onPress={() => setSheetKind('carico')} accessibilityLabel="Carico">
+                <View style={[styles.actionIcon, { backgroundColor: '#0EA5E9' }]}>
+                  <AppIcon name="add-box" size={24} color={t.colors.onData} />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>CARICO</Text>
+                  <Text style={styles.actionDescription}>Aggiungi una quantità in una posizione</Text>
+                </View>
+                <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+              </Pressable>
+              <Pressable style={styles.actionButton} onPress={() => setSheetKind('scarico')} accessibilityLabel="Scarico">
+                <View style={[styles.actionIcon, { backgroundColor: '#F97316' }]}>
+                  <AppIcon name="indeterminate-check-box" size={24} color={t.colors.onData} />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>SCARICO</Text>
+                  <Text style={styles.actionDescription}>Togli una quantità da una posizione</Text>
+                </View>
+                <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+              </Pressable>
+            </>
           )}
 
           <Pressable
@@ -338,6 +384,13 @@ export default function ScannerActionScreen() {
             </Text>
           </Pressable>
         </ScrollView>
+        <MovementSheet
+          product={product}
+          visible={sheetKind != null}
+          initialKind={sheetKind ?? 'carico'}
+          onClose={() => setSheetKind(null)}
+          onDone={movementDone}
+        />
       </SafeAreaView>
     );
   }

@@ -7,6 +7,10 @@ type P = Pick<Product, 'status' | 'deletedAt' | 'location'> | undefined;
 /** Si vende solo un prodotto che esiste, non è nel cestino e non è già venduto (P05, P06). */
 export const canSell = (product: P): boolean => !!product && !product.deletedAt && product.status !== 'sold';
 
+/** Carico, scarico, trasferimento e rettifica (Scheda M04, Azione rapida M09): prodotti disponibili e non nel
+ *  cestino; un pezzo unico al primo movimento diventa articolo a quantità. */
+export const canMoveStock = (product: P): boolean => !!product && !product.deletedAt && product.status === 'available';
+
 /** Quanti prodotti usano una posizione, una cartella o una categoria, separando quelli nel cestino (P08, P09, M01).
  *  Una posizione è usata se è la principale del prodotto o se ci ha giacenza (M03). */
 export function usage(

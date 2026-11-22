@@ -22,24 +22,34 @@ export const REASONS_BY_KIND: Record<MovementKind, MovementReason[]> = {
   rettifica: ['conta', 'danno', 'altro'],
 };
 
-export function MovementSheet({ product, visible, onClose }: { product: Product; visible: boolean; onClose: () => void }) {
+/**
+ * `initialKind`: tipo già scelto all'apertura (Azione rapida, M09). `onDone`: chiamata solo dopo un movimento
+ * registrato (Annulla e chiusura non la chiamano).
+ */
+export function MovementSheet({ product, visible, onClose, initialKind = 'carico', onDone }: {
+  product: Product;
+  visible: boolean;
+  onClose: () => void;
+  initialKind?: MovementKind;
+  onDone?: (movement: Movement) => void;
+}) {
   const styles = useStyles();
   const t = useTheme();
   const { moveStock } = useInventory();
   const { locations } = useLocations();
 
-  const [kind, setKind] = useState<MovementKind>('carico');
+  const [kind, setKind] = useState<MovementKind>(initialKind);
   const [qtyText, setQtyText] = useState('');
   const [place, setPlace] = useState(product.location);
   const [to, setTo] = useState('');
   const [reason, setReason] = useState<MovementReason | undefined>();
   const [note, setNote] = useState('');
 
-  // Ogni apertura riparte pulita dalla posizione principale del prodotto
+  // Ogni apertura riparte pulita dal tipo chiesto e dalla posizione principale del prodotto
   useEffect(() => {
     if (!visible) return;
-    setKind('carico'); setQtyText(''); setPlace(product.location); setTo(''); setReason(undefined); setNote('');
-  }, [visible, product.location]);
+    setKind(initialKind); setQtyText(''); setPlace(product.location); setTo(''); setReason(undefined); setNote('');
+  }, [visible, product.location, initialKind]);
 
   const unit = product.unit || 'pz';
   // Posizioni dell'elenco più quelle che il prodotto ha ancora ma non sono più in elenco (si mostrano con l'id)
@@ -73,6 +83,7 @@ export function MovementSheet({ product, visible, onClose }: { product: Product;
       return;
     }
     onClose();
+    onDone?.(movement);
   };
 
   const placeChips = (title: string, value: string, onPick: (id: string) => void, exclude?: string) => (

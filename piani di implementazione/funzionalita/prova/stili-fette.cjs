@@ -158,6 +158,28 @@ const FETTE = {
       ['esito', async (page) => { await page.getByLabel('Registra rettifiche', { exact: true }).click(); }],
     ],
   },
+  // M09: Carico e Scarico nell'Azione rapida (VIS-0098 = cmp-5 a quantità, VIS-0142 = cmp-1 pezzo unico)
+  m09: {
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      Object.assign(list.find((p) => p.sku === 'VIS-0098'), { unit: 'pz', stock: { magazzino: 5 } });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['azione', async (page) => {
+        await page.goto(`${APP}/scanner-action?type=product&id=cmp-5`); await page.waitForTimeout(1800);
+        await page.getByLabel('Carico', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['carico', async (page) => { await page.getByLabel('Carico', { exact: true }).first().click(); await page.waitForTimeout(600); }],
+      ['scarico', async (page) => {
+        await page.getByText('Annulla', { exact: true }).first().click(); await page.waitForTimeout(400);
+        await page.getByLabel('Scarico', { exact: true }).first().click(); await page.waitForTimeout(600);
+        await page.locator('input[placeholder="es. 2,5"]').fill('2');
+      }],
+      ['pezzo-unico', async (page) => { await page.goto(`${APP}/scanner-action?type=product&id=cmp-1`); await page.waitForTimeout(1800); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

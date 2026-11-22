@@ -31,6 +31,7 @@ import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { formatNumber } from '../../../utils/number';
 import { describeStockEvent, formatQty, isLowStock, isOutOfStock, isStocked, round3, storedStock, totalStock } from '../../../utils/stock';
 import { MovementSheet } from '../../../components/MovementSheet';
+import { canMoveStock as canMoveStockRule } from '../../../utils/productRules';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -84,7 +85,7 @@ export default function ProductDetailScreen() {
   // Sotto la scorta minima (M06): stessa regola dell'avviso «Attenzione»
   const lowStock = isLowStock(product);
   // «Movimenta» (M04): prodotti disponibili e non nel cestino; un pezzo unico diventa articolo a quantità
-  const canMoveStock = product.status === 'available' && !product.deletedAt;
+  const canMoveStock = canMoveStockRule(product);
   const stockEventText = (details: Parameters<typeof describeStockEvent>[0]) => describeStockEvent(details, placeLabel, product.unit);
 
   const generateClientText = () => {
