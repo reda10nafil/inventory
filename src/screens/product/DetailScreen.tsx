@@ -11,8 +11,8 @@ import * as Clipboard from '../../lib/clipboard';
 import * as Sharing from '../../lib/sharing';
 import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
-import { FUR_TYPES } from '../../../constants/config';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { orderByLayout } from '../../../utils/layoutOrder';
@@ -38,6 +38,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getProductById, getTimelineForProduct } = useInventory();
   const { locations } = useLocations();
+  const { labelOf } = useCategories();
   const { customFields } = useCustomFields();
 
   const { layout } = useLayout();
@@ -70,10 +71,10 @@ export default function ProductDetailScreen() {
   const halfTileWidth = (screenWidth - t.spacing.screenPadding * 2 - 10) / 2;
 
   const location = locations.find((l) => l.id === product.location);
-  const furType = FUR_TYPES.find((f) => f.id === product.furType);
+  const categoryName = labelOf(product.furType);
 
   const generateClientText = () => {
-    let text = `✨ ${furType?.label || product.furType} - ${product.sku}\n\n`;
+    let text = `✨ ${categoryName} - ${product.sku}\n\n`;
 
     if (product.length || product.width || product.weight) {
       text += '📐 MISURE:\n';
@@ -89,8 +90,6 @@ export default function ProductDetailScreen() {
 
     if (product.technicalNotes) {
       text += `📝 ${product.technicalNotes}\n\n`;
-    } else {
-      text += '📝 Pelliccia di alta qualità\n\n';
     }
 
     text += `📍 Disponibile presso: ${location?.label || product.location}`;
@@ -100,11 +99,11 @@ export default function ProductDetailScreen() {
 
   const generateProfessionalText = () => {
     let text = `╔════════════════════════════════════════╗\n`;
-    text += `║   SCHEDA TECNICA PRODOTTO PELLICCIA   ║\n`;
+    text += `║        SCHEDA TECNICA PRODOTTO        ║\n`;
     text += `╚════════════════════════════════════════╝\n\n`;
 
     text += `SKU: ${product.sku}\n`;
-    text += `TIPO: ${furType?.label || product.furType}\n`;
+    text += `CATEGORIA: ${categoryName}\n`;
     text += `STATO: ${product.status === 'available' ? 'Disponibile' : 'Venduto'}\n`;
     text += `POSIZIONE: ${location?.label || product.location}\n`;
     text += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -171,7 +170,7 @@ export default function ProductDetailScreen() {
               const text = generateClientText();
               const shareOptions: any = {
                 message: text,
-                title: `${product.sku} - ${furType?.label || product.furType}`,
+                title: `${product.sku} - ${categoryName}`,
               };
 
               // Add first image if available
@@ -248,7 +247,7 @@ export default function ProductDetailScreen() {
           <div class="label">
             <div id="qrcode"></div>
             <div class="sku">${product.sku}</div>
-            <div class="meta">${product.furType} - ${location?.label || product.location}</div>
+            <div class="meta">${categoryName} - ${location?.label || product.location}</div>
           </div>
           <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
           <script>
@@ -302,7 +301,7 @@ export default function ProductDetailScreen() {
           <div class="label">
             <svg id="barcode"></svg>
             <div class="sku">${product.sku}</div>
-            <div class="meta">${product.furType} - ${location?.label || product.location}</div>
+            <div class="meta">${categoryName} - ${location?.label || product.location}</div>
           </div>
           <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
           <script>
@@ -621,7 +620,7 @@ export default function ProductDetailScreen() {
           <div class="header">
             <h1>FurInventory Pro</h1>
             <div class="sku">${product.sku}</div>
-            <div class="fur-type">${furType?.label || product.furType}</div>
+            <div class="fur-type">${categoryName}</div>
             ${product.status === 'sold' ? '<div class="sold-badge">VENDUTO</div>' : ''}
           </div>
 
@@ -848,7 +847,7 @@ export default function ProductDetailScreen() {
           <View style={styles.titleRow}>
             <View style={styles.titleLeft}>
               <Text style={styles.sku}>{product.sku}</Text>
-              <Text style={styles.furType}>{furType?.label || product.furType}</Text>
+              <Text style={styles.furType}>{categoryName}</Text>
             </View>
             <Pressable style={styles.shareButton} onPress={handleShare}>
               <AppIcon name="share" size={20} color={t.colors.accentInk} />
@@ -1260,7 +1259,7 @@ export default function ProductDetailScreen() {
             </View>
 
             <Text style={styles.qrSkuText}>{product.sku}</Text>
-            <Text style={styles.qrInfoText}>{furType?.label || product.furType}</Text>
+            <Text style={styles.qrInfoText}>{categoryName}</Text>
 
             <Pressable style={styles.printLabelButton} onPress={handlePrintLabel}>
               <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />

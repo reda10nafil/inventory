@@ -3,7 +3,7 @@
 // nel giro esporta-importa. Le foto salvate sul dispositivo non entrano nel CSV (solo i link http).
 import type { Library, Product } from '../types';
 
-export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo Pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Cartella'];
+export const PRODUCT_CSV_HEADER = ['SKU', 'Categoria', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Cartella'];
 
 /** Intestazione più una riga per ogni prodotto non nel cestino. */
 export function productCsvRows(products: readonly Product[], libraries: readonly Pick<Library, 'id' | 'name'>[]): unknown[][] {

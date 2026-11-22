@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { CustomField, FieldUIType } from '../types';
+import { withCategoryFieldName } from '../utils/categories';
 
 const STORAGE_KEY = 'furinventory_custom_fields';
 
@@ -16,7 +17,7 @@ export interface CustomFieldOption {
 export const SYSTEM_FIELDS: CustomField[] = [
     { id: 'images', name: 'Foto Prodotto', type: 'images', uiType: 'images', required: false, order: 0, isSystem: true, icon: 'add-photo-alternate' },
     { id: 'sku', name: 'SKU / Codice', type: 'text_short', uiType: 'text', required: true, order: 1, isSystem: true, icon: 'qr-code' },
-    { id: 'furType', name: 'Tipo Pelle', type: 'text_short', uiType: 'text', required: true, order: 2, isSystem: true, icon: 'category' },
+    { id: 'furType', name: 'Categoria', type: 'text_short', uiType: 'text', required: true, order: 2, isSystem: true, icon: 'category' },
     { id: 'location', name: 'Posizione', type: 'text_short', uiType: 'text', required: true, order: 3, isSystem: true, icon: 'place' },
     { id: 'folder', name: 'Cartella', type: 'text_short', uiType: 'text', required: false, order: 4, isSystem: true, icon: 'folder' },
     { id: 'purchasePrice', name: 'Prezzo Acquisto', type: 'currency', uiType: 'text', required: false, order: 5, isSystem: true, icon: 'shopping-cart' },
@@ -79,7 +80,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
                     const existingIds = parsed.map((p: any) => p.id);
                     const missingSystemFields = SYSTEM_FIELDS.filter(sf => !existingIds.includes(sf.id));
 
-                    const merged = [...parsed, ...missingSystemFields];
+                    // M01: il campo «Tipo Pelle» salvato dalle versioni di prima si legge come «Categoria»
+                    const merged = withCategoryFieldName([...parsed, ...missingSystemFields]);
 
                     // Sort by order
                     setAllFields(merged.sort((a: CustomField, b: CustomField) => a.order - b.order));

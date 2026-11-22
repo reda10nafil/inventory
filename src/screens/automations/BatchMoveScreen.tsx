@@ -7,6 +7,7 @@ import { soundService } from '../../../services/SoundService';
 // import { Audio } from 'expo-av'; // Removed for now to simplify dependencies
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
@@ -25,6 +26,7 @@ export default function BatchMoveScreen() {
     const router = useRouter();
     const { products, moveProduct, getProductBySku } = useInventory();
     const { locations, getLocation, getNextLocation } = useLocations();
+    const { labelOf } = useCategories();
 
     const [step, setStep] = useState<Step>('scan_location');
     const [targetLocation, setTargetLocation] = useState<Location | null>(null);
@@ -150,7 +152,7 @@ export default function BatchMoveScreen() {
             }
 
             setScannedCount(c => c + 1);
-            setLastScannedProduct(`${product.sku} (${product.furType})`);
+            setLastScannedProduct(`${product.sku} (${labelOf(product.furType)})`);
             playSuccessSound();
 
             // Show overlay feedback

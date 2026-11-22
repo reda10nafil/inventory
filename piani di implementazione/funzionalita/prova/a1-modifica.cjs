@@ -1,6 +1,7 @@
 // A1 - Modifica: campi di base, campi personalizzati, D03, link GS1, campo nel cestino.
 const { scenario } = require('./lib.cjs');
 const { press, clickAt, dump } = require('./a1-util.cjs');
+const { scan } = require('./a3-util.cjs');
 
 const openEdit = async (h, sku) => {
   await h.click(sku); await h.page.waitForTimeout(800);
@@ -117,6 +118,8 @@ const newEvents = (before, after) => after.slice(0, after.length - before.length
     const side = (await dump(page)).find((b) => b.x > box.x + box.width && Math.abs(b.y - (box.y + box.height / 2)) < 30);
     const prima = await input.inputValue();
     await clickAt(page, side.x, side.y);
+    // Dopo C11 (D02) il pulsante apre il lettore: lettura simulata come in A2 e A3
+    await scan(h, 'IT-CITES-A1');
     const dopo = await input.inputValue();
     await press(page, /Salva Modifiche$/);
     const p = (await h.products()).find((x) => x.id === 'cmp-1');

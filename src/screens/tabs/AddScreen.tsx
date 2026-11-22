@@ -11,9 +11,9 @@ import BarcodeScanner from '../../../components/BarcodeScanner';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
-import { FUR_TYPES } from '../../../constants/config';
 import { parseNumber } from '../../../utils/number';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import { useCustomFields, CustomField } from '../../../contexts/CustomFieldsContext';
 import { missingRequiredFields } from '../../../utils/formValidation';
 import { useLayout, LayoutField, sectionLabel } from '../../../contexts/LayoutContext';
@@ -33,6 +33,7 @@ export default function AddProductScreen() {
   const router = useRouter();
   const { addProduct, products, libraries } = useInventory();
   const { locations } = useLocations();
+  const { categories } = useCategories();
   const { customFields } = useCustomFields();
   const { layout, getVisibleFields } = useLayout();
   const { gs1Config } = useGS1Config();
@@ -181,7 +182,7 @@ export default function AddProductScreen() {
 
     // D23: lo SKU vuoto si genera da solo al salvataggio (come dicono il suggerimento e la nota)
     if (!formData.furType || !formData.location) {
-      Alert.alert('Campi obbligatori', 'Compila almeno Tipo di Pelle e Posizione');
+      Alert.alert('Campi obbligatori', 'Compila almeno Categoria e Posizione');
       return;
     }
 
@@ -437,7 +438,7 @@ export default function AddProductScreen() {
       const getDynamicOptionsList = (cf: CustomField) => {
         if (cf.linkTo === 'locations') return locations.map(l => ({ id: l.id, label: l.label }));
         if (cf.linkTo === 'libraries') return libraries.map(l => ({ id: l.id, label: l.name }));
-        if (cf.linkTo === 'furType') return FUR_TYPES.map(f => ({ id: f.id, label: f.label }));
+        if (cf.linkTo === 'furType') return categories.map(c => ({ id: c.id, label: c.label }));
 
         return cf.dataset && Array.isArray(cf.dataset)
           ? cf.dataset.map((val: string, i: number) => ({ id: `ds_${i}`, label: String(val) }))
@@ -792,8 +793,9 @@ export default function AddProductScreen() {
         return (
           <View key="furType" style={{ width: '100%' }}>
             {renderLabel(undefined, true)}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {FUR_TYPES.map((type) => {
+            {/* M01: le categorie sono dell'utente e possono essere tante: a capo come Posizione e Cartella (D09) */}
+            <View style={styles.chipWrap}>
+              {categories.map((type) => {
                 const active = formData.furType === type.id;
                 return (
                   <Pressable
@@ -806,7 +808,7 @@ export default function AddProductScreen() {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </View>
           </View>
         );
 
@@ -994,7 +996,7 @@ export default function AddProductScreen() {
           </Pressable>
 
           <Text style={styles.footNote}>
-            <Text style={styles.required}>*</Text> Campi obbligatori: Tipo di Pelle, Posizione (SKU auto-generato se vuoto)
+            <Text style={styles.required}>*</Text> Campi obbligatori: Categoria, Posizione (SKU auto-generato se vuoto)
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

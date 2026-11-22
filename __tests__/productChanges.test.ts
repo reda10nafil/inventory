@@ -28,7 +28,7 @@ describe('describeChanges (P13)', () => {
 
   it('SKU, tipo e foto tolte', () => {
     expect(describeChanges(before, { sku: 'VIS-2', furType: 'volpe', images: ['a'] })).toEqual([
-      'SKU: VIS-1 → VIS-2', 'Tipo: visone → volpe', '1 foto tolte',
+      'SKU: VIS-1 → VIS-2', 'Categoria: visone → volpe', '1 foto tolte',
     ]);
   });
 

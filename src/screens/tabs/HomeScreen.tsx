@@ -7,6 +7,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import { isDormant, needsPromotion } from '../../../services/mockData';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -18,7 +19,6 @@ import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
-import { FUR_TYPES } from '../../../constants/config';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
@@ -31,6 +31,7 @@ export default function HomeScreen() {
   const params = useLocalSearchParams(); // Read params
   const { products, alerts, filterProducts, deleteProduct, updateProduct, libraries } = useInventory();
   const { locations } = useLocations();
+  const { categories, labelOf } = useCategories();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
@@ -74,7 +75,7 @@ export default function HomeScreen() {
   // 2. Then, apply Status Filter & Search on the Folder-filtered list
   // La ricerca vale in tutti i filtri, anche Cestino e Attenzione, e trova la posizione per nome (P14)
   const filteredProducts = folderFilteredProducts.filter((p) =>
-    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, FUR_TYPES));
+    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, categories));
 
   const filters: { id: FilterType; label: string; count: number }[] = [
     { id: 'all', label: 'Tutti', count: stats.total - stats.trash },
@@ -216,7 +217,7 @@ export default function HomeScreen() {
             {product.sku}
           </Text>
           <Text style={styles.productType} numberOfLines={1}>
-            {product.furType.charAt(0).toUpperCase() + product.furType.slice(1)}
+            {labelOf(product.furType)}
           </Text>
 
           <View style={styles.locationRow}>

@@ -4,6 +4,7 @@ import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert, Modal } from
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -20,6 +21,7 @@ export default function ScanSellScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { products, sellProduct, getProductBySku } = useInventory();
+    const { labelOf } = useCategories();
 
     const [scannedCount, setScannedCount] = useState(0);
     const [totalRevenue, setTotalRevenue] = useState(0);
@@ -163,7 +165,7 @@ export default function ScanSellScreen() {
                         {pendingProduct && (
                             <View style={styles.productInfo}>
                                 <Text style={styles.productSku}>{pendingProduct.sku}</Text>
-                                <Text style={styles.productType}>{pendingProduct.furType}</Text>
+                                <Text style={styles.productType}>{labelOf(pendingProduct.furType)}</Text>
                             </View>
                         )}
 

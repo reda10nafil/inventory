@@ -6,6 +6,7 @@ import { useRouter, useLocalSearchParams } from '../navigation/compat';
 import { Image } from '../lib/ExpoImage';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations } from '../../contexts/LocationsContext';
+import { useCategories } from '../../contexts/CategoriesContext';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
@@ -30,6 +31,7 @@ export default function ScannerActionScreen() {
 
   const { getProductById, moveProduct, sellProduct, libraries } = useInventory();
   const { locations } = useLocations();
+  const { labelOf } = useCategories();
 
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -190,7 +192,7 @@ export default function ScannerActionScreen() {
             <View style={styles.productDetails}>
               <Text style={styles.productSku}>{product.sku}</Text>
               <Text style={styles.productType}>
-                {product.furType.charAt(0).toUpperCase() + product.furType.slice(1)}
+                {labelOf(product.furType)}
               </Text>
               <View style={styles.locationBadge}>
                 <AppIcon name="location-on" size={14} color={t.colors.accentInk} />

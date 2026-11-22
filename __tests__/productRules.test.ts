@@ -2,9 +2,9 @@ import { canMove, canSell, usage } from '../utils/productRules';
 
 describe('usage (P08, P09)', () => {
   const list = [
-    { location: 'vetrina', libraryId: 'pellicce' },
-    { location: 'vetrina', libraryId: undefined, deletedAt: 'x' },
-    { location: 'magazzino', libraryId: 'pellicce', deletedAt: 'x' },
+    { location: 'vetrina', libraryId: 'pellicce', furType: 'visone' },
+    { location: 'vetrina', libraryId: undefined, furType: 'volpe', deletedAt: 'x' },
+    { location: 'magazzino', libraryId: 'pellicce', furType: 'visone', deletedAt: 'x' },
   ];
   it('conta i prodotti di una posizione, attivi e nel cestino', () => {
     expect(usage(list, { location: 'vetrina' })).toEqual({ active: 1, trashed: 1 });
@@ -12,6 +12,11 @@ describe('usage (P08, P09)', () => {
   });
   it('conta i prodotti di una cartella', () => {
     expect(usage(list, { libraryId: 'pellicce' })).toEqual({ active: 1, trashed: 1 });
+  });
+  it('conta i prodotti di una categoria (M01)', () => {
+    expect(usage(list, { furType: 'visone' })).toEqual({ active: 1, trashed: 1 });
+    expect(usage(list, { furType: 'volpe' })).toEqual({ active: 0, trashed: 1 });
+    expect(usage(list, { furType: 'altro' })).toEqual({ active: 0, trashed: 0 });
   });
 });
 

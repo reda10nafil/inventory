@@ -120,7 +120,7 @@ export default function SettingsScreen() {
     setCloudBackupBusy(true);
     try {
       const values = [
-        ['SKU', 'Tipo Pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
+        ['SKU', 'Categoria', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
         ...products.map((product) => [
           product.sku, product.furType, product.location, product.status,
           product.purchasePrice, product.sellPrice, product.length, product.width, product.weight,
@@ -168,7 +168,7 @@ export default function SettingsScreen() {
       try { return JSON.parse(valueAt(row, index)) as T; } catch { return fallback; }
     };
 
-    const furTypeIndex = column('tipo pelle', 'tipo pelliccia', 'fur type');
+    const furTypeIndex = column('categoria', 'tipo pelle', 'tipo pelliccia', 'fur type');
     const locationIndex = column('posizione', 'location');
     const statusIndex = column('status', 'stato');
     const notesIndex = column('note', 'note tecniche', 'technical notes');
@@ -440,6 +440,24 @@ export default function SettingsScreen() {
               <Text style={styles.settingTitle}>Gestisci Posizioni</Text>
               <Text style={styles.settingDescription}>
                 Modifica locazioni disponibili
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/categories')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="category" size={24} color={t.colors.onAccent} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Categorie</Text>
+              <Text style={styles.settingDescription}>
+                Tipi di prodotto da scegliere in Aggiungi
               </Text>
             </View>
           </View>

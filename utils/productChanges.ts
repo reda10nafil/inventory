@@ -22,7 +22,7 @@ export function describeChanges(before: Product, updates: Partial<Product>): str
   const changed = <K extends keyof Product>(k: K) => k in updates && !same(updates[k], before[k]);
   const out: string[] = [];
   if (changed('sku')) out.push(`SKU: ${show(before.sku)} → ${show(updates.sku)}`);
-  if (changed('furType')) out.push(`Tipo: ${show(before.furType)} → ${show(updates.furType)}`);
+  if (changed('furType')) out.push(`Categoria: ${show(before.furType)} → ${show(updates.furType)}`);
   if (changed('location')) out.push(`Posizione: ${show(before.location)} → ${show(updates.location)}`);
   if (changed('libraryId')) out.push(`Cartella: ${show(before.libraryId)} → ${show(updates.libraryId)}`);
   if (changed('sellPrice')) out.push(`Prezzo vendita: ${price(before.sellPrice)} → ${price(updates.sellPrice)}`);

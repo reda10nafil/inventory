@@ -2,6 +2,17 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, M01: categorie modificabili (ticket 04)
+
+- Branch `funzioni/magazzino`.
+- «Tipo di pelle» diventa **Categoria**, con una lista per spazio modificabile: contesto nuovo `contexts/CategoriesContext.tsx` (chiave `furinventory_categories:{org}`, fuori dalle chiavi di `InventoryContext`), predefinita = i tipi di pelle di oggi con gli stessi id. Il dato resta `furType`: nessun prodotto riscritto. Senza lista salvata (o con una rovinata) si leggono le predefinite e non si scrive nulla.
+- Logica pura in `utils/categories.ts` (test): id dal nome senza accenti e unico («Cincillà» → `cincilla`, «Volpe» → `volpe_2` se c'è già), nomi doppi rifiutati (maiuscole e accenti indifferenti), un id non più in lista si mostra com'è, il campo di sistema salvato come «Tipo Pelle» si legge «Categoria» senza riscriverlo. `usage` conta anche le categorie.
+- Impostazioni › **Categorie** (schermata nuova, `settings/categories`): aggiungi, rinomina (cambia solo il nome: i prodotti restano collegati), elimina con conferma; bloccata se la usa un prodotto, anche venduto o nel cestino, e per l'ultima.
+- Il nome della categoria (non più l'id) in Aggiungi, Modifica, Scheda (testi da condividere, PDF, etichette QR e codice a barre), card e ricerca dell'Inventario, Audit, Spostamento rapido, Vendita flash, Azione rapida, Cestino (anche la posizione col suo nome). Campi collegati alla «Libreria Categorie» leggono la lista nuova. Le pillole delle categorie vanno a capo come Posizione e Cartella. Cronologia: «Categoria: …» al posto di «Tipo: …». CSV: intestazione «Categoria» (l'import accetta anche «Tipo Pelle»); nei testi da condividere tolte le parole legate alle pellicce.
+- Prove sul web: `prova/m01-categorie.cjs` (3 scenari: predefinite senza scrittura ed etichetta «Categoria» in Aggiungi; crea «Viti» → doppione «viti» rifiutato → prodotto con `furType: "viti"` → card e Scheda «Viti» → rinomina in «Viti inox» con l'id del prodotto invariato → resta dopo la ricarica → eliminazione bloccata; Astrakan bloccata dal prodotto nel cestino, Ermellino eliminata, l'ultima no); rilanciati `a2-csv` e `a4-dati` (giro esporta-importa con la colonna «Categoria»: categoria conservata), `a2-aggiungi`, `a1-modifica`, `a1-scheda` (stessi esiti di prima; `a1-mod-scanner-cites` aggiornato alla lettura simulata dopo C11, come `a2-add-sku-scanner`).
+- Nei 5 stili: `prova/stili-fette.cjs` (nuovo, riusabile per le fette M: `FETTA=m01`) e `prova/foglio.py` → `prova/stili-m01.jpg` (Categorie, rinomina, Aggiungi, card, Impostazioni), 0 errori in console. Categorie aggiunta alle schermate di `controllo.sh`.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 140 verdi, bundle Android 5,11 MB con 62 asset, 32 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B: rilettura finale delle correzioni (numeri del CSV, note vuote, prove)
 
 - Branch `funzioni/magazzino`.

@@ -10,9 +10,9 @@ import BarcodeScanner from '../../../components/BarcodeScanner';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
-import { FUR_TYPES } from '../../../constants/config';
 import { formatNumberInput, parseNumber } from '../../../utils/number';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
@@ -56,6 +56,7 @@ function EditProductForm({ product }: { product: Product }) {
   const id = product.id;
   const { updateProduct, libraries } = useInventory();
   const { locations } = useLocations();
+  const { categories } = useCategories();
 
   const { customFields } = useCustomFields();
   const { layout } = useLayout();
@@ -142,7 +143,7 @@ function EditProductForm({ product }: { product: Product }) {
   // `withoutPhoto === true` solo dalla conferma qui sotto (onPress passa l'evento, che non è `true`)
   const handleSave = (withoutPhoto?: unknown) => {
     if (!formData.sku || !formData.furType || !formData.location) {
-      Alert.alert('Campi Obbligatori', 'Compila almeno SKU, Tipo di Pelle e Posizione');
+      Alert.alert('Campi Obbligatori', 'Compila almeno SKU, Categoria e Posizione');
       return;
     }
 
@@ -344,9 +345,10 @@ function EditProductForm({ product }: { product: Product }) {
           </View>
 
           <View style={styles.inputGroup}>
-            {renderLabel('Tipo di Pelle')}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {FUR_TYPES.map((type) => {
+            {renderLabel('Categoria')}
+            {/* M01: le categorie sono dell'utente e possono essere tante: a capo come Posizione e Cartella (D09) */}
+            <View style={styles.chipWrap}>
+              {categories.map((type) => {
                 const active = formData.furType === type.id;
                 return (
                   <Pressable
@@ -361,7 +363,7 @@ function EditProductForm({ product }: { product: Product }) {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </View>
           </View>
 
           {/* D09: pillole di Posizione e Cartella a capo, come in Aggiungi */}
@@ -507,7 +509,7 @@ function EditProductForm({ product }: { product: Product }) {
             const getDynamicOptionsList = (cf: any) => {
               if (cf.linkTo === 'locations') return locations.map((l: any) => ({ id: l.id, label: l.label }));
               if (cf.linkTo === 'libraries') return libraries.map((l: any) => ({ id: l.id, label: l.name }));
-              if (cf.linkTo === 'furType') return FUR_TYPES.map((f: any) => ({ id: f.id, label: f.label }));
+              if (cf.linkTo === 'furType') return categories.map((c) => ({ id: c.id, label: c.label }));
 
               return cf.dataset && Array.isArray(cf.dataset)
                 ? cf.dataset.map((val: string, i: number) => ({ id: `ds_${i}`, label: String(val) }))

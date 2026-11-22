@@ -6,6 +6,8 @@ import { useRouter } from '../../navigation/compat';
 import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useCustomFields, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
+import { useLocations } from '../../../contexts/LocationsContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { cardSurface } from '../../../components/ui/surfaces';
@@ -20,6 +22,8 @@ export default function TrashScreen() {
     const router = useRouter();
     const { getTrashProducts, restoreProduct, permanentlyDeleteProduct } = useInventory();
     const { getDeletedFields, restoreField, permanentlyDeleteField } = useCustomFields();
+    const { getLocation } = useLocations();
+    const { labelOf } = useCategories();
     const trashProducts = getTrashProducts();
     const deletedFields = getDeletedFields();
 
@@ -191,7 +195,7 @@ export default function TrashScreen() {
                             <View style={styles.content}>
                                 <Text style={styles.sku}>{item.sku}</Text>
                                 <Text style={styles.details} numberOfLines={1}>
-                                    {item.furType} - {item.location}
+                                    {labelOf(item.furType)} - {getLocation(item.location)?.label ?? item.location}
                                 </Text>
                                 <Text style={styles.deletedDate}>
                                     Eliminato il {new Date(item.deletedAt!).toLocaleDateString('it-IT')}

@@ -16,6 +16,7 @@ export const linking = {
       ProductDetail: 'product/:id',
       ProductEdit: 'product/edit/:id',
       SettingsLocations: 'settings/locations',
+      SettingsCategories: 'settings/categories',
       SettingsFields: 'settings/fields',
       SettingsFolders: 'settings/folders',
       SettingsLayoutBuilder: 'settings/layout-builder',
