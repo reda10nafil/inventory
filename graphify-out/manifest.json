@@ -1938,9 +1938,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/SettingsScreen.tsx": {
-    "mtime": 1795328708.7058043,
-    "seen": 1795329137.8207924,
-    "ast_hash": "0d9ce0453b0879e5f2819a7ba7b02e4d",
+    "mtime": 1795330953.209527,
+    "seen": 1795331243.5812106,
+    "ast_hash": "69bda2a5a9b0a617682e25fed381b684",
     "semantic_hash": ""
   },
   "src/screens/tabs/TimelineScreen.tsx": {
@@ -1986,9 +1986,9 @@
     "semantic_hash": ""
   },
   "src/lib/fileSystem.ts": {
-    "mtime": 1795315120.0397136,
-    "seen": 1795323475.1485813,
-    "ast_hash": "20c8111744ae8e1b80364ac8ccb904c7",
+    "mtime": 1795330953.645113,
+    "seen": 1795331243.575523,
+    "ast_hash": "f2239b25814d7c75175a86ac984a9455",
     "semantic_hash": ""
   },
   "src/lib/imageManipulator.ts": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795330887.1280124,
-    "seen": 1795330900.1055114,
-    "ast_hash": "85c8e4588b30ffaaee5fd7cf9b10bb12",
+    "mtime": 1795331228.5955758,
+    "seen": 1795331243.6126828,
+    "ast_hash": "9a93391b9bf84cbf7a7eceeb87523a19",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2688,9 +2688,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795330887.1280124,
-    "seen": 1795330900.1055114,
-    "ast_hash": "200d0e9955ced42b6a88de9c156c9189",
+    "mtime": 1795331228.5965772,
+    "seen": 1795331243.6126828,
+    "ast_hash": "b9e8858f8f887cec83bf0949e07f467a",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3252,9 +3252,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795330887.1839352,
-    "seen": 1795330900.1055114,
-    "ast_hash": "d6fe2921e493f40b7836d78ebb7b8951",
+    "mtime": 1795331228.6596375,
+    "seen": 1795331243.6126828,
+    "ast_hash": "a24cef7d312812dc850b9d11105f1036",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3381,6 +3381,18 @@
     "mtime": 1795330542.8778229,
     "seen": 1795330900.1024973,
     "ast_hash": "833774341ea0aa18b534841b1e6b2461",
+    "semantic_hash": ""
+  },
+  "__tests__/productCsv.test.ts": {
+    "mtime": 1795330938.6706843,
+    "seen": 1795331243.5214548,
+    "ast_hash": "209730cfdd7df4041514195ce1e168d3",
+    "semantic_hash": ""
+  },
+  "utils/productCsv.ts": {
+    "mtime": 1795330938.5330486,
+    "seen": 1795331243.6071928,
+    "ast_hash": "f6e44f0eaf796e750c86eb12e2dd1886",
     "semantic_hash": ""
   }
 }

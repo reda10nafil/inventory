@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C06: export CSV con la cartella e senza cestino, import col pulsante sul web (P07, P18)
+
+- Branch `funzioni/magazzino`.
+- **P07**: l'export CSV includeva i prodotti nel cestino senza segnarli e non aveva la cartella, che si perdeva nel giro esporta-importa. Ora le righe vengono da `productCsvRows` (`utils/productCsv.ts`): solo prodotti non nel cestino, colonna nuova «Cartella» col nome; l'import la riconosce per nome o id (`libraryIdFromCsv`) e la lascia vuota se la cartella non esiste. Test `__tests__/productCsv.test.ts` (4). Resta un limite dichiarato: le foto salvate sul dispositivo non entrano nel CSV (solo i link http), quindi il CSV non è un backup completo.
+- **P18**: sul web il pulsante «Importa prodotti CSV» falliva (`readAsStringAsync` di expo-file-system non c'è sul web). Ora `src/lib/fileSystem.ts` sul web legge i file scelti (indirizzi `blob:`/`data:`) col browser, anche in base64.
+- Prova sul web: `a2-csv-esporta-reimporta` 16 colonne con «Cartella», reimportato perde solo le foto locali (prima anche la cartella); `a4-dati-esporta` il prodotto nel cestino non è nel file; `a2-csv-importa-pulsante` e `a4-dati-importa-pulsante` «1 / 2 prodotti importati» (prima errore); trascinamento come prima.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 107 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C05: posizioni e cartelle eliminate senza prodotti orfani (P08, P09)
 
 - Branch `funzioni/magazzino`.

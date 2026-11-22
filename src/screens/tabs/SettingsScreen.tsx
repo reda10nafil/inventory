@@ -9,6 +9,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { Product } from '../../../types';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
+import { libraryIdFromCsv, productCsvRows } from '../../../utils/productCsv';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
@@ -25,7 +26,7 @@ export default function SettingsScreen() {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { products, addProduct, getProductBySku } = useInventory();
+  const { products, addProduct, getProductBySku, libraries } = useInventory();
   const { session, organizationId, organizations, user, signOut, switchOrganization } = useAuth();
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -81,26 +82,7 @@ export default function SettingsScreen() {
 
   const exportToCSV = async () => {
     try {
-      const csvContent = stringifyCsv([
-        ['SKU', 'Tipo Pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
-        ...products.map((product) => [
-          product.sku,
-          product.furType,
-          product.location,
-          product.status,
-          product.purchasePrice,
-          product.sellPrice,
-          product.length,
-          product.width,
-          product.weight,
-          product.technicalNotes,
-          product.productionDate,
-          JSON.stringify(product.backupImageLinks?.length ? product.backupImageLinks : (product.images || []).filter((uri) => /^https?:\/\//i.test(uri))),
-          JSON.stringify(product.customData || []),
-          product.gs1DigitalLink,
-          JSON.stringify(product.backupCustomDataLinks || {}),
-        ]),
-      ]);
+      const csvContent = stringifyCsv(productCsvRows(products, libraries));
 
       if (Platform.OS === 'web') {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
@@ -235,6 +217,7 @@ export default function SettingsScreen() {
         productionDate: valueAt(row, productionDateIndex) || undefined,
         customData: jsonAt(row, customDataIndex, []),
         gs1DigitalLink: valueAt(row, gs1Index) || undefined,
+        libraryId: libraryIdFromCsv(valueAt(row, column('cartella', 'folder', 'library')), libraries),
         isFragile: false,
       });
       imported += 1;
