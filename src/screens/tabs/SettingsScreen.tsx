@@ -1,21 +1,24 @@
 // FurInventory Pro - Settings Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Platform, Linking, Share, TextInput } from 'react-native';
+import { View, Pressable, ScrollView, Alert, Platform, Linking, Share } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
 import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { Product } from '../../../types';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
 export default function SettingsScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { products, addProduct, getProductBySku } = useInventory();
@@ -276,7 +279,7 @@ export default function SettingsScreen() {
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: spacing.screenPadding,
+          paddingHorizontal: t.spacing.screenPadding,
           paddingBottom: insets.bottom + 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -297,7 +300,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
-              <MaterialIcons name="link" size={24} color="#FFF" />
+              <AppIcon name="link" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>GS1 Digital Link</Text>
@@ -306,7 +309,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         <Pressable
@@ -315,7 +318,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
-              <MaterialIcons name="settings-cell" size={24} color="#FFF" />
+              <AppIcon name="settings-cell" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Scanner & NFC</Text>
@@ -324,7 +327,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         {/* GESTIONE INVENTARIO */}
@@ -336,7 +339,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
-              <MaterialIcons name="folder" size={24} color="#FFF" />
+              <AppIcon name="folder" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Gestisci Cartelle</Text>
@@ -345,7 +348,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         <Pressable
@@ -354,7 +357,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#10B981' }]}>
-              <MaterialIcons name="tune" size={24} color="#FFF" />
+              <AppIcon name="tune" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Campi Personalizzati</Text>
@@ -363,7 +366,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         <Pressable
@@ -372,7 +375,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
-              <MaterialIcons name="dashboard-customize" size={24} color="#FFF" />
+              <AppIcon name="dashboard-customize" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Configura Layout Aggiungi</Text>
@@ -381,7 +384,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         <Pressable
@@ -389,8 +392,8 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/trash')}
         >
           <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: theme.error }]}>
-              <MaterialIcons name="delete" size={24} color="#FFF" />
+            <View style={[styles.iconContainer, { backgroundColor: t.colors.error }]}>
+              <AppIcon name="delete" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Cestino</Text>
@@ -399,7 +402,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         <Pressable
@@ -407,8 +410,8 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/locations')}
         >
           <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
-              <MaterialIcons name="location-on" size={24} color="#000" />
+            <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="location-on" size={24} color={t.colors.onAccent} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Gestisci Posizioni</Text>
@@ -417,7 +420,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
 
@@ -430,7 +433,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#06B6D4' }]}>
-              <MaterialIcons name="share" size={24} color="#FFF" />
+              <AppIcon name="share" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Configurazione Condivisione</Text>
@@ -439,7 +442,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         {/* ALERT E NOTIFICHE */}
@@ -451,7 +454,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
-              <MaterialIcons name="notifications" size={24} color="#FFF" />
+              <AppIcon name="notifications" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Alert Prodotti Dormienti</Text>
@@ -460,7 +463,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         <Pressable
@@ -469,7 +472,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
-              <MaterialIcons name="auto-awesome" size={24} color="#FFF" />
+              <AppIcon name="auto-awesome" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Suggerimenti AI</Text>
@@ -478,7 +481,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         {/* DATI E BACKUP */}
@@ -502,7 +505,7 @@ export default function SettingsScreen() {
               value={inviteEmail}
               onChangeText={setInviteEmail}
               placeholder="Email Google dell’operatore"
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={t.colors.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
               style={styles.teamInput}
@@ -515,7 +518,7 @@ export default function SettingsScreen() {
             value={inviteToken}
             onChangeText={setInviteToken}
             placeholder="Codice invito ricevuto"
-            placeholderTextColor={theme.textSecondary}
+            placeholderTextColor={t.colors.placeholder}
             autoCapitalize="none"
             style={styles.teamInput}
           />
@@ -537,7 +540,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#10B981' }]}>
-              <MaterialIcons name="file-download" size={24} color="#FFF" />
+              <AppIcon name="file-download" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Esporta Inventario</Text>
@@ -546,13 +549,13 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         <Pressable style={styles.settingRow} onPress={importFromCSV}>
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
-              <MaterialIcons name="file-upload" size={24} color="#FFF" />
+              <AppIcon name="file-upload" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Importa prodotti CSV</Text>
@@ -561,7 +564,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         {Platform.OS === 'web' && React.createElement('div', {
@@ -570,12 +573,12 @@ export default function SettingsScreen() {
           onDragOver: (event: any) => event.preventDefault(),
           onDrop: handleCsvDrop,
           style: {
-            border: `2px dashed ${theme.primary}`,
+            border: `2px dashed ${t.colors.accent}`,
             borderRadius: 12,
             padding: 18,
             marginBottom: 12,
-            color: theme.textSecondary,
-            background: theme.surface,
+            color: t.colors.textSecondary,
+            background: t.colors.surface,
             textAlign: 'center',
           },
           children: 'Trascina qui un file CSV per importare prodotti. Per esportare usa “Esporta Inventario”.',
@@ -588,7 +591,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
-              <MaterialIcons name="cloud-upload" size={24} color="#FFF" />
+              <AppIcon name="cloud-upload" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>{cloudBackupBusy ? 'Backup in corso…' : 'Backup Google Drive'}</Text>
@@ -597,7 +600,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         {LOGIN_ENABLED && <Pressable
@@ -609,14 +612,14 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#52525B' }]}>
-              <MaterialIcons name="account-circle" size={24} color="#FFF" />
+              <AppIcon name="account-circle" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>{user?.email || 'Account Google'}</Text>
               <Text style={styles.settingDescription}>Esci da questo profilo</Text>
             </View>
           </View>
-          <MaterialIcons name="logout" size={22} color={theme.textSecondary} />
+          <AppIcon name="logout" size={22} color={t.colors.textSecondary} />
         </Pressable>}
 
         {/* TEAM E ACCESSO */}
@@ -628,7 +631,7 @@ export default function SettingsScreen() {
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
-              <MaterialIcons name="people" size={24} color="#FFF" />
+              <AppIcon name="people" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Accesso Multi-Utente</Text>
@@ -637,7 +640,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
         {/* INFO */}
@@ -660,20 +663,20 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
   },
   header: {
     paddingVertical: 12,
   },
   headerTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 24,
   },
   sectionTitle: {
-    ...typography.sectionHeader,
+    ...t.typography.sectionHeader,
     marginTop: 24,
     marginBottom: 12,
   },
@@ -681,8 +684,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.card,
     padding: 14,
     marginBottom: 8,
   },
@@ -694,7 +697,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -703,54 +706,54 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 15,
     marginBottom: 2,
   },
   settingDescription: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
   },
   infoCard: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 20,
     marginBottom: 16,
   },
   infoTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 20,
     marginBottom: 4,
   },
   infoVersion: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     marginBottom: 12,
   },
   infoDescription: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 16,
   },
   infoDivider: {
     height: 1,
-    backgroundColor: theme.border,
+    backgroundColor: t.colors.border,
     marginVertical: 16,
   },
   infoLabel: {
-    ...typography.sectionHeader,
+    ...t.typography.sectionHeader,
     fontSize: 11,
     marginBottom: 8,
   },
   infoText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     lineHeight: 18,
   },
   teamPanel: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 16,
     marginBottom: 12,
   },
@@ -758,17 +761,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginTop: 8,
-    borderRadius: borderRadius.medium,
-    backgroundColor: theme.background,
+    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.background,
   },
-  workspaceChoiceActive: { borderWidth: 1, borderColor: theme.primary },
+  workspaceChoiceActive: { borderWidth: 1, borderColor: t.colors.accent },
   teamInput: {
     minHeight: 46,
-    color: theme.textPrimary,
-    backgroundColor: theme.background,
-    borderRadius: borderRadius.medium,
+    color: t.colors.inputText,
+    backgroundColor: t.colors.background,
+    borderRadius: t.radius.input,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
     paddingHorizontal: 12,
     marginTop: 12,
   },
@@ -776,10 +779,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.primary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.button,
+    borderRadius: t.radius.button,
     marginTop: 8,
     marginBottom: 8,
   },
-  teamButtonText: { color: '#000', fontWeight: '700' },
-});
+  teamButtonText: { color: t.colors.onButton, fontWeight: '700' },
+}));

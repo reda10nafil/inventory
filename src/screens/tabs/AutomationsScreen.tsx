@@ -1,11 +1,13 @@
 // FurInventory Pro - Automations Settings Hub (with Custom Automations)
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useAutomations } from '../../../contexts/AutomationsContext';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 const BUILTIN_AUTOMATIONS = [
     {
@@ -43,6 +45,8 @@ const BUILTIN_AUTOMATIONS = [
 ];
 
 export default function AutomationsScreen() {
+    const t = useTheme();
+    const styles = useStyles();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { automations, deleteAutomation } = useAutomations();
@@ -75,7 +79,7 @@ export default function AutomationsScreen() {
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Centro Automazioni</Text>
                     <Pressable onPress={() => router.push('/scanner' as any)} style={styles.scannerButton}>
-                        <MaterialIcons name="qr-code-scanner" size={24} color={theme.primary} />
+                        <AppIcon name="qr-code-scanner" size={24} color={t.colors.accentInk} />
                     </Pressable>
                 </View>
 
@@ -87,7 +91,7 @@ export default function AutomationsScreen() {
                             onPress={() => router.push('/settings/automation-builder' as any)}
                             style={styles.createButton}
                         >
-                            <MaterialIcons name="add" size={20} color="#FFF" />
+                            <AppIcon name="add" size={20} color="#FFF" />
                             <Text style={styles.createButtonText}>Crea Nuova</Text>
                         </Pressable>
                     </View>
@@ -97,7 +101,7 @@ export default function AutomationsScreen() {
                             style={styles.emptyCard}
                             onPress={() => router.push('/settings/automation-builder' as any)}
                         >
-                            <MaterialIcons name="auto-awesome" size={40} color={theme.textSecondary} />
+                            <AppIcon name="auto-awesome" size={40} color={t.colors.textSecondary} />
                             <Text style={styles.emptyTitle}>Nessuna automazione personalizzata</Text>
                             <Text style={styles.emptyHint}>
                                 Crea la tua prima automazione per velocizzare il lavoro.
@@ -111,8 +115,8 @@ export default function AutomationsScreen() {
                                 onPress={() => handleOpenCustom(auto.id)}
                                 onLongPress={() => handleDeleteCustom(auto.id, auto.name)}
                             >
-                                <View style={[styles.iconContainer, { backgroundColor: `${auto.color}20` }]}>
-                                    <MaterialIcons name={auto.icon as any} size={32} color={auto.color} />
+                                <View style={[styles.iconContainer, { backgroundColor: withAlpha(auto.color, 0.125) }]}>
+                                    <AppIcon name={auto.icon as any} size={32} color={auto.color} />
                                 </View>
                                 <View style={styles.cardContent}>
                                     <Text style={styles.cardTitle}>{auto.name}</Text>
@@ -120,7 +124,7 @@ export default function AutomationsScreen() {
                                         {auto.steps.length} step · {auto.usageCount} utilizzi
                                     </Text>
                                 </View>
-                                <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+                                <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
                             </Pressable>
                         ))
                     )}
@@ -139,21 +143,21 @@ export default function AutomationsScreen() {
                             style={styles.card}
                             onPress={() => handleStartBuiltin(auto)}
                         >
-                            <View style={[styles.iconContainer, { backgroundColor: `${auto.color}20` }]}>
-                                <MaterialIcons name={auto.icon as any} size={32} color={auto.color} />
+                            <View style={[styles.iconContainer, { backgroundColor: withAlpha(auto.color, 0.125) }]}>
+                                <AppIcon name={auto.icon as any} size={32} color={auto.color} />
                             </View>
                             <View style={styles.cardContent}>
                                 <Text style={styles.cardTitle}>{auto.title}</Text>
                                 <Text style={styles.cardDescription}>{auto.description}</Text>
                             </View>
-                            <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+                            <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
                         </Pressable>
                     ))}
                 </View>
 
                 {/* Pro Tip Section */}
                 <View style={styles.proTip}>
-                    <MaterialIcons name="lightbulb" size={24} color="#F59E0B" />
+                    <AppIcon name="lightbulb" size={24} color={t.colors.warning} />
                     <View style={styles.proTipContent}>
                         <Text style={styles.proTipTitle}>Lo sapevi?</Text>
                         <Text style={styles.proTipText}>
@@ -166,29 +170,29 @@ export default function AutomationsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: spacing.screenPadding,
+        paddingHorizontal: t.spacing.screenPadding,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     scannerButton: {
         padding: 8,
-        backgroundColor: `${theme.primary}15`,
-        borderRadius: borderRadius.medium,
+        backgroundColor: withAlpha(t.colors.accent, 0.082),
+        borderRadius: t.radius.medium,
     },
     headerTitle: {
-        ...typography.h2 || { fontSize: 24, fontWeight: '700' },
+        ...t.typography.h2 || { fontSize: 24, fontWeight: '700' },
         fontSize: 20,
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -199,7 +203,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 12,
         fontWeight: '700',
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         letterSpacing: 1,
         marginBottom: 4,
     },
@@ -207,60 +211,60 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: theme.primary,
+        backgroundColor: t.colors.button,
         paddingHorizontal: 14,
         paddingVertical: 8,
-        borderRadius: borderRadius.full,
+        borderRadius: t.radius.full,
     },
     createButtonText: {
-        color: '#000',
+        color: t.colors.onButton,
         fontWeight: '700',
         fontSize: 13,
     },
     content: {
-        padding: spacing.screenPadding,
+        padding: t.spacing.screenPadding,
     },
     sectionDescription: {
-        ...typography.body,
-        color: theme.textSecondary,
+        ...t.typography.body,
+        color: t.colors.textSecondary,
         marginBottom: 16,
     },
     emptyCard: {
-        backgroundColor: theme.surface,
-        borderRadius: borderRadius.large,
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.large,
         padding: 32,
         alignItems: 'center',
         borderWidth: 2,
         borderStyle: 'dashed',
-        borderColor: theme.border,
+        borderColor: t.colors.dash,
         marginBottom: 8,
     },
     emptyTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginTop: 12,
     },
     emptyHint: {
         fontSize: 13,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginTop: 6,
         textAlign: 'center',
     },
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         padding: 16,
-        borderRadius: borderRadius.large,
+        borderRadius: t.radius.large,
         marginBottom: 12,
-        shadowColor: '#000',
+        shadowColor: t.colors.shadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: t.colors.border,
     },
     iconContainer: {
         width: 56,
@@ -275,25 +279,25 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     cardTitle: {
-        ...typography.h3 || { fontSize: 18, fontWeight: '600' },
+        ...t.typography.h3 || { fontSize: 18, fontWeight: '600' },
         fontSize: 18,
         marginBottom: 4,
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
     },
     cardDescription: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 14,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         lineHeight: 20,
     },
     proTip: {
         flexDirection: 'row',
-        backgroundColor: '#FFFBEB',
-        marginHorizontal: spacing.screenPadding,
+        backgroundColor: t.colors.warningSurface,
+        marginHorizontal: t.spacing.screenPadding,
         padding: 16,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.medium,
         borderWidth: 1,
-        borderColor: '#FCD34D',
+        borderColor: t.colors.warningSurfaceBorder,
         alignItems: 'flex-start',
     },
     proTipContent: {
@@ -303,7 +307,7 @@ const styles = StyleSheet.create({
     proTipTitle: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#B45309',
+        color: t.colors.onWarningSurface,
         marginBottom: 4,
     },
     proTipText: {
@@ -311,4 +315,4 @@ const styles = StyleSheet.create({
         color: '#92400E',
         lineHeight: 18,
     },
-});
+}));

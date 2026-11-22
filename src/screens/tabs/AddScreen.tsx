@@ -1,8 +1,7 @@
 // FurInventory Pro - Add Product Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, KeyboardAvoidingView, Platform, Alert, useWindowDimensions, Modal } from 'react-native';
+import { View, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, useWindowDimensions, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
 import * as ImagePicker from '../../lib/imagePicker';
 import * as DocumentPicker from '../../lib/documentPicker';
@@ -10,7 +9,6 @@ import { ActionSheetIOS } from 'react-native';
 import { Image } from '../../lib/ExpoImage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
-import { theme, typography, borderRadius, spacing, shadows } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';
 import { useLocations } from '../../../contexts/LocationsContext';
@@ -18,8 +16,14 @@ import { useCustomFields, FIELD_TYPE_INFO, CustomField } from '../../../contexts
 import { useLayout, LayoutField } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
 import { generateGS1DigitalLink, validateGTIN } from '../../../utils/gs1';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 export default function AddProductScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addProduct, products, libraries } = useInventory();
@@ -47,7 +51,7 @@ export default function AddProductScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { width: screenWidth } = useWindowDimensions();
-  const imageWidth = Math.max(1, screenWidth - insets.left - insets.right - spacing.screenPadding * 2);
+  const imageWidth = Math.max(1, screenWidth - insets.left - insets.right - t.spacing.screenPadding * 2);
 
   // Auto-generate SKU if empty — logistica universale
   const generateSKU = (): string => {
@@ -300,10 +304,10 @@ export default function AddProductScreen() {
     if (field.type === 'section') {
       return (
         <View key={field.id} style={{ width: '100%', marginTop: 24, marginBottom: 8 }}>
-          <Text style={{ ...typography.overline, color: theme.textSecondary, letterSpacing: 1 }}>
+          <Text style={{ ...t.typography.overline, color: t.colors.textSecondary, letterSpacing: 1 }}>
             {field.label?.toUpperCase() || 'SEZIONE'}
           </Text>
-          <View style={{ height: 1, backgroundColor: theme.border, marginTop: 4, opacity: 0.5 }} />
+          <View style={{ height: 1, backgroundColor: t.colors.border, marginTop: 4, opacity: 0.5 }} />
         </View>
       );
     }
@@ -327,8 +331,8 @@ export default function AddProductScreen() {
       const label = labelOverride || getFieldLabel(field.id);
       return (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-          <Text style={{ ...typography.caption, fontSize: 13, fontWeight: '600', color: theme.textPrimary }}>
-            {label}{required && <Text style={{ color: theme.error }}> *</Text>}
+          <Text style={{ ...t.typography.caption, fontSize: 13, fontWeight: '600', color: t.colors.textPrimary }}>
+            {label}{required && <Text style={{ color: t.colors.error }}> *</Text>}
           </Text>
         </View>
       );
@@ -346,11 +350,11 @@ export default function AddProductScreen() {
       const icon = getFieldIcon(field.id);
       return (
         <View style={[styles.inputWithIcon, inputProps.multiline && { alignItems: 'flex-start', paddingTop: 14 }]}>
-          <MaterialIcons name={icon as any} size={20} color={theme.textSecondary} style={styles.inputIcon} />
+          <AppIcon name={icon as any} size={20} color={t.colors.fieldIcon} style={styles.inputIcon} />
           <TextInput
             style={[styles.inputInner, inputProps.multiline && styles.textAreaInner]}
             placeholder={inputProps.placeholder}
-            placeholderTextColor={theme.textSecondary}
+            placeholderTextColor={t.colors.placeholder}
             keyboardType={inputProps.keyboardType || 'default'}
             multiline={inputProps.multiline}
             numberOfLines={inputProps.numberOfLines}
@@ -396,10 +400,10 @@ export default function AddProductScreen() {
               style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
               onPress={() => setSelectModalConfig({ fieldId: field.id, name: customField.name, options: optionsList, isMulti })}
             >
-              <Text style={{ color: val && (!isMulti || val.length > 0) ? theme.textPrimary : theme.textSecondary, fontSize: 16 }}>
+              <Text style={{ color: val && (!isMulti || val.length > 0) ? t.colors.inputText : t.colors.placeholder, fontSize: 16 }}>
                 {displayValue}
               </Text>
-              <MaterialIcons name="keyboard-arrow-down" size={24} color={theme.textSecondary} />
+              <AppIcon name="keyboard-arrow-down" size={24} color={t.colors.fieldIcon} />
             </Pressable>
           </View>
         );
@@ -437,10 +441,10 @@ export default function AddProductScreen() {
                     }}
                   >
                     <View style={[styles.quickSettingsIconContainer, isSelected && styles.quickSettingsIconContainerActive]}>
-                      <MaterialIcons
+                      <AppIcon
                         name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
                         size={28}
-                        color={isSelected ? '#000' : theme.textSecondary}
+                        color={isSelected ? t.colors.onAccent : t.colors.textSecondary}
                       />
                     </View>
                     <Text style={[styles.quickSettingsTileText, isSelected && styles.quickSettingsTileTextActive]} numberOfLines={2}>
@@ -482,13 +486,13 @@ export default function AddProductScreen() {
         return (
           <View key={field.id} style={[styles.dynamicField, sizeStyle]}>
             {renderLabel(customField.name, customField.required)}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: borderRadius.medium, overflow: 'hidden', borderWidth: 1, borderColor: theme.border }}>
-              <Pressable style={{ padding: 16, backgroundColor: `${theme.primary}10` }} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.max(stepMap.min, val - stepMap.step) }))}>
-                <MaterialIcons name="remove" size={24} color={val <= stepMap.min ? theme.textMuted : theme.primary} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.input, borderRadius: t.radius.input, overflow: 'hidden', borderWidth: 1, borderColor: t.colors.inputBorder }}>
+              <Pressable style={{ padding: 16, backgroundColor: withAlpha(t.colors.accent, 0.063) }} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.max(stepMap.min, val - stepMap.step) }))}>
+                <AppIcon name="remove" size={24} color={val <= stepMap.min ? t.colors.textMuted : t.colors.accentInk} />
               </Pressable>
-              <Text style={{ flex: 1, textAlign: 'center', ...typography.cardTitle }}>{val}</Text>
-              <Pressable style={{ padding: 16, backgroundColor: `${theme.primary}10` }} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.min(stepMap.max, val + stepMap.step) }))}>
-                <MaterialIcons name="add" size={24} color={val >= stepMap.max ? theme.textMuted : theme.primary} />
+              <Text style={{ flex: 1, textAlign: 'center', ...t.typography.cardTitle }}>{val}</Text>
+              <Pressable style={{ padding: 16, backgroundColor: withAlpha(t.colors.accent, 0.063) }} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.min(stepMap.max, val + stepMap.step) }))}>
+                <AppIcon name="add" size={24} color={val >= stepMap.max ? t.colors.textMuted : t.colors.accentInk} />
               </Pressable>
             </View>
           </View>
@@ -506,20 +510,20 @@ export default function AddProductScreen() {
                 <View key={index} style={{ marginRight: 8, position: 'relative' }}>
                   <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 12 }} contentFit="cover" />
                   <Pressable
-                    style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12, padding: 4 }}
+                    style={{ position: 'absolute', top: 4, right: 4, backgroundColor: t.colors.scrim, borderRadius: 12, padding: 4 }}
                     onPress={() => {
                       const newImages = [...customImages];
                       newImages.splice(index, 1);
                       setCustomFieldValues(prev => ({ ...prev, [field.id]: newImages }));
                     }}
                   >
-                    <MaterialIcons name="close" size={16} color="#FFF" />
+                    <AppIcon name="close" size={16} color="#FFF" />
                   </Pressable>
                 </View>
               ))}
               {customImages.length < 10 && (
                 <Pressable
-                  style={[styles.addImageButton, { width: 80, height: 80, borderWidth: 1, borderColor: theme.border, borderRadius: 12, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' }]}
+                  style={[styles.addImageButton, { width: 80, height: 80, borderWidth: 1, borderColor: t.colors.dash, borderRadius: 12, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' }]}
                   onPress={async () => {
                     const result = await ImagePicker.launchImageLibraryAsync({
                       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -532,7 +536,7 @@ export default function AddProductScreen() {
                     }
                   }}
                 >
-                  <MaterialIcons name="add-a-photo" size={24} color={theme.primary} />
+                  <AppIcon name="add-a-photo" size={24} color={t.colors.accentInk} />
                 </Pressable>
               )}
             </ScrollView>
@@ -550,10 +554,10 @@ export default function AddProductScreen() {
               style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
               onPress={() => setShowDatePickerMap(prev => ({ ...prev, [field.id]: true }))}
             >
-              <Text style={{ color: val ? theme.textPrimary : theme.textSecondary, fontSize: 16 }}>
+              <Text style={{ color: val ? t.colors.inputText : t.colors.placeholder, fontSize: 16 }}>
                 {val ? new Date(val).toLocaleDateString('it-IT') : `Seleziona Data`}
               </Text>
-              <MaterialIcons name="calendar-today" size={24} color={theme.textSecondary} />
+              <AppIcon name="calendar-today" size={24} color={t.colors.fieldIcon} />
             </Pressable>
             {showDatePickerMap[field.id] && (
               <DateTimePicker
@@ -578,20 +582,20 @@ export default function AddProductScreen() {
             {renderLabel(customField.name, customField.required)}
             <View style={{ gap: 8 }}>
               {docs.map((docUri: string, index: number) => (
-                <Pressable key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: theme.border }} onPress={() => Sharing.shareAsync(docUri).catch(console.error)}>
-                  <MaterialIcons name="insert-drive-file" size={24} color={theme.primary} />
-                  <Text style={{ flex: 1, marginLeft: 12, fontSize: 14, color: theme.textPrimary }} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
+                <Pressable key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: t.colors.border }} onPress={() => Sharing.shareAsync(docUri).catch(console.error)}>
+                  <AppIcon name="insert-drive-file" size={24} color={t.colors.accentInk} />
+                  <Text style={{ flex: 1, marginLeft: 12, fontSize: 14, color: t.colors.textPrimary }} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
                   <Pressable onPress={() => {
                     const newDocs = [...docs];
                     newDocs.splice(index, 1);
                     setCustomFieldValues(prev => ({ ...prev, [field.id]: newDocs }));
                   }}>
-                    <MaterialIcons name="delete" size={24} color={theme.error} />
+                    <AppIcon name="delete" size={24} color={t.colors.error} />
                   </Pressable>
                 </Pressable>
               ))}
               <Pressable
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.primary, backgroundColor: `${theme.primary}10`, marginTop: 4 }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: t.colors.accent, backgroundColor: withAlpha(t.colors.accent, 0.063), marginTop: 4 }}
                 onPress={async () => {
                   try {
                     const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
@@ -601,8 +605,8 @@ export default function AddProductScreen() {
                   } catch (e) { console.error('Doc Picker err', e); }
                 }}
               >
-                <MaterialIcons name="upload-file" size={20} color={theme.primary} />
-                <Text style={{ marginLeft: 8, color: theme.primary, fontWeight: 'bold' }}>Allega Documento</Text>
+                <AppIcon name="upload-file" size={20} color={t.colors.accentInk} />
+                <Text style={{ marginLeft: 8, color: t.colors.accentInk, fontWeight: 'bold' }}>Allega Documento</Text>
               </Pressable>
             </View>
           </View>
@@ -616,11 +620,11 @@ export default function AddProductScreen() {
             {renderLabel(customField.name, customField.required)}
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={[styles.inputWithIcon, { flex: 1 }]}>
-                <MaterialIcons name={getCustomFieldIcon() as any} size={20} color={theme.textSecondary} style={styles.inputIcon} />
+                <AppIcon name={getCustomFieldIcon() as any} size={20} color={t.colors.fieldIcon} style={styles.inputIcon} />
                 <TextInput
                   style={styles.inputInner}
                   placeholder={`Scan or enter ${customField.name.toLowerCase()}`}
-                  placeholderTextColor={theme.textSecondary}
+                  placeholderTextColor={t.colors.placeholder}
                   value={customFieldValues[field.id]?.toString() || ''}
                   onChangeText={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
                 />
@@ -629,7 +633,7 @@ export default function AddProductScreen() {
                 style={styles.qrButton}
                 onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: `SCAN-${Math.floor(Math.random() * 10000)}` }))} // Simulated scanner
               >
-                <MaterialIcons name="qr-code-scanner" size={24} color={theme.primary} />
+                <AppIcon name="qr-code-scanner" size={24} color={t.colors.accentInk} />
               </Pressable>
             </View>
           </View>
@@ -640,11 +644,11 @@ export default function AddProductScreen() {
         <View key={field.id} style={[styles.dynamicField, sizeStyle]}>
           {renderLabel(customField.name, customField.required)}
           <View style={[styles.inputWithIcon, customField.type === 'text_long' && { alignItems: 'flex-start', paddingTop: 14 }]}>
-            <MaterialIcons name={getCustomFieldIcon() as any} size={20} color={theme.textSecondary} style={styles.inputIcon} />
+            <AppIcon name={getCustomFieldIcon() as any} size={20} color={t.colors.fieldIcon} style={styles.inputIcon} />
             <TextInput
               style={[styles.inputInner, customField.type === 'text_long' && styles.textAreaInner]}
               placeholder={`Inserisci ${customField.name.toLowerCase()}`}
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={t.colors.placeholder}
               keyboardType={customField.type === 'number' || customField.type === 'currency' ? 'numeric' : 'default'}
               multiline={customField.type === 'text_long'}
               numberOfLines={customField.type === 'text_long' ? 3 : 1}
@@ -679,7 +683,7 @@ export default function AddProductScreen() {
                     <View key={index} style={styles.mainImageWrapper}>
                       <Image source={{ uri }} style={[styles.mainImage, { width: imageWidth }]} contentFit="cover" />
                       <Pressable style={styles.removeMainImageButton} onPress={() => removeImage(index)}>
-                        <MaterialIcons name="delete" size={20} color="#FFF" />
+                        <AppIcon name="delete" size={20} color="#FFF" />
                       </Pressable>
                     </View>
                   ))}
@@ -701,7 +705,7 @@ export default function AddProductScreen() {
               ))}
               {images.length < 10 && (
                 <Pressable style={styles.addImageButton} onPress={showImageSourcePicker}>
-                  <MaterialIcons name="add-a-photo" size={32} color={theme.primary} />
+                  <AppIcon name="add-a-photo" size={32} color={t.colors.accentInk} />
                   <Text style={styles.addImageText}>Importa</Text>
                 </Pressable>
               )}
@@ -717,7 +721,7 @@ export default function AddProductScreen() {
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 placeholder={`Auto: ${generateSKU()}`}
-                placeholderTextColor={theme.textSecondary}
+                placeholderTextColor={t.colors.placeholder}
                 value={formData.sku}
                 onChangeText={(value) => updateField('sku', value)}
               />
@@ -725,7 +729,7 @@ export default function AddProductScreen() {
                 style={styles.qrButton}
                 onPress={() => updateField('sku', generateSKU())}
               >
-                <MaterialIcons name="qr-code-2" size={24} color={theme.primary} />
+                <AppIcon name="qr-code-2" size={24} color={t.colors.accentInk} />
               </Pressable>
             </View>
             {!formData.sku && (
@@ -784,7 +788,7 @@ export default function AddProductScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.chipContainer}>
                 {libraries.length === 0 ? (
-                  <Text style={{ ...typography.caption, color: theme.textSecondary, fontStyle: 'italic' }}>Nessuna cartella</Text>
+                  <Text style={{ ...t.typography.caption, color: t.colors.textSecondary, fontStyle: 'italic' }}>Nessuna cartella</Text>
                 ) : (
                   libraries.map((lib) => (
                     <Pressable
@@ -792,7 +796,7 @@ export default function AddProductScreen() {
                       style={[styles.chip, formData.libraryId === lib.id && styles.chipActive]}
                       onPress={() => updateField('libraryId', formData.libraryId === lib.id ? '' : lib.id)}
                     >
-                      <MaterialIcons name={lib.icon as any} size={16} color={formData.libraryId === lib.id ? '#000' : theme.textSecondary} />
+                      <AppIcon name={lib.icon as any} size={16} color={formData.libraryId === lib.id ? t.colors.chipActiveText : t.colors.chipText} />
                       <Text style={[styles.chipText, formData.libraryId === lib.id && styles.chipTextActive]}>{lib.name}</Text>
                     </Pressable>
                   ))
@@ -898,7 +902,7 @@ export default function AddProductScreen() {
       >
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: spacing.screenPadding,
+            paddingHorizontal: t.spacing.screenPadding,
             paddingBottom: insets.bottom + 16,
           }}
           showsVerticalScrollIndicator={false}
@@ -907,7 +911,7 @@ export default function AddProductScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Aggiungi Prodotto</Text>
-            <MaterialIcons name="add-photo-alternate" size={32} color={theme.primary} />
+            <AppIcon name="add-photo-alternate" size={32} color={t.colors.accentInk} />
           </View>
 
           {/* Dynamic Form Fields - Rendered based on Layout Configuration */}
@@ -921,7 +925,7 @@ export default function AddProductScreen() {
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
-            <MaterialIcons name="check-circle" size={24} color={isSubmitting ? theme.textSecondary : "#000"} />
+            <AppIcon name="check-circle" size={24} color={isSubmitting ? t.colors.textSecondary : t.colors.onButton} />
             <Text style={styles.submitButtonText}>
               {isSubmitting ? 'Salvataggio...' : "Aggiungi all'Inventario"}
             </Text>
@@ -936,12 +940,12 @@ export default function AddProductScreen() {
       {/* Select Modal */}
       {selectModalConfig && (
         <Modal visible={true} transparent={true} animationType="slide" onRequestClose={() => setSelectModalConfig(null)}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: theme.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
+          <View style={{ flex: 1, backgroundColor: t.colors.scrim, justifyContent: 'flex-end' }}>
+            <View style={{ backgroundColor: t.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ ...typography.h3 }}>{selectModalConfig.name}</Text>
+                <Text style={{ ...t.typography.h3 }}>{selectModalConfig.name}</Text>
                 <Pressable onPress={() => setSelectModalConfig(null)}>
-                  <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                  <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
               </View>
               <ScrollView showsVerticalScrollIndicator={false}>
@@ -960,7 +964,7 @@ export default function AddProductScreen() {
                         justifyContent: 'space-between',
                         paddingVertical: 16,
                         borderBottomWidth: 1,
-                        borderBottomColor: theme.border
+                        borderBottomColor: t.colors.border
                       }}
                       onPress={() => {
                         if (selectModalConfig.isMulti) {
@@ -975,20 +979,20 @@ export default function AddProductScreen() {
                         }
                       }}
                     >
-                      <Text style={{ fontSize: 16, color: isSelected ? theme.primary : theme.textPrimary, fontWeight: isSelected ? '600' : '400' }}>
+                      <Text style={{ fontSize: 16, color: isSelected ? t.colors.accentInk : t.colors.textPrimary, fontWeight: isSelected ? '600' : '400' }}>
                         {opt.label}
                       </Text>
-                      {isSelected && <MaterialIcons name="check" size={24} color={theme.primary} />}
+                      {isSelected && <AppIcon name="check" size={24} color={t.colors.accentInk} />}
                     </Pressable>
                   );
                 })}
               </ScrollView>
               {selectModalConfig.isMulti && (
                 <Pressable
-                  style={{ backgroundColor: theme.primary, padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 16 }}
+                  style={{ backgroundColor: t.colors.button, padding: 16, borderRadius: t.radius.button, alignItems: 'center', marginTop: 16 }}
                   onPress={() => setSelectModalConfig(null)}
                 >
-                  <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Conferma Selezione</Text>
+                  <Text style={{ color: t.colors.onButton, fontWeight: 'bold', fontSize: 16 }}>Conferma Selezione</Text>
                 </Pressable>
               )}
             </View>
@@ -998,10 +1002,10 @@ export default function AddProductScreen() {
     </SafeAreaView>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -1022,10 +1026,10 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -1034,11 +1038,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 24,
   },
   sectionTitle: {
-    ...typography.sectionHeader,
+    ...t.typography.sectionHeader,
     marginTop: 24,
     marginBottom: 12,
   },
@@ -1046,19 +1050,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.input,
+    borderRadius: t.radius.input,
     padding: 14,
     fontSize: 16,
-    color: theme.textPrimary,
+    color: t.colors.inputText,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
   },
   textArea: {
     height: 100,
@@ -1068,10 +1072,10 @@ const styles = StyleSheet.create({
   inputWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.input,
+    borderRadius: t.radius.input,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -1081,7 +1085,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 16,
-    color: theme.textPrimary,
+    color: t.colors.inputText,
   },
   textAreaInner: {
     height: 100,
@@ -1096,15 +1100,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.full,
+    backgroundColor: t.colors.chip,
+    borderRadius: t.radius.chip,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.chipBorder,
     gap: 6,
   },
   chipActive: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
+    backgroundColor: t.colors.chipActive,
+    borderColor: t.colors.chipActiveBorder,
   },
   chipDot: {
     width: 8,
@@ -1112,13 +1116,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   chipText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 14,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.chipText,
   },
   chipTextActive: {
-    color: '#000000',
+    color: t.colors.chipActiveText,
   },
   row: {
     flexDirection: 'row',
@@ -1135,17 +1139,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: theme.primary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.button,
+    borderRadius: t.radius.button,
     padding: 16,
     marginTop: 24,
   },
   submitButtonText: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
     fontSize: 16,
+    color: t.colors.onButton,
   },
   submitButtonDisabled: {
-    backgroundColor: theme.border,
+    backgroundColor: t.colors.border,
     opacity: 0.7,
   },
   skuRow: {
@@ -1156,15 +1161,15 @@ const styles = StyleSheet.create({
   generateButton: {
     height: 50,
     width: 50,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
   },
   footNote: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     textAlign: 'center',
     marginTop: 16,
@@ -1179,8 +1184,8 @@ const styles = StyleSheet.create({
   },
   mainImage: {
     height: 280,
-    borderRadius: borderRadius.large,
-    backgroundColor: theme.surface,
+    borderRadius: t.radius.large,
+    backgroundColor: t.colors.surface,
   },
   removeMainImageButton: {
     position: 'absolute',
@@ -1189,7 +1194,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: t.colors.scrimStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1197,13 +1202,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: t.colors.scrimStrong,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
   },
   imageIndicatorText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     fontWeight: '600',
     color: '#FFF',
@@ -1224,7 +1229,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   dotIndicatorActive: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
     width: 24,
   },
   imagesScroll: {
@@ -1237,37 +1242,37 @@ const styles = StyleSheet.create({
   imageThumb: {
     width: 80,
     height: 80,
-    borderRadius: borderRadius.medium,
-    backgroundColor: theme.surface,
+    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.surface,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   imageThumbActive: {
-    borderColor: theme.primary,
+    borderColor: t.colors.accent,
   },
   helperText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     marginTop: -8,
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   addImageButton: {
     width: 80,
     height: 80,
-    borderRadius: borderRadius.medium,
-    backgroundColor: theme.surface,
+    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.surface,
     borderWidth: 2,
-    borderColor: theme.border,
+    borderColor: t.colors.dash,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   addImageText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 11,
     marginTop: 4,
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   // Quick Settings Style - Custom Fields
   quickSettingsContainer: {
@@ -1277,10 +1282,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   quickSettingsLabel: {
-    ...typography.sectionHeader,
+    ...t.typography.sectionHeader,
     fontSize: 13,
     marginBottom: 12,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   quickSettingsGrid: {
     flexDirection: 'row',
@@ -1291,8 +1296,8 @@ const styles = StyleSheet.create({
     width: '30%',
     minWidth: 100,
     aspectRatio: 1,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.tile,
+    borderRadius: t.radius.large,
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1300,9 +1305,9 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   quickSettingsTileActive: {
-    backgroundColor: `${theme.primary}25`,
-    borderColor: theme.primary,
-    shadowColor: theme.primary,
+    backgroundColor: withAlpha(t.colors.accent, 0.145),
+    borderColor: t.colors.tileSelectedBorder,
+    shadowColor: t.colors.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -1312,27 +1317,27 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   quickSettingsIconContainerActive: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.checkOn,
   },
   quickSettingsTileText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     textAlign: 'center',
   },
   quickSettingsTileTextActive: {
-    color: theme.primary,
+    color: t.colors.tileSelectedText,
   },
   quickSettingsInputCard: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 16,
     marginBottom: 12,
   },
@@ -1345,18 +1350,18 @@ const styles = StyleSheet.create({
   quickSettingsInputIcon: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: `${theme.primary}20`,
+    borderRadius: t.radius.iconWrap,
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
   },
   quickSettingsInputLabel: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 14,
     flex: 1,
   },
   unitBadge: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1364,19 +1369,19 @@ const styles = StyleSheet.create({
   unitBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#000',
+    color: t.colors.onAccent,
   },
   quickSettingsInput: {
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.medium,
     padding: 14,
     fontSize: 16,
-    color: theme.textPrimary,
+    color: t.colors.inputText,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
   },
   quickSettingsTextArea: {
     minHeight: 80,
     textAlignVertical: 'top',
   },
-});
+}));

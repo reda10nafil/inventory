@@ -1,17 +1,21 @@
 // FurInventory Pro - Global Timeline Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { TimelineEvent } from '../../../types';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 type FilterType = 'all' | 'created' | 'moved' | 'modified' | 'sold' | 'photo_added';
 type DateFilter = 'all' | 'today' | 'week' | 'month';
 
 export default function TimelineScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { timeline, getProductById } = useInventory();
@@ -36,13 +40,13 @@ export default function TimelineScreen() {
     switch (type) {
       case 'created': return '#10B981';
       case 'moved': return '#3B82F6';
-      case 'modified': return theme.primary;
+      case 'modified': return t.colors.accent;
       case 'sold': return '#10B981';
       case 'scanned': return '#8B5CF6';
       case 'photo_added': return '#F59E0B';
-      case 'deleted': return theme.notification;
+      case 'deleted': return t.colors.notification;
       case 'restored': return '#10B981';
-      default: return theme.textSecondary;
+      default: return t.colors.textSecondary;
     }
   };
 
@@ -224,14 +228,14 @@ export default function TimelineScreen() {
       {/* Timeline List */}
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: spacing.screenPadding,
+          paddingHorizontal: t.spacing.screenPadding,
           paddingBottom: insets.bottom + 16,
         }}
         showsVerticalScrollIndicator={false}
       >
         {filteredTimeline.length === 0 && (
           <View style={styles.emptyState}>
-            <MaterialIcons name="timeline" size={64} color={theme.textSecondary} />
+            <AppIcon name="timeline" size={64} color={t.colors.textSecondary} />
             <Text style={styles.emptyText}>Nessun evento trovato</Text>
           </View>
         )}
@@ -242,8 +246,8 @@ export default function TimelineScreen() {
             style={styles.timelineItem}
             onPress={() => handleEventPress(event)}
           >
-            <View style={[styles.eventIcon, { backgroundColor: `${getEventColor(event.type)}20` }]}>
-              <MaterialIcons
+            <View style={[styles.eventIcon, { backgroundColor: withAlpha(getEventColor(event.type), 0.125) }]}>
+              <AppIcon
                 name={getEventIcon(event.type) as any}
                 size={24}
                 color={getEventColor(event.type)}
@@ -264,7 +268,7 @@ export default function TimelineScreen() {
                 })}
               </Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+            <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
           </Pressable>
         ))}
       </ScrollView>
@@ -272,21 +276,21 @@ export default function TimelineScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
   },
   header: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     paddingVertical: 12,
   },
   headerTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 24,
   },
   headerCount: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 14,
     marginTop: 4,
   },
@@ -294,14 +298,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   filterScrollContent: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     gap: 8,
   },
   dateFilterScroll: {
     marginBottom: 16,
   },
   dateFilterScrollContent: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     gap: 8,
   },
   filterChip: {
@@ -309,63 +313,63 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.full,
+    backgroundColor: t.colors.chip,
+    borderRadius: t.radius.chip,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.chipBorder,
     minHeight: 48,
     minWidth: 80,
   },
   filterChipActive: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
+    backgroundColor: t.colors.chipActive,
+    borderColor: t.colors.chipActiveBorder,
   },
   filterChipText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.chipText,
   },
   filterChipTextActive: {
-    color: '#000',
+    color: t.colors.chipActiveText,
   },
   dateChip: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.chip,
+    borderRadius: t.radius.medium,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.chipBorder,
     minHeight: 48,
     minWidth: 90,
   },
   dateChipActive: {
-    backgroundColor: `${theme.primary}30`,
-    borderColor: theme.primary,
+    backgroundColor: withAlpha(t.colors.accent, 0.19),
+    borderColor: t.colors.accent,
   },
   dateChipText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.chipText,
   },
   dateChipTextActive: {
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   timelineItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.card,
     padding: 14,
     marginBottom: 8,
   },
   eventIcon: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -374,19 +378,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eventTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 14,
     marginBottom: 2,
   },
   eventDescription: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     marginBottom: 4,
   },
   eventDate: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 11,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   emptyState: {
     alignItems: 'center',
@@ -394,8 +398,8 @@ const styles = StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 16,
     marginTop: 16,
   },
-});
+}));

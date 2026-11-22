@@ -1,19 +1,23 @@
 // FurInventory Pro - Home Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, TextInput, Modal, FlatList } from 'react-native';
+import { View, Pressable, ScrollView, Alert, Modal, FlatList } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from '../../lib/ExpoImage';
-import { theme, typography, shadows, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { isDormant, needsPromotion } from '../../../services/mockData';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
 
 export default function HomeScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams(); // Read params
@@ -186,7 +190,7 @@ export default function HomeScreen() {
         {isSelectionMode && (
           <View style={styles.selectionOverlay}>
             <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-              {isSelected && <MaterialIcons name="check" size={14} color="#000" />}
+              {isSelected && <AppIcon name="check" size={14} color={t.colors.onAccent} />}
             </View>
           </View>
         )}
@@ -202,8 +206,8 @@ export default function HomeScreen() {
           )}
           {hasAlert && product.status === 'available' && (
             <View style={[styles.badge, styles.badgeAlert]}>
-              <MaterialIcons name="warning" size={12} color="#000" />
-              <Text style={styles.badgeText}>ALERT</Text>
+              <AppIcon name="warning" size={12} color={t.colors.alertBadgeText} />
+              <Text style={[styles.badgeText, styles.badgeTextAlert]}>ALERT</Text>
             </View>
           )}
         </View>
@@ -218,7 +222,7 @@ export default function HomeScreen() {
           </Text>
 
           <View style={styles.locationRow}>
-            <MaterialIcons name="location-on" size={14} color={theme.textSecondary} />
+            <AppIcon name="location-on" size={14} color={t.colors.textSecondary} />
             <Text style={styles.locationText} numberOfLines={1}>
               {product.location.replace('_', ' ').toUpperCase()}
             </Text>
@@ -260,7 +264,7 @@ export default function HomeScreen() {
                   if (isSearchVisible) setSearchQuery('');
                 }}
               >
-                <MaterialIcons name={isSearchVisible ? "close" : "search"} size={24} color={theme.primary} />
+                <AppIcon name={isSearchVisible ? "close" : "search"} size={24} color={t.colors.accentInk} />
               </Pressable>
             </>
           )}
@@ -271,18 +275,18 @@ export default function HomeScreen() {
       {isSearchVisible && (
         <View style={styles.searchContainer}>
           <View style={styles.searchBox}>
-            <MaterialIcons name="search" size={20} color={theme.textSecondary} />
+            <AppIcon name="search" size={20} color={t.colors.fieldIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Cerca SKU, tipo, posizione..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={t.colors.placeholder}
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => setSearchQuery('')}>
-                <MaterialIcons name="cancel" size={18} color={theme.textSecondary} />
+                <AppIcon name="cancel" size={18} color={t.colors.fieldIcon} />
               </Pressable>
             )}
           </View>
@@ -302,10 +306,10 @@ export default function HomeScreen() {
           ]}
           onPress={() => setActiveLibraryId(null)}
         >
-          <MaterialIcons
+          <AppIcon
             name="apps"
             size={18}
-            color={activeLibraryId === null ? '#000000' : theme.textSecondary}
+            color={activeLibraryId === null ? t.colors.chipActiveText : t.colors.chipText}
           />
           <Text
             style={[
@@ -326,10 +330,10 @@ export default function HomeScreen() {
             ]}
             onPress={() => setActiveLibraryId(lib.id)}
           >
-            <MaterialIcons
+            <AppIcon
               name={lib.icon as any}
               size={18}
-              color={activeLibraryId === lib.id ? '#000000' : theme.textSecondary}
+              color={activeLibraryId === lib.id ? t.colors.chipActiveText : t.colors.chipText}
             />
             <Text
               style={[
@@ -362,7 +366,7 @@ export default function HomeScreen() {
           <View style={styles.statValueRow}>
             <Text style={styles.statValue}>{stats.alerts}</Text>
             {stats.alerts > 0 && (
-              <MaterialIcons name="warning" size={20} color={theme.warning} />
+              <AppIcon name="warning" size={20} color={t.colors.warning} />
             )}
           </View>
           <Text style={styles.statLabel}>RICHIEDONO ATTENZIONE</Text>
@@ -404,7 +408,7 @@ export default function HomeScreen() {
         numColumns={2}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingHorizontal: spacing.screenPadding,
+          paddingHorizontal: t.spacing.screenPadding,
           paddingBottom: insets.bottom + 16,
           paddingTop: 8,
         }}
@@ -420,13 +424,13 @@ export default function HomeScreen() {
           </View>
           <View style={styles.actionButtons}>
             <Pressable style={styles.actionButton} onPress={() => setShowActionModal(true)}>
-              <MaterialIcons name="folder-open" size={24} color="#000" />
+              <AppIcon name="folder-open" size={24} color={t.colors.onAccent} />
             </Pressable>
             <Pressable style={[styles.actionButton, styles.actionButtonDestructive]} onPress={CONFIRM_DELETE_PRODUCT}>
-              <MaterialIcons name="delete" size={24} color="#FFF" />
+              <AppIcon name="delete" size={24} color="#FFF" />
             </Pressable>
             <Pressable style={styles.closeSelectionButton} onPress={exitSelectionMode}>
-              <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+              <AppIcon name="close" size={24} color={t.colors.textPrimary} />
             </Pressable>
           </View>
         </View>
@@ -456,7 +460,7 @@ export default function HomeScreen() {
                 onPress={() => handleMoveToLibrary(undefined)}
               >
                 <View style={styles.modalOptionIcon}>
-                  <MaterialIcons name="folder-off" size={20} color={theme.textSecondary} />
+                  <AppIcon name="folder-off" size={20} color={t.colors.textSecondary} />
                 </View>
                 <Text style={styles.modalOptionText}>Rimuovi dalla cartella</Text>
               </Pressable>
@@ -468,10 +472,10 @@ export default function HomeScreen() {
                   onPress={() => handleMoveToLibrary(lib.id)}
                 >
                   <View style={styles.modalOptionIcon}>
-                    <MaterialIcons
+                    <AppIcon
                       name={lib.icon as any}
                       size={20}
-                      color={theme.primary}
+                      color={t.colors.accentInk}
                     />
                   </View>
                   <Text style={styles.modalOptionText}>{lib.name}</Text>
@@ -489,24 +493,24 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     paddingVertical: 12,
   },
   headerTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 20,
   },
   headerSubtitle: {
-    ...typography.caption,
+    ...t.typography.caption,
     marginTop: 2,
   },
   iconButton: {
@@ -519,21 +523,21 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   statsContainer: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     paddingVertical: 8,
     gap: 12,
   },
   statCard: {
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.tile,
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.tile,
     minWidth: 140,
-    ...shadows.card,
+    ...t.shadows.card,
   },
   statCardAlert: {
     borderWidth: 1,
-    borderColor: theme.warning,
+    borderColor: t.colors.warningLine,
   },
   statValueRow: {
     flexDirection: 'row',
@@ -541,12 +545,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   statValue: {
-    ...typography.cardValue,
+    ...t.typography.cardValue,
     fontSize: 32,
-    color: theme.primary,
+    color: t.colors.statNumber,
   },
   statLabel: {
-    ...typography.heroLabel,
+    ...t.typography.heroLabel,
     marginTop: 4,
   },
   filterScroll: {
@@ -554,7 +558,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   filterContainer: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     paddingVertical: 6,
     gap: 8,
   },
@@ -563,38 +567,38 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.full,
+    backgroundColor: t.colors.chip,
+    borderRadius: t.radius.chip,
     borderWidth: 1.5,
-    borderColor: theme.border,
+    borderColor: t.colors.chipBorder,
     minWidth: 90,
     minHeight: 48,
   },
   filterChipActive: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
+    backgroundColor: t.colors.chipActive,
+    borderColor: t.colors.chipActiveBorder,
   },
   filterText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 14,
     fontWeight: '700',
-    color: theme.textSecondary,
+    color: t.colors.chipText,
   },
   filterTextActive: {
-    color: '#000000',
+    color: t.colors.chipActiveText,
   },
   productCard: {
     flex: 1,
     margin: 6,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.card,
     overflow: 'hidden',
-    ...shadows.card,
+    ...t.shadows.card,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   productCardSelected: {
-    borderColor: theme.primary,
+    borderColor: t.colors.accent,
   },
   selectionOverlay: {
     position: 'absolute',
@@ -606,20 +610,20 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: t.colors.scrim,
     borderWidth: 1.5,
     borderColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxSelected: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
+    backgroundColor: t.colors.checkOn,
+    borderColor: t.colors.checkOn,
   },
   productImage: {
     width: '100%',
     height: 160,
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
   },
   badgeContainer: {
     position: 'absolute',
@@ -634,30 +638,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: borderRadius.small,
+    borderRadius: t.radius.badge,
     gap: 4,
   },
   badgeSold: {
-    backgroundColor: theme.textSecondary,
+    backgroundColor: t.colors.soldBadge,
   },
   badgeAlert: {
-    backgroundColor: theme.warning,
+    backgroundColor: t.colors.alertBadge,
   },
   badgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#000000',
+    color: t.colors.soldBadgeText,
+  },
+  badgeTextAlert: {
+    color: t.colors.alertBadgeText,
   },
   productInfo: {
     padding: 12,
   },
   productSku: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 14,
     marginBottom: 4,
   },
   productType: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     marginBottom: 6,
   },
@@ -668,34 +675,34 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   locationText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 11,
     flex: 1,
   },
   priceText: {
-    ...typography.cardValue,
+    ...t.typography.cardValue,
     fontSize: 16,
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   searchContainer: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     paddingBottom: 12,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.input,
     paddingHorizontal: 12,
     height: 44,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.input,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
     gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   cardDeleteButton: {
     position: 'absolute',
@@ -704,7 +711,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: t.colors.scrim,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -714,15 +721,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconButtonActive: {
-    backgroundColor: theme.surfaceElevated,
-    borderRadius: borderRadius.full,
+    backgroundColor: t.colors.surfaceElevated,
+    borderRadius: t.radius.full,
   },
   libraryScroll: {
     flexGrow: 0,
     marginTop: 12,
   },
   libraryContainer: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     paddingVertical: 6,
     gap: 8,
   },
@@ -732,53 +739,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.chip,
     gap: 6,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.chipBorder,
   },
   libraryChipActive: {
-    backgroundColor: theme.primary, // Gold for active
-    borderColor: theme.primary,
+    backgroundColor: t.colors.chipActive, // Gold for active
+    borderColor: t.colors.chipActiveBorder,
   },
   libraryText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.chipText,
   },
   libraryTextActive: {
-    color: '#000000', // Black text on Gold background
+    color: t.colors.chipActiveText, // Black text on Gold background
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: t.colors.scrimStrong,
     justifyContent: 'center',
-    padding: spacing.screenPadding,
+    padding: t.spacing.screenPadding,
   },
   modalContent: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 20,
     maxHeight: '80%',
-    ...shadows.cardElevated,
+    ...t.shadows.cardElevated,
   },
   modalHeader: {
     marginBottom: 20,
     alignItems: 'center',
   },
   modalTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 18,
     marginBottom: 4,
   },
   modalSubtitle: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 14,
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   modalSectionLabel: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 12,
@@ -794,39 +801,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: borderRadius.medium,
-    backgroundColor: theme.backgroundSecondary,
+    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   modalOptionSelected: {
-    borderColor: theme.primary,
-    backgroundColor: `${theme.primary}15`, // 15% opacity gold
+    borderColor: t.colors.accent,
+    backgroundColor: withAlpha(t.colors.accent, 0.082), // 15% opacity gold
   },
   modalOptionIcon: {
     width: 32,
     height: 32,
-    borderRadius: borderRadius.small,
-    backgroundColor: theme.surface,
+    borderRadius: t.radius.small,
+    backgroundColor: t.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   modalOptionIconSelected: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
   },
   modalOptionText: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 15,
     flex: 1,
   },
   modalOptionTextSelected: {
-    color: theme.primary,
+    color: t.colors.accentInk,
     fontWeight: '600',
   },
   modalDivider: {
     height: 1,
-    backgroundColor: theme.border,
+    backgroundColor: t.colors.border,
     marginVertical: 20,
   },
   modalDeleteButton: {
@@ -835,22 +842,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 14,
-    borderRadius: borderRadius.medium,
-    backgroundColor: `${theme.error}15`,
+    borderRadius: t.radius.medium,
+    backgroundColor: withAlpha(t.colors.error, 0.082),
     marginBottom: 12,
   },
   modalDeleteText: {
-    ...typography.buttonPrimary,
-    color: theme.error,
+    ...t.typography.buttonPrimary,
+    color: t.colors.error,
     fontSize: 15,
   },
   modalCancelText: {
-    ...typography.bodySecondary,
+    ...t.typography.bodySecondary,
     fontWeight: '600',
   },
   modalCancelButton: {
     paddingVertical: 14,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
@@ -860,22 +867,22 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 16,
     right: 16,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    ...shadows.cardElevated,
+    ...t.shadows.cardElevated,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
   },
   selectionInfo: {
     flex: 1,
   },
   selectionCount: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 16,
   },
   actionButtons: {
@@ -889,31 +896,31 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: theme.primary,
-    borderRadius: borderRadius.full,
+    backgroundColor: t.colors.accent,
+    borderRadius: t.radius.full,
   },
   actionButtonDestructive: {
-    backgroundColor: theme.error,
+    backgroundColor: t.colors.error,
   },
   actionButtonText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontWeight: '700',
-    color: '#000',
+    color: t.colors.onAccent,
     fontSize: 13,
   },
   closeSelectionButton: {
     padding: 8,
     marginLeft: 8,
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.full,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.full,
   },
   textButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   textButtonLabel: {
-    ...typography.buttonPrimary,
-    color: theme.primary,
+    ...t.typography.buttonPrimary,
+    color: t.colors.accentInk,
     fontSize: 14,
   },
-});
+}));
