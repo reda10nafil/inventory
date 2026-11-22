@@ -5,6 +5,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from '../../navigation/compat';
 import QRCode from 'react-native-qrcode-svg';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
+import { useInventory } from '../../../contexts/InventoryContext';
+import { usage } from '../../../utils/productRules';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -33,6 +35,7 @@ export default function ManageLocationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { locations, loading, addLocation, updateLocation, deleteLocation } = useLocations();
+  const { products } = useInventory();
 
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
@@ -94,6 +97,15 @@ export default function ManageLocationsScreen() {
   const handleDeleteLocation = (id: string) => {
     if (locations.length <= 1) {
       Alert.alert('Attenzione', 'Devi avere almeno una posizione');
+      return;
+    }
+    // Ogni prodotto deve avere una posizione che esiste: prima si spostano (P08)
+    const used = usage(products, { location: id });
+    if (used.active + used.trashed > 0) {
+      const label = locations.find((l) => l.id === id)?.label ?? id;
+      const parts = [used.active && `${used.active} prodotti`, used.trashed && `${used.trashed} nel cestino`].filter(Boolean).join(' e ');
+      const trash = used.trashed ? ' Quelli nel cestino si possono anche eliminare per sempre dal Cestino.' : '';
+      Alert.alert('Attenzione', `La posizione "${label}" contiene ${parts}. Spostali in un'altra posizione prima di eliminarla.${trash}`);
       return;
     }
     Alert.alert(

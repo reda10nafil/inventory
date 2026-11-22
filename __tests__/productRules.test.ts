@@ -1,4 +1,19 @@
-import { canMove, canSell } from '../utils/productRules';
+import { canMove, canSell, usage } from '../utils/productRules';
+
+describe('usage (P08, P09)', () => {
+  const list = [
+    { location: 'vetrina', libraryId: 'pellicce' },
+    { location: 'vetrina', libraryId: undefined, deletedAt: 'x' },
+    { location: 'magazzino', libraryId: 'pellicce', deletedAt: 'x' },
+  ];
+  it('conta i prodotti di una posizione, attivi e nel cestino', () => {
+    expect(usage(list, { location: 'vetrina' })).toEqual({ active: 1, trashed: 1 });
+    expect(usage(list, { location: 'sartoria' })).toEqual({ active: 0, trashed: 0 });
+  });
+  it('conta i prodotti di una cartella', () => {
+    expect(usage(list, { libraryId: 'pellicce' })).toEqual({ active: 1, trashed: 1 });
+  });
+});
 
 const p = (extra: object = {}) => ({ status: 'available' as const, location: 'vetrina', ...extra });
 

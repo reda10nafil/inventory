@@ -6,7 +6,7 @@ import { isDormant, needsPromotion } from '../services/mockData';
 import { useAuth } from './AuthContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
-import { canMove, canSell } from '../utils/productRules';
+import { canMove, canSell, usage } from '../utils/productRules';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
 export interface Library {
@@ -660,10 +660,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteLibrary = (id: string): boolean => {
     // Check if any products are assigned to this library
-    const productsInLibrary = products.filter((p) => p.libraryId === id && !p.deletedAt);
-    if (productsInLibrary.length > 0) {
+    if (usage(products, { libraryId: id }).active > 0) {
       return false; // Cannot delete, has products
     }
+    // I prodotti nel cestino perdono la cartella: ripristinati, non puntano a una cartella che non c'è più (P09)
+    setProducts((prev) => prev.map((p) => (p.libraryId === id ? { ...p, libraryId: undefined } : p)));
     setLibraries((prev) => prev.filter((l) => l.id !== id));
     return true;
   };

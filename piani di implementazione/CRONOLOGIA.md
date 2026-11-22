@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C05: posizioni e cartelle eliminate senza prodotti orfani (P08, P09)
+
+- Branch `funzioni/magazzino`.
+- **P08**: eliminare una posizione lasciava i suoi prodotti con l'id di una posizione che non c'è più (mostrato grezzo in Inventario e Scheda, Modifica senza posizione). Ora una posizione usata da prodotti, anche nel cestino, non si elimina: l'avviso dice quanti sono e chiede di spostarli (per quelli nel cestino: eliminarli per sempre dal Cestino). Ogni prodotto ha sempre una posizione che esiste.
+- **P09**: una cartella con prodotti solo nel cestino si eliminava e, ripristinati, puntavano a una cartella che non c'era più. Ora la cartella si elimina come prima se non ha prodotti attivi, e i prodotti nel cestino perdono la cartella (ripristinati, sono senza cartella).
+- Logica: `usage` in `utils/productRules.ts` (prodotti attivi e nel cestino per posizione o cartella), 2 test nuovi.
+- Prova sul web: `a4-pos-elimina` → avviso «La posizione "Vetrina" contiene 1 prodotti…», nessun id grezzo in Inventario e Scheda (prima la posizione spariva e restava l'id); `a4-cart-cestino` → dopo l'eliminazione il prodotto ripristinato non ha più `libraryId` (prima puntava a «usato-e-permute»); crea, modifica, nome doppio, cartella piena e vuota come prima.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 103 verdi, bundle Android 5,08 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C04: Spostamento rapido e Audit registrano «spostato» (D15, P22)
 
 - Branch `funzioni/magazzino`.
