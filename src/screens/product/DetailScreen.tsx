@@ -1,5 +1,5 @@
 // FurInventory Pro - Product Detail Screen
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Pressable, ScrollView, Alert, useWindowDimensions, Share, Modal, StatusBar, Linking } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as Print from '../../lib/print';
@@ -28,6 +28,7 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
+import { formatNumber } from '../../../utils/number';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -47,6 +48,7 @@ export default function ProductDetailScreen() {
   // D17: tutti gli hook prima del ritorno anticipato «Prodotto non trovato» (regole degli hook)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
+  const viewerRef = useRef<ScrollView>(null); // visore delle foto a tutto schermo
   const { width: screenWidth } = useWindowDimensions();
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -75,14 +77,14 @@ export default function ProductDetailScreen() {
 
     if (product.length || product.width || product.weight) {
       text += '📐 MISURE:\n';
-      if (product.length) text += `   Lunghezza: ${product.length} cm\n`;
-      if (product.width) text += `   Larghezza: ${product.width} cm\n`;
-      if (product.weight) text += `   Peso: ${product.weight} kg\n`;
+      if (product.length) text += `   Lunghezza: ${formatNumber(product.length)} cm\n`;
+      if (product.width) text += `   Larghezza: ${formatNumber(product.width)} cm\n`;
+      if (product.weight) text += `   Peso: ${formatNumber(product.weight)} kg\n`;
       text += '\n';
     }
 
     if (product.sellPrice) {
-      text += `💰 PREZZO: €${product.sellPrice.toLocaleString()}\n\n`;
+      text += `💰 PREZZO: ${formatPrice(product.sellPrice)}\n\n`;
     }
 
     if (product.technicalNotes) {
@@ -108,18 +110,18 @@ export default function ProductDetailScreen() {
     text += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     text += `📐 MISURE DETTAGLIATE:\n`;
-    text += `   • Lunghezza: ${product.length || 'N/D'} cm\n`;
-    text += `   • Larghezza: ${product.width || 'N/D'} cm\n`;
-    text += `   • Peso: ${product.weight || 'N/D'} kg\n`;
+    text += `   • Lunghezza: ${product.length != null ? formatNumber(product.length) : 'N/D'} cm\n`;
+    text += `   • Larghezza: ${product.width != null ? formatNumber(product.width) : 'N/D'} cm\n`;
+    text += `   • Peso: ${product.weight != null ? formatNumber(product.weight) : 'N/D'} kg\n`;
     text += `\n`;
 
     text += `💰 ANALISI PREZZI:\n`;
-    text += `   • Prezzo Acquisto: €${product.purchasePrice?.toLocaleString() || 'N/D'}\n`;
-    text += `   • Prezzo Vendita: €${product.sellPrice?.toLocaleString() || 'N/D'}\n`;
+    text += `   • Prezzo Acquisto: ${product.purchasePrice != null ? formatPrice(product.purchasePrice) : 'N/D'}\n`;
+    text += `   • Prezzo Vendita: ${product.sellPrice != null ? formatPrice(product.sellPrice) : 'N/D'}\n`;
     if (product.purchasePrice && product.sellPrice) {
       const margin = product.sellPrice - product.purchasePrice;
       const marginPercent = ((margin / product.purchasePrice) * 100).toFixed(1);
-      text += `   • Margine: €${margin.toLocaleString()} (+${marginPercent}%)\n`;
+      text += `   • Margine: ${formatPrice(margin)} (+${marginPercent}%)\n`;
     }
     text += `\n`;
 
@@ -637,13 +639,13 @@ export default function ProductDetailScreen() {
                 ${product.purchasePrice ? `
                   <div class="card">
                     <div class="card-label">Acquisto</div>
-                    <div class="card-value">€${product.purchasePrice.toLocaleString()}</div>
+                    <div class="card-value">${formatPrice(product.purchasePrice)}</div>
                   </div>
                 ` : ''}
                 ${product.sellPrice ? `
                   <div class="card">
                     <div class="card-label">Vendita</div>
-                    <div class="card-value primary">€${product.sellPrice.toLocaleString()}</div>
+                    <div class="card-value primary">${formatPrice(product.sellPrice)}</div>
                   </div>
                 ` : ''}
               </div>
@@ -658,19 +660,19 @@ export default function ProductDetailScreen() {
                 ${product.length ? `
                   <div class="card">
                     <div class="card-label">Lunghezza</div>
-                    <div class="card-value">${product.length} cm</div>
+                    <div class="card-value">${formatNumber(product.length)} cm</div>
                   </div>
                 ` : ''}
                 ${product.width ? `
                   <div class="card">
                     <div class="card-label">Larghezza</div>
-                    <div class="card-value">${product.width} cm</div>
+                    <div class="card-value">${formatNumber(product.width)} cm</div>
                   </div>
                 ` : ''}
                 ${product.weight ? `
                   <div class="card">
                     <div class="card-label">Peso</div>
-                    <div class="card-value">${product.weight} kg</div>
+                    <div class="card-value">${formatNumber(product.weight)} kg</div>
                   </div>
                 ` : ''}
               </div>
@@ -893,29 +895,29 @@ export default function ProductDetailScreen() {
           )}
 
           {/* Measurements */}
-          {(product.length || product.width || product.weight) && (
+          {!!(product.length || product.width || product.weight) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Misure</Text>
               <View style={styles.measureRow}>
-                {product.length && (
+                {!!product.length && (
                   <View style={styles.measureCard}>
                     <AppIcon name="straighten" size={22} color={t.colors.fieldIcon} />
                     <Text style={styles.measureLabel}>Lunghezza</Text>
-                    <Text style={styles.measureValue}>{product.length} cm</Text>
+                    <Text style={styles.measureValue}>{formatNumber(product.length)} cm</Text>
                   </View>
                 )}
-                {product.width && (
+                {!!product.width && (
                   <View style={styles.measureCard}>
                     <AppIcon name="width-wide" size={22} color={t.colors.fieldIcon} />
                     <Text style={styles.measureLabel}>Larghezza</Text>
-                    <Text style={styles.measureValue}>{product.width} cm</Text>
+                    <Text style={styles.measureValue}>{formatNumber(product.width)} cm</Text>
                   </View>
                 )}
-                {product.weight && (
+                {!!product.weight && (
                   <View style={styles.measureCard}>
                     <AppIcon name="fitness-center" size={22} color={t.colors.fieldIcon} />
                     <Text style={styles.measureLabel}>Peso</Text>
-                    <Text style={styles.measureValue}>{product.weight} kg</Text>
+                    <Text style={styles.measureValue}>{formatNumber(product.weight)} kg</Text>
                   </View>
                 )}
               </View>
@@ -1294,11 +1296,17 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
 
+          {/* Larghezza dello schermo: senza, sul web lo scorrevole diventava largo quanto tutte le foto e veniva
+              centrato, mostrando sempre la seconda (P21). La foto di partenza si imposta anche al montaggio,
+              perché `contentOffset` vale solo sul telefono. */}
           <ScrollView
+            ref={viewerRef}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
+            style={{ width: screenWidth, flex: 1 }}
             contentContainerStyle={{ flexGrow: 1 }}
+            onContentSizeChange={() => viewerRef.current?.scrollTo({ x: currentImageIndex * screenWidth, y: 0, animated: false })}
             onScroll={(event) => {
               const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
               setCurrentImageIndex(index);

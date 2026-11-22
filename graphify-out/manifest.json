@@ -1848,9 +1848,9 @@
     "semantic_hash": ""
   },
   "src/screens/product/DetailScreen.tsx": {
-    "mtime": 1795333636.88536,
-    "seen": 1795333864.7419422,
-    "ast_hash": "de00ad178e8e739ddfefa955653e5f09",
+    "mtime": 1795334191.760003,
+    "seen": 1795334438.1378977,
+    "ast_hash": "5cc7e97c862024d5f1688bc8ab82ef09",
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
@@ -1878,9 +1878,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/Gs1ConfigScreen.tsx": {
-    "mtime": 1795321170.8102405,
-    "seen": 1795323475.1485813,
-    "ast_hash": "878dea004a618babb3d9e0b39df66ebf",
+    "mtime": 1795333927.5592842,
+    "seen": 1795334438.1391137,
+    "ast_hash": "441d4413adfb89e0d71898cc3542950e",
     "semantic_hash": ""
   },
   "src/screens/settings/HardwareScreen.tsx": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/TrashScreen.tsx": {
-    "mtime": 1795321202.0722673,
-    "seen": 1795323475.1485813,
-    "ast_hash": "d472e1fc4b81dee1daaa46b5b4fc54bf",
+    "mtime": 1795333964.6045516,
+    "seen": 1795334438.1391137,
+    "ast_hash": "c8bc8082c1e153de81deb6154591972d",
     "semantic_hash": ""
   },
   "src/screens/tabs/AddScreen.tsx": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795333849.7117612,
-    "seen": 1795333864.7767267,
-    "ast_hash": "288af6b185c78ab581c936901d1bb60b",
+    "mtime": 1795334422.8591814,
+    "seen": 1795334438.179624,
+    "ast_hash": "aa02faf30fcc2033bc1df3e3887f5bc3",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -3060,9 +3060,9 @@
     "semantic_hash": ""
   },
   "__tests__/number.test.ts": {
-    "mtime": 1795328694.0465405,
-    "seen": 1795329137.7798045,
-    "ast_hash": "131081325285d868b609843a4f5e72cb",
+    "mtime": 1795333897.0583975,
+    "seen": 1795334438.1025248,
+    "ast_hash": "5ef741b7aaada428c8045bd03fca5943",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a1-cestino.cjs": {
@@ -3246,15 +3246,15 @@
     "semantic_hash": ""
   },
   "utils/number.ts": {
-    "mtime": 1795328693.9166,
-    "seen": 1795329137.8618245,
-    "ast_hash": "a4c4e3eaa7309b22fcc83e6c5be94614",
+    "mtime": 1795333896.9250944,
+    "seen": 1795334438.171266,
+    "ast_hash": "3a84a708c3b4152de048a44fb2e52d78",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795333849.7669504,
-    "seen": 1795333864.7767267,
-    "ast_hash": "9c310226dd25cf6b19eacb2fae170d34",
+    "mtime": 1795334422.9127426,
+    "seen": 1795334438.1822796,
+    "ast_hash": "76d0512db0bced9dfb26806bb15dec81",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {

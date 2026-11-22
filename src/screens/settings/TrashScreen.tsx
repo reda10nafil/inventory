@@ -49,6 +49,21 @@ export default function TrashScreen() {
         );
     };
 
+    const handleEmptyTrash = () => {
+        Alert.alert(
+            'Svuota Cestino',
+            `Eliminare per sempre ${trashProducts.length} prodotti? Questa azione è irreversibile.`,
+            [
+                { text: 'Annulla', style: 'cancel' },
+                {
+                    text: 'Svuota',
+                    style: 'destructive',
+                    onPress: () => trashProducts.forEach((p) => permanentlyDeleteProduct(p.id)),
+                }
+            ]
+        );
+    };
+
     const handleRestoreField = (id: string) => {
         Alert.alert(
             'Ripristina Campo',
@@ -147,10 +162,14 @@ export default function TrashScreen() {
 
                             {/* Deleted Products Section */}
                             {trashProducts.length > 0 && (
-                                <View style={styles.section}>
-                                    <Text style={styles.sectionTitle}>
+                                <View style={[styles.section, styles.sectionRow]}>
+                                    <Text style={[styles.sectionTitle, { flex: 1 }]}>
                                         Prodotti eliminati ({trashProducts.length})
                                     </Text>
+                                    {/* Svuota il cestino dei prodotti (P24): prima si eliminavano solo uno per uno */}
+                                    <Pressable onPress={handleEmptyTrash} style={styles.emptyButton} accessibilityRole="button">
+                                        <Text style={styles.emptyButtonText}>Svuota</Text>
+                                    </Pressable>
                                 </View>
                             )}
                         </>
@@ -228,6 +247,23 @@ const useStyles = makeStyles((t) => ({
     },
     section: {
         marginBottom: 8,
+    },
+    sectionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    emptyButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: t.radius.chip,
+        borderWidth: 1,
+        borderColor: t.colors.error,
+    },
+    emptyButtonText: {
+        ...t.typography.caption,
+        color: t.colors.error,
+        fontWeight: '600',
     },
     sectionTitle: {
         ...t.typography.sectionHeader,

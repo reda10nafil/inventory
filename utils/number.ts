@@ -19,6 +19,14 @@ export function parseNumber(input: string | number | null | undefined): number |
   return Number.isFinite(value) ? value : undefined;
 }
 
+/** Numero da mostrare: «2,1», «1.250», «1.250,5» (P19: la Scheda scriveva «2.1 kg»). Fino a 3 decimali. */
+export function formatNumber(value: number): string {
+  const rounded = Math.round(Math.abs(value) * 1000) / 1000;
+  const [int, dec] = String(rounded).split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${value < 0 ? '-' : ''}${grouped}${dec ? `,${dec}` : ''}`;
+}
+
 /** Valore da mettere in un campo del modulo: virgola come decimale, senza separatore delle migliaia. */
 export function formatNumberInput(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '';

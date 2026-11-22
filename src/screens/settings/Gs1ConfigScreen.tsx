@@ -1,5 +1,5 @@
 // FurInventory Pro - GS1 Digital Link Configuration Screen
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, Switch, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
@@ -24,6 +24,9 @@ export default function GS1ConfigScreen() {
 
   // Local state for text input debouncing
   const [baseUrlLocal, setBaseUrlLocal] = useState(gs1Config.baseUrl);
+  // La configurazione salvata può arrivare dopo l'apertura (ricarica, indirizzo): il campo la segue, altrimenti
+  // mostrava il dominio predefinito e uscendo dal campo lo salvava sopra quello vero (P10).
+  useEffect(() => { setBaseUrlLocal(gs1Config.baseUrl); }, [gs1Config.baseUrl]);
 
   const handleBaseUrlBlur = () => {
     updateGS1Config({ baseUrl: baseUrlLocal.trim() || 'https://syncroflow.app/id' });

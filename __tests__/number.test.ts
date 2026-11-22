@@ -1,4 +1,15 @@
-import { formatNumberInput, parseNumber } from '../utils/number';
+import { formatNumber, formatNumberInput, parseNumber } from '../utils/number';
+
+describe('formatNumber (P19)', () => {
+  it('formato italiano', () => {
+    expect(formatNumber(2.1)).toBe('2,1');
+    expect(formatNumber(115)).toBe('115');
+    expect(formatNumber(1250)).toBe('1.250');
+    expect(formatNumber(1250.5)).toBe('1.250,5');
+    expect(formatNumber(0.1 + 0.2)).toBe('0,3');
+    expect(formatNumber(-3.25)).toBe('-3,25');
+  });
+});
 
 describe('parseNumber (P03)', () => {
   it('virgola come decimale', () => {

@@ -2,6 +2,16 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C13: dominio GS1, numeri della Scheda, Svuota cestino, visore delle foto (P10, P19, P24, P21)
+
+- Branch `funzioni/magazzino`.
+- **P10**: ricaricando la pagina GS1 il campo mostrava il dominio predefinito (la configurazione arriva dopo) e uscendo dal campo lo salvava sopra quello vero. Ora il campo segue la configurazione salvata quando arriva.
+- **P19**: la Scheda, i testi da condividere e il PDF scrivevano «2.1 kg» e prezzi come «€4,200»: ora `formatNumber` (`utils/number.ts`, test) e `formatPrice` («2,1 kg», «4.200 €»). In più le misure nella Scheda usano condizioni booleane: un valore 0 non finisce fuori da un `Text` (sul telefono è un errore).
+- **P24**: nel Cestino c'è «Svuota» accanto a «Prodotti eliminati (N)», con conferma; prima si eliminava solo uno per uno.
+- **P21**: sul web il visore a tutto schermo mostrava sempre la seconda foto e non scorreva: lo scorrevole ora è largo quanto lo schermo e all'apertura va alla foto del contatore.
+- Prova sul web: `a1-scheda-visore` «2,1 kg» e visore sulla foto del contatore (1/3 → foto 1, 3/3 → foto 3; prima sempre la 2), la rotella passa alla foto 2; `a1-scheda-condividi` «Peso: 2,1 kg», «PREZZO: 4.200 €»; `a4-gs1-salva` dopo la ricarica il campo dice «https://id.prova.it» e resta salvato (prima tornava al predefinito); `a1-cestino-ripristina` il pulsante «Svuota» c'è.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 121 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C12: prodotti senza foto senza immagine d'esempio (D18)
 
 - Branch `funzioni/magazzino`.
