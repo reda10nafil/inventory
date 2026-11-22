@@ -9,6 +9,17 @@ export function withAlpha(color: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${Number(out.toFixed(4))})`;
 }
 
+/**
+ * Colore pieno e trasparenza separati, per gli `Stop` di react-native-svg: sul telefono `stopColor` perde l'alfa di
+ * `rgba()` e conta solo `stopOpacity` (sul web invece l'alfa del colore vale).
+ */
+export function splitAlpha(color: string): { color: string; opacity: number } {
+  const rgba = parseColor(color);
+  if (!rgba) return { color, opacity: 1 };
+  const [r, g, b, a] = rgba;
+  return { color: `rgb(${r}, ${g}, ${b})`, opacity: a };
+}
+
 function parseColor(color: string): [number, number, number, number] | null {
   const c = color.trim();
   const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(c);

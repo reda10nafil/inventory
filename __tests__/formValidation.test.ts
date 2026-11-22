@@ -29,3 +29,18 @@ describe('missingRequiredFields (D24)', () => {
     expect(missingRequiredFields(layout, custom, { a: 0 })).toEqual([]);
   });
 });
+
+describe('missingRequiredFields con i dati del campionario', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const seed = require('../piani di implementazione/ui-ux/campionario/seed.json');
+  const fields = seed.furinventory_custom_fields as CustomField[];
+  const layout = seed.furinventory_layout_config.fields;
+
+  it('con il modulo vuoto chiede la Taglia (unico personalizzato obbligatorio)', () => {
+    expect(missingRequiredFields(layout, fields, {}).map((f) => f.name)).toEqual(['Taglia']);
+  });
+
+  it('con la Taglia scelta non chiede nulla', () => {
+    expect(missingRequiredFields(layout, fields, { field_cmp_taglia: 'm' })).toEqual([]);
+  });
+});

@@ -1,4 +1,4 @@
-import { withAlpha } from '../utils/color';
+import { splitAlpha, withAlpha } from '../utils/color';
 import { formatPrice } from '../utils/price';
 import { DEFAULT_STYLE, THEMES, isStyleId, oggi, themeFor } from '../constants/themes';
 import { theme as today } from '../constants/theme';
@@ -70,5 +70,12 @@ describe('formatPrice', () => {
     expect(formatPrice(1450.5)).toBe('1.450,50 €');
     expect(formatPrice(1234567)).toBe('1.234.567 €');
     expect(formatPrice(-80)).toBe('-80 €');
+  });
+});
+
+describe('splitAlpha', () => {
+  it('separa colore pieno e trasparenza (stop dei bagliori sul telefono)', () => {
+    expect(splitAlpha('rgba(58,124,255,0.36)')).toEqual({ color: 'rgb(58, 124, 255)', opacity: 0.36 });
+    expect(splitAlpha('#0A84FF')).toEqual({ color: 'rgb(10, 132, 255)', opacity: 1 });
   });
 });

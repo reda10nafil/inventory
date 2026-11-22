@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX: bagliori con la trasparenza giusta sul telefono (dopo L9)
+
+- Branch / SHA: `ui-ux/stili`, commit dopo L9.
+- Trovato rileggendo `react-native-svg` (`extractGradient.ts`): sul telefono lo `Stop` di un gradiente prende il colore senza alfa e usa solo `stopOpacity`. I bagliori di Babilonia e Ishtar, scritti come `rgba(…, 0.36)` in `stopColor`, sarebbero usciti **pieni**; il web rispetta l'alfa, quindi le schermate non lo mostravano. Ora `Backdrop` separa colore e trasparenza (`splitAlpha` in `utils/color.ts`, con test). Sul web le schermate di Babilonia e Ishtar differiscono al massimo di 1-2 livelli di colore (arrotondamenti).
+- D24 provato anche sui dati del campionario: con il modulo vuoto chiede la «Taglia», unico campo personalizzato obbligatorio; con la taglia scelta non chiede nulla.
+- Messaggio di WatermelonDB al primo avvio web: misurato su 10 browser vuoti per versione, **1 su 10 sulla versione di partenza (8081) e 2 su 10 su quella nuova (8082)**: c'era già prima del tema.
+- Verifiche: tsc 0, eslint 0, jest 76 verdi, bundle Android riuscito.
+
 ## 22 novembre 2026 — UI/UX L9: verifica finale nei 5 stili (tema chiuso)
 
 - Branch / SHA: `ui-ux/stili`, commit di L9 dopo L7.
