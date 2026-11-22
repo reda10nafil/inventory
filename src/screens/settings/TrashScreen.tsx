@@ -1,15 +1,19 @@
 // FurInventory Pro - Trash Screen (Products + Custom Fields)
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Alert, SectionList } from 'react-native';
+import { View, FlatList, Pressable, Alert, SectionList } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
 import { Image } from '../../lib/ExpoImage';
-import { theme, typography, shadows, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useCustomFields, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 export default function TrashScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { getTrashProducts, restoreProduct, permanentlyDeleteProduct } = useInventory();
@@ -75,14 +79,14 @@ export default function TrashScreen() {
         <SafeAreaView edges={['top']} style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
+                    <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.title}>Cestino ({totalItems})</Text>
             </View>
 
             {totalItems === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <MaterialIcons name="delete-outline" size={64} color={theme.textSecondary} />
+                    <AppIcon name="delete-outline" size={64} color={t.colors.textSecondary} />
                     <Text style={styles.emptyText}>Il cestino è vuoto</Text>
                     <Text style={styles.emptySubtext}>
                         I prodotti e i campi eliminati appariranno qui
@@ -100,11 +104,11 @@ export default function TrashScreen() {
                                     </Text>
                                     {deletedFields.map((field) => (
                                         <View key={field.id} style={styles.fieldCard}>
-                                            <View style={[styles.fieldIconBox, { backgroundColor: `${theme.primary}15` }]}>
-                                                <MaterialIcons
+                                            <View style={[styles.fieldIconBox, { backgroundColor: withAlpha(t.colors.accent, 0.082) }]}>
+                                                <AppIcon
                                                     name={field.icon as any || 'text-fields'}
                                                     size={22}
-                                                    color={theme.primary}
+                                                    color={t.colors.accentInk}
                                                 />
                                             </View>
                                             <View style={styles.fieldContent}>
@@ -124,13 +128,13 @@ export default function TrashScreen() {
                                                     style={[styles.actionButton, styles.restoreButton]}
                                                     onPress={() => handleRestoreField(field.id)}
                                                 >
-                                                    <MaterialIcons name="restore" size={18} color={theme.primary} />
+                                                    <AppIcon name="restore" size={18} color={t.colors.accentInk} />
                                                 </Pressable>
                                                 <Pressable
                                                     style={[styles.actionButton, styles.deleteButton]}
                                                     onPress={() => handleDeleteFieldForever(field.id)}
                                                 >
-                                                    <MaterialIcons name="delete-forever" size={18} color={theme.error} />
+                                                    <AppIcon name="delete-forever" size={18} color={t.colors.error} />
                                                 </Pressable>
                                             </View>
                                         </View>
@@ -159,7 +163,7 @@ export default function TrashScreen() {
                                 />
                             ) : (
                                 <View style={[styles.image, styles.imagePlaceholder]}>
-                                    <MaterialIcons name="image" size={24} color={theme.textSecondary} />
+                                    <AppIcon name="image" size={24} color={t.colors.textSecondary} />
                                 </View>
                             )}
                             <View style={styles.content}>
@@ -176,13 +180,13 @@ export default function TrashScreen() {
                                     style={[styles.actionButton, styles.restoreButton]}
                                     onPress={() => handleRestoreProduct(item.id)}
                                 >
-                                    <MaterialIcons name="restore" size={20} color={theme.primary} />
+                                    <AppIcon name="restore" size={20} color={t.colors.accentInk} />
                                 </Pressable>
                                 <Pressable
                                     style={[styles.actionButton, styles.deleteButton]}
                                     onPress={() => handleDeleteProductForever(item.id)}
                                 >
-                                    <MaterialIcons name="delete-forever" size={20} color={theme.error} />
+                                    <AppIcon name="delete-forever" size={20} color={t.colors.error} />
                                 </Pressable>
                             </View>
                         </View>
@@ -198,51 +202,51 @@ export default function TrashScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: spacing.screenPadding,
+        padding: t.spacing.screenPadding,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     backButton: {
         marginRight: 16,
     },
     title: {
-        ...typography.cardTitle,
+        ...t.typography.cardTitle,
         fontSize: 20,
     },
     section: {
         marginBottom: 8,
     },
     sectionTitle: {
-        ...typography.sectionHeader,
+        ...t.typography.sectionHeader,
         marginBottom: 12,
         marginTop: 8,
     },
     listContent: {
-        padding: spacing.screenPadding,
+        padding: t.spacing.screenPadding,
         gap: 8,
     },
     card: {
         flexDirection: 'row',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         padding: 12,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.medium,
         alignItems: 'center',
         marginBottom: 8,
-        ...shadows.small,
+        ...t.shadows.small,
     },
     fieldCard: {
         flexDirection: 'row',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         padding: 12,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.medium,
         alignItems: 'center',
         marginBottom: 8,
     },
@@ -258,19 +262,19 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     fieldName: {
-        ...typography.cardTitle,
+        ...t.typography.cardTitle,
         fontSize: 14,
         marginBottom: 2,
     },
     fieldType: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 12,
     },
     image: {
         width: 60,
         height: 60,
-        borderRadius: borderRadius.small,
-        backgroundColor: theme.backgroundSecondary,
+        borderRadius: t.radius.small,
+        backgroundColor: t.colors.backgroundSecondary,
     },
     imagePlaceholder: {
         alignItems: 'center',
@@ -281,18 +285,18 @@ const styles = StyleSheet.create({
         marginLeft: 12,
     },
     sku: {
-        ...typography.cardTitle,
+        ...t.typography.cardTitle,
         fontSize: 16,
     },
     details: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 13,
         marginTop: 2,
     },
     deletedDate: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 11,
-        color: theme.error,
+        color: t.colors.error,
         marginTop: 4,
     },
     actions: {
@@ -305,13 +309,13 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     restoreButton: {
-        backgroundColor: `${theme.primary}15`,
+        backgroundColor: withAlpha(t.colors.accent, 0.082),
     },
     deleteButton: {
-        backgroundColor: `${theme.error}10`,
+        backgroundColor: withAlpha(t.colors.error, 0.063),
     },
     emptyContainer: {
         flex: 1,
@@ -320,13 +324,13 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     emptyText: {
-        ...typography.body,
-        color: theme.textSecondary,
+        ...t.typography.body,
+        color: t.colors.textSecondary,
         fontSize: 18,
     },
     emptySubtext: {
-        ...typography.caption,
-        color: theme.textMuted,
+        ...t.typography.caption,
+        color: t.colors.textMuted,
         fontSize: 14,
     },
-});
+}));

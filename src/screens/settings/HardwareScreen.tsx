@@ -1,13 +1,17 @@
 // FurInventory Pro - Hardware Settings Screen
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Switch, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Switch, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
-import { theme, typography, borderRadius, spacing, shadows } from '../../../constants/theme';
 import { useHardwareConfig, ScanMode } from '../../../contexts/HardwareConfigContext';
 import { nfcService } from '../../../utils/nfcService';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 export default function HardwareSettingsScreen() {
+  const styles = useStyles();
+  const t = useTheme();
   const insets = useSafeAreaInsets();
   const { hwConfig, updateHwConfig, resetHwConfig } = useHardwareConfig();
 
@@ -36,10 +40,10 @@ export default function HardwareSettingsScreen() {
         style={[styles.segmentButton, isActive && styles.segmentButtonActive]}
         onPress={() => updateHwConfig({ scanMode: mode })}
       >
-        <MaterialIcons
+        <AppIcon
           name={icon as any}
           size={18}
-          color={isActive ? '#000' : theme.textSecondary}
+          color={isActive ? t.colors.onAccent : t.colors.textSecondary}
         />
         <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>{label}</Text>
       </Pressable>
@@ -55,7 +59,7 @@ export default function HardwareSettingsScreen() {
       {/* Header Info */}
       <View style={styles.infoCard}>
         <View style={styles.infoIconWrap}>
-          <MaterialIcons name="settings-cell" size={24} color={theme.primary} />
+          <AppIcon name="settings-cell" size={24} color={t.colors.accentInk} />
         </View>
         <View style={styles.infoContent}>
           <Text style={styles.infoTitle}>Scanner & Hardware</Text>
@@ -83,8 +87,8 @@ export default function HardwareSettingsScreen() {
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
-            <View style={[styles.iconBadge, { backgroundColor: `${theme.primary}20` }]}>
-              <MaterialIcons name="save-alt" size={16} color={theme.primary} />
+            <View style={[styles.iconBadge, { backgroundColor: t.colors.iconWrap }]}>
+              <AppIcon name="save-alt" size={16} color={t.colors.accentInk} />
             </View>
             <View style={styles.toggleTextWrap}>
               <Text style={styles.toggleTitle}>Scrittura Automatica NFC</Text>
@@ -96,8 +100,8 @@ export default function HardwareSettingsScreen() {
           <Switch
             value={hwConfig.autoWriteNfcOnSave}
             onValueChange={(val) => updateHwConfig({ autoWriteNfcOnSave: val })}
-            trackColor={{ false: theme.border, true: `${theme.primary}80` }}
-            thumbColor={hwConfig.autoWriteNfcOnSave ? theme.primary : theme.textMuted}
+            trackColor={{ false: t.colors.border, true: withAlpha(t.colors.accent, 0.502) }}
+            thumbColor={hwConfig.autoWriteNfcOnSave ? t.colors.accent : t.colors.textMuted}
           />
         </View>
       </View>
@@ -106,38 +110,38 @@ export default function HardwareSettingsScreen() {
       <View style={styles.card}>
         <Pressable style={styles.actionRow} onPress={handleTestNfc}>
           <View style={styles.actionRowContent}>
-            <MaterialIcons name="health-and-safety" size={24} color={theme.textPrimary} />
+            <AppIcon name="health-and-safety" size={24} color={t.colors.textPrimary} />
             <Text style={styles.actionRowText}>Test Stato Sensore NFC</Text>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
-    paddingHorizontal: spacing.screenPadding,
+    backgroundColor: t.colors.background,
+    paddingHorizontal: t.spacing.screenPadding,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: `${theme.primary}10`,
-    borderRadius: borderRadius.large,
+    backgroundColor: withAlpha(t.colors.accent, 0.063),
+    borderRadius: t.radius.large,
     padding: 16,
     marginTop: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: `${theme.primary}30`,
+    borderColor: withAlpha(t.colors.accent, 0.19),
     gap: 12,
   },
   infoIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: `${theme.primary}20`,
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -145,50 +149,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoTitle: {
-    ...typography.cardTitle,
-    color: theme.primary,
+    ...t.typography.cardTitle,
+    color: t.colors.accentInk,
     marginBottom: 4,
   },
   infoDesc: {
-    ...typography.caption,
-    color: theme.textSecondary,
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
     lineHeight: 18,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 12,
     marginTop: 8,
   },
   card: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: theme.borderLight,
-    ...shadows.card,
+    borderColor: t.colors.borderLight,
+    ...t.shadows.card,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     marginBottom: 4,
   },
   helperText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
-    color: theme.textMuted,
+    color: t.colors.textMuted,
     marginBottom: 16,
     lineHeight: 16,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.medium,
     padding: 3,
     gap: 4,
   },
@@ -198,19 +202,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: borderRadius.small,
+    borderRadius: t.radius.small,
     gap: 6,
   },
   segmentButtonActive: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
   },
   segmentText: {
     fontSize: 13,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   segmentTextActive: {
-    color: '#000',
+    color: t.colors.onAccent,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -237,12 +241,12 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     marginBottom: 4,
   },
   toggleDesc: {
     fontSize: 12,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     lineHeight: 16,
   },
   actionRow: {
@@ -259,6 +263,6 @@ const styles = StyleSheet.create({
   actionRowText: {
     fontSize: 15,
     fontWeight: '500',
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
   },
-});
+}));

@@ -1,14 +1,16 @@
 // FurInventory Pro - Layout Builder Screen
 // Simple implementation to customize Add Product layout (no Reanimated dependencies)
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Platform, TextInput, Modal } from 'react-native';
+import { View, Pressable, ScrollView, Alert, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useLayout, LayoutField, FieldSize } from '../../../contexts/LayoutContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { PREDEFINED_TEMPLATES } from '../../../lib/templates';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 const SIZE_OPTIONS: { value: FieldSize; label: string; width: string }[] = [
     { value: 'small', label: '1/3', width: '33%' },
@@ -65,6 +67,8 @@ const COMMON_ICONS = [
 ];
 
 export default function LayoutBuilderScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const router = useRouter();
     const {
         layout,
@@ -135,7 +139,7 @@ export default function LayoutBuilderScreen() {
     };
 
     const loadTemplate = (templateId: string) => {
-        const template = PREDEFINED_TEMPLATES.find(t => t.id === templateId);
+        const template = PREDEFINED_TEMPLATES.find(tpl => tpl.id === templateId);
         if (!template) return;
 
         Alert.alert(
@@ -206,7 +210,7 @@ export default function LayoutBuilderScreen() {
         <SafeAreaView edges={['bottom']} style={styles.container}>
             {/* Instructions */}
             <View style={styles.instructionsContainer}>
-                <MaterialIcons name="info-outline" size={20} color={theme.primary} />
+                <AppIcon name="info-outline" size={20} color={t.colors.accentInk} />
                 <Text style={styles.instructionsText}>
                     Usa le frecce per riordinare. Tocca per modificare dimensione.
                 </Text>
@@ -215,20 +219,20 @@ export default function LayoutBuilderScreen() {
             <View style={styles.previewHeader}>
                 <Text style={styles.previewTitle}>CONFIGURA CAMPI</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                    <Pressable onPress={() => setShowTemplatesModal(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${theme.primary}20`, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                        <MaterialIcons name="auto-awesome" size={18} color={theme.primary} />
-                        <Text style={{ ...typography.caption, color: theme.primary, fontWeight: '600' }}>MODELLI</Text>
+                    <Pressable onPress={() => setShowTemplatesModal(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.colors.accentSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
+                        <AppIcon name="auto-awesome" size={18} color={t.colors.accentInk} />
+                        <Text style={{ ...t.typography.caption, color: t.colors.accentInk, fontWeight: '600' }}>MODELLI</Text>
                     </Pressable>
                     <Pressable onPress={() => {
                         addSectionHeader('NUOVA SEZIONE');
                         setHasChanges(true);
-                    }} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.surface, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
-                        <MaterialIcons name="playlist-add" size={18} color={theme.primary} />
-                        <Text style={{ ...typography.caption, color: theme.primary, fontWeight: '600' }}>SEZIONE</Text>
+                    }} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.colors.buttonSecondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder }}>
+                        <AppIcon name="playlist-add" size={18} color={t.colors.onButtonSecondary} />
+                        <Text style={{ ...t.typography.caption, color: t.colors.onButtonSecondary, fontWeight: '600' }}>SEZIONE</Text>
                     </Pressable>
-                    <Pressable onPress={() => setShowAddFieldModal(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.surface, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: theme.border }}>
-                        <MaterialIcons name="add" size={18} color={theme.primary} />
-                        <Text style={{ ...typography.caption, color: theme.primary, fontWeight: '600' }}>CAMPO</Text>
+                    <Pressable onPress={() => setShowAddFieldModal(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.colors.buttonSecondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder }}>
+                        <AppIcon name="add" size={18} color={t.colors.onButtonSecondary} />
+                        <Text style={{ ...t.typography.caption, color: t.colors.onButtonSecondary, fontWeight: '600' }}>CAMPO</Text>
                     </Pressable>
                 </ScrollView>
             </View>
@@ -250,7 +254,7 @@ export default function LayoutBuilderScreen() {
                                     styles.fieldCard,
                                     !item.visible && styles.fieldCardHidden,
                                     isSelected && styles.fieldCardSelected,
-                                    isSection && { borderColor: theme.border, borderStyle: 'dashed' }
+                                    isSection && { borderColor: t.colors.dash, borderStyle: 'dashed' }
                                 ]}
                             >
                                 <View style={styles.fieldCardHeader}>
@@ -261,10 +265,10 @@ export default function LayoutBuilderScreen() {
                                             onPress={() => moveField(index, 'up')}
                                             disabled={index === 0}
                                         >
-                                            <MaterialIcons
+                                            <AppIcon
                                                 name="keyboard-arrow-up"
                                                 size={20}
-                                                color={index === 0 ? theme.border : theme.textSecondary}
+                                                color={index === 0 ? t.colors.border : t.colors.textSecondary}
                                             />
                                         </Pressable>
                                         <Pressable
@@ -272,19 +276,19 @@ export default function LayoutBuilderScreen() {
                                             onPress={() => moveField(index, 'down')}
                                             disabled={index === localFields.length - 1}
                                         >
-                                            <MaterialIcons
+                                            <AppIcon
                                                 name="keyboard-arrow-down"
                                                 size={20}
-                                                color={index === localFields.length - 1 ? theme.border : theme.textSecondary}
+                                                color={index === localFields.length - 1 ? t.colors.border : t.colors.textSecondary}
                                             />
                                         </Pressable>
                                     </View>
 
                                     {isSection ? (
                                         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                            <MaterialIcons name="menu" size={20} color={theme.textSecondary} />
+                                            <AppIcon name="menu" size={20} color={t.colors.textSecondary} />
                                             <TextInput
-                                                style={{ flex: 1, ...typography.cardTitle, fontSize: 15, paddingVertical: 0 }}
+                                                style={{ flex: 1, ...t.typography.cardTitle, fontSize: 15, paddingVertical: 0 }}
                                                 value={item.label}
                                                 onChangeText={(text) => {
                                                     const newFields = localFields.map(f => f.id === item.id ? { ...f, label: text } : f);
@@ -293,7 +297,7 @@ export default function LayoutBuilderScreen() {
                                                     setHasChanges(true);
                                                 }}
                                                 placeholder="Nome Sezione"
-                                                placeholderTextColor={theme.textSecondary}
+                                                placeholderTextColor={t.colors.placeholder}
                                             />
                                             <Pressable onPress={() => {
                                                 Alert.alert('Elimina Sezione', 'Sei sicuro?', [
@@ -306,15 +310,15 @@ export default function LayoutBuilderScreen() {
                                                     }
                                                 ])
                                             }}>
-                                                <MaterialIcons name="delete-outline" size={20} color={theme.error} />
+                                                <AppIcon name="delete-outline" size={20} color={t.colors.error} />
                                             </Pressable>
                                         </View>
                                     ) : (
                                         <>
-                                            <MaterialIcons
+                                            <AppIcon
                                                 name={getFieldIconForItem(item) as any}
                                                 size={20}
-                                                color={item.visible ? theme.primary : theme.textSecondary}
+                                                color={item.visible ? t.colors.accent : t.colors.textSecondary}
                                             />
                                             <Text style={[
                                                 styles.fieldCardTitle,
@@ -336,10 +340,10 @@ export default function LayoutBuilderScreen() {
                                                 style={styles.visibilityButton}
                                                 onPress={() => handleToggleVisibility(item.id)}
                                             >
-                                                <MaterialIcons
+                                                <AppIcon
                                                     name={item.visible ? 'visibility' : 'visibility-off'}
                                                     size={20}
-                                                    color={item.visible ? theme.primary : theme.textSecondary}
+                                                    color={item.visible ? t.colors.accent : t.colors.textSecondary}
                                                 />
                                             </Pressable>
 
@@ -359,7 +363,7 @@ export default function LayoutBuilderScreen() {
                                                     ]);
                                                 }}
                                             >
-                                                <MaterialIcons name="close" size={20} color={theme.error} />
+                                                <AppIcon name="close" size={20} color={t.colors.error} />
                                             </Pressable>
                                         </>
                                     )}
@@ -410,12 +414,12 @@ export default function LayoutBuilderScreen() {
                                                         width: 40,
                                                         height: 40,
                                                         borderRadius: 8,
-                                                        backgroundColor: getFieldIconForItem(item) === icon ? theme.primary : theme.backgroundSecondary,
+                                                        backgroundColor: getFieldIconForItem(item) === icon ? t.colors.accent : t.colors.backgroundSecondary,
                                                         justifyContent: 'center',
                                                         alignItems: 'center'
                                                     }}
                                                 >
-                                                    <MaterialIcons name={icon as any} size={20} color={getFieldIconForItem(item) === icon ? '#000' : theme.textSecondary} />
+                                                    <AppIcon name={icon as any} size={20} color={getFieldIconForItem(item) === icon ? t.colors.onAccent : t.colors.textSecondary} />
                                                 </Pressable>
                                             ))}
                                         </ScrollView>
@@ -434,7 +438,7 @@ export default function LayoutBuilderScreen() {
                     onPress={handleSave}
                     disabled={!hasChanges}
                 >
-                    <MaterialIcons name="save" size={24} color={hasChanges ? '#000' : theme.textSecondary} />
+                    <AppIcon name="save" size={24} color={hasChanges ? t.colors.onButton : t.colors.textSecondary} />
                     <Text style={[styles.saveButtonText, !hasChanges && styles.saveButtonTextDisabled]}>
                         {hasChanges ? 'Salva Layout' : 'Nessuna Modifica'}
                     </Text>
@@ -443,33 +447,33 @@ export default function LayoutBuilderScreen() {
 
             {/* Templates Selector Modal */}
             <Modal visible={showTemplatesModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowTemplatesModal(false)}>
-                <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }}>
                     <View style={styles.modalHeader}>
                         <Pressable onPress={() => setShowTemplatesModal(false)}>
-                            <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                            <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                         </Pressable>
-                        <Text style={{ ...typography.cardTitle, fontSize: 18 }}>Modelli di Settore</Text>
+                        <Text style={{ ...t.typography.cardTitle, fontSize: 18 }}>Modelli di Settore</Text>
                         <View style={{ width: 24 }} />
                     </View>
-                    <ScrollView style={{ flex: 1, padding: spacing.screenPadding }}>
-                        <Text style={{ ...typography.caption, color: theme.textSecondary, marginBottom: 24, fontSize: 13, lineHeight: 18 }}>
+                    <ScrollView style={{ flex: 1, padding: t.spacing.screenPadding }}>
+                        <Text style={{ ...t.typography.caption, color: t.colors.textSecondary, marginBottom: 24, fontSize: 13, lineHeight: 18 }}>
                             Carica un modello predefinito per iniettare automaticamente nel tuo database i campi più comuni usati nel tuo settore.
                             Questa azione SOSTITUIRÀ l'intero layout attuale con una configurazione pulita per il settore scelto.
                         </Text>
                         {PREDEFINED_TEMPLATES.map(template => (
                             <Pressable
                                 key={template.id}
-                                style={{ backgroundColor: theme.surface, padding: 16, borderRadius: borderRadius.medium, marginBottom: 16, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                                style={{ backgroundColor: t.colors.tile, padding: 16, borderRadius: t.radius.tile, marginBottom: 16, borderWidth: 1, borderColor: t.colors.tileBorder, flexDirection: 'row', alignItems: 'center', gap: 16 }}
                                 onPress={() => loadTemplate(template.id)}
                             >
-                                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: `${theme.primary}20`, alignItems: 'center', justifyContent: 'center' }}>
-                                    <MaterialIcons name={template.icon as any} size={24} color={theme.primary} />
+                                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: t.colors.iconWrap, alignItems: 'center', justifyContent: 'center' }}>
+                                    <AppIcon name={template.icon as any} size={24} color={t.colors.accentInk} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ ...typography.cardTitle, fontSize: 16, marginBottom: 4 }}>{template.name}</Text>
-                                    <Text style={{ ...typography.caption, color: theme.textSecondary }}>{template.description}</Text>
+                                    <Text style={{ ...t.typography.cardTitle, fontSize: 16, marginBottom: 4 }}>{template.name}</Text>
+                                    <Text style={{ ...t.typography.caption, color: t.colors.textSecondary }}>{template.description}</Text>
                                 </View>
-                                <MaterialIcons name="arrow-forward-ios" size={16} color={theme.textSecondary} />
+                                <AppIcon name="arrow-forward-ios" size={16} color={t.colors.textSecondary} />
                             </Pressable>
                         ))}
                     </ScrollView>
@@ -478,22 +482,22 @@ export default function LayoutBuilderScreen() {
 
             {/* Add Field Modal */}
             <Modal visible={showAddFieldModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddFieldModal(false)}>
-                <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }}>
                     <View style={styles.modalHeader}>
                         <Pressable onPress={() => setShowAddFieldModal(false)}>
-                            <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                            <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                         </Pressable>
-                        <Text style={{ ...typography.cardTitle, fontSize: 18 }}>Aggiungi Campo</Text>
+                        <Text style={{ ...t.typography.cardTitle, fontSize: 18 }}>Aggiungi Campo</Text>
                         <View style={{ width: 24 }} />
                     </View>
-                    <ScrollView style={{ flex: 1, padding: spacing.screenPadding }}>
-                        <Text style={{ ...typography.caption, color: theme.textSecondary, marginBottom: 24, fontSize: 13, lineHeight: 18 }}>
+                    <ScrollView style={{ flex: 1, padding: t.spacing.screenPadding }}>
+                        <Text style={{ ...t.typography.caption, color: t.colors.textSecondary, marginBottom: 24, fontSize: 13, lineHeight: 18 }}>
                             Seleziona un campo dal registro per aggiungerlo al tuo layout.
                         </Text>
                         {customFields.filter(cf => !localFields.some(lf => lf.id === cf.id)).map(cf => (
                             <Pressable
                                 key={cf.id}
-                                style={{ backgroundColor: theme.surface, padding: 16, borderRadius: borderRadius.medium, marginBottom: 12, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                                style={{ backgroundColor: t.colors.tile, padding: 16, borderRadius: t.radius.tile, marginBottom: 12, borderWidth: 1, borderColor: t.colors.tileBorder, flexDirection: 'row', alignItems: 'center', gap: 16 }}
                                 onPress={() => {
                                     const newField: LayoutField = {
                                         id: cf.id,
@@ -508,20 +512,20 @@ export default function LayoutBuilderScreen() {
                                     setShowAddFieldModal(false);
                                 }}
                             >
-                                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: `${theme.primary}20`, alignItems: 'center', justifyContent: 'center' }}>
-                                    <MaterialIcons name={(cf.icon as any) || 'text-fields'} size={20} color={theme.primary} />
+                                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.colors.iconWrap, alignItems: 'center', justifyContent: 'center' }}>
+                                    <AppIcon name={(cf.icon as any) || 'text-fields'} size={20} color={t.colors.accentInk} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ ...typography.cardTitle, fontSize: 16, marginBottom: 2 }}>{cf.name}</Text>
-                                    <Text style={{ ...typography.caption, color: theme.textSecondary }}>{cf.isSystem ? 'Campo Originale di Sistema' : 'Campo Personalizzato'}</Text>
+                                    <Text style={{ ...t.typography.cardTitle, fontSize: 16, marginBottom: 2 }}>{cf.name}</Text>
+                                    <Text style={{ ...t.typography.caption, color: t.colors.textSecondary }}>{cf.isSystem ? 'Campo Originale di Sistema' : 'Campo Personalizzato'}</Text>
                                 </View>
-                                <MaterialIcons name="add-circle-outline" size={24} color={theme.primary} />
+                                <AppIcon name="add-circle-outline" size={24} color={t.colors.accentInk} />
                             </Pressable>
                         ))}
                         {customFields.filter(cf => !localFields.some(lf => lf.id === cf.id)).length === 0 && (
                             <View style={{ padding: 24, alignItems: 'center', opacity: 0.5 }}>
-                                <MaterialIcons name="check-circle" size={48} color={theme.textSecondary} />
-                                <Text style={{ ...typography.cardTitle, marginTop: 16, textAlign: 'center' }}>Tutti i campi sono già nel layout</Text>
+                                <AppIcon name="check-circle" size={48} color={t.colors.textSecondary} />
+                                <Text style={{ ...t.typography.cardTitle, marginTop: 16, textAlign: 'center' }}>Tutti i campi sono già nel layout</Text>
                             </View>
                         )}
                     </ScrollView>
@@ -531,38 +535,38 @@ export default function LayoutBuilderScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     instructionsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingHorizontal: spacing.screenPadding,
+        paddingHorizontal: t.spacing.screenPadding,
         paddingVertical: 12,
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     instructionsText: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 13,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         flex: 1,
     },
     previewHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: spacing.screenPadding,
+        paddingHorizontal: t.spacing.screenPadding,
         paddingVertical: 12,
     },
     previewTitle: {
-        ...typography.sectionHeader,
+        ...t.typography.sectionHeader,
         fontSize: 12,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     previewLegend: {
         flexDirection: 'row',
@@ -576,23 +580,23 @@ const styles = StyleSheet.create({
     legendBox: {
         height: 12,
         borderRadius: 3,
-        backgroundColor: theme.primary,
+        backgroundColor: t.colors.accent,
     },
     legendText: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 11,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     listContainer: {
         flex: 1,
     },
     listContent: {
-        paddingHorizontal: spacing.screenPadding,
+        paddingHorizontal: t.spacing.screenPadding,
         paddingBottom: 100,
     },
     fieldCard: {
-        backgroundColor: theme.surface,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.card,
         marginBottom: 8,
         borderWidth: 2,
         borderColor: 'transparent',
@@ -602,7 +606,7 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
     fieldCardSelected: {
-        borderColor: theme.primary,
+        borderColor: t.colors.accent,
     },
     fieldCardHeader: {
         flexDirection: 'row',
@@ -621,17 +625,17 @@ const styles = StyleSheet.create({
         opacity: 0.3,
     },
     fieldCardTitle: {
-        ...typography.cardTitle,
+        ...t.typography.cardTitle,
         fontSize: 15,
         flex: 1,
     },
     fieldCardTitleHidden: {
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     sizeIndicatorContainer: {
         width: 40,
         height: 8,
-        backgroundColor: theme.backgroundSecondary,
+        backgroundColor: t.colors.backgroundSecondary,
         borderRadius: 4,
         overflow: 'hidden',
     },
@@ -641,15 +645,15 @@ const styles = StyleSheet.create({
     },
     sizeIndicatorSmall: {
         width: '33%',
-        backgroundColor: `${theme.primary}60`,
+        backgroundColor: withAlpha(t.colors.accent, 0.376),
     },
     sizeIndicatorMedium: {
         width: '50%',
-        backgroundColor: `${theme.primary}80`,
+        backgroundColor: withAlpha(t.colors.accent, 0.502),
     },
     sizeIndicatorFull: {
         width: '100%',
-        backgroundColor: theme.primary,
+        backgroundColor: t.colors.accent,
     },
     visibilityButton: {
         padding: 4,
@@ -658,13 +662,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingBottom: 14,
         borderTopWidth: 1,
-        borderTopColor: theme.border,
+        borderTopColor: t.colors.border,
         paddingTop: 12,
     },
     sizeSelectorLabel: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 12,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginBottom: 8,
     },
     sizeOptions: {
@@ -673,72 +677,72 @@ const styles = StyleSheet.create({
     },
     sizeOption: {
         flex: 1,
-        backgroundColor: theme.backgroundSecondary,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.backgroundSecondary,
+        borderRadius: t.radius.tile,
         padding: 12,
         alignItems: 'center',
         borderWidth: 2,
         borderColor: 'transparent',
     },
     sizeOptionActive: {
-        backgroundColor: `${theme.primary}20`,
-        borderColor: theme.primary,
+        backgroundColor: t.colors.tileSelected,
+        borderColor: t.colors.tileSelectedBorder,
     },
     sizeOptionText: {
-        ...typography.cardTitle,
+        ...t.typography.cardTitle,
         fontSize: 14,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     sizeOptionTextActive: {
-        color: theme.primary,
+        color: t.colors.tileSelectedText,
     },
     sizeOptionSubtext: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 11,
-        color: theme.textMuted,
+        color: t.colors.textMuted,
         marginTop: 2,
     },
     sizeOptionSubtextActive: {
-        color: theme.primary,
+        color: t.colors.tileSelectedText,
     },
     bottomBar: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: theme.background,
-        paddingHorizontal: spacing.screenPadding,
+        backgroundColor: t.colors.background,
+        paddingHorizontal: t.spacing.screenPadding,
         paddingTop: 12,
         paddingBottom: Platform.OS === 'ios' ? 30 : 16,
         borderTopWidth: 1,
-        borderTopColor: theme.border,
+        borderTopColor: t.colors.border,
     },
     saveButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: theme.primary,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.button,
+        borderRadius: t.radius.button,
         paddingVertical: 14,
     },
     saveButtonDisabled: {
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
     },
     saveButtonText: {
-        ...typography.buttonPrimary,
+        ...t.typography.buttonPrimary,
         fontSize: 16,
     },
     saveButtonTextDisabled: {
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     modalHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: spacing.screenPadding,
+        paddingHorizontal: t.spacing.screenPadding,
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
-});
+}));

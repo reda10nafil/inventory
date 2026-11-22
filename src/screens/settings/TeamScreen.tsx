@@ -6,21 +6,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Pressable,
   ScrollView,
   Alert,
   ActivityIndicator,
-  TextInput,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from '../../navigation/compat';
 import useMeshRole from '../../hooks/useMeshRole';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 // ---------------------------------------------------------------------------
 // Scanner universale — expo-camera (funziona su qualsiasi Android/iOS, no S25 specifico)
@@ -28,28 +29,11 @@ import useMeshRole from '../../hooks/useMeshRole';
 const Camera: any = CameraView;
 
 // ---------------------------------------------------------------------------
-// Theme isolata #0A0A0A / #D4AF37 (coerente con constants/theme.ts)
-// ---------------------------------------------------------------------------
-const T = {
-  bg: '#0A0A0A',
-  bg2: '#1A1A1A',
-  surface: '#1F1F1F',
-  surface2: '#2A2A2A',
-  border: '#374151',
-  borderLight: '#2A2A2A',
-  gold: '#D4AF37',
-  goldDim: '#B8941F',
-  text: '#FFFFFF',
-  textSec: '#9CA3AF',
-  textMuted: '#6B7280',
-  success: '#10B981',
-  error: '#EF4444',
-};
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export default function TeamScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const {
     role,
@@ -250,7 +234,7 @@ export default function TeamScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-          <MaterialIcons name="arrow-back" size={24} color={T.text} />
+          <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Team & Accesso</Text>
         <View style={{ width: 36 }} />
@@ -272,9 +256,9 @@ export default function TeamScreen() {
           style={styles.linkRow}
           onPress={() => (router as any).push('/chat' as any)}
         >
-          <MaterialIcons name="chat-bubble-outline" size={18} color={T.gold} />
+          <AppIcon name="chat-bubble-outline" size={18} color={t.colors.accentInk} />
           <Text style={styles.linkText}>Apri Chat Team (placeholder router.push)</Text>
-          <MaterialIcons name="chevron-right" size={20} color={T.textSec} />
+          <AppIcon name="chevron-right" size={20} color={t.colors.textSecondary} />
         </Pressable>
 
         {/* Host vs Client toggle — fix flash: mode indipendente, niente sync role→mode */}
@@ -288,7 +272,7 @@ export default function TeamScreen() {
               setIsScanning(false);
             }}
           >
-            <MaterialIcons name="qr-code-2" size={18} color={mode === 'host' ? '#000' : T.textSec} />
+            <AppIcon name="qr-code-2" size={18} color={mode === 'host' ? t.colors.onAccent : t.colors.textSecondary} />
             <Text style={[styles.segText, mode === 'host' && styles.segTextActive]}>Host (Genera QR)</Text>
           </Pressable>
           <Pressable
@@ -299,14 +283,14 @@ export default function TeamScreen() {
               setIsScanning(false);
             }}
           >
-            <MaterialIcons name="qr-code-scanner" size={18} color={mode === 'client' ? '#000' : T.textSec} />
+            <AppIcon name="qr-code-scanner" size={18} color={mode === 'client' ? t.colors.onAccent : t.colors.textSecondary} />
             <Text style={[styles.segText, mode === 'client' && styles.segTextActive]}>Client (Scansiona)</Text>
           </Pressable>
         </View>
 
         {/* Stato connessione — generico, offline/online coerente */}
         <View style={styles.statusCard}>
-          <View style={[styles.dot, { backgroundColor: isConnected ? T.success : mode === 'host' ? '#F59E0B' : T.textMuted }]} />
+          <View style={[styles.dot, { backgroundColor: isConnected ? t.colors.success : mode === 'host' ? t.colors.warning : t.colors.textMuted }]} />
           <Text style={styles.statusText}>
             {isConnected ? 'Connesso LAN' : mode === 'host' ? 'Host pronto — in attesa client' : 'Non connesso — in attesa scansione'} • Sync: {isConnected ? (syncStatus === 'synced' ? 'sincronizzato' : syncStatus === 'syncing' ? 'in corso' : 'pronto') : 'pronto'}
             {(isConnected || mode === 'host') && roomToken ? ` • ROOM ${roomToken}` : ''}
@@ -322,43 +306,43 @@ export default function TeamScreen() {
         {mode === 'host' && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="hub" size={20} color={T.gold} />
+              <AppIcon name="hub" size={20} color={t.colors.accentInk} />
               <Text style={styles.cardTitle}>Host — Genera QR LAN</Text>
             </View>
             <Text style={styles.cardDesc}>
               Mostra questo QR al Client sulla stessa rete Mercusys. Payload:{' '}
-              <Text style={{ color: T.gold }}>ws://IP:PORT?token=ROOM</Text> (IP locale auto).
+              <Text style={{ color: t.colors.accentInk }}>ws://IP:PORT?token=ROOM</Text> (IP locale auto).
             </Text>
 
             {hostLoading ? (
               <View style={styles.qrLoading}>
-                <ActivityIndicator color={T.gold} />
+                <ActivityIndicator color={t.colors.accentInk} />
                 <Text style={styles.muted}>Generazione stanza...</Text>
               </View>
             ) : qrPayload ? (
               <>
                 <View style={styles.qrWrap}>
                   <View style={styles.qrBox}>
-                    <QRCode value={qrPayload} size={200} color="#000" backgroundColor="#FFF" />
+                    <QRCode value={qrPayload} size={200} color={t.colors.qrInk} backgroundColor={t.colors.qrPaper} />
                   </View>
                   <Text style={styles.qrPayload} selectable>
                     {qrPayload}
                   </Text>
-                  <Text style={[styles.qrHint, qrExpiresIn < 20 && { color: T.error, fontWeight: '700' }]}>
+                  <Text style={[styles.qrHint, qrExpiresIn < 20 && { color: t.colors.error, fontWeight: '700' }]}>
                     {qrExpiresIn > 0 ? `QR effimero — scade in ${qrExpiresIn}s (uso singolo, rigenerazione automatica)` : 'QR scaduto — rigenerazione...'}
                   </Text>
                   <View style={styles.qrProgressTrack}>
-                    <View style={[styles.qrProgressFill, { width: `${(qrExpiresIn/120)*100}%`, backgroundColor: qrExpiresIn < 20 ? T.error : T.gold }]} />
+                    <View style={[styles.qrProgressFill, { width: `${(qrExpiresIn/120)*100}%`, backgroundColor: qrExpiresIn < 20 ? t.colors.error : t.colors.accent }]} />
                   </View>
                 </View>
 
                 <View style={styles.rowGap}>
                   <Pressable style={styles.primaryBtn} onPress={handleCreateHost}>
-                    <MaterialIcons name="refresh" size={18} color="#000" />
+                    <AppIcon name="refresh" size={18} color={t.colors.onButton} />
                     <Text style={styles.primaryBtnText}>Rigenera QR</Text>
                   </Pressable>
                   <Pressable style={styles.secondaryBtn} onPress={handleTestPayload}>
-                    <MaterialIcons name="send" size={18} color={T.gold} />
+                    <AppIcon name="send" size={18} color={t.colors.onButtonSecondary} />
                     <Text style={styles.secondaryBtnText}>Invia payload test</Text>
                   </Pressable>
                 </View>
@@ -371,14 +355,14 @@ export default function TeamScreen() {
               </>
             ) : (
               <Pressable style={styles.primaryBtn} onPress={handleCreateHost}>
-                <MaterialIcons name="qr-code" size={20} color="#000" />
+                <AppIcon name="qr-code" size={20} color={t.colors.onButton} />
                 <Text style={styles.primaryBtnText}>Genera QR Host</Text>
               </Pressable>
             )}
 
             <Pressable style={styles.rowBetween} onPress={() => syncNow({ fullResync: false })}>
               <Text style={styles.muted}>Host push delta</Text>
-              <Text style={{ color: T.gold, fontWeight: '700' }}>Sincronizza ora →</Text>
+              <Text style={{ color: t.colors.accentInk, fontWeight: '700' }}>Sincronizza ora →</Text>
             </Pressable>
           </View>
         )}
@@ -387,7 +371,7 @@ export default function TeamScreen() {
         {mode === 'client' && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="phonelink" size={20} color={T.gold} />
+              <AppIcon name="phonelink" size={20} color={t.colors.accentInk} />
               <Text style={styles.cardTitle}>Client — Scanner QR universale</Text>
             </View>
             <Text style={styles.cardDesc}>
@@ -404,7 +388,7 @@ export default function TeamScreen() {
                     if (!res.granted) Alert.alert('Permesso negato', 'Abilita la fotocamera nelle impostazioni.');
                   }}
                 >
-                  <MaterialIcons name="videocam-off" size={36} color={T.textMuted} />
+                  <AppIcon name="videocam-off" size={36} color={t.colors.textMuted} />
                   <Text style={styles.cameraPlaceholderTitle}>Permesso fotocamera richiesto</Text>
                   <Text style={styles.cameraPlaceholderDesc}>Tocca per autorizzare — funziona su qualsiasi telefono</Text>
                 </Pressable>
@@ -413,7 +397,7 @@ export default function TeamScreen() {
                   style={styles.cameraPlaceholder}
                   onPress={() => setIsScanning(true)}
                 >
-                  <MaterialIcons name="qr-code-scanner" size={44} color={T.gold} />
+                  <AppIcon name="qr-code-scanner" size={44} color={t.colors.accentInk} />
                   <Text style={styles.cameraPlaceholderTitle}>Avvia scanner QR</Text>
                   <Text style={styles.cameraPlaceholderDesc}>Universale • QR only • LAN isolata</Text>
                 </Pressable>
@@ -436,7 +420,7 @@ export default function TeamScreen() {
                     <Text style={styles.scanLabel}>Inquadra il QR Host</Text>
                   </View>
                   <Pressable style={styles.closeScan} onPress={() => setIsScanning(false)}>
-                    <MaterialIcons name="close" size={22} color="#FFF" />
+                    <AppIcon name="close" size={22} color="#FFF" />
                   </Pressable>
                 </View>
               )}
@@ -449,19 +433,19 @@ export default function TeamScreen() {
                 value={manualPayload}
                 onChangeText={setManualPayload}
                 placeholder="ws://192.168.1.50:8080?token=0123456789ABCDEF"
-                placeholderTextColor={T.textMuted}
+                placeholderTextColor={t.colors.textMuted}
                 style={styles.input}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
               <Pressable style={styles.goBtn} onPress={handleManualJoin}>
-                <MaterialIcons name="login" size={20} color="#000" />
+                <AppIcon name="login" size={20} color={t.colors.onButton} />
               </Pressable>
             </View>
 
             {scannedValue && (
               <View style={styles.scannedCard}>
-                <MaterialIcons name="check-circle" size={18} color={T.success} />
+                <AppIcon name="check-circle" size={18} color={t.colors.success} />
                 <Text style={styles.scannedText} numberOfLines={2}>
                   Ultimo QR: {scannedValue}
                 </Text>
@@ -470,11 +454,11 @@ export default function TeamScreen() {
 
             <View style={styles.rowGap}>
               <Pressable style={styles.secondaryBtn} onPress={() => syncNow({ fullResync: true })}>
-                <MaterialIcons name="sync" size={18} color={T.gold} />
+                <AppIcon name="sync" size={18} color={t.colors.onButtonSecondary} />
                 <Text style={styles.secondaryBtnText}>Sincronizza ora</Text>
               </Pressable>
               <Pressable style={styles.secondaryBtn} onPress={handleTestPayload}>
-                <MaterialIcons name="send" size={18} color={T.gold} />
+                <AppIcon name="send" size={18} color={t.colors.onButtonSecondary} />
                 <Text style={styles.secondaryBtnText}>Invia light payload</Text>
               </Pressable>
             </View>
@@ -488,7 +472,7 @@ export default function TeamScreen() {
         {/* Dispositivi nella stanza — sezione separata (non ammucchiata) */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <MaterialIcons name="devices" size={20} color={T.gold} />
+            <AppIcon name="devices" size={20} color={t.colors.accentInk} />
             <Text style={styles.cardTitle}>Dispositivi nella stanza ({connectedDevices.length})</Text>
           </View>
           <Text style={styles.cardDesc}>Presenza in tempo reale sulla rete locale. I dispositivi appaiono dopo il pairing con il QR della stanza.</Text>
@@ -497,12 +481,12 @@ export default function TeamScreen() {
           ) : (
             connectedDevices.map(dev => (
               <View key={dev.id} style={styles.deviceRow}>
-                <View style={[styles.deviceDot, { backgroundColor: dev.online ? T.success : T.textMuted }]} />
+                <View style={[styles.deviceDot, { backgroundColor: dev.online ? t.colors.success : t.colors.textMuted }]} />
                 <View style={styles.deviceInfo}>
                   <Text style={styles.deviceName}>{dev.name}</Text>
                   <Text style={styles.deviceMeta}>{dev.ip} • {dev.role} • ultimo: {dev.lastSeen}</Text>
                 </View>
-                <Text style={[styles.deviceStatus, { color: dev.online ? T.success : T.textMuted }]}>{dev.online ? 'Online' : 'Offline'}</Text>
+                <Text style={[styles.deviceStatus, { color: dev.online ? t.colors.success : t.colors.textMuted }]}>{dev.online ? 'Online' : 'Offline'}</Text>
               </View>
             ))
           )}
@@ -511,7 +495,7 @@ export default function TeamScreen() {
 
         {/* Info LAN isolata */}
         <View style={styles.infoCard}>
-          <MaterialIcons name="security" size={20} color={T.gold} />
+          <AppIcon name="security" size={20} color={t.colors.accentInk} />
           <Text style={styles.infoText}>
             Pairing protetto da token temporaneo. Il traffico WebSocket resta in chiaro: usa questa funzione solo su una rete locale privata e affidabile.
           </Text>
@@ -521,8 +505,8 @@ export default function TeamScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+const useStyles = makeStyles((t) => ({
+  container: { flex: 1, backgroundColor: t.colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -530,34 +514,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: T.borderLight,
-    backgroundColor: T.bg,
+    borderBottomColor: t.colors.borderLight,
+    backgroundColor: t.colors.background,
   },
   backBtn: { padding: 6, borderRadius: 20 },
-  headerTitle: { color: T.text, fontSize: 18, fontWeight: '700', letterSpacing: 0.3 },
+  headerTitle: { color: t.colors.textPrimary, fontSize: 18, fontWeight: '700', letterSpacing: 0.3 },
   scrollContent: { padding: 16, paddingBottom: 28, gap: 14 },
-  sectionTitle: { color: T.textSec, fontSize: 12, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' },
-  sectionDesc: { color: T.textSec, fontSize: 13, lineHeight: 18 },
+  sectionTitle: { color: t.colors.textSecondary, fontSize: 12, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' },
+  sectionDesc: { color: t.colors.textSecondary, fontSize: 13, lineHeight: 18 },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: T.surface,
+    backgroundColor: t.colors.surface,
     borderWidth: 1,
-    borderColor: T.borderLight,
+    borderColor: t.colors.borderLight,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  linkText: { flex: 1, color: T.text, fontWeight: '600', fontSize: 13 },
+  linkText: { flex: 1, color: t.colors.textPrimary, fontWeight: '600', fontSize: 13 },
   segment: {
     flexDirection: 'row',
-    backgroundColor: T.bg2,
+    backgroundColor: t.colors.backgroundSecondary,
     borderRadius: 12,
     padding: 4,
     gap: 6,
     borderWidth: 1,
-    borderColor: T.borderLight,
+    borderColor: t.colors.borderLight,
   },
   segBtn: {
     flex: 1,
@@ -568,53 +552,53 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderRadius: 9,
   },
-  segBtnActive: { backgroundColor: T.gold },
-  segText: { color: T.textSec, fontWeight: '700', fontSize: 13 },
-  segTextActive: { color: '#000' },
+  segBtnActive: { backgroundColor: t.colors.accent },
+  segText: { color: t.colors.textSecondary, fontWeight: '700', fontSize: 13 },
+  segTextActive: { color: t.colors.onAccent },
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: T.surface,
+    backgroundColor: t.colors.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: T.borderLight,
+    borderColor: t.colors.borderLight,
   },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  statusText: { flex: 1, color: T.textSec, fontSize: 12, fontWeight: '600' },
-  disconnectBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: T.bg2, borderWidth: 1, borderColor: T.border },
-  disconnectText: { color: T.text, fontSize: 12, fontWeight: '700' },
+  statusText: { flex: 1, color: t.colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  disconnectBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: t.colors.backgroundSecondary, borderWidth: 1, borderColor: t.colors.border },
+  disconnectText: { color: t.colors.textPrimary, fontSize: 12, fontWeight: '700' },
   card: {
-    backgroundColor: T.surface,
+    backgroundColor: t.colors.surface,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: T.borderLight,
+    borderColor: t.colors.borderLight,
     gap: 12,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardTitle: { color: T.text, fontSize: 15, fontWeight: '800' },
-  cardDesc: { color: T.textSec, fontSize: 13, lineHeight: 18 },
+  cardTitle: { color: t.colors.textPrimary, fontSize: 15, fontWeight: '800' },
+  cardDesc: { color: t.colors.textSecondary, fontSize: 13, lineHeight: 18 },
   qrLoading: { alignItems: 'center', gap: 10, paddingVertical: 24 },
-  muted: { color: T.textSec, fontSize: 13 },
-  mutedSmall: { color: T.textMuted, fontSize: 11, textAlign: 'center' },
+  muted: { color: t.colors.textSecondary, fontSize: 13 },
+  mutedSmall: { color: t.colors.textMuted, fontSize: 11, textAlign: 'center' },
   qrWrap: { alignItems: 'center', gap: 10, paddingVertical: 8 },
-  qrBox: { backgroundColor: '#FFF', padding: 14, borderRadius: 12 },
-  qrPayload: { color: T.gold, fontSize: 11, fontWeight: '700', textAlign: 'center' },
-  qrHint: { color: T.textMuted, fontSize: 11, textAlign: 'center' },
-  qrProgressTrack: { height: 4, backgroundColor: T.borderLight, borderRadius: 2, overflow: 'hidden', marginTop: 6 },
+  qrBox: { backgroundColor: t.colors.qrPaper, padding: 14, borderRadius: 12 },
+  qrPayload: { color: t.colors.accentInk, fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  qrHint: { color: t.colors.textMuted, fontSize: 11, textAlign: 'center' },
+  qrProgressTrack: { height: 4, backgroundColor: t.colors.borderLight, borderRadius: 2, overflow: 'hidden', marginTop: 6 },
   qrProgressFill: { height: 4, borderRadius: 2 },
-  deviceListCard: { backgroundColor: T.bg2, borderRadius: 12, padding: 12, gap: 8, borderWidth: 1, borderColor: T.borderLight, marginTop: 4 },
+  deviceListCard: { backgroundColor: t.colors.backgroundSecondary, borderRadius: 12, padding: 12, gap: 8, borderWidth: 1, borderColor: t.colors.borderLight, marginTop: 4 },
   deviceListHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  deviceListTitle: { color: T.text, fontSize: 12, fontWeight: '800', flex: 1 },
-  deviceListSubtitle: { color: T.textMuted, fontSize: 10, fontWeight: '600' },
-  deviceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: T.borderLight },
+  deviceListTitle: { color: t.colors.textPrimary, fontSize: 12, fontWeight: '800', flex: 1 },
+  deviceListSubtitle: { color: t.colors.textMuted, fontSize: 10, fontWeight: '600' },
+  deviceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: t.colors.borderLight },
   deviceDot: { width: 8, height: 8, borderRadius: 4 },
   deviceInfo: { flex: 1, gap: 2 },
-  deviceName: { color: T.text, fontSize: 13, fontWeight: '700' },
-  deviceMeta: { color: T.textMuted, fontSize: 10 },
+  deviceName: { color: t.colors.textPrimary, fontSize: 13, fontWeight: '700' },
+  deviceMeta: { color: t.colors.textMuted, fontSize: 10 },
   deviceStatus: { fontSize: 11, fontWeight: '700' },
   rowGap: { flexDirection: 'row', gap: 10 },
   primaryBtn: {
@@ -623,87 +607,87 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: T.gold,
+    backgroundColor: t.colors.button,
     paddingVertical: 12,
     borderRadius: 10,
   },
-  primaryBtnText: { color: '#000', fontWeight: '800', fontSize: 13 },
+  primaryBtnText: { color: t.colors.onButton, fontWeight: '800', fontSize: 13 },
   secondaryBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: T.bg2,
+    backgroundColor: t.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: T.gold + '55',
+    borderColor: withAlpha(t.colors.accent, 0.333),
     paddingVertical: 12,
     borderRadius: 10,
   },
-  secondaryBtnText: { color: T.gold, fontWeight: '800', fontSize: 13 },
-  metaText: { color: T.textMuted, fontSize: 11, lineHeight: 15 },
+  secondaryBtnText: { color: t.colors.onButtonSecondary, fontWeight: '800', fontSize: 13 },
+  metaText: { color: t.colors.textMuted, fontSize: 11, lineHeight: 15 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 },
   // camera
-  cameraWrap: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: T.borderLight, backgroundColor: '#000' },
+  cameraWrap: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: t.colors.borderLight, backgroundColor: t.colors.cameraBackground },
   cameraPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 28,
     paddingHorizontal: 16,
-    backgroundColor: T.bg2,
+    backgroundColor: t.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: T.borderLight,
+    borderColor: t.colors.borderLight,
     borderRadius: 12,
   },
-  cameraPlaceholderTitle: { color: T.text, fontWeight: '800', fontSize: 14, marginTop: 6 },
-  cameraPlaceholderDesc: { color: T.textSec, fontSize: 11, textAlign: 'center' },
-  badge: { marginTop: 6, backgroundColor: T.gold + '22', borderWidth: 1, borderColor: T.gold + '55', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  badgeText: { color: T.gold, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
-  cameraContainer: { height: 320, backgroundColor: '#000', position: 'relative' },
+  cameraPlaceholderTitle: { color: t.colors.textPrimary, fontWeight: '800', fontSize: 14, marginTop: 6 },
+  cameraPlaceholderDesc: { color: t.colors.textSecondary, fontSize: 11, textAlign: 'center' },
+  badge: { marginTop: 6, backgroundColor: withAlpha(t.colors.accent, 0.133), borderWidth: 1, borderColor: withAlpha(t.colors.accent, 0.333), paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  badgeText: { color: t.colors.accentInk, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  cameraContainer: { height: 320, backgroundColor: t.colors.cameraBackground, position: 'relative' },
   scanOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 16 },
   scanFrame: { width: 220, height: 220, position: 'relative' },
-  corner: { position: 'absolute', width: 28, height: 28, borderColor: T.gold },
+  corner: { position: 'absolute', width: 28, height: 28, borderColor: t.colors.accent },
   cornerTL: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 },
   cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
-  scanLabel: { color: '#FFF', fontWeight: '700', fontSize: 12, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, overflow: 'hidden' },
-  closeScan: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 999 },
-  label: { color: T.textSec, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 4 },
+  scanLabel: { color: '#FFF', fontWeight: '700', fontSize: 12, backgroundColor: withAlpha(t.colors.shadow, 0.55), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, overflow: 'hidden' },
+  closeScan: { position: 'absolute', top: 10, right: 10, backgroundColor: withAlpha(t.colors.shadow, 0.6), padding: 8, borderRadius: 999 },
+  label: { color: t.colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 4 },
   inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   input: {
     flex: 1,
-    backgroundColor: T.bg2,
+    backgroundColor: t.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: t.colors.inputBorder,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: T.text,
+    color: t.colors.inputText,
     fontSize: 12,
   },
-  goBtn: { width: 44, height: 44, borderRadius: 10, backgroundColor: T.gold, alignItems: 'center', justifyContent: 'center' },
+  goBtn: { width: 44, height: 44, borderRadius: 10, backgroundColor: t.colors.button, alignItems: 'center', justifyContent: 'center' },
   scannedCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: T.bg2,
+    backgroundColor: t.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: T.success + '44',
+    borderColor: withAlpha(t.colors.success, 0.267),
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  scannedText: { flex: 1, color: T.text, fontSize: 11, fontWeight: '600' },
+  scannedText: { flex: 1, color: t.colors.textPrimary, fontSize: 11, fontWeight: '600' },
   infoCard: {
     flexDirection: 'row',
     gap: 10,
-    backgroundColor: T.gold + '12',
+    backgroundColor: withAlpha(t.colors.accent, 0.071),
     borderWidth: 1,
-    borderColor: T.gold + '30',
+    borderColor: withAlpha(t.colors.accent, 0.19),
     borderRadius: 12,
     padding: 12,
   },
-  infoText: { flex: 1, color: T.textSec, fontSize: 12, lineHeight: 16 },
-});
+  infoText: { flex: 1, color: t.colors.textSecondary, fontSize: 12, lineHeight: 16 },
+}));

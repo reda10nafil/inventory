@@ -1,15 +1,19 @@
 // FurInventory Pro - GS1 Digital Link Configuration Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Switch, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Switch, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing, shadows } from '../../../constants/theme';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { buildPreviewLink } from '../../../utils/gs1';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 export default function GS1ConfigScreen() {
+  const styles = useStyles();
+  const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { gs1Config, updateGS1Config, resetToDefaults } = useGS1Config();
@@ -56,7 +60,7 @@ export default function GS1ConfigScreen() {
       {/* Header Info */}
       <View style={styles.infoCard}>
         <View style={styles.infoIconWrap}>
-          <MaterialIcons name="link" size={24} color={theme.primary} />
+          <AppIcon name="link" size={24} color={t.colors.accentInk} />
         </View>
         <View style={styles.infoContent}>
           <Text style={styles.infoTitle}>GS1 Digital Link</Text>
@@ -71,14 +75,14 @@ export default function GS1ConfigScreen() {
       <View style={styles.card}>
         <Text style={styles.fieldLabel}>Dominio Base</Text>
         <View style={styles.inputContainer}>
-          <MaterialIcons name="language" size={20} color={theme.textSecondary} style={styles.inputIcon} />
+          <AppIcon name="language" size={20} color={t.colors.fieldIcon} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             value={baseUrlLocal}
             onChangeText={setBaseUrlLocal}
             onBlur={handleBaseUrlBlur}
             placeholder="https://syncroflow.app/id"
-            placeholderTextColor={theme.textMuted}
+            placeholderTextColor={t.colors.textMuted}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -96,8 +100,8 @@ export default function GS1ConfigScreen() {
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
-            <View style={[styles.aiBadge, { backgroundColor: `${theme.primary}30` }]}>
-              <Text style={[styles.aiBadgeText, { color: theme.primary }]}>AI 01</Text>
+            <View style={[styles.aiBadge, { backgroundColor: withAlpha(t.colors.accent, 0.19) }]}>
+              <Text style={[styles.aiBadgeText, { color: t.colors.accentInk }]}>AI 01</Text>
             </View>
             <View style={styles.toggleTextWrap}>
               <Text style={styles.toggleTitle}>GTIN / EAN</Text>
@@ -105,7 +109,7 @@ export default function GS1ConfigScreen() {
             </View>
           </View>
           <View style={styles.alwaysOnBadge}>
-            <MaterialIcons name="lock" size={14} color={theme.primary} />
+            <AppIcon name="lock" size={14} color={t.colors.accentInk} />
             <Text style={styles.alwaysOnText}>Obbligatorio</Text>
           </View>
         </View>
@@ -115,8 +119,8 @@ export default function GS1ConfigScreen() {
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
-            <View style={[styles.aiBadge, { backgroundColor: gs1Config.enableSerial ? `${theme.success}30` : `${theme.textMuted}20` }]}>
-              <Text style={[styles.aiBadgeText, { color: gs1Config.enableSerial ? theme.success : theme.textMuted }]}>AI 21</Text>
+            <View style={[styles.aiBadge, { backgroundColor: gs1Config.enableSerial ? withAlpha(t.colors.success, 0.19) : withAlpha(t.colors.textMuted, 0.125) }]}>
+              <Text style={[styles.aiBadgeText, { color: gs1Config.enableSerial ? t.colors.success : t.colors.textMuted }]}>AI 21</Text>
             </View>
             <View style={styles.toggleTextWrap}>
               <Text style={styles.toggleTitle}>Numero Seriale</Text>
@@ -126,8 +130,8 @@ export default function GS1ConfigScreen() {
           <Switch
             value={gs1Config.enableSerial}
             onValueChange={(val) => updateGS1Config({ enableSerial: val })}
-            trackColor={{ false: theme.border, true: `${theme.success}80` }}
-            thumbColor={gs1Config.enableSerial ? theme.success : theme.textMuted}
+            trackColor={{ false: t.colors.border, true: withAlpha(t.colors.success, 0.502) }}
+            thumbColor={gs1Config.enableSerial ? t.colors.success : t.colors.textMuted}
           />
         </View>
 
@@ -140,10 +144,10 @@ export default function GS1ConfigScreen() {
                 style={[styles.segmentButton, gs1Config.serialMode === 'uuid' && styles.segmentButtonActive]}
                 onPress={() => updateGS1Config({ serialMode: 'uuid' })}
               >
-                <MaterialIcons
+                <AppIcon
                   name="fingerprint"
                   size={16}
-                  color={gs1Config.serialMode === 'uuid' ? '#000' : theme.textSecondary}
+                  color={gs1Config.serialMode === 'uuid' ? t.colors.onAccent : t.colors.textSecondary}
                 />
                 <Text style={[styles.segmentText, gs1Config.serialMode === 'uuid' && styles.segmentTextActive]}>UUID</Text>
               </Pressable>
@@ -151,10 +155,10 @@ export default function GS1ConfigScreen() {
                 style={[styles.segmentButton, gs1Config.serialMode === 'progressive' && styles.segmentButtonActive]}
                 onPress={() => updateGS1Config({ serialMode: 'progressive' })}
               >
-                <MaterialIcons
+                <AppIcon
                   name="format-list-numbered"
                   size={16}
-                  color={gs1Config.serialMode === 'progressive' ? '#000' : theme.textSecondary}
+                  color={gs1Config.serialMode === 'progressive' ? t.colors.onAccent : t.colors.textSecondary}
                 />
                 <Text style={[styles.segmentText, gs1Config.serialMode === 'progressive' && styles.segmentTextActive]}>Progressivo</Text>
               </Pressable>
@@ -167,8 +171,8 @@ export default function GS1ConfigScreen() {
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
-            <View style={[styles.aiBadge, { backgroundColor: gs1Config.enableLotto ? `${theme.info}30` : `${theme.textMuted}20` }]}>
-              <Text style={[styles.aiBadgeText, { color: gs1Config.enableLotto ? theme.info : theme.textMuted }]}>AI 10</Text>
+            <View style={[styles.aiBadge, { backgroundColor: gs1Config.enableLotto ? withAlpha(t.colors.info, 0.19) : withAlpha(t.colors.textMuted, 0.125) }]}>
+              <Text style={[styles.aiBadgeText, { color: gs1Config.enableLotto ? t.colors.info : t.colors.textMuted }]}>AI 10</Text>
             </View>
             <View style={styles.toggleTextWrap}>
               <Text style={styles.toggleTitle}>Lotto</Text>
@@ -178,8 +182,8 @@ export default function GS1ConfigScreen() {
           <Switch
             value={gs1Config.enableLotto}
             onValueChange={(val) => updateGS1Config({ enableLotto: val })}
-            trackColor={{ false: theme.border, true: `${theme.info}80` }}
-            thumbColor={gs1Config.enableLotto ? theme.info : theme.textMuted}
+            trackColor={{ false: t.colors.border, true: withAlpha(t.colors.info, 0.502) }}
+            thumbColor={gs1Config.enableLotto ? t.colors.info : t.colors.textMuted}
           />
         </View>
 
@@ -199,10 +203,10 @@ export default function GS1ConfigScreen() {
                     style={[styles.fieldPickerChip, gs1Config.lottoFieldId === cf.id && styles.fieldPickerChipActive]}
                     onPress={() => updateGS1Config({ lottoFieldId: cf.id })}
                   >
-                    <MaterialIcons
+                    <AppIcon
                       name={(cf.icon || 'label') as any}
                       size={16}
-                      color={gs1Config.lottoFieldId === cf.id ? '#000' : theme.textSecondary}
+                      color={gs1Config.lottoFieldId === cf.id ? t.colors.chipActiveText : t.colors.chipText}
                     />
                     <Text style={[styles.fieldPickerText, gs1Config.lottoFieldId === cf.id && styles.fieldPickerTextActive]}>
                       {cf.name}
@@ -219,7 +223,7 @@ export default function GS1ConfigScreen() {
       <Text style={styles.sectionTitle}>ANTEPRIMA STRINGA</Text>
       <View style={styles.previewCard}>
         <View style={styles.previewHeader}>
-          <MaterialIcons name="qr-code" size={20} color={theme.primary} />
+          <AppIcon name="qr-code" size={20} color={t.colors.accentInk} />
           <Text style={styles.previewLabel}>URL Risultante</Text>
         </View>
         <View style={styles.previewUrlContainer}>
@@ -227,16 +231,16 @@ export default function GS1ConfigScreen() {
         </View>
         <View style={styles.previewBreakdown}>
           <View style={styles.previewSegment}>
-            <View style={[styles.previewDot, { backgroundColor: theme.primary }]} />
+            <View style={[styles.previewDot, { backgroundColor: t.colors.accent }]} />
             <Text style={styles.previewSegmentText}>Base: {baseUrlLocal || '...'}</Text>
           </View>
           <View style={styles.previewSegment}>
-            <View style={[styles.previewDot, { backgroundColor: theme.warning }]} />
+            <View style={[styles.previewDot, { backgroundColor: t.colors.warning }]} />
             <Text style={styles.previewSegmentText}>AI 01 (GTIN): dal campo SKU</Text>
           </View>
           {gs1Config.enableSerial && (
             <View style={styles.previewSegment}>
-              <View style={[styles.previewDot, { backgroundColor: theme.success }]} />
+              <View style={[styles.previewDot, { backgroundColor: t.colors.success }]} />
               <Text style={styles.previewSegmentText}>
                 AI 21 (Seriale): {gs1Config.serialMode === 'uuid' ? 'UUID automatico' : 'Progressivo'}
               </Text>
@@ -244,7 +248,7 @@ export default function GS1ConfigScreen() {
           )}
           {gs1Config.enableLotto && (
             <View style={styles.previewSegment}>
-              <View style={[styles.previewDot, { backgroundColor: theme.info }]} />
+              <View style={[styles.previewDot, { backgroundColor: t.colors.info }]} />
               <Text style={styles.previewSegmentText}>
                 AI 10 (Lotto): {gs1Config.lottoFieldId
                   ? customFields.find(f => f.id === gs1Config.lottoFieldId)?.name || 'campo selezionato'
@@ -257,35 +261,35 @@ export default function GS1ConfigScreen() {
 
       {/* Reset Button */}
       <Pressable style={styles.resetButton} onPress={handleReset}>
-        <MaterialIcons name="restore" size={20} color={theme.error} />
+        <AppIcon name="restore" size={20} color={t.colors.error} />
         <Text style={styles.resetText}>Ripristina Predefiniti</Text>
       </Pressable>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
-    paddingHorizontal: spacing.screenPadding,
+    backgroundColor: t.colors.background,
+    paddingHorizontal: t.spacing.screenPadding,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: `${theme.primary}10`,
-    borderRadius: borderRadius.large,
+    backgroundColor: withAlpha(t.colors.accent, 0.063),
+    borderRadius: t.radius.large,
     padding: 16,
     marginTop: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: `${theme.primary}30`,
+    borderColor: withAlpha(t.colors.accent, 0.19),
     gap: 12,
   },
   infoIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: `${theme.primary}20`,
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -293,46 +297,46 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoTitle: {
-    ...typography.cardTitle,
-    color: theme.primary,
+    ...t.typography.cardTitle,
+    color: t.colors.accentInk,
     marginBottom: 4,
   },
   infoDesc: {
-    ...typography.caption,
-    color: theme.textSecondary,
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
     lineHeight: 18,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 12,
     marginTop: 8,
   },
   card: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: theme.borderLight,
-    ...shadows.card,
+    borderColor: t.colors.borderLight,
+    ...t.shadows.card,
   },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     marginBottom: 10,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.input,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -341,13 +345,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: theme.textPrimary,
+    color: t.colors.inputText,
     paddingVertical: 14,
   },
   helperText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
-    color: theme.textMuted,
+    color: t.colors.textMuted,
     marginTop: 8,
     lineHeight: 16,
   },
@@ -378,45 +382,45 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     marginBottom: 2,
   },
   toggleDesc: {
     fontSize: 12,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   alwaysOnBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${theme.primary}15`,
+    backgroundColor: withAlpha(t.colors.accent, 0.082),
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: borderRadius.full,
+    borderRadius: t.radius.full,
     gap: 4,
   },
   alwaysOnText: {
     fontSize: 11,
     fontWeight: '700',
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   subOption: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: theme.borderLight,
+    borderTopColor: t.colors.borderLight,
   },
   subOptionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.medium,
     padding: 3,
     gap: 4,
   },
@@ -426,19 +430,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    borderRadius: borderRadius.small,
+    borderRadius: t.radius.small,
     gap: 6,
   },
   segmentButtonActive: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
   },
   segmentText: {
     fontSize: 13,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   segmentTextActive: {
-    color: '#000',
+    color: t.colors.onAccent,
   },
   fieldPickerGrid: {
     flexDirection: 'row',
@@ -450,38 +454,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: borderRadius.full,
-    backgroundColor: theme.backgroundSecondary,
+    borderRadius: t.radius.chip,
+    backgroundColor: t.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.chipBorder,
     gap: 6,
   },
   fieldPickerChipActive: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
+    backgroundColor: t.colors.chipActive,
+    borderColor: t.colors.chipActiveBorder,
   },
   fieldPickerText: {
     fontSize: 13,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.chipText,
   },
   fieldPickerTextActive: {
-    color: '#000',
+    color: t.colors.chipActiveText,
   },
   noFieldsText: {
     fontSize: 13,
-    color: theme.textMuted,
+    color: t.colors.textMuted,
     fontStyle: 'italic',
     lineHeight: 18,
   },
   previewCard: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: theme.primary,
-    ...shadows.cardElevated,
+    borderColor: t.colors.accent,
+    ...t.shadows.cardElevated,
   },
   previewHeader: {
     flexDirection: 'row',
@@ -492,20 +496,20 @@ const styles = StyleSheet.create({
   previewLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: theme.primary,
+    color: t.colors.accentInk,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   previewUrlContainer: {
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.medium,
     padding: 14,
     marginBottom: 12,
   },
   previewUrl: {
     fontSize: 13,
     fontFamily: 'monospace',
-    color: theme.primary,
+    color: t.colors.accentInk,
     lineHeight: 20,
   },
   previewBreakdown: {
@@ -523,7 +527,7 @@ const styles = StyleSheet.create({
   },
   previewSegmentText: {
     fontSize: 12,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   resetButton: {
     flexDirection: 'row',
@@ -531,14 +535,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     marginTop: 12,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
     borderWidth: 1,
-    borderColor: `${theme.error}30`,
+    borderColor: withAlpha(t.colors.error, 0.19),
     gap: 8,
   },
   resetText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.error,
+    color: t.colors.error,
   },
-});
+}));

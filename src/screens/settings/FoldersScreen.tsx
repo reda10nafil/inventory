@@ -1,12 +1,14 @@
 // FurInventory Pro - Manage Folders Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Modal } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView, Alert, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory, Library } from '../../../contexts/InventoryContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 const ICON_OPTIONS = [
   'folder',
@@ -20,6 +22,8 @@ const ICON_OPTIONS = [
 ];
 
 export default function ManageFoldersScreen() {
+  const styles = useStyles();
+  const t = useTheme();
   const insets = useSafeAreaInsets();
   const { libraries, products, addLibrary, updateLibrary, deleteLibrary } = useInventory();
 
@@ -167,7 +171,7 @@ export default function ManageFoldersScreen() {
           <TextInput
             style={styles.input}
             placeholder="Nome cartella (es: Giacche)"
-            placeholderTextColor={theme.textSecondary}
+            placeholderTextColor={t.colors.placeholder}
             value={name}
             onChangeText={setName}
           />
@@ -183,10 +187,10 @@ export default function ManageFoldersScreen() {
                 ]}
                 onPress={() => setSelectedIcon(icon)}
               >
-                <MaterialIcons
+                <AppIcon
                   name={icon as any}
                   size={28}
-                  color={selectedIcon === icon ? '#000' : theme.textSecondary}
+                  color={selectedIcon === icon ? t.colors.onAccent : t.colors.textSecondary}
                 />
               </Pressable>
             ))}
@@ -197,15 +201,15 @@ export default function ManageFoldersScreen() {
             <TextInput
               style={[styles.input, { flex: 1, marginBottom: 0 }]}
               placeholder="Scansiona o Genera..."
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={t.colors.placeholder}
               value={barcode}
               onChangeText={setBarcode}
             />
             <Pressable style={styles.iconButton} onPress={() => setShowScanner(true)}>
-              <MaterialIcons name="qr-code-scanner" size={24} color={theme.primary} />
+              <AppIcon name="qr-code-scanner" size={24} color={t.colors.accentInk} />
             </Pressable>
             <Pressable style={styles.iconButton} onPress={generateBarcode}>
-              <MaterialIcons name="autorenew" size={24} color={theme.primary} />
+              <AppIcon name="autorenew" size={24} color={t.colors.accentInk} />
             </Pressable>
           </View>
 
@@ -245,7 +249,7 @@ export default function ManageFoldersScreen() {
         {libraries.map((library) => (
           <Pressable key={library.id} style={styles.libraryItem} onPress={() => handleEdit(library)}>
             <View style={styles.libraryIcon}>
-              <MaterialIcons name={library.icon as any} size={28} color={theme.primary} />
+              <AppIcon name={library.icon as any} size={28} color={t.colors.accentInk} />
             </View>
             <View style={styles.libraryInfo}>
               <Text style={styles.libraryName}>{library.name}</Text>
@@ -259,18 +263,18 @@ export default function ManageFoldersScreen() {
             <View style={styles.itemActions}>
               {library.barcode && (
                 <Pressable onPress={() => { setBarcode(library.barcode!); setShowQRModal(true); }} style={{ marginRight: 8 }}>
-                  <MaterialIcons name="qr-code" size={20} color={theme.textPrimary} />
+                  <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
                 </Pressable>
               )}
               <Pressable onPress={() => handleDeleteLibrary(library.id)}>
-                <MaterialIcons name="delete" size={20} color={theme.error} />
+                <AppIcon name="delete" size={20} color={t.colors.error} />
               </Pressable>
             </View>
           </Pressable>
         ))}
 
         <View style={styles.infoCard}>
-          <MaterialIcons name="info-outline" size={24} color={theme.primary} />
+          <AppIcon name="info-outline" size={24} color={t.colors.accentInk} />
           <Text style={styles.infoText}>
             Usa i barcode per accedere rapidamente al contenuto di una cartella tramite le automazioni.
           </Text>
@@ -301,40 +305,40 @@ export default function ManageFoldersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
   },
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
   },
   formCard: {
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.surface,
     padding: 16,
-    borderRadius: borderRadius.large,
+    borderRadius: t.radius.large,
     marginBottom: 24,
   },
   formTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 16,
     marginBottom: 16,
     textTransform: 'uppercase',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   label: {
-    ...typography.caption,
+    ...t.typography.caption,
     marginBottom: 8,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   input: {
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.input,
     padding: 12,
-    color: theme.textPrimary,
+    color: t.colors.inputText,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
     marginBottom: 16,
   },
   iconPicker: {
@@ -346,16 +350,16 @@ const styles = StyleSheet.create({
   iconOption: {
     width: 50,
     height: 50,
-    borderRadius: borderRadius.medium,
-    backgroundColor: theme.backgroundSecondary,
+    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
   },
   iconOptionSelected: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
+    backgroundColor: t.colors.accent,
+    borderColor: t.colors.accent,
   },
   barcodeRow: {
     flexDirection: 'row',
@@ -365,16 +369,16 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 10,
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.medium,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
   },
   qrPreview: {
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#FFF',
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.qrPaper,
+    borderRadius: t.radius.medium,
     marginBottom: 16,
     alignSelf: 'center',
   },
@@ -382,7 +386,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#000',
+    color: t.colors.qrInk,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -390,50 +394,50 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.button,
     padding: 14,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.button,
     alignItems: 'center',
   },
   saveButtonText: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
     padding: 14,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.button,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.buttonSecondaryBorder,
   },
   cancelButtonText: {
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     fontWeight: '600',
   },
   warningText: {
     fontSize: 12,
-    color: theme.warning,
+    color: t.colors.warning,
     marginTop: 8,
     fontStyle: 'italic',
   },
   listTitle: {
-    ...typography.sectionHeader,
+    ...t.typography.sectionHeader,
     marginBottom: 12,
   },
   libraryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.surface,
     padding: 16,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.card,
     marginBottom: 8,
   },
   libraryIcon: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.medium,
-    backgroundColor: `${theme.primary}15`,
+    borderRadius: t.radius.iconWrap,
+    backgroundColor: withAlpha(t.colors.accent, 0.082),
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -442,18 +446,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   libraryName: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 15,
     marginBottom: 2,
   },
   libraryCount: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 11,
   },
   libraryId: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 10,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     fontFamily: 'monospace',
   },
   itemActions: {
@@ -469,29 +473,29 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: 'row',
     gap: 12,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 16,
     marginTop: 16,
     marginBottom: 16,
   },
   infoText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     lineHeight: 18,
     flex: 1,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: withAlpha(t.colors.shadow, 0.85),
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   qrCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: t.colors.qrPaper,
     padding: 32,
-    borderRadius: borderRadius.large,
+    borderRadius: t.radius.large,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,
@@ -500,13 +504,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 24,
-    color: '#000',
+    color: t.colors.qrInk,
   },
   qrBigText: {
     marginTop: 16,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: t.colors.qrInk,
     textAlign: 'center',
   },
   qrHint: {
@@ -515,4 +519,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-});
+}));

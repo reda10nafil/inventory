@@ -1,13 +1,15 @@
 // FurInventory Pro - Automation Builder
 import React, { useState } from 'react';
 import {
-    View, Text, StyleSheet, Pressable, ScrollView, Alert,
-    TextInput, Modal, FlatList,
+  View,
+  Pressable,
+  ScrollView,
+  Alert,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
-import { theme, borderRadius, spacing } from '../../../constants/theme';
 import {
     useAutomations,
     AutomationStep,
@@ -16,6 +18,10 @@ import {
     CustomAutomation,
 } from '../../../contexts/AutomationsContext';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 // ── Available step types for the picker ────────────────────
 const AVAILABLE_STEPS: { type: StepType; description: string }[] = [
@@ -38,6 +44,8 @@ const COLOR_OPTIONS = [
 ];
 
 export default function AutomationBuilderScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -154,7 +162,7 @@ export default function AutomationBuilderScreen() {
         <SafeAreaView edges={['top']} style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                    <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>{existing ? 'Modifica Automazione' : 'Nuova Automazione'}</Text>
                 <Pressable onPress={handleSave} style={styles.saveButton}>
@@ -171,7 +179,7 @@ export default function AutomationBuilderScreen() {
                         value={name}
                         onChangeText={setName}
                         placeholder="Es. Scarico Merci"
-                        placeholderTextColor={theme.textSecondary}
+                        placeholderTextColor={t.colors.placeholder}
                     />
 
                     <Text style={[styles.sectionLabel, { marginTop: 16 }]}>DESCRIZIONE (opzionale)</Text>
@@ -180,7 +188,7 @@ export default function AutomationBuilderScreen() {
                         value={description}
                         onChangeText={setDescription}
                         placeholder="Cosa fa questa automazione?"
-                        placeholderTextColor={theme.textSecondary}
+                        placeholderTextColor={t.colors.placeholder}
                         multiline
                     />
                 </View>
@@ -193,9 +201,9 @@ export default function AutomationBuilderScreen() {
                             <Pressable
                                 key={ic}
                                 onPress={() => setIcon(ic)}
-                                style={[styles.iconChip, icon === ic && { backgroundColor: `${color}30`, borderColor: color }]}
+                                style={[styles.iconChip, icon === ic && { backgroundColor: withAlpha(color, 0.19), borderColor: color }]}
                             >
-                                <MaterialIcons name={ic as any} size={24} color={icon === ic ? color : theme.textSecondary} />
+                                <AppIcon name={ic as any} size={24} color={icon === ic ? color : t.colors.textSecondary} />
                             </Pressable>
                         ))}
                     </ScrollView>
@@ -216,7 +224,7 @@ export default function AutomationBuilderScreen() {
 
                     {steps.length === 0 ? (
                         <View style={styles.emptyFlow}>
-                            <MaterialIcons name="account-tree" size={48} color={theme.textSecondary} />
+                            <AppIcon name="account-tree" size={48} color={t.colors.textSecondary} />
                             <Text style={styles.emptyFlowText}>Nessuno step aggiunto</Text>
                             <Text style={styles.emptyFlowHint}>Premi "+" per costruire il flusso</Text>
                         </View>
@@ -228,22 +236,22 @@ export default function AutomationBuilderScreen() {
                                     <View key={step.id}>
                                         {/* Step node */}
                                         <View style={styles.flowNode}>
-                                            <View style={[styles.flowNodeIcon, { backgroundColor: `${meta.color}20` }]}>
-                                                <MaterialIcons name={meta.icon as any} size={24} color={meta.color} />
+                                            <View style={[styles.flowNodeIcon, { backgroundColor: withAlpha(meta.color, 0.125) }]}>
+                                                <AppIcon name={meta.icon as any} size={24} color={meta.color} />
                                             </View>
                                             <View style={styles.flowNodeContent}>
                                                 <Text style={styles.flowNodeLabel}>{step.label}</Text>
                                                 <Text style={styles.flowNodeMeta}>Step {index + 1} · {meta.label}</Text>
                                             </View>
                                             <Pressable onPress={() => removeStep(step.id)} hitSlop={8}>
-                                                <MaterialIcons name="delete-outline" size={20} color={theme.textSecondary} />
+                                                <AppIcon name="delete-outline" size={20} color={t.colors.textSecondary} />
                                             </Pressable>
                                         </View>
                                         {/* Arrow connector */}
                                         {index < steps.length - 1 && (
                                             <View style={styles.flowConnector}>
                                                 <View style={styles.flowLine} />
-                                                <MaterialIcons name="arrow-downward" size={16} color={theme.textSecondary} />
+                                                <AppIcon name="arrow-downward" size={16} color={t.colors.textSecondary} />
                                                 <View style={styles.flowLine} />
                                             </View>
                                         )}
@@ -255,7 +263,7 @@ export default function AutomationBuilderScreen() {
 
                     {/* Add step button */}
                     <Pressable style={[styles.addStepButton, { borderColor: color }]} onPress={() => setShowStepPicker(true)}>
-                        <MaterialIcons name="add" size={24} color={color} />
+                        <AppIcon name="add" size={24} color={color} />
                         <Text style={[styles.addStepText, { color }]}>Aggiungi Step</Text>
                     </Pressable>
                 </View>
@@ -264,8 +272,8 @@ export default function AutomationBuilderScreen() {
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>ANTEPRIMA</Text>
                     <View style={styles.previewCard}>
-                        <View style={[styles.previewIcon, { backgroundColor: `${color}20` }]}>
-                            <MaterialIcons name={icon as any} size={32} color={color} />
+                        <View style={[styles.previewIcon, { backgroundColor: withAlpha(color, 0.125) }]}>
+                            <AppIcon name={icon as any} size={32} color={color} />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.previewName}>{name || 'Nome automazione'}</Text>
@@ -284,8 +292,8 @@ export default function AutomationBuilderScreen() {
                             const meta = STEP_TYPE_META[as.type];
                             return (
                                 <Pressable key={as.type} style={styles.stepOption} onPress={() => handleAddStep(as.type)}>
-                                    <View style={[styles.stepOptionIcon, { backgroundColor: `${meta.color}20` }]}>
-                                        <MaterialIcons name={meta.icon as any} size={24} color={meta.color} />
+                                    <View style={[styles.stepOptionIcon, { backgroundColor: withAlpha(meta.color, 0.125) }]}>
+                                        <AppIcon name={meta.icon as any} size={24} color={meta.color} />
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.stepOptionTitle}>{meta.label}</Text>
@@ -312,7 +320,7 @@ export default function AutomationBuilderScreen() {
                                     value={configTag}
                                     onChangeText={setConfigTag}
                                     placeholder="Es. Da Pulire"
-                                    placeholderTextColor={theme.textSecondary}
+                                    placeholderTextColor={t.colors.placeholder}
                                 />
                             </View>
                         )}
@@ -325,7 +333,7 @@ export default function AutomationBuilderScreen() {
                                     value={configFieldName}
                                     onChangeText={setConfigFieldName}
                                     placeholder="Es. Stato"
-                                    placeholderTextColor={theme.textSecondary}
+                                    placeholderTextColor={t.colors.placeholder}
                                 />
                                 <Text style={[styles.configLabel, { marginTop: 12 }]}>Valore:</Text>
                                 <TextInput
@@ -333,7 +341,7 @@ export default function AutomationBuilderScreen() {
                                     value={configFieldValue}
                                     onChangeText={setConfigFieldValue}
                                     placeholder="Es. Controllato"
-                                    placeholderTextColor={theme.textSecondary}
+                                    placeholderTextColor={t.colors.placeholder}
                                 />
                             </View>
                         )}
@@ -344,7 +352,7 @@ export default function AutomationBuilderScreen() {
                                     style={styles.toggleRow}
                                     onPress={() => setConfigUseLastScanned(!configUseLastScanned)}
                                 >
-                                    <MaterialIcons
+                                    <AppIcon
                                         name={configUseLastScanned ? 'check-box' : 'check-box-outline-blank'}
                                         size={24}
                                         color={color}
@@ -357,10 +365,10 @@ export default function AutomationBuilderScreen() {
                                         {locations.map(loc => (
                                             <Pressable
                                                 key={loc.id}
-                                                style={[styles.locationOption, configLocationId === loc.id && { borderColor: color, backgroundColor: `${color}15` }]}
+                                                style={[styles.locationOption, configLocationId === loc.id && { borderColor: color, backgroundColor: withAlpha(color, 0.082) }]}
                                                 onPress={() => setConfigLocationId(loc.id)}
                                             >
-                                                <MaterialIcons name="location-on" size={20} color={configLocationId === loc.id ? color : theme.textSecondary} />
+                                                <AppIcon name="location-on" size={20} color={configLocationId === loc.id ? color : t.colors.textSecondary} />
                                                 <Text style={[styles.locationOptionText, configLocationId === loc.id && { color }]}>{loc.label}</Text>
                                             </Pressable>
                                         ))}
@@ -375,7 +383,7 @@ export default function AutomationBuilderScreen() {
                                     style={styles.toggleRow}
                                     onPress={() => setConfigPricePrompt(!configPricePrompt)}
                                 >
-                                    <MaterialIcons
+                                    <AppIcon
                                         name={configPricePrompt ? 'check-box' : 'check-box-outline-blank'}
                                         size={24}
                                         color={color}
@@ -386,11 +394,11 @@ export default function AutomationBuilderScreen() {
                         )}
 
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-                            <Pressable style={[styles.configButton, { backgroundColor: theme.surface }]} onPress={() => { setShowConfigModal(false); setConfigStep(null); }}>
-                                <Text style={{ color: theme.textPrimary }}>Annulla</Text>
+                            <Pressable style={[styles.configButton, { backgroundColor: t.colors.buttonSecondary }]} onPress={() => { setShowConfigModal(false); setConfigStep(null); }}>
+                                <Text style={{ color: t.colors.textPrimary }}>Annulla</Text>
                             </Pressable>
                             <Pressable style={[styles.configButton, { backgroundColor: color, flex: 2 }]} onPress={handleSaveConfig}>
-                                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Aggiungi</Text>
+                                <Text style={{ color: t.colors.onData, fontWeight: 'bold' }}>Aggiungi</Text>
                             </Pressable>
                         </View>
                     </Pressable>
@@ -401,97 +409,97 @@ export default function AutomationBuilderScreen() {
 }
 
 // ── Styles ──────────────────────────────────────────────────
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
+const useStyles = makeStyles((t) => ({
+    container: { flex: 1, backgroundColor: t.colors.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: 16, borderBottomWidth: 1, borderBottomColor: theme.border,
+        padding: 16, borderBottomWidth: 1, borderBottomColor: t.colors.border,
     },
     backButton: { padding: 4 },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: theme.textPrimary },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: t.colors.textPrimary },
     saveButton: {
-        backgroundColor: theme.primary, paddingHorizontal: 16, paddingVertical: 8,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.button, paddingHorizontal: 16, paddingVertical: 8,
+        borderRadius: t.radius.button,
     },
-    saveButtonText: { color: '#000', fontWeight: 'bold', fontSize: 14 },
-    section: { padding: spacing.screenPadding, borderBottomWidth: 1, borderBottomColor: theme.border },
-    sectionLabel: { fontSize: 12, fontWeight: '700', color: theme.textSecondary, marginBottom: 12, letterSpacing: 1 },
+    saveButtonText: { color: t.colors.onButton, fontWeight: 'bold', fontSize: 14 },
+    section: { padding: t.spacing.screenPadding, borderBottomWidth: 1, borderBottomColor: t.colors.border },
+    sectionLabel: { fontSize: 12, fontWeight: '700', color: t.colors.textSecondary, marginBottom: 12, letterSpacing: 1 },
     input: {
-        backgroundColor: theme.surface, borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.input, borderRadius: t.radius.input,
         paddingHorizontal: 16, paddingVertical: 14, fontSize: 16,
-        color: theme.textPrimary, borderWidth: 1, borderColor: theme.border,
+        color: t.colors.inputText, borderWidth: 1, borderColor: t.colors.inputBorder,
     },
     iconChip: {
         width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
         marginRight: 10, borderWidth: 2, borderColor: 'transparent',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
     },
     colorChip: {
         width: 36, height: 36, borderRadius: 18, marginRight: 10, borderWidth: 3, borderColor: 'transparent',
     },
-    colorChipActive: { borderColor: '#FFF', transform: [{ scale: 1.15 }] },
+    colorChipActive: { borderColor: t.colors.textPrimary, transform: [{ scale: 1.15 }] },
     emptyFlow: { alignItems: 'center', padding: 32 },
-    emptyFlowText: { fontSize: 16, color: theme.textSecondary, marginTop: 12 },
-    emptyFlowHint: { fontSize: 13, color: theme.textSecondary, marginTop: 4 },
+    emptyFlowText: { fontSize: 16, color: t.colors.textSecondary, marginTop: 12 },
+    emptyFlowHint: { fontSize: 13, color: t.colors.textSecondary, marginTop: 4 },
     flowContainer: { marginBottom: 16 },
     flowNode: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface,
-        padding: 14, borderRadius: borderRadius.medium, borderWidth: 1, borderColor: theme.border,
+        flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface,
+        padding: 14, borderRadius: t.radius.medium, borderWidth: 1, borderColor: t.colors.border,
     },
     flowNodeIcon: {
         width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12,
     },
     flowNodeContent: { flex: 1, marginRight: 8 },
-    flowNodeLabel: { fontSize: 15, fontWeight: '600', color: theme.textPrimary },
-    flowNodeMeta: { fontSize: 12, color: theme.textSecondary, marginTop: 2 },
+    flowNodeLabel: { fontSize: 15, fontWeight: '600', color: t.colors.textPrimary },
+    flowNodeMeta: { fontSize: 12, color: t.colors.textSecondary, marginTop: 2 },
     flowConnector: { alignItems: 'center', paddingVertical: 4 },
-    flowLine: { width: 2, height: 8, backgroundColor: theme.border },
+    flowLine: { width: 2, height: 8, backgroundColor: t.colors.border },
     addStepButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        padding: 14, borderRadius: borderRadius.medium, borderWidth: 2,
+        padding: 14, borderRadius: t.radius.medium, borderWidth: 2,
         borderStyle: 'dashed',
     },
     addStepText: { fontSize: 15, fontWeight: '600', marginLeft: 8 },
     previewCard: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface,
-        padding: 16, borderRadius: borderRadius.large, borderWidth: 1, borderColor: theme.border,
+        flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface,
+        padding: 16, borderRadius: t.radius.large, borderWidth: 1, borderColor: t.colors.border,
     },
     previewIcon: {
         width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 16,
     },
-    previewName: { fontSize: 18, fontWeight: '700', color: theme.textPrimary },
-    previewSteps: { fontSize: 13, color: theme.textSecondary, marginTop: 4 },
+    previewName: { fontSize: 18, fontWeight: '700', color: t.colors.textPrimary },
+    previewSteps: { fontSize: 13, color: t.colors.textSecondary, marginTop: 4 },
     modalOverlay: {
-        flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end',
+        flex: 1, backgroundColor: t.colors.scrimStrong, justifyContent: 'flex-end',
     },
     modalContent: {
-        backgroundColor: theme.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        backgroundColor: t.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
         padding: 24, maxHeight: '80%',
     },
     modalTitle: {
-        fontSize: 20, fontWeight: 'bold', color: theme.textPrimary, marginBottom: 20, textAlign: 'center',
+        fontSize: 20, fontWeight: 'bold', color: t.colors.textPrimary, marginBottom: 20, textAlign: 'center',
     },
     stepOption: {
         flexDirection: 'row', alignItems: 'center', padding: 14,
-        borderRadius: borderRadius.medium, marginBottom: 10,
-        backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border,
+        borderRadius: t.radius.medium, marginBottom: 10,
+        backgroundColor: t.colors.background, borderWidth: 1, borderColor: t.colors.border,
     },
     stepOptionIcon: {
         width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 14,
     },
-    stepOptionTitle: { fontSize: 16, fontWeight: '600', color: theme.textPrimary },
-    stepOptionDesc: { fontSize: 13, color: theme.textSecondary, marginTop: 2 },
-    configLabel: { fontSize: 14, fontWeight: '600', color: theme.textSecondary, marginBottom: 8 },
+    stepOptionTitle: { fontSize: 16, fontWeight: '600', color: t.colors.textPrimary },
+    stepOptionDesc: { fontSize: 13, color: t.colors.textSecondary, marginTop: 2 },
+    configLabel: { fontSize: 14, fontWeight: '600', color: t.colors.textSecondary, marginBottom: 8 },
     toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-    toggleLabel: { fontSize: 15, color: theme.textPrimary, flex: 1 },
+    toggleLabel: { fontSize: 15, color: t.colors.textPrimary, flex: 1 },
     locationOption: {
         flexDirection: 'row', alignItems: 'center', padding: 12,
-        borderRadius: borderRadius.medium, backgroundColor: theme.background,
-        borderWidth: 1, borderColor: theme.border, marginBottom: 8, gap: 10,
+        borderRadius: t.radius.medium, backgroundColor: t.colors.background,
+        borderWidth: 1, borderColor: t.colors.border, marginBottom: 8, gap: 10,
     },
-    locationOptionText: { fontSize: 15, color: theme.textPrimary },
+    locationOptionText: { fontSize: 15, color: t.colors.textPrimary },
     configButton: {
-        flex: 1, padding: 14, borderRadius: borderRadius.medium, alignItems: 'center',
-        borderWidth: 1, borderColor: theme.border,
+        flex: 1, padding: 14, borderRadius: t.radius.button, alignItems: 'center',
+        borderWidth: 1, borderColor: t.colors.border,
     },
-});
+}));

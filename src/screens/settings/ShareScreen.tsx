@@ -1,12 +1,16 @@
 // FurInventory Pro - Share Settings Screen
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 export default function ShareSettingsScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
 
@@ -15,21 +19,21 @@ export default function ShareSettingsScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
+                    <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Configurazione Condivisione</Text>
             </View>
 
             <ScrollView
                 contentContainerStyle={{
-                    paddingHorizontal: spacing.screenPadding,
+                    paddingHorizontal: t.spacing.screenPadding,
                     paddingBottom: insets.bottom + 16,
                 }}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Info Card */}
                 <View style={styles.infoCard}>
-                    <MaterialIcons name="info-outline" size={24} color={theme.primary} />
+                    <AppIcon name="info-outline" size={24} color={t.colors.accentInk} />
                     <Text style={styles.infoText}>
                         Questa funzionalità verrà completata nella prossima versione.{'\n\n'}
                         Potrai personalizzare quali informazioni condividere nelle modalità Cliente e Professionista.
@@ -41,42 +45,42 @@ export default function ShareSettingsScreen() {
                 <View style={styles.previewCard}>
                     <Text style={styles.previewTitle}>Informazioni condivise:</Text>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Tipo di pelliccia</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Stato (Disponibile/Venduto)</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Posizione</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Misure (lunghezza, larghezza, peso)</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Prezzo di vendita</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Descrizione/Note tecniche</Text>
                     </View>
                     <View style={styles.divider} />
                     <Text style={styles.excludedTitle}>Non condiviso:</Text>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="cancel" size={20} color={theme.textSecondary} />
-                        <Text style={[styles.previewText, { color: theme.textSecondary }]}>Prezzo di acquisto</Text>
+                        <AppIcon name="cancel" size={20} color={t.colors.textSecondary} />
+                        <Text style={[styles.previewText, { color: t.colors.textSecondary }]}>Prezzo di acquisto</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="cancel" size={20} color={theme.textSecondary} />
-                        <Text style={[styles.previewText, { color: theme.textSecondary }]}>Margini</Text>
+                        <AppIcon name="cancel" size={20} color={t.colors.textSecondary} />
+                        <Text style={[styles.previewText, { color: t.colors.textSecondary }]}>Margini</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="cancel" size={20} color={theme.textSecondary} />
-                        <Text style={[styles.previewText, { color: theme.textSecondary }]}>Fornitori</Text>
+                        <AppIcon name="cancel" size={20} color={t.colors.textSecondary} />
+                        <Text style={[styles.previewText, { color: t.colors.textSecondary }]}>Fornitori</Text>
                     </View>
                 </View>
 
@@ -85,27 +89,27 @@ export default function ShareSettingsScreen() {
                 <View style={styles.previewCard}>
                     <Text style={styles.previewTitle}>Informazioni condivise:</Text>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Tutte le informazioni Cliente</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Prezzo di acquisto</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Margine e percentuale</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Date (produzione, creazione, aggiornamento, scans ione, vendita)</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Cronologia movimenti</Text>
                     </View>
                     <View style={styles.previewItem}>
-                        <MaterialIcons name="check-circle" size={20} color={theme.success} />
+                        <AppIcon name="check-circle" size={20} color={t.colors.success} />
                         <Text style={styles.previewText}>Note tecniche complete</Text>
                     </View>
                 </View>
@@ -122,30 +126,30 @@ export default function ShareSettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: spacing.screenPadding,
+        paddingHorizontal: t.spacing.screenPadding,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     backButton: {
         marginRight: 12,
         padding: 8,
     },
     headerTitle: {
-        ...typography.cardTitle,
+        ...t.typography.cardTitle,
         fontSize: 18,
     },
     infoCard: {
-        backgroundColor: `${theme.primary}15`,
-        borderRadius: borderRadius.large,
+        backgroundColor: withAlpha(t.colors.accent, 0.082),
+        borderRadius: t.radius.large,
         padding: 16,
         marginTop: 16,
         marginBottom: 24,
@@ -153,30 +157,30 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     infoText: {
-        ...typography.body,
+        ...t.typography.body,
         fontSize: 14,
         lineHeight: 20,
         flex: 1,
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
     },
     sectionTitle: {
-        ...typography.sectionHeader,
+        ...t.typography.sectionHeader,
         marginTop: 8,
         marginBottom: 12,
     },
     previewCard: {
-        backgroundColor: theme.surface,
-        borderRadius: borderRadius.large,
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.large,
         padding: 16,
         marginBottom: 16,
     },
     previewTitle: {
-        ...typography.cardTitle,
+        ...t.typography.cardTitle,
         fontSize: 15,
         marginBottom: 12,
     },
     excludedTitle: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 13,
         marginBottom: 8,
         marginTop: 4,
@@ -188,24 +192,24 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     previewText: {
-        ...typography.body,
+        ...t.typography.body,
         fontSize: 14,
         flex: 1,
     },
     divider: {
         height: 1,
-        backgroundColor: theme.border,
+        backgroundColor: t.colors.border,
         marginVertical: 12,
     },
     noteCard: {
-        backgroundColor: theme.surface,
-        borderRadius: borderRadius.large,
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.large,
         padding: 16,
         marginBottom: 16,
     },
     noteText: {
-        ...typography.caption,
+        ...t.typography.caption,
         fontSize: 13,
         lineHeight: 19,
     },
-});
+}));

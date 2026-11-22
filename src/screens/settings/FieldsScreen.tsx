@@ -1,11 +1,13 @@
 // FurInventory Pro - Custom Fields Builder Screen with Edit Modal
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, TextInput, Modal, ActivityIndicator } from 'react-native';
+import { View, Pressable, ScrollView, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useCustomFields, FieldType, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
 import { FieldUIType, CustomField } from '../../../types';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 const COMMON_ICONS = [
   'tune', 'text-fields', 'tag', 'calendar-today', 'image', 'list', 'check-box',
@@ -17,6 +19,8 @@ const COMMON_ICONS = [
 ];
 
 export default function CustomFieldsScreen() {
+  const styles = useStyles();
+  const t = useTheme();
   const insets = useSafeAreaInsets();
   const { customFields, loading, addField, deleteField, updateField } = useCustomFields();
 
@@ -165,7 +169,7 @@ export default function CustomFieldsScreen() {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.primary} />
+          <ActivityIndicator size="large" color={t.colors.accentInk} />
           <Text style={styles.loadingText}>Caricamento...</Text>
         </View>
       </SafeAreaView>
@@ -176,7 +180,7 @@ export default function CustomFieldsScreen() {
     <SafeAreaView edges={['top']} style={styles.container}>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: spacing.screenPadding,
+          paddingHorizontal: t.spacing.screenPadding,
           paddingBottom: insets.bottom + 16,
         }}
         showsVerticalScrollIndicator={false}
@@ -188,10 +192,10 @@ export default function CustomFieldsScreen() {
             {customFields.map((field) => (
               <View key={field.id} style={styles.fieldCard}>
                 <View style={styles.fieldIcon}>
-                  <MaterialIcons
+                  <AppIcon
                     name={field.icon as any || 'text-fields'}
                     size={24}
-                    color={field.isSystem ? theme.textSecondary : theme.primary}
+                    color={field.isSystem ? t.colors.textSecondary : t.colors.accent}
                   />
                 </View>
                 <View style={styles.fieldContent}>
@@ -226,13 +230,13 @@ export default function CustomFieldsScreen() {
                       style={styles.editButton}
                       onPress={() => openEditModal(field)}
                     >
-                      <MaterialIcons name="edit" size={18} color={theme.primary} />
+                      <AppIcon name="edit" size={18} color={t.colors.accentInk} />
                     </Pressable>
                     <Pressable
                       style={styles.deleteButton}
                       onPress={() => handleDeleteField(field)}
                     >
-                      <MaterialIcons name="delete" size={18} color={theme.error} />
+                      <AppIcon name="delete" size={18} color={t.colors.error} />
                     </Pressable>
                   </View>
                 )}
@@ -246,12 +250,12 @@ export default function CustomFieldsScreen() {
           style={styles.addButton}
           onPress={() => setShowAddModal(true)}
         >
-          <MaterialIcons name="add-circle" size={24} color="#000" />
+          <AppIcon name="add-circle" size={24} color={t.colors.onButton} />
           <Text style={styles.addButtonText}>Crea Nuovo Campo</Text>
         </Pressable>
 
         <View style={styles.infoCard}>
-          <MaterialIcons name="security" size={24} color={theme.primary} />
+          <AppIcon name="security" size={24} color={t.colors.accentInk} />
           <Text style={styles.infoText}>
             Immutabilità Storica Attiva: Se elimini un campo, finirà nel Cestino.
             I prodotti già generati continueranno a visualizzarlo nei loro dettagli.
@@ -272,7 +276,7 @@ export default function CustomFieldsScreen() {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Pressable onPress={() => { resetForm(); setShowAddModal(false); }}>
-              <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+              <AppIcon name="close" size={24} color={t.colors.textPrimary} />
             </Pressable>
             <Text style={styles.modalTitle}>
               {editingField ? 'Modifica Campo' : 'Field Builder'}
@@ -300,13 +304,13 @@ export default function CustomFieldsScreen() {
                     }}
                   >
                     <View style={styles.typeOptionIcon}>
-                      <MaterialIcons name={info.icon as any} size={24} color={theme.primary} />
+                      <AppIcon name={info.icon as any} size={24} color={t.colors.accentInk} />
                     </View>
                     <View style={styles.typeOptionContent}>
                       <Text style={styles.typeOptionLabel}>{info.label}</Text>
                       <Text style={styles.typeOptionDesc}>{info.description}</Text>
                     </View>
-                    <MaterialIcons name="add-circle" size={24} color={theme.primary} />
+                    <AppIcon name="add-circle" size={24} color={t.colors.accentInk} />
                   </Pressable>
                 ))}
               </>
@@ -314,10 +318,10 @@ export default function CustomFieldsScreen() {
               /* 2. CONFIGURAZIONE CAMPO */
               <>
                 <View style={styles.selectedTypeHeader}>
-                  <MaterialIcons
+                  <AppIcon
                     name={FIELD_TYPE_INFO[selectedBaseType].icon as any}
                     size={32}
-                    color={theme.primary}
+                    color={t.colors.accentInk}
                   />
                   <Text style={styles.selectedTypeLabel}>
                     {FIELD_TYPE_INFO[selectedBaseType].label}
@@ -337,7 +341,7 @@ export default function CustomFieldsScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Es: Taglia Pantalone, PDF Manuale"
-                  placeholderTextColor={theme.textSecondary}
+                  placeholderTextColor={t.colors.placeholder}
                   value={fieldName}
                   onChangeText={setFieldName}
                 />
@@ -349,7 +353,7 @@ export default function CustomFieldsScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="Es: cm, kg, €, ml"
-                      placeholderTextColor={theme.textSecondary}
+                      placeholderTextColor={t.colors.placeholder}
                       value={fieldUnit}
                       onChangeText={setFieldUnit}
                     />
@@ -367,12 +371,12 @@ export default function CustomFieldsScreen() {
                         width: 48,
                         height: 48,
                         borderRadius: 12,
-                        backgroundColor: selectedIcon === icon ? theme.primary : theme.backgroundSecondary,
+                        backgroundColor: selectedIcon === icon ? t.colors.accent : t.colors.backgroundSecondary,
                         justifyContent: 'center',
                         alignItems: 'center'
                       }}
                     >
-                      <MaterialIcons name={icon as any} size={24} color={selectedIcon === icon ? '#000' : theme.textSecondary} />
+                      <AppIcon name={icon as any} size={24} color={selectedIcon === icon ? t.colors.onAccent : t.colors.textSecondary} />
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -382,7 +386,7 @@ export default function CustomFieldsScreen() {
                   <View style={styles.datasetBox}>
                     <Text style={styles.inputLabel}>Intelligenza Avanzata</Text>
                     <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 }} onPress={() => setIsBarcode(!isBarcode)}>
-                      <MaterialIcons name={isBarcode ? 'qr-code-scanner' : 'qr-code'} size={24} color={isBarcode ? theme.primary : theme.textSecondary} />
+                      <AppIcon name={isBarcode ? 'qr-code-scanner' : 'qr-code'} size={24} color={isBarcode ? t.colors.accent : t.colors.textSecondary} />
                       <Text style={styles.requiredToggleText}>Abilita Scanner Barcode / QR</Text>
                     </Pressable>
                     <Text style={[styles.subtext, { marginTop: 6, marginLeft: 36 }]}>
@@ -403,12 +407,12 @@ export default function CustomFieldsScreen() {
                             paddingHorizontal: 16,
                             paddingVertical: 8,
                             borderRadius: 16,
-                            backgroundColor: selectedUIType === ui ? theme.primary : theme.surface,
+                            backgroundColor: selectedUIType === ui ? t.colors.chipActive : t.colors.chip,
                             borderWidth: 1,
-                            borderColor: selectedUIType === ui ? theme.primary : theme.border
+                            borderColor: selectedUIType === ui ? t.colors.chipActiveBorder : t.colors.chipBorder
                           }}
                         >
-                          <Text style={{ color: selectedUIType === ui ? '#000' : theme.textPrimary, fontWeight: '600' }}>{ui.toUpperCase()}</Text>
+                          <Text style={{ color: selectedUIType === ui ? t.colors.chipActiveText : t.colors.textPrimary, fontWeight: '600' }}>{ui.toUpperCase()}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -428,12 +432,12 @@ export default function CustomFieldsScreen() {
                             paddingHorizontal: 16,
                             paddingVertical: 8,
                             borderRadius: 16,
-                            backgroundColor: linkTo === l.id ? theme.primary : theme.surface,
+                            backgroundColor: linkTo === l.id ? t.colors.chipActive : t.colors.chip,
                             borderWidth: 1,
-                            borderColor: linkTo === l.id ? theme.primary : theme.border
+                            borderColor: linkTo === l.id ? t.colors.chipActiveBorder : t.colors.chipBorder
                           }}
                         >
-                          <Text style={{ color: linkTo === l.id ? '#000' : theme.textPrimary, fontWeight: '600' }}>{l.label}</Text>
+                          <Text style={{ color: linkTo === l.id ? t.colors.chipActiveText : t.colors.textPrimary, fontWeight: '600' }}>{l.label}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -446,19 +450,19 @@ export default function CustomFieldsScreen() {
                             <TextInput
                               style={[styles.input, styles.optionInput]}
                               placeholder={`Valore ${index + 1}`}
-                              placeholderTextColor={theme.textSecondary}
+                              placeholderTextColor={t.colors.placeholder}
                               value={option}
                               onChangeText={(text) => updateOption(index, text)}
                             />
                             {options.length > 1 && (
                               <Pressable style={styles.removeOptionButton} onPress={() => removeOption(index)}>
-                                <MaterialIcons name="remove-circle" size={24} color={theme.error} />
+                                <AppIcon name="remove-circle" size={24} color={t.colors.error} />
                               </Pressable>
                             )}
                           </View>
                         ))}
                         <Pressable style={styles.addOptionButton} onPress={() => setOptions([...options, ''])}>
-                          <MaterialIcons name="add" size={20} color={theme.primary} />
+                          <AppIcon name="add" size={20} color={t.colors.accentInk} />
                           <Text style={styles.addOptionText}>Aggiungi Opzione</Text>
                         </Pressable>
                       </>
@@ -475,14 +479,14 @@ export default function CustomFieldsScreen() {
                         paddingHorizontal: 16,
                         paddingVertical: 8,
                         borderRadius: 16,
-                        backgroundColor: selectedUIType === 'stepper' ? theme.primary : theme.surface,
+                        backgroundColor: selectedUIType === 'stepper' ? t.colors.chipActive : t.colors.chip,
                         borderWidth: 1,
-                        borderColor: selectedUIType === 'stepper' ? theme.primary : theme.border,
+                        borderColor: selectedUIType === 'stepper' ? t.colors.chipActiveBorder : t.colors.chipBorder,
                         alignSelf: 'flex-start',
                         marginBottom: 16
                       }}
                     >
-                      <Text style={{ color: selectedUIType === 'stepper' ? '#000' : theme.textPrimary, fontWeight: '600' }}>STEPPER (+ / -)</Text>
+                      <Text style={{ color: selectedUIType === 'stepper' ? t.colors.chipActiveText : t.colors.textPrimary, fontWeight: '600' }}>STEPPER (+ / -)</Text>
                     </Pressable>
 
                     {selectedUIType === 'stepper' && (
@@ -491,11 +495,11 @@ export default function CustomFieldsScreen() {
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.subtext}>Minimo</Text>
-                            <TextInput style={styles.input} value={stepperOptions.min} onChangeText={t => setStepperOptions({ ...stepperOptions, min: t })} keyboardType="numeric" />
+                            <TextInput style={styles.input} value={stepperOptions.min} onChangeText={v => setStepperOptions({ ...stepperOptions, min: v })} keyboardType="numeric" />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.subtext}>Massimo</Text>
-                            <TextInput style={styles.input} value={stepperOptions.max} onChangeText={t => setStepperOptions({ ...stepperOptions, max: t })} keyboardType="numeric" />
+                            <TextInput style={styles.input} value={stepperOptions.max} onChangeText={v => setStepperOptions({ ...stepperOptions, max: v })} keyboardType="numeric" />
                           </View>
                         </View>
                       </View>
@@ -504,10 +508,10 @@ export default function CustomFieldsScreen() {
                 )}
 
                 <Pressable style={styles.requiredToggle} onPress={() => setIsRequired(!isRequired)}>
-                  <MaterialIcons
+                  <AppIcon
                     name={isRequired ? 'check-box' : 'check-box-outline-blank'}
                     size={24}
-                    color={isRequired ? theme.primary : theme.textSecondary}
+                    color={isRequired ? t.colors.checkOn : t.colors.textSecondary}
                   />
                   <Text style={styles.requiredToggleText}>Campo obbligatorio in fase di aggiunta</Text>
                 </Pressable>
@@ -520,61 +524,61 @@ export default function CustomFieldsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
+const useStyles = makeStyles((t) => ({
+  container: { flex: 1, backgroundColor: t.colors.background },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { ...typography.body, marginTop: 12 },
-  sectionTitle: { ...typography.sectionHeader, marginTop: 24, marginBottom: 12 },
+  loadingText: { ...t.typography.body, marginTop: 12 },
+  sectionTitle: { ...t.typography.sectionHeader, marginTop: 24, marginBottom: 12 },
 
-  fieldCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: borderRadius.medium, padding: 16, marginBottom: 12 },
-  fieldIcon: { width: 48, height: 48, borderRadius: borderRadius.medium, backgroundColor: `${theme.primary}15`, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  fieldCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface, borderRadius: t.radius.card, padding: 16, marginBottom: 12 },
+  fieldIcon: { width: 48, height: 48, borderRadius: t.radius.iconWrap, backgroundColor: withAlpha(t.colors.accent, 0.082), alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   fieldContent: { flex: 1 },
   fieldHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  fieldName: { ...typography.cardTitle, fontSize: 15 },
-  systemBadge: { backgroundColor: theme.backgroundSecondary, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  systemBadgeText: { fontSize: 10, color: theme.textSecondary, fontWeight: '600' },
-  requiredBadge: { backgroundColor: `${theme.warning}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  requiredText: { fontSize: 10, color: theme.warning, fontWeight: '600' },
-  fieldType: { ...typography.caption, fontSize: 12 },
-  fieldOptions: { ...typography.caption, fontSize: 11, color: theme.textMuted, marginTop: 2 },
+  fieldName: { ...t.typography.cardTitle, fontSize: 15 },
+  systemBadge: { backgroundColor: t.colors.backgroundSecondary, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  systemBadgeText: { fontSize: 10, color: t.colors.textSecondary, fontWeight: '600' },
+  requiredBadge: { backgroundColor: t.colors.warningSoft, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  requiredText: { fontSize: 10, color: t.colors.warningText, fontWeight: '600' },
+  fieldType: { ...t.typography.caption, fontSize: 12 },
+  fieldOptions: { ...t.typography.caption, fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
   fieldActions: { flexDirection: 'row', gap: 4 },
-  editButton: { padding: 8, backgroundColor: `${theme.primary}15`, borderRadius: 8 },
+  editButton: { padding: 8, backgroundColor: withAlpha(t.colors.accent, 0.082), borderRadius: 8 },
   deleteButton: { padding: 8 },
 
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.primary, borderRadius: borderRadius.medium, padding: 16, marginTop: 16 },
-  addButtonText: { ...typography.buttonPrimary, fontSize: 16 },
-  infoCard: { flexDirection: 'row', gap: 12, backgroundColor: theme.surface, borderRadius: borderRadius.medium, padding: 16, marginTop: 16 },
-  infoText: { ...typography.caption, fontSize: 13, lineHeight: 18, flex: 1 },
+  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: t.colors.button, borderRadius: t.radius.button, padding: 16, marginTop: 16 },
+  addButtonText: { ...t.typography.buttonPrimary, fontSize: 16 },
+  infoCard: { flexDirection: 'row', gap: 12, backgroundColor: t.colors.surface, borderRadius: t.radius.medium, padding: 16, marginTop: 16 },
+  infoText: { ...t.typography.caption, fontSize: 13, lineHeight: 18, flex: 1 },
 
-  modalContainer: { flex: 1, backgroundColor: theme.background },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.screenPadding, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.border },
-  modalTitle: { ...typography.cardTitle, fontSize: 18 },
-  saveButton: { color: theme.primary, fontWeight: '600', fontSize: 16 },
-  modalContent: { flex: 1, paddingHorizontal: spacing.screenPadding },
-  modalSectionTitle: { ...typography.sectionHeader, marginTop: 24, marginBottom: 16 },
+  modalContainer: { flex: 1, backgroundColor: t.colors.background },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: t.spacing.screenPadding, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: t.colors.border },
+  modalTitle: { ...t.typography.cardTitle, fontSize: 18 },
+  saveButton: { color: t.colors.accentInk, fontWeight: '600', fontSize: 16 },
+  modalContent: { flex: 1, paddingHorizontal: t.spacing.screenPadding },
+  modalSectionTitle: { ...t.typography.sectionHeader, marginTop: 24, marginBottom: 16 },
 
-  typeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: borderRadius.medium, padding: 16, marginBottom: 12 },
-  typeOptionIcon: { width: 48, height: 48, borderRadius: borderRadius.medium, backgroundColor: `${theme.primary}15`, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  typeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.tile, borderRadius: t.radius.tile, padding: 16, marginBottom: 12 },
+  typeOptionIcon: { width: 48, height: 48, borderRadius: t.radius.iconWrap, backgroundColor: withAlpha(t.colors.accent, 0.082), alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   typeOptionContent: { flex: 1 },
-  typeOptionLabel: { ...typography.cardTitle, fontSize: 15, marginBottom: 2 },
-  typeOptionDesc: { ...typography.caption, fontSize: 12 },
+  typeOptionLabel: { ...t.typography.cardTitle, fontSize: 15, marginBottom: 2 },
+  typeOptionDesc: { ...t.typography.caption, fontSize: 12 },
 
-  selectedTypeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: borderRadius.medium, padding: 16, marginTop: 24, marginBottom: 24 },
-  selectedTypeLabel: { ...typography.cardTitle, fontSize: 16, flex: 1 },
+  selectedTypeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.colors.surface, borderRadius: t.radius.medium, padding: 16, marginTop: 24, marginBottom: 24 },
+  selectedTypeLabel: { ...t.typography.cardTitle, fontSize: 16, flex: 1 },
   changeTypeButton: { padding: 8 },
-  changeTypeText: { color: theme.primary, fontWeight: '600' },
+  changeTypeText: { color: t.colors.accentInk, fontWeight: '600' },
 
-  inputLabel: { ...typography.caption, fontWeight: '600', marginBottom: 8, marginTop: 16 },
-  input: { backgroundColor: theme.surface, borderRadius: borderRadius.medium, padding: 14, fontSize: 16, color: theme.textPrimary, borderWidth: 1, borderColor: theme.border },
-  subtext: { ...typography.caption, fontSize: 11, marginBottom: 4, color: theme.textSecondary },
+  inputLabel: { ...t.typography.caption, fontWeight: '600', marginBottom: 8, marginTop: 16 },
+  input: { backgroundColor: t.colors.input, borderRadius: t.radius.input, padding: 14, fontSize: 16, color: t.colors.inputText, borderWidth: 1, borderColor: t.colors.inputBorder },
+  subtext: { ...t.typography.caption, fontSize: 11, marginBottom: 4, color: t.colors.textSecondary },
 
-  datasetBox: { backgroundColor: theme.backgroundSecondary, padding: 16, borderRadius: borderRadius.medium, marginTop: 16 },
+  datasetBox: { backgroundColor: t.colors.backgroundSecondary, padding: 16, borderRadius: t.radius.medium, marginTop: 16 },
 
   optionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   optionInput: { flex: 1 },
   removeOptionButton: { padding: 4 },
   addOptionButton: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, marginTop: 8 },
-  addOptionText: { color: theme.primary, fontWeight: '600' },
-  requiredToggle: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, padding: 16, backgroundColor: theme.surface, borderRadius: borderRadius.medium, marginBottom: 40 },
-  requiredToggleText: { ...typography.body, fontSize: 15 },
-});
+  addOptionText: { color: t.colors.accentInk, fontWeight: '600' },
+  requiredToggle: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, padding: 16, backgroundColor: t.colors.surface, borderRadius: t.radius.medium, marginBottom: 40 },
+  requiredToggleText: { ...t.typography.body, fontSize: 15 },
+}));
