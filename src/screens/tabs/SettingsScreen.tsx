@@ -677,7 +677,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Info</Text>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>FurInventory Pro</Text>
+          <Text style={styles.infoTitle}>Syncro Flow</Text>
           <Text style={styles.infoVersion}>Versione 1.0.0</Text>
           <Text style={styles.infoDescription}>
             Sistema di gestione inventario professionale per pellicce di lusso

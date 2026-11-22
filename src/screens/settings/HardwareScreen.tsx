@@ -67,7 +67,7 @@ export default function HardwareSettingsScreen() {
         <View style={styles.infoContent}>
           <Text style={styles.infoTitle}>Scanner & Hardware</Text>
           <Text style={styles.infoDesc}>
-            Configura come FurInventory Pro interagisce con il mondo fisico. Scegli se preferisci usare la fotocamera (QR) o il sensore NFC per scansionare e programmare i prodotti.
+            Configura come Syncro Flow interagisce con il mondo fisico. Scegli se preferisci usare la fotocamera (QR) o il sensore NFC per scansionare e programmare i prodotti.
           </Text>
         </View>
       </View>

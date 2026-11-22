@@ -250,7 +250,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>FurInventory Pro</Text>
+          <Text style={styles.headerTitle}>Syncro Flow</Text>
           <Text style={styles.headerSubtitle}>{filteredProducts.length} prodotti</Text>
 
         </View>
@@ -414,6 +414,18 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 16 }]}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id}
+        ListEmptyComponent={
+          // D06: un messaggio quando l'inventario è vuoto o nessun prodotto passa cartella, filtro e ricerca
+          <View style={styles.empty}>
+            <AppIcon name={products.length > 0 ? 'search-off' : 'inventory-2'} size={40} color={t.colors.textMuted} />
+            <Text style={styles.emptyTitle}>{products.length > 0 ? 'Nessun prodotto qui' : 'Inventario vuoto'}</Text>
+            <Text style={styles.emptyText}>
+              {products.length > 0
+                ? 'Nessun prodotto corrisponde a cartella, filtro o ricerca scelti.'
+                : 'Aggiungi il primo prodotto dalla scheda Aggiungi.'}
+            </Text>
+          </View>
+        }
       />
 
       {/* Selection Bottom Bar */}
@@ -615,6 +627,19 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: t.spacing.screenPadding,
     paddingTop: 8,
     gap: 12,
+  },
+  empty: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    ...t.typography.cardTitle,
+  },
+  emptyText: {
+    ...t.typography.caption,
+    textAlign: 'center',
   },
   gridRow: {
     gap: 12,

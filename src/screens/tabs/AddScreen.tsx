@@ -13,6 +13,7 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCustomFields, CustomField } from '../../../contexts/CustomFieldsContext';
+import { missingRequiredFields } from '../../../utils/formValidation';
 import { useLayout, LayoutField, sectionLabel } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
 import { generateGS1DigitalLink } from '../../../utils/gs1';
@@ -175,8 +176,16 @@ export default function AddProductScreen() {
   const handleSubmit = () => {
     if (isSubmitting) return;
 
-    if (!formData.sku || !formData.furType || !formData.location) {
-      Alert.alert('Campi Obbligatori', 'Compila almeno SKU, Tipo di Pelle e Posizione');
+    // D23: lo SKU vuoto si genera da solo al salvataggio (come dicono il suggerimento e la nota)
+    if (!formData.furType || !formData.location) {
+      Alert.alert('Campi obbligatori', 'Compila almeno Tipo di Pelle e Posizione');
+      return;
+    }
+
+    // D24: anche i campi personalizzati segnati come obbligatori
+    const missing = missingRequiredFields(getVisibleFields(), customFields, customFieldValues);
+    if (missing.length > 0) {
+      Alert.alert('Campi obbligatori', `Compila anche: ${missing.map((f) => f.name).join(', ')}`);
       return;
     }
 
@@ -236,7 +245,7 @@ export default function AddProductScreen() {
 
       Alert.alert(
         'Prodotto Aggiunto',
-        `${formData.sku || finalSKU} Ã¨ stato aggiunto all'inventario`,
+        `${formData.sku || finalSKU} è stato aggiunto all'inventario`,
         [
           {
             text: 'OK',
@@ -255,6 +264,8 @@ export default function AddProductScreen() {
                 libraryId: '',
               });
               setImages([]);
+              // D22: si svuotano anche i campi personalizzati, così il prodotto successivo non eredita i valori
+              setCustomFieldValues({});
               setIsSubmitting(false);
               router.push('/(tabs)');
             },
@@ -263,7 +274,7 @@ export default function AddProductScreen() {
       );
     } catch (error) {
       setIsSubmitting(false);
-      Alert.alert('Errore', 'Si Ã¨ verificato un errore durante il salvataggio');
+      Alert.alert('Errore', 'Si è verificato un errore durante il salvataggio');
     }
   };
 

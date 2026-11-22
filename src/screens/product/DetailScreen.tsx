@@ -14,6 +14,8 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
+import { useLayout } from '../../../contexts/LayoutContext';
+import { orderByLayout } from '../../../utils/layoutOrder';
 import { nfcService } from '../../../utils/nfcService';
 import Barcode from '../../../components/Barcode';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -36,8 +38,18 @@ export default function ProductDetailScreen() {
   const { locations } = useLocations();
   const { customFields } = useCustomFields();
 
+  const { layout } = useLayout();
+
   const product = getProductById(id as string);
   const timeline = getTimelineForProduct(id as string);
+
+  // D17: tutti gli hook prima del ritorno anticipato «Prodotto non trovato» (regole degli hook)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const { width: screenWidth } = useWindowDimensions();
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
 
   if (!product) {
     return (
@@ -50,15 +62,9 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isModalVisible, setModalVisible] = useState(false);
-  const { width: screenWidth } = useWindowDimensions();
   const heroWidth = Math.max(1, screenWidth);
   // Riquadro a metà dei campi strutturati: due per riga con 10 px in mezzo (come la tela), anche se resta da solo
   const halfTileWidth = (screenWidth - t.spacing.screenPadding * 2 - 10) / 2;
-  const [showAllHistory, setShowAllHistory] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
 
   const location = locations.find((l) => l.id === product.location);
   const furType = FUR_TYPES.find((f) => f.id === product.furType);
@@ -930,7 +936,7 @@ export default function ProductDetailScreen() {
               <Text style={styles.sectionTitle}>Campi strutturati</Text>
 
               <View style={styles.customCardsContainer}>
-                {product.customData.map((dataItem, index) => {
+                {orderByLayout(product.customData, layout.fields.map((f) => f.id)).map((dataItem, index) => {
                   const value = dataItem.value;
                   const field = dataItem.fieldSnapshot;
                   if (value === undefined || value === null || value === '') return null;

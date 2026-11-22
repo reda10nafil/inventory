@@ -21,9 +21,10 @@ export default function ScannerActionScreen() {
   const styles = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { type = 'product', id } = useLocalSearchParams();
-  // Support legacy param productId
-  const entityId = (id as string) || (useLocalSearchParams().productId as string);
+  const params = useLocalSearchParams();
+  const { type = 'product', id } = params;
+  // Support legacy param productId (un solo `useLocalSearchParams`: prima il secondo era chiamato solo a volte)
+  const entityId = (id as string) || (params.productId as string);
 
   const { getProductById, moveProduct, sellProduct, libraries } = useInventory();
   const { locations } = useLocations();

@@ -58,20 +58,10 @@ export default function CustomRunnerScreen() {
         if (automation) recordUsage(automation.id);
     }, []);
 
-    if (!automation) {
-        return (
-            <SafeAreaView edges={['top']} style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <Backdrop />
-                <AppIcon name="error-outline" size={64} color={t.colors.textSecondary} />
-                <Text style={{ color: t.colors.textSecondary, marginTop: 16, fontSize: 16 }}>Automazione non trovata</Text>
-                <Pressable onPress={() => router.back()} style={{ marginTop: 24, padding: 12 }}>
-                    <Text style={{ color: t.colors.accentInk, fontSize: 16 }}>Torna Indietro</Text>
-                </Pressable>
-            </SafeAreaView>
-        );
-    }
 
-    const steps = automation.steps;
+    // Gli hook stanno tutti prima del ritorno «Automazione non trovata» (prima `useCallback` e `useState` venivano
+    // dopo e la schermata andava in errore aperta da indirizzo o ricaricata).
+    const steps = automation?.steps ?? [];
     const currentStep = steps[currentStepIndex];
     const isComplete = currentStepIndex >= steps.length;
 
@@ -308,6 +298,19 @@ export default function CustomRunnerScreen() {
         setFeedbackMessage(msg);
         setTimeout(() => setFeedbackMessage(null), isError ? 2000 : 1200);
     };
+
+    if (!automation) {
+        return (
+            <SafeAreaView edges={['top']} style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Backdrop />
+                <AppIcon name="error-outline" size={64} color={t.colors.textSecondary} />
+                <Text style={{ color: t.colors.textSecondary, marginTop: 16, fontSize: 16 }}>Automazione non trovata</Text>
+                <Pressable onPress={() => router.back()} style={{ marginTop: 24, padding: 12 }}>
+                    <Text style={{ color: t.colors.accentInk, fontSize: 16 }}>Torna Indietro</Text>
+                </Pressable>
+            </SafeAreaView>
+        );
+    }
 
     // ── Render ──────────────────────────────────────────────
     const meta = currentStep ? STEP_TYPE_META[currentStep.type] : null;

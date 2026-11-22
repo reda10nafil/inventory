@@ -2,6 +2,23 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L7: difetti del ticket 09
+
+- Branch / SHA: `ui-ux/stili`, commit di L7 dopo L6f.
+- Fatto:
+  - **D04** campi strutturati della Scheda nell'ordine del layout (`utils/layoutOrder.ts`, test); i campi tolti dal layout vanno in fondo;
+  - **D17** gli hook della Scheda prima del ritorno «Prodotto non trovato»;
+  - **D06** messaggio nell'Inventario vuoto («Inventario vuoto») e quando cartella, filtro o ricerca non trovano nulla («Nessun prodotto qui»);
+  - **D07** «Syncro Flow» nel titolo dell'Inventario, in Impostazioni › Info e nel testo di Scanner & Hardware (il PDF resta com'è, ticket 10);
+  - **D11** «è» nei due messaggi di Aggiungi (gli altri file del codice sono già UTF-8 puliti: controllati tutti);
+  - **D22** dopo il salvataggio si svuotano anche i campi personalizzati;
+  - **D23** SKU vuoto accettato: si genera da solo (il generatore c'era già, lo bloccava il controllo);
+  - **D24** i campi personalizzati obbligatori mostrati dal modulo vengono controllati al salvataggio (`utils/formValidation.ts`, test);
+  - in più, stessi difetti di D17 fuori dal ticket: `CustomRunnerScreen` (andava in errore aperta da indirizzo o ricaricata) e `ScannerActionScreen` (hook chiamato solo a volte).
+- Verifiche: tsc 0, eslint 0, jest 73 verdi (nuovi: ordine del layout, obbligatori); regole degli hook con `eslint-plugin-react-hooks` su `src`, `components`, `App.tsx`: **nessuna violazione**; schermate di Inventario, Scheda, Aggiungi, Impostazioni, Hardware e Azione rapida in attuale e ishtar senza errori; prova del filtro vuoto in babilonia: messaggio e titolo presenti, nessun errore in console.
+- Messaggio in console già esistente, non del tema: al **primo avvio sul web in un browser vuoto** WatermelonDB trova il database vuoto e chiama `unsafeResetDatabase`; a volte LokiJS scrive «Deleting database failed because it's blocked by another connection» (la sua connessione è ancora aperta). Capita una volta per browser; l'app funziona. Da guardare nella fase B.
+- Ancora da fare: L9.
+
 ## 22 novembre 2026 — UI/UX L6c-f: Aggiungi, Modifica, Impostazioni, Cronologia, Automazioni, scanner, chat
 
 - Branch / SHA: `ui-ux/stili`, quattro commit (L6c, L6d, L6e, L6f) dopo L6b; ogni corsia fatta da un subagente su file separati, con le regole comuni del brief L6.
