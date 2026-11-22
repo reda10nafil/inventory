@@ -9,8 +9,9 @@ Aggiornato il 22 novembre 2026, notte (circa 9:00), dalla prima sessione della f
   - **F00** (499a313): conferme e avvisi sul web (`Alert.alert` → finestre del browser, `utils/webAlert.ts`).
   - **Prova di tutte le funzioni** (7dd83ac): `prova-funzioni.md`, esiti per area in `prova/esito-a1.md` … `a4`, script Playwright in `prova/`.
   - **Correzioni C01-C14** tutte chiuse: C01 numeri italiani (d3128a6), C02 Modifica (7baa3f8), C03 vendite (bdf04fa), C04 D15 spostamenti (913e7cd), C05 posizioni e cartelle eliminate (cb7e9c7), C06 CSV (e1fbbd1), C07 modelli e campi nel layout (6a56c73), C08 D03 Modifica (ee53296), C09 ricerca e filtri (e2b30fd), C10 Cronologia completa (ffc17bc), C11 lettore QR (844e986), C12 senza foto (77c0549), C13 GS1, numeri, Svuota, visore (a71ef0a), C14 D21 (42301ae).
+  - **Rilettura del revisore** (12bd952): numeri del CSV a 3 decimali (`parseStoredNumber`), note vuote senza eventi spuri, rilancio completo delle 85 prove sul codice finale, parti nuove nei 5 stili (`prova/stili-fase-b.jpg`).
   - **Mappa Wayfinder confermata** (25b514a): `map.md`, `issues/01-10` (decise dall'agente, regola 4), `grafo-lavori.md` (fette M01-M10).
-- Jest: 121 test verdi. Bundle Android 5,09 MB, 62 asset.
+- Jest: 126 test verdi. Bundle Android 5,09 MB, 62 asset.
 
 ## Cosa fare adesso, in ordine
 
