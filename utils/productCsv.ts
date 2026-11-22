@@ -1,13 +1,19 @@
-// Righe dell'export CSV dei prodotti (Impostazioni › Esporta) e lettura della cartella all'import.
+// Righe dell'export CSV dei prodotti (Impostazioni › Esporta) e lettura del CSV all'import.
 // P07: l'export includeva i prodotti nel cestino senza segnarli e non aveva la cartella, che si perdeva
 // nel giro esporta-importa. Le foto salvate sul dispositivo non entrano nel CSV (solo i link http).
 // M08 (ticket 09): colonne Unità, Giacenza e Scorta minima per gli articoli a quantità, più i due report
 // (giacenze e movimenti). Nel CSV dei prodotti le posizioni sono id (l'app lo rilegge), nei report sono nomi.
-import type { Library, Product, TimelineEvent } from '../types';
+// C1 (ticket 19): «Categoria» è la cartella, col nome completo «Pellicce › Visone», e «Tipo di pelle» è `furType`.
+// Le intestazioni sono cambiate tre volte; l'import riconosce il file dall'intestazione (`productCsvFormat`).
+import type { Product, TimelineEvent } from '../types';
+import { categoryPath, categoryTree, type CategoryNode } from './categories';
+import { furTypeFromCsv, type FurType } from './furTypes';
 import { parseStoredNumber } from './number';
 import { DEFAULT_UNIT, isLowStock, isStocked, MOVEMENT_LABELS, REASON_LABELS, round3, stockOf } from './stock';
 
-export const PRODUCT_CSV_HEADER = ['SKU', 'Categoria', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Cartella', 'Unità', 'Giacenza', 'Scorta minima'];
+// Stesse posizioni delle colonne di prima di C1: cambiano solo i nomi della seconda («Categoria» → «Tipo di pelle»)
+// e della sedicesima («Cartella» → «Categoria»).
+export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Categoria', 'Unità', 'Giacenza', 'Scorta minima'];
 
 /**
  * Giacenza di un articolo a quantità per il CSV: «magazzino:12; vetrina:2.5», con la posizione principale per
@@ -44,8 +50,7 @@ export function parseStockCell(text: string): Record<string, number> | null | un
 }
 
 /** Intestazione più una riga per ogni prodotto non nel cestino. */
-export function productCsvRows(products: readonly Product[], libraries: readonly Pick<Library, 'id' | 'name'>[]): unknown[][] {
-  const folder = (id?: string) => (id ? libraries.find((l) => l.id === id)?.name ?? id : '');
+export function productCsvRows(products: readonly Product[], categories: readonly CategoryNode[]): unknown[][] {
   return [
     PRODUCT_CSV_HEADER,
     ...products.filter((p) => !p.deletedAt).map((product) => [
@@ -64,7 +69,7 @@ export function productCsvRows(products: readonly Product[], libraries: readonly
       JSON.stringify(product.customData || []),
       product.gs1DigitalLink,
       JSON.stringify(product.backupCustomDataLinks || {}),
-      folder(product.libraryId),
+      categoryPath(categories, product.libraryId),
       isStocked(product) ? product.unit || DEFAULT_UNIT : '',
       stockCell(product),
       product.minStock,
@@ -72,16 +77,139 @@ export function productCsvRows(products: readonly Product[], libraries: readonly
   ];
 }
 
-/** Cartella scritta nel CSV (nome o id, maiuscole indifferenti) → id di una cartella esistente, altrimenti nessuna. */
-export function libraryIdFromCsv(value: string, libraries: readonly Pick<Library, 'id' | 'name'>[]): string | undefined {
-  const v = value.trim().toLocaleLowerCase();
+// Maiuscole, accenti e spazi indifferenti (anche nelle intestazioni: «Unità» → «unita»)
+const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLocaleLowerCase();
+
+/**
+ * Categoria scritta nel CSV → id di una categoria esistente, altrimenti nessuna. Si confronta prima col nome
+ * completo di ogni categoria («Pellicce › Visone», anche scritto con «>»), poi con l'id, poi col solo nome (la
+ * prima nell'ordine dell'albero): due categorie possono avere una sottocategoria con lo stesso nome.
+ */
+export function libraryIdFromCsv(value: string, categories: readonly CategoryNode[]): string | undefined {
+  const key = (text: string) => fold(text).replace(/\s*[›>]\s*/g, ' › ');
+  const v = key(value);
   if (!v) return undefined;
-  return libraries.find((l) => l.id.toLocaleLowerCase() === v || l.name.trim().toLocaleLowerCase() === v)?.id;
+  const tree = categoryTree(categories).map(({ category }) => category);
+  return (tree.find((c) => key(categoryPath(categories, c.id)) === v)
+    ?? tree.find((c) => fold(c.id) === v)
+    ?? tree.find((c) => fold(c.name) === v))?.id;
 }
 
-type Labels = { place: (id: string) => string; category: (id: string) => string };
+/** I tre formati del CSV dei prodotti, riconosciuti dall'intestazione (ticket 19). */
+export type ProductCsvFormat = 'pre-m01' | 'm01' | 'c1';
 
-export const STOCK_CSV_HEADER = ['SKU', 'Categoria', 'Posizione', 'Quantità', 'Unità', 'Scorta minima', 'Sotto scorta'];
+/**
+ * Formato dall'intestazione, non dalla posizione: con la colonna «Cartella», oppure senza «Tipo di pelle», il file
+ * è di prima di C1 e «Categoria» vuol dire tipo di pelle (M01-M10; prima di M01 c'era «Tipo Pelle»); altrimenti è
+ * di C1 e «Categoria» è la cartella.
+ */
+export function productCsvFormat(header: readonly string[]): ProductCsvFormat {
+  const names = header.map(fold);
+  if (names.includes('cartella') || !names.includes('tipo di pelle')) return names.includes('categoria') ? 'm01' : 'pre-m01';
+  return 'c1';
+}
+
+/** Colonne del CSV dei prodotti: indice di ognuna nell'intestazione (-1 se manca) e formato del file. */
+export function productCsvColumns(header: readonly string[]) {
+  const names = header.map(fold);
+  // La prima colonna del file che ha uno dei nomi (come prima di C1)
+  const column = (...options: string[]) => names.findIndex((name) => options.includes(name));
+  const format = productCsvFormat(header);
+  const old = format !== 'c1';
+  return {
+    format,
+    sku: column('sku', 'codice sku'),
+    furType: old ? column('tipo di pelle', 'categoria', 'tipo pelle', 'tipo pelliccia', 'fur type') : column('tipo di pelle', 'tipo pelle', 'tipo pelliccia', 'fur type'),
+    category: old ? column('cartella', 'folder', 'library') : column('categoria', 'category', 'folder', 'library'),
+    location: column('posizione', 'location'),
+    status: column('status', 'stato'),
+    purchasePrice: column('prezzo acquisto', 'purchase price'),
+    sellPrice: column('prezzo vendita', 'sell price'),
+    length: column('lunghezza', 'length'),
+    width: column('larghezza', 'width'),
+    weight: column('peso', 'weight'),
+    notes: column('note', 'note tecniche', 'technical notes'),
+    images: column('immagini url', 'immagini', 'foto url', 'images'),
+    customData: column('dati personalizzati json', 'custom data json'),
+    productionDate: column('data produzione', 'production date'),
+    gs1: column('gs1 digital link', 'gs1'),
+    backupAttachments: column('link allegati drive json', 'drive attachments json'),
+    // M08: articoli a quantità
+    unit: column('unita', 'unit'),
+    stock: column('giacenza', 'stock'),
+    minStock: column('scorta minima', 'min stock'),
+  };
+}
+
+export type ProductCsvColumns = ReturnType<typeof productCsvColumns>;
+
+/**
+ * Una riga del CSV → dati del prodotto da aggiungere, con la giacenza per `addProduct(dati, { stock })`.
+ * `null` se la riga si salta: SKU vuoto o giacenza scritta ma non valida (lo SKU già presente lo controlla chi
+ * importa). Tipo di pelle e categoria si cercano per id o nome; la categoria anche col nome completo.
+ */
+export function productFromCsvRow(
+  row: readonly string[],
+  cols: ProductCsvColumns,
+  lists: { categories: readonly CategoryNode[]; furTypes: readonly FurType[] },
+): { product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>; stock: Record<string, number> | null } | null {
+  const valueAt = (index: number) => (index < 0 ? '' : (row[index] || '').trim());
+  const numberAt = (index: number) => parseStoredNumber(valueAt(index)); // «2.125» dell'export = 2,125
+  const jsonAt = <T,>(index: number, fallback: T): T => {
+    if (index < 0 || !valueAt(index)) return fallback;
+    try { return JSON.parse(valueAt(index)) as T; } catch { return fallback; }
+  };
+  const sku = valueAt(cols.sku);
+  if (!sku) return null;
+  // Giacenza vuota: pezzo unico come prima; scritta ma non valida: riga saltata (non diventa 1 pezzo)
+  const stock = parseStockCell(valueAt(cols.stock));
+  if (stock === undefined) return null;
+  const minStock = numberAt(cols.minStock);
+
+  const rawStatus = valueAt(cols.status).toLocaleLowerCase();
+  // Un articolo a quantità non è mai «venduto» (ticket 03): con la giacenza è disponibile
+  const status: Product['status'] = stock
+    ? 'available'
+    : rawStatus === 'sold' || rawStatus === 'venduto'
+      ? 'sold'
+      : rawStatus === 'archived' || rawStatus === 'archiviato'
+        ? 'archived'
+        : 'available';
+  const rawImages = valueAt(cols.images);
+  const images = jsonAt<string[]>(cols.images, rawImages ? rawImages.split(';').map((image) => image.trim()).filter(Boolean) : []);
+  const backupImageLinks = Array.isArray(images) ? images.filter((image) => /^https?:\/\//i.test(image)) : [];
+
+  return {
+    stock,
+    product: {
+      sku,
+      furType: furTypeFromCsv(valueAt(cols.furType), lists.furTypes),
+      location: valueAt(cols.location),
+      status,
+      images: Array.isArray(images) ? images.filter((image) => !/drive\.google\.com/i.test(image)) : [],
+      backupImageLinks,
+      backupCustomDataLinks: jsonAt(cols.backupAttachments, {}),
+      purchasePrice: numberAt(cols.purchasePrice),
+      sellPrice: numberAt(cols.sellPrice),
+      length: numberAt(cols.length),
+      width: numberAt(cols.width),
+      weight: numberAt(cols.weight),
+      technicalNotes: valueAt(cols.notes),
+      productionDate: valueAt(cols.productionDate) || undefined,
+      customData: jsonAt(cols.customData, []),
+      gs1DigitalLink: valueAt(cols.gs1) || undefined,
+      libraryId: libraryIdFromCsv(valueAt(cols.category), lists.categories),
+      isFragile: false,
+      ...(stock && { unit: valueAt(cols.unit) || undefined }),
+      ...(stock && minStock != null && minStock >= 0 && { minStock }),
+    },
+  };
+}
+
+type Labels = { place: (id: string) => string; category: (libraryId: string | undefined) => string; furType: (id: string) => string };
+
+// C1: «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo; prima «Categoria» era il tipo.
+export const STOCK_CSV_HEADER = ['SKU', 'Categoria', 'Tipo di pelle', 'Posizione', 'Quantità', 'Unità', 'Scorta minima', 'Sotto scorta'];
 
 /**
  * Report delle giacenze: una riga per prodotto e posizione con quantità, prodotti non nel cestino. Un pezzo unico
@@ -100,7 +228,8 @@ export function stockCsvRows(products: readonly Product[], labels: Labels): unkn
     for (const [place, qty] of stock) {
       rows.push([
         product.sku,
-        labels.category(product.furType),
+        labels.category(product.libraryId),
+        product.furType ? labels.furType(product.furType) : '',
         labels.place(place),
         qty,
         stocked ? product.unit || DEFAULT_UNIT : DEFAULT_UNIT,
@@ -131,7 +260,7 @@ export function csvDateTime(iso: string): string {
 export function movementCsvRows(
   timeline: readonly TimelineEvent[],
   products: readonly Product[],
-  labels: Labels & { contact?: (id: string) => string | undefined },
+  labels: Pick<Labels, 'place'> & { contact?: (id: string) => string | undefined },
 ): unknown[][] {
   const byId = new Map(products.map((p) => [p.id, p]));
   // La Cronologia è salvata dal più nuovo: girata prima dell'ordinamento (stabile), il carico «iniziale» resta

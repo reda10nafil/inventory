@@ -417,8 +417,8 @@ export default function CustomFieldsScreen() {
                       {[
                         { id: null, label: 'Manuale (Digita tu)' },
                         { id: 'locations', label: 'Libreria Posizioni' },
-                        { id: 'libraries', label: 'Libreria Cartelle' },
-                        { id: 'furType', label: 'Libreria Categorie' },
+                        { id: 'libraries', label: 'Libreria Categorie' },
+                        { id: 'furType', label: 'Libreria Tipi di pelle' },
                       ].map(l => (
                         <Pressable
                           key={String(l.id)}

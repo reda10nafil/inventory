@@ -14,7 +14,9 @@ import { formatNumberInput, parseNumber } from '../../../utils/number';
 import { DEFAULT_UNIT, formatQty, isStocked, stockOf, totalStock } from '../../../utils/stock';
 import { parseMinStock } from '../../../utils/alerts';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useFurTypes } from '../../../contexts/FurTypesContext';
+import { CategoryPicker } from '../../../components/CategoryPicker';
+import { categoryPath, categoryTree } from '../../../utils/categories';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
@@ -58,7 +60,7 @@ function EditProductForm({ product }: { product: Product }) {
   const id = product.id;
   const { updateProduct, libraries } = useInventory();
   const { locations } = useLocations();
-  const { categories } = useCategories();
+  const { furTypes } = useFurTypes();
   // Articolo a quantità (M03): posizione e giacenza non si modificano qui
   const stocked = isStocked(product);
   const placeLabel = (place: string) => locations.find((l) => l.id === place)?.label ?? place;
@@ -148,8 +150,9 @@ function EditProductForm({ product }: { product: Product }) {
 
   // `withoutPhoto === true` solo dalla conferma qui sotto (onPress passa l'evento, che non è `true`)
   const handleSave = (withoutPhoto?: unknown) => {
-    if (!formData.sku || !formData.furType || !formData.location) {
-      Alert.alert('Campi Obbligatori', 'Compila almeno SKU, Categoria e Posizione');
+    // C1: il tipo di pelle è facoltativo
+    if (!formData.sku || !formData.location) {
+      Alert.alert('Campi Obbligatori', 'Compila almeno SKU e Posizione');
       return;
     }
 
@@ -359,10 +362,17 @@ function EditProductForm({ product }: { product: Product }) {
           </View>
 
           <View style={styles.inputGroup}>
-            {renderLabel('Categoria')}
-            {/* M01: le categorie sono dell'utente e possono essere tante: a capo come Posizione e Cartella (D09) */}
+            {renderLabel('Tipo di pelle')}
+            {/* Tipo di pelle (M01, C1): facoltativo, «Nessuno» lo toglie; a capo come Posizione e Categoria (D09) */}
             <View style={styles.chipWrap}>
-              {categories.map((type) => {
+              <Pressable
+                style={[styles.chip, !formData.furType && styles.chipActive]}
+                onPress={() => updateField('furType', '')}
+              >
+                {!formData.furType && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                <Text style={[styles.chipText, !formData.furType && styles.chipTextActive]}>Nessuno</Text>
+              </Pressable>
+              {furTypes.map((type) => {
                 const active = formData.furType === type.id;
                 return (
                   <Pressable
@@ -380,7 +390,7 @@ function EditProductForm({ product }: { product: Product }) {
             </View>
           </View>
 
-          {/* D09: pillole di Posizione e Cartella a capo, come in Aggiungi */}
+          {/* D09: pillole di Posizione e Categoria a capo, come in Aggiungi */}
           {stocked ? (
             // Articolo a quantità (M03): posizione e giacenza in sola lettura
             <View style={styles.inputGroup}>
@@ -426,40 +436,9 @@ function EditProductForm({ product }: { product: Product }) {
           )}
 
           <View style={styles.inputGroup}>
-            {renderLabel('Cartella')}
-            <View style={styles.chipWrap}>
-              <Pressable
-                style={[styles.chip, styles.chipSmall, !formData.libraryId && styles.chipActive]}
-                onPress={() => updateField('libraryId', '')}
-              >
-                {!formData.libraryId && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                <AppIcon name="folder-off" size={16} color={!formData.libraryId ? t.colors.chipActiveText : t.colors.textMuted} />
-                <Text style={[styles.chipText, styles.chipTextSmall, !formData.libraryId && styles.chipTextActive]} numberOfLines={1}>
-                  Nessuna
-                </Text>
-              </Pressable>
-
-              {libraries.map((lib) => {
-                const active = formData.libraryId === lib.id;
-                return (
-                  <Pressable
-                    key={lib.id}
-                    style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
-                    onPress={() => updateField('libraryId', lib.id)}
-                  >
-                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                    <AppIcon
-                      name={lib.icon}
-                      size={16}
-                      color={active ? t.colors.chipActiveText : t.colors.textMuted}
-                    />
-                    <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>
-                      {lib.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {renderLabel('Categoria')}
+            {/* C1: categoria e, se ne ha, sottocategoria (la cartella di prima); «Nessuna» la toglie */}
+            <CategoryPicker categories={libraries} value={formData.libraryId} onChange={(id) => updateField('libraryId', id)} showNone />
           </View>
 
           {renderSection('Prezzi')}
@@ -544,8 +523,8 @@ function EditProductForm({ product }: { product: Product }) {
 
             const getDynamicOptionsList = (cf: any) => {
               if (cf.linkTo === 'locations') return locations.map((l: any) => ({ id: l.id, label: l.label }));
-              if (cf.linkTo === 'libraries') return libraries.map((l: any) => ({ id: l.id, label: l.name }));
-              if (cf.linkTo === 'furType') return categories.map((c) => ({ id: c.id, label: c.label }));
+              if (cf.linkTo === 'libraries') return categoryTree(libraries).map(({ category: l }) => ({ id: l.id, label: categoryPath(libraries, l.id) }));
+              if (cf.linkTo === 'furType') return furTypes.map((c) => ({ id: c.id, label: c.label }));
 
               return cf.dataset && Array.isArray(cf.dataset)
                 ? cf.dataset.map((val: string, i: number) => ({ id: `ds_${i}`, label: String(val) }))

@@ -7,14 +7,17 @@ import { useAuth } from './AuthContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { usage } from '../utils/productRules';
+import { childrenOf } from '../utils/categories';
 import { describeChanges } from '../utils/productChanges';
 import { countOf, editableUpdates, moveOf, movementOf, saleOf, withInitialStock, withStartingStock, type CountResult } from '../utils/inventoryOps';
 import { lowStockAlert, mergeAlerts } from '../utils/alerts';
 import type { Movement, MovementError } from '../utils/stock';
 
-/** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
+/** Categoria dei prodotti (C1: la cartella di prima) - ID uses slug format for Google Sheets compatibility */
 export interface Library {
   id: string; // slug format, e.g., 'pellicce', 'accessori'
+  /** C1: categoria principale di cui questa è una sottocategoria; assente = principale (le cartelle di prima) */
+  parentId?: string;
   name: string;
   icon: string;
   createdAt: string;
@@ -91,7 +94,8 @@ interface InventoryContextType {
   getTimelineForProduct: (productId: string) => TimelineEvent[];
   filterProducts: (filter: 'all' | 'available' | 'sold' | 'alert' | 'trash') => Product[];
   getTrashProducts: () => Product[];
-  addLibrary: (name: string, icon: string) => void;
+  /** Con `parentId` la categoria nasce sottocategoria (C1). */
+  addLibrary: (name: string, icon: string, parentId?: string) => Library;
   updateLibrary: (id: string, updates: Partial<Library>) => void;
   deleteLibrary: (id: string) => boolean;
   getProductBySku: (sku: string) => Product | undefined;
@@ -618,7 +622,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       .replace(/^-+|-+$/g, ''); // Trim leading/trailing dashes
   };
 
-  const addLibrary = (name: string, icon: string) => {
+  const addLibrary = (name: string, icon: string, parentId?: string) => {
     const slug = generateSlug(name);
     // Ensure unique ID
     let uniqueSlug = slug;
@@ -633,8 +637,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       name,
       icon,
       createdAt: new Date().toISOString(),
+      ...(parentId && { parentId }),
     };
     setLibraries((prev) => [...prev, newLibrary]);
+    return newLibrary;
   };
 
   const updateLibrary = (id: string, updates: Partial<Library>) => {
@@ -644,8 +650,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteLibrary = (id: string): boolean => {
-    // Check if any products are assigned to this library
-    if (usage(productsRef.current, { libraryId: id }).active > 0) {
+    // Una categoria con sottocategorie (C1) o con prodotti non si elimina
+    if (childrenOf(libraries, id).length > 0 || usage(productsRef.current, { libraryId: id }).active > 0) {
       return false; // Cannot delete, has products
     }
     // I prodotti nel cestino perdono la cartella: ripristinati, non puntano a una cartella che non c'è più (P09)

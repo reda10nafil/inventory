@@ -22,9 +22,10 @@ export function describeChanges(before: Product, updates: Partial<Product>): str
   const changed = <K extends keyof Product>(k: K) => k in updates && !same(updates[k], before[k]);
   const out: string[] = [];
   if (changed('sku')) out.push(`SKU: ${show(before.sku)} → ${show(updates.sku)}`);
-  if (changed('furType')) out.push(`Categoria: ${show(before.furType)} → ${show(updates.furType)}`);
+  // C1: il campo `furType` è il tipo di pelle, la categoria è `libraryId` (la cartella di prima)
+  if (changed('furType')) out.push(`Tipo di pelle: ${show(before.furType)} → ${show(updates.furType)}`);
   if (changed('location')) out.push(`Posizione: ${show(before.location)} → ${show(updates.location)}`);
-  if (changed('libraryId')) out.push(`Cartella: ${show(before.libraryId)} → ${show(updates.libraryId)}`);
+  if (changed('libraryId')) out.push(`Categoria: ${show(before.libraryId)} → ${show(updates.libraryId)}`);
   if (changed('sellPrice')) out.push(`Prezzo vendita: ${price(before.sellPrice)} → ${price(updates.sellPrice)}`);
   if (changed('purchasePrice')) out.push(`Prezzo acquisto: ${price(before.purchasePrice)} → ${price(updates.purchasePrice)}`);
   if (changed('length')) out.push(`Lunghezza: ${num(before.length)} → ${num(updates.length)}`);

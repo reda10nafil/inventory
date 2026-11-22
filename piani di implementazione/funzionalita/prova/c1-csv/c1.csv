@@ -1,0 +1,5 @@
+SKU,Tipo di pelle,Posizione,Status,Prezzo Vendita,Categoria,Unità,Giacenza,Scorta minima
+C1-NEW-1,Visone,vetrina,,1500,Pellicce › Visone,,,
+C1-NEW-2,,magazzino,,25,Usato e permute,,,
+C1-NEW-3,volpe,stand_b,,,pellicce > visone,,,
+C1-NEW-4,cincilla,vetrina,,,Collezione Inverno,,,

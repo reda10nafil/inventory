@@ -7,7 +7,9 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useFurTypes } from '../../../contexts/FurTypesContext';
+import { useProductKind } from '../../../hooks/useProductKind';
+import { categoryPath, categoryPicker, categoryTree, categoryWithDescendants, rootCategories } from '../../../utils/categories';
 import { isDormant, needsPromotion } from '../../../services/mockData';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -32,7 +34,8 @@ export default function HomeScreen() {
   const params = useLocalSearchParams(); // Read params
   const { products, alerts, filterProducts, deleteProduct, updateProduct, libraries } = useInventory();
   const { locations } = useLocations();
-  const { categories, labelOf } = useCategories();
+  const { furTypes } = useFurTypes();
+  const kindOf = useProductKind();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
@@ -53,11 +56,13 @@ export default function HomeScreen() {
   const alertedIds = new Set(activeAlerts.map((a) => a.productId));
   const trashProducts = products.filter((p) => p.deletedAt);
 
-  // 1. First, filter by Library (Folder)
-  const folderFilteredProducts = products.filter((p) => {
-    if (activeLibraryId === null) return true;
-    return p.libraryId === activeLibraryId;
-  });
+  // 1. Prima il filtro per categoria (C1: una categoria principale include le sue sottocategorie)
+  const inCategory = activeLibraryId === null ? null : categoryWithDescendants(libraries, activeLibraryId);
+  const inActiveCategory = (p: { libraryId?: string }) => inCategory === null || (!!p.libraryId && inCategory.has(p.libraryId));
+  const folderFilteredProducts = products.filter(inActiveCategory);
+  // Pillole: la principale accesa e, sotto, le sue sottocategorie (anche per un codice di sottocategoria letto)
+  const picker = categoryPicker(libraries, activeLibraryId ?? undefined);
+  const categoryLabels = libraries.map((l) => ({ id: l.id, label: categoryPath(libraries, l.id) }));
 
   // Calculate stats based on the FOLDER (Library) view
   const stats = {
@@ -66,17 +71,13 @@ export default function HomeScreen() {
     sold: folderFilteredProducts.filter((p) => p.status === 'sold' && !p.deletedAt).length,
     // Prodotti con almeno un avviso, non numero di avvisi (P15)
     alerts: folderFilteredProducts.filter((p) => matchesFilter(p, 'alert', alertedIds)).length,
-    trash: trashProducts.filter((p) => {
-      // Trash is global usually, but if we want to show trash for this folder:
-      if (activeLibraryId === null) return true;
-      return p.libraryId === activeLibraryId;
-    }).length,
+    trash: trashProducts.filter(inActiveCategory).length,
   };
 
   // 2. Then, apply Status Filter & Search on the Folder-filtered list
   // La ricerca vale in tutti i filtri, anche Cestino e Attenzione, e trova la posizione per nome (P14)
   const filteredProducts = folderFilteredProducts.filter((p) =>
-    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, categories));
+    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, furTypes, categoryLabels));
 
   const filters: { id: FilterType; label: string; count: number }[] = [
     { id: 'all', label: 'Tutti', count: stats.total - stats.trash },
@@ -129,9 +130,9 @@ export default function HomeScreen() {
     });
 
     if (libraryId === undefined) {
-      Alert.alert('Spostato', `${selectedIds.length} prodotti rimossi dalla cartella`);
+      Alert.alert('Spostato', `${selectedIds.length} prodotti rimossi dalla categoria`);
     } else {
-      const libName = libraries.find(l => l.id === libraryId)?.name;
+      const libName = categoryPath(libraries, libraryId);
       Alert.alert('Spostato', `${selectedIds.length} prodotti spostati in "${libName}"`);
     }
 
@@ -168,6 +169,7 @@ export default function HomeScreen() {
     const isSelectionMode = selectedIds.length > 0;
     // Posizione con il suo nome e il suo colore (dati dell'utente); se non c'è più resta l'id, come nella Scheda.
     const location = locations.find((l) => l.id === product.location);
+    const kind = kindOf(product);
 
     return (
       <Pressable
@@ -223,9 +225,12 @@ export default function HomeScreen() {
           <Text style={styles.productSku} numberOfLines={1}>
             {product.sku}
           </Text>
-          <Text style={styles.productType} numberOfLines={1}>
-            {labelOf(product.furType)}
-          </Text>
+          {/* C1: categoria e tipo di pelle, su due righe se serve (niente testo tagliato) */}
+          {!!kind.line && (
+            <Text style={styles.productType} numberOfLines={2}>
+              {kind.line}
+            </Text>
+          )}
 
           <View style={styles.locationRow}>
             <View style={[styles.locationDot, { backgroundColor: location?.color || t.colors.textMuted }]} />
@@ -289,7 +294,7 @@ export default function HomeScreen() {
             <AppIcon name="search" size={20} color={t.colors.fieldIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Cerca SKU, tipo, posizione..."
+              placeholder="Cerca SKU, categoria, posizione..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
@@ -303,7 +308,7 @@ export default function HomeScreen() {
           </View>
         </View>
       )}
-      {/* Library/Folder Selector - NEW */}
+      {/* Categorie principali (C1: le cartelle di prima) */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -333,32 +338,58 @@ export default function HomeScreen() {
           </Text>
         </Pressable>
 
-        {libraries.map((lib) => (
-          <Pressable
-            key={lib.id}
-            style={[
-              styles.libraryChip,
-              activeLibraryId === lib.id && styles.libraryChipActive,
-            ]}
-            onPress={() => setActiveLibraryId(lib.id)}
-          >
-            {activeLibraryId === lib.id && <GradientFill gradient={t.gradients.chipActive} style={styles.chipFill} />}
-            <AppIcon
-              name={lib.icon as any}
-              size={18}
-              color={activeLibraryId === lib.id ? t.colors.chipActiveText : t.colors.textSecondary}
-            />
-            <Text
-              style={[
-                styles.libraryText,
-                activeLibraryId === lib.id && styles.libraryTextActive,
-              ]}
+        {rootCategories(libraries).map((lib) => {
+          const active = picker.rootId === lib.id;
+          return (
+            <Pressable
+              key={lib.id}
+              style={[styles.libraryChip, active && styles.libraryChipActive]}
+              onPress={() => setActiveLibraryId(lib.id)}
             >
-              {lib.name}
-            </Text>
-          </Pressable>
-        ))}
+              {active && <GradientFill gradient={t.gradients.chipActive} style={styles.chipFill} />}
+              <AppIcon
+                name={lib.icon as any}
+                size={18}
+                color={active ? t.colors.chipActiveText : t.colors.textSecondary}
+              />
+              <Text style={[styles.libraryText, active && styles.libraryTextActive]}>
+                {lib.name}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
+
+      {/* Sottocategorie della categoria scelta: «Tutte» = la categoria con le sue sottocategorie */}
+      {picker.rootId && picker.children.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.libraryContainer, styles.subLibraryContainer]}
+          style={styles.libraryScroll}
+        >
+          {[{ id: picker.rootId, name: 'Tutte', icon: 'apps' }, ...picker.children].map((lib, i) => {
+            const active = i === 0 ? activeLibraryId === picker.rootId : picker.childId === lib.id;
+            return (
+              <Pressable
+                key={i === 0 ? 'tutte' : lib.id}
+                style={[styles.libraryChip, styles.subLibraryChip, active && styles.libraryChipActive]}
+                onPress={() => setActiveLibraryId(lib.id)}
+              >
+                {active && <GradientFill gradient={t.gradients.chipActive} style={styles.chipFill} />}
+                <AppIcon
+                  name={(i === 0 ? 'apps' : lib.icon || 'subdirectory-arrow-right') as any}
+                  size={16}
+                  color={active ? t.colors.chipActiveText : t.colors.textSecondary}
+                />
+                <Text style={[styles.libraryText, styles.subLibraryText, active && styles.libraryTextActive]}>
+                  {lib.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
 
       {/* Stats Cards: tre colonne uguali, tutte visibili. Il riquadro degli avvisi si colora solo se ce ne sono. */}
       <View style={styles.statsRow}>
@@ -423,7 +454,7 @@ export default function HomeScreen() {
             <Text style={styles.emptyTitle}>{products.length > 0 ? 'Nessun prodotto qui' : 'Inventario vuoto'}</Text>
             <Text style={styles.emptyText}>
               {products.length > 0
-                ? 'Nessun prodotto corrisponde a cartella, filtro o ricerca scelti.'
+                ? 'Nessun prodotto corrisponde a categoria, filtro o ricerca scelti.'
                 : 'Aggiungi il primo prodotto dalla scheda Aggiungi.'}
             </Text>
           </View>
@@ -467,9 +498,9 @@ export default function HomeScreen() {
               <Text style={styles.modalTitle}>Gestisci {selectedIds.length} Prodotti</Text>
             </View>
 
-            <Text style={styles.modalSectionLabel}>Sposta in cartella</Text>
+            <Text style={styles.modalSectionLabel}>Sposta in categoria</Text>
             <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalList}>
-              {/* Option to clear folder */}
+              {/* Togli la categoria */}
               <Pressable
                 style={styles.modalOption}
                 onPress={() => handleMoveToLibrary(undefined)}
@@ -477,13 +508,14 @@ export default function HomeScreen() {
                 <View style={styles.modalOptionIcon}>
                   <AppIcon name="folder-off" size={20} color={t.colors.textSecondary} />
                 </View>
-                <Text style={styles.modalOptionText}>Rimuovi dalla cartella</Text>
+                <Text style={styles.modalOptionText}>Rimuovi dalla categoria</Text>
               </Pressable>
 
-              {libraries.map(lib => (
+              {/* Ad albero: le sottocategorie rientrate sotto la loro categoria */}
+              {categoryTree(libraries).map(({ category: lib, depth }) => (
                 <Pressable
                   key={lib.id}
-                  style={styles.modalOption}
+                  style={[styles.modalOption, depth > 0 && { marginLeft: 20 * Math.min(depth, 2) }]}
                   onPress={() => handleMoveToLibrary(lib.id)}
                 >
                   <View style={styles.modalOptionIcon}>
@@ -840,6 +872,17 @@ const useStyles = makeStyles((t) => ({
   libraryTextActive: {
     fontWeight: '600',
     color: t.colors.chipActiveText,
+  },
+  // Seconda fila (sottocategorie): un po' più piccola, attaccata alla prima
+  subLibraryContainer: {
+    paddingTop: 0,
+  },
+  subLibraryChip: {
+    height: 32,
+    paddingHorizontal: 12,
+  },
+  subLibraryText: {
+    fontSize: 13,
   },
   modalOverlay: {
     flex: 1,

@@ -24,10 +24,10 @@ const FETTE = {
       ['aggiungi', async (page) => {
         await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
         await page.getByText('Detersivi', { exact: true }).first().click(); await page.waitForTimeout(300);
-        await page.getByText('Categoria *', { exact: true }).first().scrollIntoViewIfNeeded();
+        await page.getByText('Tipo di pelle', { exact: true }).first().scrollIntoViewIfNeeded(); // C1
       }],
       ['card', async (page) => { await page.goto(APP); await page.getByText('LIN-0021', { exact: true }).first().scrollIntoViewIfNeeded(); }],
-      ['impostazioni', async (page) => { await page.goto(`${APP}/settings`); await page.waitForTimeout(1500); await page.getByText('Categorie', { exact: true }).first().scrollIntoViewIfNeeded(); }],
+      ['impostazioni', async (page) => { await page.goto(`${APP}/settings`); await page.waitForTimeout(1500); await page.getByText('Tipi di pelle', { exact: true }).first().scrollIntoViewIfNeeded(); }], // C1
     ],
   },
   // M03: articoli a quantità (card, esaurito, Scheda, Modifica in sola lettura, Magazzino in Aggiungi, Cronologia)
@@ -243,6 +243,46 @@ const FETTE = {
         await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
         await page.getByText('Cronologia dettagliata', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
       }],
+    ],
+  },
+  // C1: categorie = cartelle con sottocategorie (nomi lunghi apposta), tipo di pelle facoltativo
+  c1: {
+    prepara: () => {
+      const lk = 'inventory:v1:local:libraries';
+      const pk = 'inventory:v1:local:products';
+      const libs = JSON.parse(localStorage.getItem(lk));
+      libs.push({ id: 'visone', name: 'Visone', icon: 'folder', createdAt: '2026-11-22T20:00:00.000Z', parentId: 'pellicce' });
+      libs.push({ id: 'volpe', name: 'Volpe', icon: 'folder', createdAt: '2026-11-22T20:00:00.000Z', parentId: 'pellicce' });
+      libs.push({ id: 'cappotti', name: 'Cappotti lunghi e giacche da sera', icon: 'layers', createdAt: '2026-11-22T20:00:00.000Z', parentId: 'collezione-inverno' });
+      localStorage.setItem(lk, JSON.stringify(libs));
+      const list = JSON.parse(localStorage.getItem(pk));
+      list.find((p) => p.sku === 'VIS-0098').libraryId = 'visone';
+      Object.assign(list.find((p) => p.sku === 'LIN-0021'), { libraryId: 'cappotti' });
+      list.find((p) => p.sku === 'PUZ-0012').furType = ''; // senza tipo di pelle
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['categorie', async (page) => {
+        await page.goto(`${APP}/settings/folders`); await page.waitForTimeout(1800);
+        await page.getByText('Categorie esistenti', { exact: false }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['sottocategoria', async (page) => {
+        await page.getByText('Cappotti lunghi e giacche da sera', { exact: true }).first().click(); await page.waitForTimeout(500);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.getByText('Sottocategoria di', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['aggiungi', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByText('Collezione Inverno', { exact: true }).first().click(); await page.waitForTimeout(300);
+        await page.getByText('Cappotti lunghi e giacche da sera', { exact: true }).first().click(); await page.waitForTimeout(300);
+        await page.getByText('Tipo di pelle', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['scheda', async (page) => { await page.goto(`${APP}/product/cmp-3`); await page.waitForTimeout(1800); await page.getByText('LIN-0021', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
+      ['inventario', async (page) => {
+        await page.goto(APP); await page.waitForTimeout(1500);
+        await page.getByText('Collezione Inverno', { exact: true }).first().click(); await page.waitForTimeout(600);
+      }],
+      ['tipi-di-pelle', async (page) => { await page.goto(`${APP}/settings/categories`); await page.waitForTimeout(1800); }],
     ],
   },
 };

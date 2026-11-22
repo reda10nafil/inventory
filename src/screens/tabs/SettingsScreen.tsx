@@ -7,11 +7,11 @@ import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
-import { Product } from '../../../types';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
-import { libraryIdFromCsv, movementCsvRows, parseStockCell, productCsvRows, stockCsvRows } from '../../../utils/productCsv';
+import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
+import { categoryPath } from '../../../utils/categories';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
@@ -22,7 +22,6 @@ import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput, fontStyle } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
-import { parseStoredNumber } from '../../../utils/number';
 
 export default function SettingsScreen() {
   const t = useTheme();
@@ -31,10 +30,16 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { products, timeline, addProduct, getProductBySku, libraries } = useInventory();
   const { getLocation } = useLocations();
-  const { labelOf } = useCategories();
+  const { furTypes, labelOf } = useFurTypes();
   const { nameOf: contactName } = useContacts();
   // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
-  const reportLabels = { place: (id: string) => getLocation(id)?.label ?? id, category: labelOf, contact: contactName };
+  // C1: nel report delle giacenze «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo
+  const reportLabels = {
+    place: (id: string) => getLocation(id)?.label ?? id,
+    category: (id: string | undefined) => categoryPath(libraries, id),
+    furType: labelOf,
+    contact: contactName,
+  };
   const { session, organizationId, organizations, user, signOut, switchOrganization } = useAuth();
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -132,7 +137,7 @@ export default function SettingsScreen() {
     setCloudBackupBusy(true);
     try {
       const values = [
-        ['SKU', 'Categoria', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
+        ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
         ...products.map((product) => [
           product.sku, product.furType, product.location, product.status,
           product.purchasePrice, product.sellPrice, product.length, product.width, product.weight,
@@ -162,92 +167,23 @@ export default function SettingsScreen() {
   const importCsvContent = (content: string) => {
     const rows = parseCsv(content.replace(/^\uFEFF/, ''));
     if (rows.length < 2) throw new Error('Il CSV non contiene prodotti.');
-
-    const normalize = (value: string) => value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim()
-      .toLocaleLowerCase();
-    const headers = rows[0].map(normalize);
-    const column = (...names: string[]) => headers.findIndex((header) => names.includes(header));
-    const skuIndex = column('sku', 'codice sku');
-    if (skuIndex < 0) throw new Error('Manca la colonna SKU. Esporta prima un CSV dall’app per vedere il formato supportato.');
-
-    const valueAt = (row: string[], index: number) => index < 0 ? '' : (row[index] || '').trim();
-    const numberAt = (row: string[], index: number) => parseStoredNumber(valueAt(row, index)); // «2.125» dell'export = 2,125
-    const jsonAt = <T,>(row: string[], index: number, fallback: T): T => {
-      if (index < 0 || !valueAt(row, index)) return fallback;
-      try { return JSON.parse(valueAt(row, index)) as T; } catch { return fallback; }
-    };
-
-    const furTypeIndex = column('categoria', 'tipo pelle', 'tipo pelliccia', 'fur type');
-    const locationIndex = column('posizione', 'location');
-    const statusIndex = column('status', 'stato');
-    const notesIndex = column('note', 'note tecniche', 'technical notes');
-    const imagesIndex = column('immagini url', 'immagini', 'foto url', 'images');
-    const customDataIndex = column('dati personalizzati json', 'custom data json');
-    const productionDateIndex = column('data produzione', 'production date');
-    const gs1Index = column('gs1 digital link', 'gs1');
-    const backupAttachmentsIndex = column('link allegati drive json', 'drive attachments json');
-    // M08: articoli a quantità (intestazioni senza accenti: «Unità» → «unita»)
-    const unitIndex = column('unita', 'unit');
-    const stockIndex = column('giacenza', 'stock');
-    const minStockIndex = column('scorta minima', 'min stock');
+    // C1: colonne e formato (prima di M01, M01-M10, da C1) dall'intestazione; una riga → un prodotto in `productFromCsvRow`
+    const cols = productCsvColumns(rows[0]);
+    if (cols.sku < 0) throw new Error('Manca la colonna SKU. Esporta prima un CSV dall’app per vedere il formato supportato.');
 
     let imported = 0;
     let skipped = 0;
     const seenSkus = new Set(products.map((product) => product.sku.trim().toLocaleLowerCase()));
     rows.slice(1).forEach((row) => {
-      const sku = valueAt(row, skuIndex);
-      const normalizedSku = sku.toLocaleLowerCase();
-      if (!sku || seenSkus.has(normalizedSku) || getProductBySku(sku)) {
-        skipped += 1;
-        return;
-      }
-      // Giacenza vuota: pezzo unico come prima; scritta ma non valida: riga saltata (non diventa 1 pezzo)
-      const stock = parseStockCell(valueAt(row, stockIndex));
-      if (stock === undefined) {
+      // SKU vuoto o giacenza scritta ma non valida: `null`, la riga si salta (non diventa un pezzo unico)
+      const parsed = productFromCsvRow(row, cols, { categories: libraries, furTypes });
+      const normalizedSku = parsed ? parsed.product.sku.toLocaleLowerCase() : '';
+      if (!parsed || seenSkus.has(normalizedSku) || getProductBySku(parsed.product.sku)) {
         skipped += 1;
         return;
       }
       seenSkus.add(normalizedSku);
-      const minStock = numberAt(row, minStockIndex);
-
-      const rawStatus = valueAt(row, statusIndex).toLocaleLowerCase();
-      // Un articolo a quantità non è mai «venduto» (ticket 03): con la giacenza è disponibile
-      const status: Product['status'] = stock
-        ? 'available'
-        : rawStatus === 'sold' || rawStatus === 'venduto'
-          ? 'sold'
-          : rawStatus === 'archived' || rawStatus === 'archiviato'
-            ? 'archived'
-            : 'available';
-      const rawImages = valueAt(row, imagesIndex);
-      const images = jsonAt<string[]>(row, imagesIndex, rawImages ? rawImages.split(';').map((image) => image.trim()).filter(Boolean) : []);
-      const backupImageLinks = Array.isArray(images) ? images.filter((image) => /^https?:\/\//i.test(image)) : [];
-
-      const added = addProduct({
-        sku,
-        furType: valueAt(row, furTypeIndex),
-        location: valueAt(row, locationIndex),
-        status,
-        images: Array.isArray(images) ? images.filter((image) => !/drive\.google\.com/i.test(image)) : [],
-        backupImageLinks,
-        backupCustomDataLinks: jsonAt(row, backupAttachmentsIndex, {}),
-        purchasePrice: numberAt(row, column('prezzo acquisto', 'purchase price')),
-        sellPrice: numberAt(row, column('prezzo vendita', 'sell price')),
-        length: numberAt(row, column('lunghezza', 'length')),
-        width: numberAt(row, column('larghezza', 'width')),
-        weight: numberAt(row, column('peso', 'weight')),
-        technicalNotes: valueAt(row, notesIndex),
-        productionDate: valueAt(row, productionDateIndex) || undefined,
-        customData: jsonAt(row, customDataIndex, []),
-        gs1DigitalLink: valueAt(row, gs1Index) || undefined,
-        libraryId: libraryIdFromCsv(valueAt(row, column('cartella', 'folder', 'library')), libraries),
-        isFragile: false,
-        ...(stock && { unit: valueAt(row, unitIndex) || undefined }),
-        ...(stock && minStock != null && minStock >= 0 && { minStock }),
-      }, stock ? { stock } : undefined);
+      const added = addProduct(parsed.product, parsed.stock ? { stock: parsed.stock } : undefined);
       if (added) imported += 1;
       else skipped += 1;
     });
@@ -375,9 +311,9 @@ export default function SettingsScreen() {
               <AppIcon name="folder" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Gestisci Cartelle</Text>
+              <Text style={styles.settingTitle}>Categorie</Text>
               <Text style={styles.settingDescription}>
-                Crea e organizza librerie personalizzate
+                Categorie e sottocategorie dei prodotti
               </Text>
             </View>
           </View>
@@ -484,9 +420,9 @@ export default function SettingsScreen() {
               <AppIcon name="category" size={24} color={t.colors.onAccent} />
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Categorie</Text>
+              <Text style={styles.settingTitle}>Tipi di pelle</Text>
               <Text style={styles.settingDescription}>
-                Tipi di prodotto da scegliere in Aggiungi
+                Per le pellicce; facoltativo negli altri prodotti
               </Text>
             </View>
           </View>

@@ -2,6 +2,8 @@
 
 Tipo: grilling. Stato: **chiuso** il 22 novembre 2026 sera (risposta dell'utente). Fetta: C1. **Supera il ticket 04** (M01): là «Tipo di pelle» era diventato «Categoria», nel verso sbagliato.
 
+**Fatto** il 22 novembre 2026 sera, fetta C1 su `funzioni/magazzino` (commit «feat(magazzino): C1 categorie = cartelle…», SHA in `git log` e nella voce di `../../CRONOLOGIA.md`). Forma scelta per la sottocategoria nel CSV: nome completo nella colonna «Categoria» («Pellicce › Visone»). Decisioni prese al posto dell'utente: righe C1 in `../../DECISIONI_DA_RIVEDERE.md`. I tre formati dei CSV vecchi hanno un test ciascuno (`__tests__/productCsv.test.ts`, file in `../prova/c1-csv/`).
+
 ## Question
 
 Oggi «Categoria» è l'ex tipo di pelle (visone, volpe…) e «Cartella» un raggruppamento libero (Pellicce, Collezione Inverno). L'utente vuole le cartelle come categorie (pellicce, abbigliamento, borse, scarpe, zaini). Come si sistemano senza perdere dati?

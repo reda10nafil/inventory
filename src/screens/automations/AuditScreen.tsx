@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useProductKind } from '../../../hooks/useProductKind';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -23,6 +23,7 @@ interface AuditItem {
     id: string;
     sku: string;
     furType: string;
+    libraryId?: string;
     status: AuditStatus;
 }
 
@@ -33,7 +34,7 @@ export default function AuditScreen() {
     const router = useRouter();
     const { products, getProductBySku, moveProduct } = useInventory();
     const { locations } = useLocations();
-    const { labelOf } = useCategories();
+    const kindOf = useProductKind();
 
     const [step, setStep] = useState<'scan_location' | 'audit_loop'>('scan_location');
     const [targetLocation, setTargetLocation] = useState<Location | null>(null);
@@ -80,6 +81,7 @@ export default function AuditScreen() {
                 id: p.id,
                 sku: p.sku,
                 furType: p.furType,
+                libraryId: p.libraryId,
                 status: 'missing' as AuditStatus
             }));
 
@@ -183,6 +185,7 @@ export default function AuditScreen() {
                 id: product.id,
                 sku: product.sku,
                 furType: product.furType,
+                libraryId: product.libraryId,
                 status: 'intruder'
             },
             ...prev
@@ -208,7 +211,8 @@ export default function AuditScreen() {
                     <Text style={[styles.itemSku, { color: item.status === 'missing' ? t.colors.textSecondary : t.colors.textPrimary }]}>
                         {item.sku}
                     </Text>
-                    <Text style={styles.itemType}>{labelOf(item.furType)}</Text>
+                    {/* C1: categoria e tipo di pelle */}
+                    {!!kindOf(item).line && <Text style={styles.itemType}>{kindOf(item).line}</Text>}
                     {item.status === 'intruder' && (
                         <Text style={styles.intruderLabel}>INTRUSO</Text>
                     )}

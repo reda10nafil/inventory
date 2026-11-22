@@ -47,12 +47,12 @@ Un elenco di fette pronte da eseguire, una per task, che porta nell'app React Na
 
 ## Fette da eseguire
 
-Ordine: M10 (**fatta** il 22 sera, `df4f3e5`), poi C1 → S1 → S2 → S3 → N1 → N2 → I1 → L1 → L2 → I2 → I3. L0 e N0 sono ricerche in sola lettura, **chiuse** il 22 sera: resoconti in `ricerche/`, sintesi nei ticket 20 e 17. I difetti rimasti della fase B (elenco in `PASSAGGIO.md`) non sono in nessuna fetta: da proporre all'utente come fetta a sé.
+Ordine: M10 (**fatta** il 22 sera, `df4f3e5`), C1 (**fatta** il 22 sera, vedi `git log`), poi S1 → S2 → S3 → N1 → N2 → I1 → L1 → L2 → I2 → I3. L0 e N0 sono ricerche in sola lettura, **chiuse** il 22 sera: resoconti in `ricerche/`, sintesi nei ticket 20 e 17. I difetti rimasti della fase B (elenco in `PASSAGGIO.md`) non sono in nessuna fetta: da proporre all'utente come fetta a sé.
 
 | Fetta | Ticket | Cosa | Dipende da | File principali |
 | --- | --- | --- | --- | --- |
 | M10 | 07 | Fornitori e clienti: indicazioni in `PASSAGGIO.md`, punto 1 | M04 | `ContactsContext`, schermata nuova, `MovementSheet` |
-| C1 | 19 | Categorie = cartelle con sottocategorie; «Tipo di pelle» campo facoltativo; CSV con le due colonne | M10 | `CategoriesContext`, `utils/categories.ts`, Cartelle, Aggiungi, Modifica, Scheda, Home, CSV, PDF, Audit, Conta, Azione rapida |
+| C1 | 19 | **Fatta.** Categorie = cartelle con sottocategorie; «Tipo di pelle» campo facoltativo; CSV con le due colonne | M10 | `FurTypesContext` (ex `CategoriesContext`), `utils/categories.ts` (albero), `utils/furTypes.ts`, Cartelle, Aggiungi, Modifica, Scheda, Home, CSV, PDF, Audit, Conta, Azione rapida |
 | S1 | 13 | Scaffali: anagrafica (posizione, categoria o generico, codice e tag), Impostazioni › Scaffali, `shelfId` facoltativo nel prodotto | C1 | contesto nuovo `ShelvesContext`, schermata nuova, Aggiungi, Modifica, Scheda |
 | S2 | 14, 15 | Capacità in pezzi, peso e volume; altezza e profondità facoltative nel prodotto; riempimento in % con i colori | S1 | `utils/shelves.ts` + test, Scaffali, Scheda |
 | S3 | 15 | Avviso dall'80% e proposta dello scaffale migliore in Aggiungi, Movimenta e nelle automazioni di carico | S2 | Aggiungi, `MovementSheet`, Azione rapida, Spostamento rapido |

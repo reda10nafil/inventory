@@ -19,6 +19,12 @@ describe('matchesSearch (P14)', () => {
     expect(matchesSearch(a, 'Stand A', locations)).toBe(true);
     expect(matchesSearch({ ...a, stock: { vetrina: 1, stand_a: 0 } }, 'Stand A', locations)).toBe(false);
   });
+  it('trova per categoria, anche col nome completo della sottocategoria (C1)', () => {
+    const categories = [{ id: 'visone', label: 'Pellicce › Visone' }];
+    expect(matchesSearch({ ...p, libraryId: 'visone' }, 'pellicce', locations, types, categories)).toBe(true);
+    expect(matchesSearch({ ...p, libraryId: 'visone' }, 'visone', locations, types, categories)).toBe(true);
+    expect(matchesSearch(p, 'pellicce', locations, types, categories)).toBe(false);
+  });
   it('ricerca vuota: tutto', () => expect(matchesSearch(p, '  ', locations)).toBe(true));
 });
 

@@ -1,5 +1,11 @@
-import { libraryIdFromCsv, MOVEMENT_CSV_HEADER, movementCsvRows, parseStockCell, PRODUCT_CSV_HEADER, productCsvRows, STOCK_CSV_HEADER, stockCell, stockCsvRows } from '../utils/productCsv';
+import * as fs from 'fs';
+import * as path from 'path';
+import {
+  libraryIdFromCsv, MOVEMENT_CSV_HEADER, movementCsvRows, parseStockCell, PRODUCT_CSV_HEADER, productCsvColumns, productCsvFormat,
+  productCsvRows, productFromCsvRow, STOCK_CSV_HEADER, stockCell, stockCsvRows,
+} from '../utils/productCsv';
 import { parseCsv, stringifyCsv } from '../utils/csv';
+import { DEFAULT_FUR_TYPES } from '../utils/furTypes';
 import { withStartingStock } from '../utils/inventoryOps';
 import { replayStock, stockOf } from '../utils/stock';
 import type { Product, TimelineEvent } from '../types';
@@ -11,7 +17,7 @@ const product = (extra: Partial<Product>): Product => ({
 const libraries = [{ id: 'pellicce', name: 'Pellicce' }, { id: 'usato', name: 'Usato e permute' }];
 
 describe('productCsvRows (P07)', () => {
-  it('esclude il cestino e scrive il nome della cartella', () => {
+  it('esclude il cestino e scrive il nome della categoria (la cartella, C1)', () => {
     const rows = productCsvRows([
       product({ sku: 'A', libraryId: 'pellicce' }),
       product({ sku: 'B', deletedAt: '2026-11-21' }),
@@ -19,9 +25,23 @@ describe('productCsvRows (P07)', () => {
     ], libraries);
     expect(rows[0]).toEqual(PRODUCT_CSV_HEADER);
     expect(rows.slice(1).map((r) => r[0])).toEqual(['A', 'C']);
-    const cartella = PRODUCT_CSV_HEADER.indexOf('Cartella');
-    expect(rows[1][cartella]).toBe('Pellicce');
-    expect(rows[2][cartella]).toBe('');
+    const categoria = PRODUCT_CSV_HEADER.indexOf('Categoria');
+    expect(rows[1][categoria]).toBe('Pellicce');
+    expect(rows[2][categoria]).toBe('');
+  });
+
+  it('C1: «Tipo di pelle» e «Categoria» al posto delle colonne di prima, stesse posizioni', () => {
+    expect(PRODUCT_CSV_HEADER[1]).toBe('Tipo di pelle');
+    expect(PRODUCT_CSV_HEADER[15]).toBe('Categoria');
+    expect(PRODUCT_CSV_HEADER).not.toContain('Cartella');
+    expect(productCsvFormat(PRODUCT_CSV_HEADER)).toBe('c1');
+  });
+
+  it('la sottocategoria si scrive col nome completo; senza tipo di pelle la cella è vuota', () => {
+    const list = [...libraries, { id: 'visone', name: 'Visone', parentId: 'pellicce' }];
+    const rows = productCsvRows([product({ libraryId: 'visone', furType: '' })], list);
+    expect(rows[1][PRODUCT_CSV_HEADER.indexOf('Categoria')]).toBe('Pellicce › Visone');
+    expect(rows[1][PRODUCT_CSV_HEADER.indexOf('Tipo di pelle')]).toBe('');
   });
 
   it('solo le foto con link http entrano nel CSV', () => {
@@ -39,6 +59,96 @@ describe('libraryIdFromCsv', () => {
   it('cartella sconosciuta o vuota: nessuna', () => {
     expect(libraryIdFromCsv('Giacche', libraries)).toBeUndefined();
     expect(libraryIdFromCsv('', libraries)).toBeUndefined();
+  });
+  it('C1: nome completo della sottocategoria, anche con «>»; lo stesso nome sotto due categorie', () => {
+    const list = [
+      ...libraries,
+      { id: 'visone', name: 'Visone', parentId: 'pellicce' },
+      { id: 'visone-1', name: 'Visone', parentId: 'usato' },
+    ];
+    expect(libraryIdFromCsv('Pellicce › Visone', list)).toBe('visone');
+    expect(libraryIdFromCsv('usato e permute > VISONE', list)).toBe('visone-1');
+    expect(libraryIdFromCsv('Usato e permute›Visone', list)).toBe('visone-1');
+    expect(libraryIdFromCsv('visone-1', list)).toBe('visone-1');
+    // Solo il nome: la prima nell'ordine dell'albero
+    expect(libraryIdFromCsv('Visone', list)).toBe('visone');
+    expect(libraryIdFromCsv('Pellicce › Volpe', list)).toBeUndefined();
+  });
+});
+
+// I tre formati del CSV dei prodotti (ticket 19): gli stessi file della prova `prova/c1-categorie.cjs`
+describe('CSV di prima e di adesso (C1)', () => {
+  const dir = path.join(__dirname, '..', 'piani di implementazione', 'funzionalita', 'prova', 'c1-csv');
+  const categories = [
+    { id: 'pellicce', name: 'Pellicce' },
+    { id: 'collezione-inverno', name: 'Collezione Inverno' },
+    { id: 'usato-e-permute', name: 'Usato e permute' },
+    { id: 'visone', name: 'Visone', parentId: 'pellicce' },
+  ];
+  const read = (file: string) => {
+    const rows = parseCsv(fs.readFileSync(path.join(dir, file), 'utf8'));
+    const cols = productCsvColumns(rows[0]);
+    const products = rows.slice(1).map((row) => productFromCsvRow(row, cols, { categories, furTypes: DEFAULT_FUR_TYPES }));
+    return { format: cols.format, products: products.map((r) => r && { sku: r.product.sku, furType: r.product.furType, libraryId: r.product.libraryId, status: r.product.status, sellPrice: r.product.sellPrice, stock: r.stock }) };
+  };
+
+  it('prima di M01: «Tipo Pelle» è il tipo di pelle, «Cartella» la categoria', () => {
+    expect(read('pre-m01.csv')).toEqual({
+      format: 'pre-m01',
+      products: [
+        { sku: 'C1-PRE-1', furType: 'volpe', libraryId: 'pellicce', status: 'sold', sellPrice: 1234.5, stock: null },
+        { sku: 'C1-PRE-2', furType: 'visone', libraryId: undefined, status: 'available', sellPrice: undefined, stock: null },
+      ],
+    });
+  });
+
+  it('M01-M10: «Categoria» è il tipo di pelle, «Cartella» la categoria (anche per id)', () => {
+    expect(read('m01.csv')).toEqual({
+      format: 'm01',
+      products: [
+        { sku: 'C1-M01-1', furType: 'zibellino', libraryId: 'usato-e-permute', status: 'available', sellPrice: 900, stock: null },
+        { sku: 'C1-M01-2', furType: 'astrakan', libraryId: 'collezione-inverno', status: 'available', sellPrice: undefined, stock: { vetrina: 3 } },
+      ],
+    });
+  });
+
+  it('da C1: «Tipo di pelle» (anche per nome o vuoto) e «Categoria» col nome completo', () => {
+    expect(read('c1.csv')).toEqual({
+      format: 'c1',
+      products: [
+        { sku: 'C1-NEW-1', furType: 'visone', libraryId: 'visone', status: 'available', sellPrice: 1500, stock: null },
+        { sku: 'C1-NEW-2', furType: '', libraryId: 'usato-e-permute', status: 'available', sellPrice: 25, stock: null },
+        { sku: 'C1-NEW-3', furType: 'volpe', libraryId: 'visone', status: 'available', sellPrice: undefined, stock: null },
+        { sku: 'C1-NEW-4', furType: 'cincilla', libraryId: 'collezione-inverno', status: 'available', sellPrice: undefined, stock: null },
+      ],
+    });
+  });
+
+  it('il formato dipende dall\'intestazione, non dalla posizione', () => {
+    // M08 importava «SKU,Categoria,…» senza «Cartella»: è un file M01, «Categoria» = tipo di pelle
+    expect(productCsvFormat(['SKU', 'Categoria', 'Posizione'])).toBe('m01');
+    expect(productCsvColumns(['SKU', 'Posizione', 'Categoria']).furType).toBe(2);
+    expect(productCsvColumns(['SKU', 'Posizione', 'Categoria']).category).toBe(-1);
+    // «Cartella» e «Tipo di pelle» insieme: vecchio
+    expect(productCsvFormat(['SKU', 'Tipo di pelle', 'Cartella'])).toBe('pre-m01');
+    // Solo «Tipo di pelle»: nuovo, nessuna categoria
+    const c1 = productCsvColumns(['Categoria', 'SKU', 'Tipo di pelle']);
+    expect([c1.format, c1.category, c1.furType]).toEqual(['c1', 0, 2]);
+    expect(productCsvFormat(['sku', 'posizione'])).toBe('pre-m01');
+  });
+
+  it('riga saltata: SKU vuoto o giacenza non valida', () => {
+    const cols = productCsvColumns(['SKU', 'Tipo di pelle', 'Giacenza']);
+    expect(productFromCsvRow(['', 'visone', ''], cols, { categories, furTypes: DEFAULT_FUR_TYPES })).toBeNull();
+    expect(productFromCsvRow(['A', 'visone', 'vetrina:-1'], cols, { categories, furTypes: DEFAULT_FUR_TYPES })).toBeNull();
+  });
+
+  it('esporta e reimporta: stesso tipo di pelle e stessa categoria, anche una sottocategoria e senza tipo', () => {
+    const originals = [product({ sku: 'A', libraryId: 'visone', furType: '' }), product({ sku: 'B', libraryId: 'usato-e-permute', furType: 'cincilla' })];
+    const rows = parseCsv(stringifyCsv(productCsvRows(originals, categories)));
+    const cols = productCsvColumns(rows[0]);
+    const back = rows.slice(1).map((row) => productFromCsvRow(row, cols, { categories, furTypes: DEFAULT_FUR_TYPES })?.product);
+    expect(back.map((p) => [p?.sku, p?.furType, p?.libraryId])).toEqual([['A', '', 'visone'], ['B', 'cincilla', 'usato-e-permute']]);
   });
 });
 
@@ -95,7 +205,11 @@ describe('Giacenza nel CSV dei prodotti (M08)', () => {
 });
 
 describe('Report giacenze e movimenti (M08)', () => {
-  const labels = { place: (id: string) => ({ vetrina: 'Vetrina', magazzino: 'Magazzino' } as Record<string, string>)[id] ?? id, category: (id: string) => (id === 'visone' ? 'Visone' : id) };
+  const labels = {
+    place: (id: string) => ({ vetrina: 'Vetrina', magazzino: 'Magazzino' } as Record<string, string>)[id] ?? id,
+    category: (id: string | undefined) => (id === 'visone' ? 'Pellicce › Visone' : id ?? ''),
+    furType: (id: string) => (id === 'visone' ? 'Visone' : id),
+  };
 
   it('stockCsvRows: una riga per posizione, pezzo unico a 1, esaurito a 0, sotto scorta del prodotto', () => {
     const rows = stockCsvRows([
@@ -108,12 +222,18 @@ describe('Report giacenze e movimenti (M08)', () => {
     ], labels);
     expect(rows[0]).toEqual(STOCK_CSV_HEADER);
     expect(rows.slice(1)).toEqual([
-      ['A', 'Visone', 'Vetrina', 1, 'kg', 5, 'sì'],
-      ['A', 'Visone', 'Magazzino', 2, 'kg', 5, 'sì'],
-      ['B', 'Visone', 'Vetrina', 1, 'pz', undefined, ''],
-      ['C', 'Visone', 'Vetrina', 0, 'pz', undefined, ''],
-      ['F', 'Visone', 'Vetrina', 5, 'pz', 5, 'no'],
+      ['A', '', 'Visone', 'Vetrina', 1, 'kg', 5, 'sì'],
+      ['A', '', 'Visone', 'Magazzino', 2, 'kg', 5, 'sì'],
+      ['B', '', 'Visone', 'Vetrina', 1, 'pz', undefined, ''],
+      ['C', '', 'Visone', 'Vetrina', 0, 'pz', undefined, ''],
+      ['F', '', 'Visone', 'Vetrina', 5, 'pz', 5, 'no'],
     ]);
+  });
+
+  it('stockCsvRows (C1): «Categoria» = nome completo della cartella, «Tipo di pelle» = nome del tipo, vuoti se mancano', () => {
+    expect(STOCK_CSV_HEADER.slice(0, 4)).toEqual(['SKU', 'Categoria', 'Tipo di pelle', 'Posizione']);
+    const rows = stockCsvRows([product({ sku: 'A', libraryId: 'visone' }), product({ sku: 'B', furType: '' })], labels);
+    expect(rows.slice(1).map((r) => r.slice(0, 4))).toEqual([['A', 'Pellicce › Visone', 'Visone', 'Vetrina'], ['B', '', '', 'Vetrina']]);
   });
 
   it('movementCsvRows: solo eventi `stock`, dal più vecchio, con etichette; prodotto eliminato → id', () => {

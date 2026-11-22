@@ -124,7 +124,7 @@ export function movementOf(
 }
 
 /** Riga della Conta (M07, ticket 06): un articolo a quantità che si aspetta in una posizione. */
-export type CountRow = { id: string; sku: string; furType: string; unit: string; expected: number };
+export type CountRow = { id: string; sku: string; furType: string; libraryId?: string; unit: string; expected: number };
 
 /** Si possono contare (e rettificare) solo gli articoli a quantità disponibili e non nel cestino. */
 const countable = (p: Product) => isStocked(p) && !p.deletedAt && p.status === 'available';
@@ -137,7 +137,7 @@ const countable = (p: Product) => isStocked(p) && !p.deletedAt && p.status === '
 export function countRows(products: readonly Product[], at: string): CountRow[] {
   return products
     .filter((p) => countable(p) && isAt(p, at))
-    .map((p) => ({ id: p.id, sku: p.sku, furType: p.furType, unit: p.unit || DEFAULT_UNIT, expected: qtyAt(p, at) }))
+    .map((p) => ({ id: p.id, sku: p.sku, furType: p.furType, libraryId: p.libraryId, unit: p.unit || DEFAULT_UNIT, expected: qtyAt(p, at) }))
     .sort((a, b) => a.sku.localeCompare(b.sku));
 }
 

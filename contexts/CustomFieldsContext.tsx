@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { CustomField, FieldUIType } from '../types';
-import { withCategoryFieldName } from '../utils/categories';
+import { withSystemFieldNames } from '../utils/furTypes';
 
 const STORAGE_KEY = 'furinventory_custom_fields';
 
@@ -17,9 +17,10 @@ export interface CustomFieldOption {
 export const SYSTEM_FIELDS: CustomField[] = [
     { id: 'images', name: 'Foto Prodotto', type: 'images', uiType: 'images', required: false, order: 0, isSystem: true, icon: 'add-photo-alternate' },
     { id: 'sku', name: 'SKU / Codice', type: 'text_short', uiType: 'text', required: true, order: 1, isSystem: true, icon: 'qr-code' },
-    { id: 'furType', name: 'Categoria', type: 'text_short', uiType: 'text', required: true, order: 2, isSystem: true, icon: 'category' },
+    // C1: «Tipo di pelle» facoltativo (in M01 «Categoria»); la categoria è il campo `folder` (la cartella di prima)
+    { id: 'furType', name: 'Tipo di pelle', type: 'text_short', uiType: 'text', required: false, order: 2, isSystem: true, icon: 'category' },
     { id: 'location', name: 'Posizione', type: 'text_short', uiType: 'text', required: true, order: 3, isSystem: true, icon: 'place' },
-    { id: 'folder', name: 'Cartella', type: 'text_short', uiType: 'text', required: false, order: 4, isSystem: true, icon: 'folder' },
+    { id: 'folder', name: 'Categoria', type: 'text_short', uiType: 'text', required: false, order: 4, isSystem: true, icon: 'folder' },
     { id: 'purchasePrice', name: 'Prezzo Acquisto', type: 'currency', uiType: 'text', required: false, order: 5, isSystem: true, icon: 'shopping-cart' },
     { id: 'sellPrice', name: 'Prezzo Vendita', type: 'currency', uiType: 'text', required: false, order: 6, isSystem: true, icon: 'sell' },
     { id: 'length', name: 'Lunghezza', type: 'number', uiType: 'text', required: false, order: 7, isSystem: true, icon: 'straighten', unit: 'cm' },
@@ -80,8 +81,9 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
                     const existingIds = parsed.map((p: any) => p.id);
                     const missingSystemFields = SYSTEM_FIELDS.filter(sf => !existingIds.includes(sf.id));
 
-                    // M01: il campo «Tipo Pelle» salvato dalle versioni di prima si legge come «Categoria»
-                    const merged = withCategoryFieldName([...parsed, ...missingSystemFields]);
+                    // C1: i campi di sistema salvati prima («Tipo Pelle» o «Categoria» per il tipo di pelle, «Cartella»)
+                    // si leggono coi nomi nuovi, e il tipo di pelle non obbligatorio, senza riscrivere nulla
+                    const merged = withSystemFieldNames([...parsed, ...missingSystemFields]);
 
                     // Sort by order
                     setAllFields(merged.sort((a: CustomField, b: CustomField) => a.order - b.order));

@@ -8,19 +8,22 @@ export type InventoryFilter = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
 type Named = { id: string; label: string };
 
-/** Il prodotto corrisponde alla ricerca: SKU, tipo (id o nome) o posizione (id o nome), maiuscole indifferenti.
- *  Per un articolo a quantità contano tutte le posizioni dove ha giacenza (M03). */
+/** Il prodotto corrisponde alla ricerca: SKU, tipo di pelle (id o nome), categoria (id o nome completo, C1) o
+ *  posizione (id o nome), maiuscole indifferenti. Per un articolo a quantità contano tutte le posizioni dove ha
+ *  giacenza (M03). */
 export function matchesSearch(
-  product: Pick<Product, 'sku' | 'furType' | 'location' | 'stock'>,
+  product: Pick<Product, 'sku' | 'furType' | 'location' | 'stock'> & { libraryId?: string },
   query: string,
   locations: readonly Named[],
   types: readonly Named[] = [],
+  categories: readonly Named[] = [],
 ): boolean {
   const q = query.trim().toLocaleLowerCase();
   if (!q) return true;
   const label = (list: readonly Named[], id: string) => list.find((x) => x.id === id)?.label ?? '';
   const places = positionsOf(product).flatMap((id) => [id, label(locations, id)]);
-  return [product.sku, product.furType, label(types, product.furType), ...places]
+  const category = product.libraryId ? [product.libraryId, label(categories, product.libraryId)] : [];
+  return [product.sku, product.furType, label(types, product.furType), ...category, ...places]
     .some((text) => String(text || '').toLocaleLowerCase().includes(q));
 }
 

@@ -40,7 +40,7 @@ const { scan, product, timelineIds, newEvents } = require('./a3-util.cjs');
     const posizione = await h.has('POSIZIONE', true);
     await h.go('scanner');
     await scan(h, 'pellicce', { wait: 1500 });
-    const cartella = await h.has('CARTELLA', true);
+    const cartella = await h.has('CATEGORIA', true); // C1: etichetta nuova
     await h.go('scanner');
     await scan(h, 'ZZZ-000', { wait: 1200 });
     return { lettore: used, prodotto, eventiDopoLettura: ev, posizione, cartella };

@@ -13,7 +13,9 @@ import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { parseNumber } from '../../../utils/number';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useFurTypes } from '../../../contexts/FurTypesContext';
+import { CategoryPicker } from '../../../components/CategoryPicker';
+import { categoryPath, categoryTree } from '../../../utils/categories';
 import { useCustomFields, CustomField } from '../../../contexts/CustomFieldsContext';
 import { missingRequiredFields } from '../../../utils/formValidation';
 import { useLayout, LayoutField, sectionLabel } from '../../../contexts/LayoutContext';
@@ -35,7 +37,7 @@ export default function AddProductScreen() {
   const router = useRouter();
   const { addProduct, products, libraries } = useInventory();
   const { locations } = useLocations();
-  const { categories } = useCategories();
+  const { furTypes } = useFurTypes();
   const { customFields } = useCustomFields();
   const { layout, getVisibleFields } = useLayout();
   const { gs1Config } = useGS1Config();
@@ -189,8 +191,9 @@ export default function AddProductScreen() {
     if (isSubmitting) return;
 
     // D23: lo SKU vuoto si genera da solo al salvataggio (come dicono il suggerimento e la nota)
-    if (!formData.furType || !formData.location) {
-      Alert.alert('Campi obbligatori', 'Compila almeno Categoria e Posizione');
+    // C1: il tipo di pelle è facoltativo (un prodotto che non è una pelliccia non ne ha uno)
+    if (!formData.location) {
+      Alert.alert('Campi obbligatori', 'Compila almeno la Posizione');
       return;
     }
 
@@ -467,8 +470,8 @@ export default function AddProductScreen() {
 
       const getDynamicOptionsList = (cf: CustomField) => {
         if (cf.linkTo === 'locations') return locations.map(l => ({ id: l.id, label: l.label }));
-        if (cf.linkTo === 'libraries') return libraries.map(l => ({ id: l.id, label: l.name }));
-        if (cf.linkTo === 'furType') return categories.map(c => ({ id: c.id, label: c.label }));
+        if (cf.linkTo === 'libraries') return categoryTree(libraries).map(({ category: l }) => ({ id: l.id, label: categoryPath(libraries, l.id) }));
+        if (cf.linkTo === 'furType') return furTypes.map(c => ({ id: c.id, label: c.label }));
 
         return cf.dataset && Array.isArray(cf.dataset)
           ? cf.dataset.map((val: string, i: number) => ({ id: `ds_${i}`, label: String(val) }))
@@ -822,16 +825,16 @@ export default function AddProductScreen() {
       case 'furType':
         return (
           <View key="furType" style={{ width: '100%' }}>
-            {renderLabel(undefined, true)}
-            {/* M01: le categorie sono dell'utente e possono essere tante: a capo come Posizione e Cartella (D09) */}
+            {renderLabel()}
+            {/* Tipo di pelle (M01, C1): facoltativo, il secondo tocco toglie la scelta; a capo come Posizione e Categoria (D09) */}
             <View style={styles.chipWrap}>
-              {categories.map((type) => {
+              {furTypes.map((type) => {
                 const active = formData.furType === type.id;
                 return (
                   <Pressable
                     key={type.id}
                     style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => updateField('furType', type.id)}
+                    onPress={() => updateField('furType', active ? '' : type.id)}
                   >
                     {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>{type.label}</Text>
@@ -842,7 +845,7 @@ export default function AddProductScreen() {
           </View>
         );
 
-      // D09: le pillole di Posizione e Cartella vanno a capo invece di scorrere fuori dal campo
+      // D09: le pillole di Posizione e Categoria vanno a capo invece di scorrere fuori dal campo
       case 'location':
         return (
           <View key="location" style={sizeStyle}>
@@ -870,26 +873,8 @@ export default function AddProductScreen() {
         return (
           <View key="folder" style={sizeStyle}>
             {renderLabel()}
-            <View style={styles.chipWrap}>
-              {libraries.length === 0 ? (
-                <Text style={styles.chipEmpty}>Nessuna cartella</Text>
-              ) : (
-                libraries.map((lib) => {
-                  const active = formData.libraryId === lib.id;
-                  return (
-                    <Pressable
-                      key={lib.id}
-                      style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
-                      onPress={() => updateField('libraryId', active ? '' : lib.id)}
-                    >
-                      {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                      <AppIcon name={lib.icon} size={16} color={active ? t.colors.chipActiveText : t.colors.textMuted} />
-                      <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>{lib.name}</Text>
-                    </Pressable>
-                  );
-                })
-              )}
-            </View>
+            {/* C1: categoria e, se ne ha, sottocategoria (la cartella di prima) */}
+            <CategoryPicker categories={libraries} value={formData.libraryId} onChange={(id) => updateField('libraryId', id)} />
           </View>
         );
 
@@ -1092,7 +1077,7 @@ export default function AddProductScreen() {
           </Pressable>
 
           <Text style={styles.footNote}>
-            <Text style={styles.required}>*</Text> Campi obbligatori: Categoria, Posizione (SKU auto-generato se vuoto)
+            <Text style={styles.required}>*</Text> Campi obbligatori: Posizione (SKU auto-generato se vuoto)
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

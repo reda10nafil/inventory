@@ -116,7 +116,7 @@ export default function ScannerScreen() {
       soundService.playBlockingError();
       Alert.alert(
         'Codice Non Riconosciuto',
-        `Codice scansionato: ${data}\n\nNessun prodotto, posizione o cartella corrisponde a questo codice.`,
+        `Codice scansionato: ${data}\n\nNessun prodotto, posizione o categoria corrisponde a questo codice.`,
         [
           {
             text: 'OK',

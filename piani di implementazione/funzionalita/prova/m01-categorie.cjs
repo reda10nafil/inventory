@@ -1,6 +1,7 @@
 // M01 (ticket 04): categorie modificabili per spazio. Predefinite senza scrittura, crea → usa in Aggiungi →
 // card e Scheda col nome, rinomina senza cambiare l'id del prodotto, eliminazione bloccata se usata (anche
 // dal cestino) o se è l'ultima, eliminazione di una libera, ricarica che conserva la lista.
+// C1 (ticket 19): la lista di M01 si chiama «Tipi di pelle» (stessa chiave, stesso indirizzo); selettori aggiornati.
 const { scenario } = require('./lib.cjs');
 const KEY = 'furinventory_categories:local';
 const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-label^="Elimina "]')].map((e) => e.getAttribute('aria-label').slice(8)));
@@ -10,20 +11,20 @@ const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-
     const elenco = await names(h);
     const chiave = await h.store(KEY, 500);
     await h.go('add');
-    const etichettaAggiungi = await h.has('Categoria *', true);
+    const etichettaAggiungi = await h.has('Tipo di pelle', true);
     const vecchiaEtichetta = await h.has('Tipo Pelle');
     await h.tab('Impostazioni');
-    const voce = await h.has('Categorie', true);
+    const voce = await h.has('Tipi di pelle', true);
     return { elenco, chiaveScritta: chiave !== null, etichettaAggiungi, vecchiaEtichetta, voceImpostazioni: voce };
   });
 
   await scenario('m01-crea-usa-rinomina', async (h) => {
     await h.go('settings/categories');
-    await h.page.getByPlaceholder('Es. Viti, Detersivi, Elettronica').fill('Viti');
-    await h.click('Crea categoria');
+    await h.page.getByPlaceholder('Es. Lapin, Castoro, Montone').fill('Viti');
+    await h.click('Crea tipo di pelle');
     const dopoCrea = await h.store(KEY, 800);
-    await h.page.getByPlaceholder('Es. Viti, Detersivi, Elettronica').fill('viti');
-    await h.click('Crea categoria'); // doppione: rifiutato
+    await h.page.getByPlaceholder('Es. Lapin, Castoro, Montone').fill('viti');
+    await h.click('Crea tipo di pelle'); // doppione: rifiutato
     const dopoDoppione = (await h.store(KEY, 500)).length;
     await h.go('add');
     await h.click('Viti'); await h.click('Vetrina'); await h.click('M');
@@ -32,10 +33,10 @@ const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-
     await h.go('');
     const card = await h.has('Viti', true);
     await h.click('LOG-2026-001');
-    const scheda = await h.has('Viti', true);
+    const scheda = await h.has('Tipo di pelle: Viti', true); // C1: nella Scheda il tipo di pelle ha l'etichetta
     await h.go('settings/categories');
     await h.click('Viti');
-    await h.page.getByPlaceholder('Es. Viti, Detersivi, Elettronica').fill('Viti inox');
+    await h.page.getByPlaceholder('Es. Lapin, Castoro, Montone').fill('Viti inox');
     await h.click('Salva nome');
     const dopoRinomina = await h.store(KEY, 800);
     const p2 = (await h.products()).find((x) => x.sku === 'LOG-2026-001');

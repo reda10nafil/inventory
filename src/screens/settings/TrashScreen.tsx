@@ -7,7 +7,7 @@ import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useCustomFields, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useProductKind } from '../../../hooks/useProductKind';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { cardSurface } from '../../../components/ui/surfaces';
@@ -23,7 +23,7 @@ export default function TrashScreen() {
     const { getTrashProducts, restoreProduct, permanentlyDeleteProduct } = useInventory();
     const { getDeletedFields, restoreField, permanentlyDeleteField } = useCustomFields();
     const { getLocation } = useLocations();
-    const { labelOf } = useCategories();
+    const kindOf = useProductKind();
     const trashProducts = getTrashProducts();
     const deletedFields = getDeletedFields();
 
@@ -195,7 +195,7 @@ export default function TrashScreen() {
                             <View style={styles.content}>
                                 <Text style={styles.sku}>{item.sku}</Text>
                                 <Text style={styles.details} numberOfLines={1}>
-                                    {labelOf(item.furType)} - {getLocation(item.location)?.label ?? item.location}
+                                    {[kindOf(item).line, getLocation(item.location)?.label ?? item.location].filter(Boolean).join(' - ')}
                                 </Text>
                                 <Text style={styles.deletedDate}>
                                     Eliminato il {new Date(item.deletedAt!).toLocaleDateString('it-IT')}

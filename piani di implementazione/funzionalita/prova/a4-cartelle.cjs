@@ -1,8 +1,9 @@
 // a4: Impostazioni › Cartelle - crea, rinomina, elimina (piena, vuota), e cartella eliminata con prodotti nel cestino.
+// C1 (ticket 19): le cartelle si chiamano «Categorie» (stesso indirizzo); selettori aggiornati.
 // Uso: node a4-cartelle.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const { scenario } = require('./lib.cjs');
 const KEY = 'inventory:v1:local:libraries';
-const NOME = 'Nome cartella (es: Giacche)';
+const NOME = 'Nome categoria (es: Giacche)';
 const row = (h, id) => h.page.locator('[tabindex="0"]').filter({ hasText: `ID: ${id}` }).first();
 const solo = process.argv[2];
 const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, fn, opts) : null);
@@ -14,7 +15,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
     await h.page.locator('[tabindex="0"]').nth(2).click(); // terza icona = warehouse
     await h.page.getByPlaceholder('Scansiona o Genera...').fill('LIB-PROVA-1');
     const avviso = await h.has('Il barcode verrà salvato solo se modifichi');
-    await h.click('Crea Cartella');
+    await h.click('Crea Categoria');
     const libs = (await h.store(KEY)) || [];
     const nuova = libs.find((l) => l.name === 'Giacche');
     await h.go('');
@@ -26,7 +27,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
     await h.go('settings/folders');
     await row(h, 'pellicce').click();
     await h.page.waitForTimeout(400);
-    const titolo = await h.has('Modifica cartella');
+    const titolo = await h.has('Modifica categoria');
     await h.page.getByPlaceholder(NOME).fill('Pellicce Lusso');
     await h.page.getByPlaceholder('Scansiona o Genera...').fill('LIB-PELLICCE');
     await h.click('Salva Modifiche');
@@ -48,7 +49,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
   await run('a4-cart-elimina-vuota', async (h) => {
     await h.go('settings/folders');
     await h.page.getByPlaceholder(NOME).fill('Temporanea');
-    await h.click('Crea Cartella');
+    await h.click('Crea Categoria');
     const creata = ((await h.store(KEY)) || []).find((l) => l.name === 'Temporanea');
     await row(h, creata.id).locator('[tabindex="0"]').last().click();
     await h.page.waitForTimeout(500);

@@ -12,7 +12,7 @@ import * as Sharing from '../../lib/sharing';
 import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useProductKind } from '../../../hooks/useProductKind';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -42,7 +42,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getProductById, getTimelineForProduct } = useInventory();
   const { locations } = useLocations();
-  const { labelOf } = useCategories();
+  const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
   const { customFields } = useCustomFields();
 
@@ -77,7 +77,10 @@ export default function ProductDetailScreen() {
   const halfTileWidth = (screenWidth - t.spacing.screenPadding * 2 - 10) / 2;
 
   const location = locations.find((l) => l.id === product.location);
-  const categoryName = labelOf(product.furType);
+  // C1: categoria (la cartella, col nome completo) e tipo di pelle, ognuno solo se c'è
+  const kind = kindOf(product);
+  /** «Categoria · Tipo - testo», senza separatori in più quando mancano. */
+  const withKind = (text: string) => [kind.full, text].filter(Boolean).join(' - ');
   // Articolo a quantità (M03): giacenza per posizione, dalla più grande; il nome della posizione o, se non c'è più, l'id
   const stocked = isStocked(product);
   const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
@@ -94,7 +97,7 @@ export default function ProductDetailScreen() {
   const stockEventOnScreen = (details: Parameters<typeof describeStockEvent>[0]) => describeStockEvent(details, placeLabel, product.unit, contactLabel);
 
   const generateClientText = () => {
-    let text = `✨ ${categoryName} - ${product.sku}\n\n`;
+    let text = `✨ ${withKind(product.sku)}\n\n`;
 
     if (product.length || product.width || product.weight) {
       text += '📐 MISURE:\n';
@@ -123,7 +126,8 @@ export default function ProductDetailScreen() {
     text += `╚════════════════════════════════════════╝\n\n`;
 
     text += `SKU: ${product.sku}\n`;
-    text += `CATEGORIA: ${categoryName}\n`;
+    if (kind.path) text += `CATEGORIA: ${kind.path}\n`;
+    if (kind.furType) text += `TIPO DI PELLE: ${kind.furType}\n`;
     text += `STATO: ${product.status === 'available' ? 'Disponibile' : 'Venduto'}\n`;
     text += `POSIZIONE: ${location?.label || product.location}\n`;
     if (stocked) text += `GIACENZA: ${formatQty(totalStock(product), product.unit)}\n`;
@@ -192,7 +196,7 @@ export default function ProductDetailScreen() {
               const text = generateClientText();
               const shareOptions: any = {
                 message: text,
-                title: `${product.sku} - ${categoryName}`,
+                title: [product.sku, kind.full].filter(Boolean).join(' - '),
               };
 
               // Add first image if available
@@ -269,7 +273,7 @@ export default function ProductDetailScreen() {
           <div class="label">
             <div id="qrcode"></div>
             <div class="sku">${product.sku}</div>
-            <div class="meta">${categoryName} - ${location?.label || product.location}</div>
+            <div class="meta">${withKind(location?.label || product.location)}</div>
           </div>
           <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
           <script>
@@ -323,7 +327,7 @@ export default function ProductDetailScreen() {
           <div class="label">
             <svg id="barcode"></svg>
             <div class="sku">${product.sku}</div>
-            <div class="meta">${categoryName} - ${location?.label || product.location}</div>
+            <div class="meta">${withKind(location?.label || product.location)}</div>
           </div>
           <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
           <script>
@@ -643,7 +647,8 @@ export default function ProductDetailScreen() {
           <div class="header">
             <h1>FurInventory Pro</h1>
             <div class="sku">${product.sku}</div>
-            <div class="fur-type">${categoryName}</div>
+            ${kind.path ? `<div class="fur-type">${kind.path}</div>` : ''}
+            ${kind.furType ? `<div class="fur-type">Tipo di pelle: ${kind.furType}</div>` : ''}
             ${product.status === 'sold' ? '<div class="sold-badge">VENDUTO</div>' : ''}
           </div>
 
@@ -876,7 +881,8 @@ export default function ProductDetailScreen() {
           <View style={styles.titleRow}>
             <View style={styles.titleLeft}>
               <Text style={styles.sku}>{product.sku}</Text>
-              <Text style={styles.furType}>{categoryName}</Text>
+              {!!kind.path && <Text style={styles.furType}>{kind.path}</Text>}
+              {!!kind.furType && <Text style={styles.kindDetail}>Tipo di pelle: {kind.furType}</Text>}
             </View>
             <Pressable style={styles.shareButton} onPress={handleShare}>
               <AppIcon name="share" size={20} color={t.colors.accentInk} />
@@ -1339,7 +1345,7 @@ export default function ProductDetailScreen() {
             </View>
 
             <Text style={styles.qrSkuText}>{product.sku}</Text>
-            <Text style={styles.qrInfoText}>{categoryName}</Text>
+            {!!kind.full && <Text style={styles.qrInfoText}>{kind.full}</Text>}
 
             <Pressable style={styles.printLabelButton} onPress={handlePrintLabel}>
               <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
@@ -1502,6 +1508,12 @@ const useStyles = makeStyles((t) => ({
     marginTop: 2,
     fontSize: 15,
     lineHeight: 20,
+    color: t.colors.textSecondary,
+  },
+  kindDetail: {
+    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 18,
     color: t.colors.textSecondary,
   },
   shareButton: {

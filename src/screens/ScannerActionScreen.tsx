@@ -6,7 +6,8 @@ import { useRouter, useLocalSearchParams } from '../navigation/compat';
 import { Image } from '../lib/ExpoImage';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations } from '../../contexts/LocationsContext';
-import { useCategories } from '../../contexts/CategoriesContext';
+import { useProductKind } from '../../hooks/useProductKind';
+import { categoryPath } from '../../utils/categories';
 import { useContacts } from '../../contexts/ContactsContext';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
@@ -37,7 +38,7 @@ export default function ScannerActionScreen() {
 
   const { getProductById, moveProduct, sellProduct, libraries } = useInventory();
   const { locations } = useLocations();
-  const { labelOf } = useCategories();
+  const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
 
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
@@ -54,7 +55,7 @@ export default function ScannerActionScreen() {
   // Render NOT FOUND states
   if (type === 'product' && !product) return <NotFoundScreen message="Prodotto non trovato" router={router} />;
   if (type === 'location' && !location) return <NotFoundScreen message="Posizione non trovata" router={router} />;
-  if (type === 'library' && !library) return <NotFoundScreen message="Cartella non trovata" router={router} />;
+  if (type === 'library' && !library) return <NotFoundScreen message="Categoria non trovata" router={router} />;
 
   // --- HANDLERS ---
   const handleAction = () => {
@@ -153,8 +154,8 @@ export default function ScannerActionScreen() {
           <View style={[styles.headerCard, { borderLeftColor: t.colors.accent, borderLeftWidth: 6 }]}>
             <AppIcon name={library.icon as any || 'folder'} size={40} color={t.colors.accentInk} />
             <View style={{ marginLeft: 16 }}>
-              <Text style={styles.headerTitle}>CARTELLA</Text>
-              <Text style={styles.headerSubtitle}>{library.name}</Text>
+              <Text style={styles.headerTitle}>CATEGORIA</Text>
+              <Text style={styles.headerSubtitle}>{categoryPath(libraries, library.id)}</Text>
             </View>
           </View>
 
@@ -221,9 +222,12 @@ export default function ScannerActionScreen() {
             )}
             <View style={styles.productDetails}>
               <Text style={styles.productSku}>{product.sku}</Text>
-              <Text style={styles.productType}>
-                {labelOf(product.furType)}
-              </Text>
+              {/* C1: categoria e tipo di pelle, ognuno solo se c'è */}
+              {!!kindOf(product).line && (
+                <Text style={styles.productType}>
+                  {kindOf(product).line}
+                </Text>
+              )}
               <View style={styles.locationBadge}>
                 <AppIcon name="location-on" size={14} color={t.colors.accentInk} />
                 <Text style={styles.locationText}>{where}</Text>

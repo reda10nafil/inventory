@@ -1,12 +1,14 @@
-// Impostazioni › Categorie (M01, ticket 04): aggiungere, rinominare ed eliminare le categorie dei prodotti.
-// Una categoria usata da un prodotto (anche venduto o nel cestino) non si elimina: si può solo rinominare.
+// Impostazioni › Tipi di pelle (M01, ticket 04; C1, ticket 19): aggiungere, rinominare ed eliminare i tipi di pelle.
+// In M01 si chiamavano «Categorie»; da C1 le categorie sono le cartelle e il tipo di pelle è un campo facoltativo.
+// Un tipo usato da un prodotto (anche venduto o nel cestino) non si elimina: si può solo rinominare.
+// Indirizzo `settings/categories` come in M01, chiave `furinventory_categories:{org}` invariata.
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { usage } from '../../../utils/productRules';
-import { categoryNameError } from '../../../utils/categories';
+import { furTypeNameError } from '../../../utils/furTypes';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -14,10 +16,10 @@ import { cardSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
-export default function CategoriesScreen() {
+export default function FurTypesScreen() {
   const styles = useStyles();
   const t = useTheme();
-  const { categories, loading, addCategory, renameCategory, deleteCategory } = useCategories();
+  const { furTypes: categories, loading, addFurType: addCategory, renameFurType: renameCategory, deleteFurType: deleteCategory } = useFurTypes();
   const { products } = useInventory();
 
   const [name, setName] = useState('');
@@ -29,17 +31,17 @@ export default function CategoriesScreen() {
   };
 
   const handleSave = async () => {
-    const error = categoryNameError(name, categories, editingId ?? undefined);
+    const error = furTypeNameError(name, categories, editingId ?? undefined);
     if (error) {
       Alert.alert('Errore', error);
       return;
     }
     if (editingId) {
       await renameCategory(editingId, name);
-      Alert.alert('Fatto', 'Categoria rinominata');
+      Alert.alert('Fatto', 'Tipo di pelle rinominato');
     } else {
       await addCategory(name);
-      Alert.alert('Fatto', 'Categoria creata');
+      Alert.alert('Fatto', 'Tipo di pelle creato');
     }
     resetForm();
   };
@@ -47,7 +49,7 @@ export default function CategoriesScreen() {
   const handleDelete = (id: string) => {
     const label = categories.find((c) => c.id === id)?.label ?? id;
     if (categories.length <= 1) {
-      Alert.alert('Attenzione', 'Devi avere almeno una categoria');
+      Alert.alert('Attenzione', 'Devi avere almeno un tipo di pelle');
       return;
     }
     const used = usage(products, { furType: id });
@@ -55,10 +57,10 @@ export default function CategoriesScreen() {
       const n = (k: number) => (k === 1 ? '1 prodotto' : `${k} prodotti`);
       const parts = used.active && used.trashed ? `${n(used.active)} e ${used.trashed} nel cestino` : used.active ? n(used.active) : `${n(used.trashed)} nel cestino`;
       const trash = used.trashed ? ' Quelli nel cestino si possono anche eliminare per sempre dal Cestino.' : '';
-      Alert.alert('Attenzione', `La categoria "${label}" è usata da ${parts}. Cambia la categoria di quei prodotti prima di eliminarla, oppure rinominala.${trash}`);
+      Alert.alert('Attenzione', `Il tipo di pelle "${label}" è usato da ${parts}. Cambia il tipo di pelle di quei prodotti prima di eliminarlo, oppure rinominalo.${trash}`);
       return;
     }
-    Alert.alert('Conferma eliminazione', `Eliminare la categoria "${label}"?`, [
+    Alert.alert('Conferma eliminazione', `Eliminare il tipo di pelle "${label}"?`, [
       { text: 'Annulla', style: 'cancel' },
       {
         text: 'Elimina',
@@ -85,11 +87,11 @@ export default function CategoriesScreen() {
       <Backdrop />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>{editingId ? 'Rinomina categoria' : 'Aggiungi categoria'}</Text>
+          <Text style={styles.formTitle}>{editingId ? 'Rinomina tipo di pelle' : 'Aggiungi tipo di pelle'}</Text>
           <Text style={styles.label}>Nome</Text>
           <TextInput
             style={styles.input}
-            placeholder="Es. Viti, Detersivi, Elettronica"
+            placeholder="Es. Lapin, Castoro, Montone"
             placeholderTextColor={t.colors.placeholder}
             value={name}
             onChangeText={setName}
@@ -103,12 +105,12 @@ export default function CategoriesScreen() {
             )}
             <Pressable style={styles.saveButton} onPress={handleSave}>
               <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-              <Text style={styles.saveButtonText}>{editingId ? 'Salva nome' : 'Crea categoria'}</Text>
+              <Text style={styles.saveButtonText}>{editingId ? 'Salva nome' : 'Crea tipo di pelle'}</Text>
             </Pressable>
           </View>
         </View>
 
-        <Text style={styles.listTitle}>Categorie ({categories.length})</Text>
+        <Text style={styles.listTitle}>Tipi di pelle ({categories.length})</Text>
         {categories.map((category) => {
           const used = usage(products, { furType: category.id });
           const count = used.active + used.trashed;
@@ -130,7 +132,7 @@ export default function CategoriesScreen() {
             </Pressable>
           );
         })}
-        <Text style={styles.hint}>Tocca una categoria per rinominarla: i prodotti che la usano restano collegati.</Text>
+        <Text style={styles.hint}>Tocca un tipo per rinominarlo: i prodotti che lo usano restano collegati. Il tipo di pelle è facoltativo: un prodotto che non è una pelliccia non ne ha bisogno. Le categorie dei prodotti sono in Impostazioni › Categorie.</Text>
       </ScrollView>
     </SafeAreaView>
   );

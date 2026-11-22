@@ -9,7 +9,7 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import type { Theme as NavigationTheme } from '@react-navigation/native';
 import { InventoryProvider } from './contexts/InventoryContext';
 import { LocationsProvider } from './contexts/LocationsContext';
-import { CategoriesProvider } from './contexts/CategoriesContext';
+import { FurTypesProvider } from './contexts/FurTypesContext';
 import { ContactsProvider } from './contexts/ContactsContext';
 import { CustomFieldsProvider } from './contexts/CustomFieldsContext';
 import { LayoutProvider } from './contexts/LayoutContext';
@@ -117,7 +117,7 @@ function SignedInApp() {
   return (
     <AutomationsProvider key={organizationId}>
       <LocationsProvider>
-        <CategoriesProvider>
+        <FurTypesProvider>
         <ContactsProvider>
         <CustomFieldsProvider>
           <LayoutProvider>
@@ -134,7 +134,7 @@ function SignedInApp() {
           </LayoutProvider>
         </CustomFieldsProvider>
         </ContactsProvider>
-        </CategoriesProvider>
+        </FurTypesProvider>
       </LocationsProvider>
     </AutomationsProvider>
   );

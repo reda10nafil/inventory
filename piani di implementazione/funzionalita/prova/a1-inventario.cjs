@@ -85,7 +85,7 @@ const selectionBar = async (page) => (await dump(page)).filter((b) => b.y > 630 
     await clickAt(page, 276, 435); // card VOL-0087
     const bar2 = await selectionBar(page);
     await clickAt(page, bar2[0].x, bar2[0].y);
-    await press(page, 'Rimuovi dalla cartella', true);
+    await press(page, 'Rimuovi dalla categoria', true); // C1: etichetta nuova
     ps = await h.products();
     out.dopoRimuovi = ps.map((p) => `${p.sku}:${p.libraryId === undefined ? 'nessuna' : p.libraryId}`);
     await press(page, 'Usato e permute');

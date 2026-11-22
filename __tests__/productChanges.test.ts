@@ -18,18 +18,22 @@ describe('describeChanges (P13)', () => {
     expect(describeChanges({ ...before, technicalNotes: '' }, { technicalNotes: undefined })).toEqual([]);
   });
 
-  it('peso, cartella e prezzo in formato italiano', () => {
+  it('peso, categoria (la cartella, C1) e prezzo in formato italiano', () => {
     expect(describeChanges(before, { weight: 2.5, libraryId: undefined, sellPrice: 4500 })).toEqual([
-      'Cartella: pellicce → —',
+      'Categoria: pellicce → —',
       'Prezzo vendita: 4.200 € → 4.500 €',
       'Peso: 2,1 → 2,5',
     ]);
   });
 
-  it('SKU, tipo e foto tolte', () => {
+  it('SKU, tipo di pelle e foto tolte', () => {
     expect(describeChanges(before, { sku: 'VIS-2', furType: 'volpe', images: ['a'] })).toEqual([
-      'SKU: VIS-1 → VIS-2', 'Categoria: visone → volpe', '1 foto tolte',
+      'SKU: VIS-1 → VIS-2', 'Tipo di pelle: visone → volpe', '1 foto tolte',
     ]);
+  });
+
+  it('tipo di pelle tolto (C1, facoltativo)', () => {
+    expect(describeChanges(before, { furType: '' })).toEqual(['Tipo di pelle: visone → —']);
   });
 
   it('campi personalizzati cambiati, aggiunti e tolti', () => {

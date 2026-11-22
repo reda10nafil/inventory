@@ -6,7 +6,7 @@ const solo = process.argv[2];
 const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, fn, opts) : null);
 
 const VOCI = [
-  ['Stile:', false], ['GS1 Digital Link'], ['Scanner & NFC'], ['Gestisci Cartelle'], ['Campi Personalizzati'],
+  ['Stile:', false], ['GS1 Digital Link'], ['Scanner & NFC'], ['Categorie'], ['Campi Personalizzati'], // C1: «Gestisci Cartelle» → «Categorie»
   ['Configura Layout Aggiungi'], ['Cestino'], ['Gestisci Posizioni'], ['Configurazione Condivisione'],
   ['Alert Prodotti Dormienti'], ['Suggerimenti AI'], ['Spazio locale'], ['Backup Google Drive'], ['Accesso Multi-Utente'],
 ];

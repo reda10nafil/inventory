@@ -8,7 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCategories } from '../../../contexts/CategoriesContext';
+import { useProductKind } from '../../../hooks/useProductKind';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -32,7 +32,7 @@ export default function CountScreen() {
   const router = useRouter();
   const { products, countStock } = useInventory();
   const { locations } = useLocations();
-  const { labelOf } = useCategories();
+  const kindOf = useProductKind();
 
   const [step, setStep] = useState<Step>('place');
   const [at, setAt] = useState('');
@@ -154,7 +154,7 @@ export default function CountScreen() {
                 <View key={row.id} style={styles.row}>
                   <View style={styles.rowInfo}>
                     <Text style={styles.rowSku}>{row.sku}</Text>
-                    <Text style={styles.rowSub} numberOfLines={1}>{labelOf(row.furType)} · Registrata: {formatQty(row.expected, row.unit)}</Text>
+                    <Text style={styles.rowSub} numberOfLines={2}>{[kindOf(row).line, `Registrata: ${formatQty(row.expected, row.unit)}`].filter(Boolean).join(' · ')}</Text>
                     {note && <Text style={[styles.rowDelta, { color: note.color }]}>{note.text}</Text>}
                   </View>
                   <View style={[styles.inputBox, styles.countBox]}>

@@ -1,7 +1,9 @@
-// FurInventory Pro - Manage Folders Screen
+// Impostazioni › Categorie (C1, ticket 19): le categorie dei prodotti sono le cartelle di prima, con le
+// sottocategorie (un genitore facoltativo, un solo livello). Una categoria con sottocategorie o con prodotti
+// non si elimina. Indirizzo `settings/folders` come prima.
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView, Alert, Modal } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { useInventory, Library } from '../../../contexts/InventoryContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
@@ -12,6 +14,7 @@ import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { categoryDeleteError, categoryNameError, categoryTree, childrenOf, parentIdOf, parentOptions } from '../../../utils/categories';
 
 const ICON_OPTIONS = [
   'folder',
@@ -27,26 +30,29 @@ const ICON_OPTIONS = [
 export default function ManageFoldersScreen() {
   const styles = useStyles();
   const t = useTheme();
-  const insets = useSafeAreaInsets();
   const { libraries, products, addLibrary, updateLibrary, deleteLibrary } = useInventory();
 
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('folder');
   const [barcode, setBarcode] = useState('');
+  const [parentId, setParentId] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [showScanner, setShowScanner] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
 
-  // Calculate item count dynamically from products
+  // Prodotti (non nel cestino) direttamente nella categoria
   const getItemCount = (libraryId: string): number => {
     return products.filter((p) => p.libraryId === libraryId && !p.deletedAt).length;
   };
+  const parents = parentOptions(libraries, editingId ?? undefined);
+  const editingHasChildren = !!editingId && childrenOf(libraries, editingId).length > 0;
 
   const resetForm = () => {
     setName('');
     setSelectedIcon('folder');
     setBarcode('');
+    setParentId('');
     setEditingId(null);
   };
 
@@ -54,64 +60,35 @@ export default function ManageFoldersScreen() {
     setName(lib.name);
     setSelectedIcon(lib.icon);
     setBarcode(lib.barcode || '');
+    setParentId(parentIdOf(libraries, lib.id) ?? '');
     setEditingId(lib.id);
   };
 
   const handleSave = () => {
-    if (!name.trim()) {
-      Alert.alert('Errore', 'Inserisci un nome per la cartella');
+    // Un genitore che nel frattempo non si può più scegliere vale «nessuno»
+    const parent = parents.some((p) => p.id === parentId) ? parentId : undefined;
+    const error = categoryNameError(libraries, name, parent, editingId ?? undefined);
+    if (error) {
+      Alert.alert('Errore', error);
       return;
     }
 
     if (editingId) {
-      // Update
       updateLibrary(editingId, {
         name: name.trim(),
         icon: selectedIcon,
         barcode: barcode || undefined,
+        parentId: parent,
       });
-      Alert.alert('Successo', 'Cartella aggiornata');
+      Alert.alert('Successo', 'Categoria aggiornata');
       resetForm();
     } else {
-      // Create
-      addLibrary(name.trim(), selectedIcon);
-      // addLibrary currently doesn't accept barcode/nfc, but we can update it immediately after or update addLibrary signature
-      // Since addLibrary generates ID internally, retrieving it is tricky without refactoring context.
-      // Ideally, addLibrary should return the new ID or object.
-      // For now, let's assume standard creation. If users want barcode, they can edit after creation or we can try to find it.
-
-      // Workaround: We can't set barcode on creation with current addLibrary.
-      // Exception: If we refactored addLibrary. But we didn't.
-      // Let's refactor addLibrary quickly in Context? Or just tell user to Edit to add barcode?
-      // Better: Just let them creating it, then if barcode is set, we try to find the newly created lib.
-
-      // Actually, let's just create it. Then flush form.
-      Alert.alert('Successo', `Cartella "${name}" creata`);
+      // Il codice si salva modificando la categoria dopo averla creata (limite di prima, vedi l'avviso sotto)
+      addLibrary(name.trim(), selectedIcon, parent);
+      Alert.alert('Successo', parent ? `Sottocategoria "${name.trim()}" creata` : `Categoria "${name.trim()}" creata`);
       resetForm();
     }
   };
-
-  // NOTE: addLibrary doesn't support barcode yet in its arguments. 
-  // I should update addLibrary in Context to accept optional barcode?
-  // Or I can just check if barcode is set here. 
-  // Since I can't easily change the context signature without breaking other calls (potentially), 
-  // I will stick to: Create -> Then Edit to add barcode if needed.
-  // Wait, I CAN update Context. I already modified it.
-  // But wait, I didn't verify addLibrary signature update. I only added updateLibrary.
-  // Let's check if I can update addLibrary easily. 
-  // In InventoryContext, addLibrary takes (name, icon).
-  // I should probably update it to take optional params.
-
-  // However, for now, let's just stick to "Create then Edit" or use a useEffect to update the last created one if needed? 
-  // No, that's messy.
-  // Ideally, I should update addLibrary signature.
-  // Let's assume for this step I implement the UI. If barcode is set during creation, I alert the user 
-  // "Nota: Per salvare il barcode su una nuova cartella, creala e poi modificala." 
-  // Or better, I update addLibrary signature in next step if necessary.
-
-  // Actually, I can update the Context to accept optional options.
-  // But I don't want to switch context again now. 
-  // I'll make handleSave logic smart: if creating and barcode is present, warn user or handle it.
 
   const generateBarcode = () => {
     const baseName = editingId || name.toLowerCase().replace(/[^a-z0-9]/g, '_');
@@ -124,20 +101,15 @@ export default function ManageFoldersScreen() {
 
   const handleDeleteLibrary = (id: string) => {
     const library = libraries.find((l) => l.id === id);
-    const itemCount = getItemCount(id);
-
-    if (itemCount > 0) {
-      Alert.alert(
-        'Attenzione',
-        `La cartella "${library?.name}" contiene ${itemCount} prodotti. Spostarli prima di eliminare.`,
-        [{ text: 'OK' }]
-      );
+    const refusal = categoryDeleteError(libraries, products, id);
+    if (refusal) {
+      Alert.alert('Attenzione', refusal, [{ text: 'OK' }]);
       return;
     }
 
     Alert.alert(
       'Conferma Eliminazione',
-      `Eliminare la cartella "${library?.name}"?`,
+      `Eliminare la categoria "${library?.name}"?`,
       [
         { text: 'Annulla', style: 'cancel' },
         {
@@ -146,7 +118,9 @@ export default function ManageFoldersScreen() {
           onPress: () => {
             const success = deleteLibrary(id);
             if (!success) {
-              Alert.alert('Errore', 'Impossibile eliminare la cartella');
+              Alert.alert('Errore', 'Impossibile eliminare la categoria');
+            } else if (editingId === id) {
+              resetForm();
             }
           },
         },
@@ -154,10 +128,20 @@ export default function ManageFoldersScreen() {
     );
   };
 
-  const handleBarCodeScanned = ({ type, data }: { type: string, data: string }) => {
+  const handleBarCodeScanned = ({ data }: { type: string, data: string }) => {
     setBarcode(data);
     setShowScanner(false);
     Alert.alert('Scansionato', `Codice acquisito: ${data}`);
+  };
+
+  const parentChip = (id: string, label: string) => {
+    const active = parentId === id;
+    return (
+      <Pressable key={id || 'none'} style={[styles.parentChip, active && styles.parentChipActive]} onPress={() => setParentId(id)}>
+        {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+        <Text style={[styles.parentChipText, active && styles.parentChipTextActive]} numberOfLines={1}>{label}</Text>
+      </Pressable>
+    );
   };
 
   return (
@@ -168,13 +152,13 @@ export default function ManageFoldersScreen() {
         {/* Form */}
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>
-            {editingId ? 'Modifica cartella' : 'Crea nuova cartella'}
+            {editingId ? 'Modifica categoria' : 'Crea nuova categoria'}
           </Text>
 
           <Text style={styles.label}>Nome</Text>
           <TextInput
             style={styles.input}
-            placeholder="Nome cartella (es: Giacche)"
+            placeholder="Nome categoria (es: Giacche)"
             placeholderTextColor={t.colors.placeholder}
             value={name}
             onChangeText={setName}
@@ -199,6 +183,17 @@ export default function ManageFoldersScreen() {
               </Pressable>
             ))}
           </View>
+
+          {/* C1: sottocategoria di una categoria principale (un solo livello) */}
+          <Text style={styles.label}>Sottocategoria di</Text>
+          {editingHasChildren ? (
+            <Text style={styles.parentHint}>Ha delle sottocategorie: resta una categoria principale.</Text>
+          ) : (
+            <View style={styles.parentWrap}>
+              {parentChip('', 'Nessuna (principale)')}
+              {parents.map((p) => parentChip(p.id, p.name))}
+            </View>
+          )}
 
           <Text style={styles.label}>Barcode / NFC (Opzionale)</Text>
           <View style={styles.barcodeRow}>
@@ -233,55 +228,65 @@ export default function ManageFoldersScreen() {
             )}
             <Pressable style={styles.saveButton} onPress={handleSave}>
               <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-              {/* Note: if creating with barcode, we warn user or just ignore barcode for creation phase if API doesn't support it */}
               <Text style={styles.saveButtonText}>
-                {editingId ? 'Salva Modifiche' : 'Crea Cartella'}
+                {editingId ? 'Salva Modifiche' : 'Crea Categoria'}
               </Text>
             </Pressable>
           </View>
 
           {!editingId && barcode ? (
             <Text style={styles.warningText}>
-              Nota: Il barcode verrà salvato solo se modifichi la cartella dopo averla creata (limite attuale).
+              Nota: Il barcode verrà salvato solo se modifichi la categoria dopo averla creata (limite attuale).
             </Text>
           ) : null}
 
         </View>
 
-        {/* List */}
-        <Text style={styles.listTitle}>Cartelle esistenti ({libraries.length})</Text>
+        {/* Elenco ad albero: ogni categoria principale seguita dalle sue sottocategorie, rientrate */}
+        <Text style={styles.listTitle}>Categorie esistenti ({libraries.length})</Text>
 
-        {libraries.map((library) => (
-          <Pressable key={library.id} style={styles.libraryItem} onPress={() => handleEdit(library)}>
-            <View style={styles.libraryIcon}>
-              <AppIcon name={library.icon as any} size={28} color={t.colors.accentInk} />
-            </View>
-            <View style={styles.libraryInfo}>
-              <Text style={styles.libraryName}>{library.name}</Text>
-              <Text style={styles.libraryCount}>{getItemCount(library.id)} prodotti</Text>
-              <Text style={styles.libraryId}>
-                ID: {library.id}
-                {library.barcode ? ` • 🏷️ ${library.barcode}` : ''}
-              </Text>
-            </View>
+        {categoryTree(libraries).map(({ category: library, depth }) => {
+          const subs = childrenOf(libraries, library.id).length;
+          const count = getItemCount(library.id);
+          return (
+            <Pressable
+              key={library.id}
+              style={[styles.libraryItem, depth > 0 && { marginLeft: 24 * Math.min(depth, 2) }, editingId === library.id && styles.libraryItemEditing]}
+              onPress={() => handleEdit(library)}
+            >
+              <View style={[styles.libraryIcon, depth > 0 && styles.libraryIconSub]}>
+                <AppIcon name={library.icon as any} size={depth > 0 ? 22 : 28} color={t.colors.accentInk} />
+              </View>
+              <View style={styles.libraryInfo}>
+                <Text style={styles.libraryName}>{library.name}</Text>
+                <Text style={styles.libraryCount}>
+                  {count === 1 ? '1 prodotto' : `${count} prodotti`}
+                  {subs > 0 ? ` · ${subs === 1 ? '1 sottocategoria' : `${subs} sottocategorie`}` : ''}
+                </Text>
+                <Text style={styles.libraryId}>
+                  ID: {library.id}
+                  {library.barcode ? ` • 🏷️ ${library.barcode}` : ''}
+                </Text>
+              </View>
 
-            <View style={styles.itemActions}>
-              {library.barcode && (
-                <Pressable onPress={() => { setBarcode(library.barcode!); setShowQRModal(true); }} style={{ marginRight: 8 }}>
-                  <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
+              <View style={styles.itemActions}>
+                {library.barcode && (
+                  <Pressable onPress={() => { setBarcode(library.barcode!); setShowQRModal(true); }} style={{ marginRight: 8 }}>
+                    <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
+                  </Pressable>
+                )}
+                <Pressable onPress={() => handleDeleteLibrary(library.id)} accessibilityLabel={`Elimina ${library.name}`}>
+                  <AppIcon name="delete" size={20} color={t.colors.error} />
                 </Pressable>
-              )}
-              <Pressable onPress={() => handleDeleteLibrary(library.id)}>
-                <AppIcon name="delete" size={20} color={t.colors.error} />
-              </Pressable>
-            </View>
-          </Pressable>
-        ))}
+              </View>
+            </Pressable>
+          );
+        })}
 
         <View style={styles.infoCard}>
           <AppIcon name="info-outline" size={24} color={t.colors.accentInk} />
           <Text style={styles.infoText}>
-            Usa i barcode per accedere rapidamente al contenuto di una cartella tramite le automazioni.
+            Le categorie raggruppano i prodotti (per esempio pellicce, abbigliamento, borse); una sottocategoria sta dentro una categoria principale. Usa i barcode per aprire una categoria dallo scanner.
           </Text>
         </View>
 
@@ -298,10 +303,10 @@ export default function ManageFoldersScreen() {
       <Modal visible={showQRModal} transparent animationType="fade" onRequestClose={() => setShowQRModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowQRModal(false)}>
           <View style={styles.qrCard}>
-            <Text style={styles.qrTitle}>Codice Cartella</Text>
+            <Text style={styles.qrTitle}>Codice Categoria</Text>
             <QRCode value={barcode || 'empty'} size={200} />
             <Text style={styles.qrBigText}>{barcode}</Text>
-            <Text style={styles.qrHint}>Scansiona per filtrare prodotti di questa cartella</Text>
+            <Text style={styles.qrHint}>Scansiona per filtrare prodotti di questa categoria</Text>
           </View>
         </Pressable>
       </Modal>
@@ -365,6 +370,44 @@ const useStyles = makeStyles((t) => ({
   iconOptionSelected: {
     backgroundColor: t.colors.tileSelected,
     borderColor: t.colors.tileSelectedBorder,
+  },
+  parentWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 16,
+  },
+  parentChip: {
+    height: 34,
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    borderRadius: t.radius.chip,
+    backgroundColor: t.colors.chip,
+    borderWidth: 1,
+    borderColor: t.colors.chipBorder,
+    overflow: 'hidden',
+  },
+  parentChipActive: {
+    backgroundColor: t.colors.chipActive,
+    borderColor: t.colors.chipActiveBorder,
+  },
+  parentChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: t.colors.chipText,
+    flexShrink: 1,
+  },
+  parentChipTextActive: {
+    fontWeight: '600',
+    color: t.colors.chipActiveText,
+  },
+  parentHint: {
+    ...t.typography.caption,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 16,
   },
   barcodeRow: {
     flexDirection: 'row',
@@ -453,6 +496,10 @@ const useStyles = makeStyles((t) => ({
     padding: 16,
     marginBottom: 10,
   },
+  libraryItemEditing: {
+    borderWidth: 1,
+    borderColor: t.colors.accent,
+  },
   libraryIcon: {
     width: 48,
     height: 48,
@@ -461,6 +508,10 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  libraryIconSub: {
+    width: 40,
+    height: 40,
   },
   libraryInfo: {
     flex: 1,

@@ -11,7 +11,7 @@ import ProductEditScreen from '../screens/product/EditScreen';
 import NotFoundScreen from '../screens/NotFoundScreen';
 
 import LocationsScreen from '../screens/settings/LocationsScreen';
-import CategoriesScreen from '../screens/settings/CategoriesScreen';
+import FurTypesScreen from '../screens/settings/FurTypesScreen';
 import ContactsScreen from '../screens/settings/ContactsScreen';
 import FieldsScreen from '../screens/settings/FieldsScreen';
 import FoldersScreen from '../screens/settings/FoldersScreen';
@@ -94,10 +94,10 @@ export default function RootNavigator() {
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProductEdit" component={ProductEditScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsLocations" component={LocationsScreen} options={{ headerShown: true, headerTitle: 'Gestisci Posizioni' }} />
-      <Stack.Screen name="SettingsCategories" component={CategoriesScreen} options={{ headerShown: true, headerTitle: 'Categorie' }} />
+      <Stack.Screen name="SettingsCategories" component={FurTypesScreen} options={{ headerShown: true, headerTitle: 'Tipi di pelle' }} />
       <Stack.Screen name="SettingsContacts" component={ContactsScreen} options={{ headerShown: true, headerTitle: 'Fornitori e clienti' }} />
       <Stack.Screen name="SettingsFields" component={FieldsScreen} options={{ headerShown: true, headerTitle: 'Campi Personalizzati' }} />
-      <Stack.Screen name="SettingsFolders" component={FoldersScreen} options={{ headerShown: true, headerTitle: 'Gestisci Cartelle' }} />
+      <Stack.Screen name="SettingsFolders" component={FoldersScreen} options={{ headerShown: true, headerTitle: 'Categorie' }} />
       <Stack.Screen name="SettingsLayoutBuilder" component={LayoutBuilderScreen} options={{ headerShown: true, headerTitle: 'Configura Layout Aggiungi' }} />
       <Stack.Screen name="SettingsGs1" component={Gs1ConfigScreen} options={{ headerShown: true, headerTitle: 'GS1 Digital Link' }} />
       <Stack.Screen name="SettingsHardware" component={HardwareScreen} options={{ headerShown: true, headerTitle: 'Scanner & Hardware' }} />
