@@ -1788,9 +1788,9 @@
     "semantic_hash": ""
   },
   "src/navigation/compat.ts": {
-    "mtime": 1795318617.7800734,
-    "seen": 1795323475.1485813,
-    "ast_hash": "5ea30667f1e7d1f0535d78711874a595",
+    "mtime": 1795332325.5073566,
+    "seen": 1795332665.2169185,
+    "ast_hash": "029117740d68a7293166af4b076f99e3",
     "semantic_hash": ""
   },
   "src/screens/NotFoundScreen.tsx": {
@@ -1932,9 +1932,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/HomeScreen.tsx": {
-    "mtime": 1795323131.847642,
-    "seen": 1795323475.1485813,
-    "ast_hash": "99ce8c8a974a299a56d76adfb9c95859",
+    "mtime": 1795332295.114263,
+    "seen": 1795332665.2261646,
+    "ast_hash": "0ba828109f54722d4736eca6349ef55f",
     "semantic_hash": ""
   },
   "src/screens/tabs/SettingsScreen.tsx": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795332223.687938,
-    "seen": 1795332238.8734205,
-    "ast_hash": "cf632f7d07525ae5d3dd7cd556c636d1",
+    "mtime": 1795332649.830475,
+    "seen": 1795332665.2713823,
+    "ast_hash": "e41bce4c6a6cc36382fa71c734d8c36d",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -3252,9 +3252,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795332223.7359285,
-    "seen": 1795332238.874954,
-    "ast_hash": "10dfc51742c4ea94d0ec7b80a9a9d23b",
+    "mtime": 1795332649.8928683,
+    "seen": 1795332665.2724128,
+    "ast_hash": "f1a765f183959680c1fce44f8371d154",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3423,6 +3423,18 @@
     "mtime": 1795332032.5849571,
     "seen": 1795332238.8294165,
     "ast_hash": "d21ca74978bfa2819402de1252f98b6e",
+    "semantic_hash": ""
+  },
+  "__tests__/inventoryFilter.test.ts": {
+    "mtime": 1795332275.3730335,
+    "seen": 1795332665.1698914,
+    "ast_hash": "995c7fe4b5580ce00f809698a401e41d",
+    "semantic_hash": ""
+  },
+  "utils/inventoryFilter.ts": {
+    "mtime": 1795332275.2577865,
+    "seen": 1795332665.2664132,
+    "ast_hash": "8a00352935a9d0ab38ae498f4e836031",
     "semantic_hash": ""
   }
 }

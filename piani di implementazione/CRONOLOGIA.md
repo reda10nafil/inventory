@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C09: ricerca, Attenzione e filtro della cartella nell'Inventario (P14, P15, D14)
+
+- Branch `funzioni/magazzino`.
+- **P14**: la ricerca confrontava l'id della posizione («stand_a»), non il nome («Stand A»), e nei filtri Cestino e Attenzione veniva ignorata. Ora `matchesSearch` (SKU, tipo per id o nome, posizione per id o nome) vale in tutti i filtri; `matchesFilter` per i filtri di stato. Logica in `utils/inventoryFilter.ts` (test, 4).
+- **P15**: la pillola e il riquadro Attenzione contavano gli avvisi (2 con un solo prodotto); ora contano i prodotti con almeno un avviso.
+- **D14**: «Vedi prodotti» di una cartella dall'Azione rapida apriva l'Inventario senza filtro. In `compat.ts` l'indirizzo `/(tabs)/?library=…` (e `/?library=…`) ora porta il parametro alla schermata dell'Inventario dentro le schede.
+- Prova sul web: `a1-inv-ricerca` «Stand A» → VOL-0087 (prima nulla), «PUZ» in Attenzione → nessun capo (prima VIS-0098); `a1-inv-elimina` «VOL» nel Cestino → solo VOL-0087; `a1-inv-filtri` «Attenzione 1» (prima 2); `a3-azione-cartella-D14` → `/?library=pellicce`, 3 capi (prima 6).
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 116 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C08: Modifica mostra i campi del modulo, anche vuoti (D03)
 
 - Branch `funzioni/magazzino`.

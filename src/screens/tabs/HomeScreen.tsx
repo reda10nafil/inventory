@@ -16,6 +16,8 @@ import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
+import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
+import { FUR_TYPES } from '../../../constants/config';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
@@ -45,6 +47,7 @@ export default function HomeScreen() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   const activeAlerts = alerts.filter((a) => !a.dismissed);
+  const alertedIds = new Set(activeAlerts.map((a) => a.productId));
   const trashProducts = products.filter((p) => p.deletedAt);
 
   // 1. First, filter by Library (Folder)
@@ -58,10 +61,8 @@ export default function HomeScreen() {
     total: folderFilteredProducts.length,
     available: folderFilteredProducts.filter((p) => p.status === 'available' && !p.deletedAt).length,
     sold: folderFilteredProducts.filter((p) => p.status === 'sold' && !p.deletedAt).length,
-    alerts: activeAlerts.filter((a) => {
-      const prod = folderFilteredProducts.find((p) => p.id === a.productId);
-      return !!prod;
-    }).length,
+    // Prodotti con almeno un avviso, non numero di avvisi (P15)
+    alerts: folderFilteredProducts.filter((p) => matchesFilter(p, 'alert', alertedIds)).length,
     trash: trashProducts.filter((p) => {
       // Trash is global usually, but if we want to show trash for this folder:
       if (activeLibraryId === null) return true;
@@ -70,25 +71,9 @@ export default function HomeScreen() {
   };
 
   // 2. Then, apply Status Filter & Search on the Folder-filtered list
-  const filteredProducts = folderFilteredProducts.filter((p) => {
-    // Status Filter
-    if (activeFilter === 'available' && (p.status !== 'available' || p.deletedAt)) return false;
-    if (activeFilter === 'sold' && (p.status !== 'sold' || p.deletedAt)) return false;
-    if (activeFilter === 'trash') return !!p.deletedAt;
-    if (activeFilter === 'alert') return activeAlerts.some((a) => a.productId === p.id);
-    if (activeFilter === 'all' && p.deletedAt) return false;
-
-    // Search Query — guard null (CSV import legacy)
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        String(p.sku || '').toLowerCase().includes(query) ||
-        String(p.furType || '').toLowerCase().includes(query) ||
-        String(p.location || '').toLowerCase().includes(query)
-      );
-    }
-    return true;
-  });
+  // La ricerca vale in tutti i filtri, anche Cestino e Attenzione, e trova la posizione per nome (P14)
+  const filteredProducts = folderFilteredProducts.filter((p) =>
+    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, FUR_TYPES));
 
   const filters: { id: FilterType; label: string; count: number }[] = [
     { id: 'all', label: 'Tutti', count: stats.total - stats.trash },

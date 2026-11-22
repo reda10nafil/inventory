@@ -6,6 +6,10 @@ type Href = string | { pathname: string; params?: Record<string, any> };
 
 function parseHref(href: Href): { name: string; params?: any } {
   if (typeof href === 'string') {
+    // Inventario filtrato per cartella («Vedi prodotti» dall'Azione rapida): il parametro va alla schermata
+    // dell'Inventario dentro le schede, non al navigatore delle schede (D14: il filtro si perdeva).
+    const library = href.match(/^\/(?:\(tabs\)\/?)?\?library=([^&]+)/);
+    if (library) return { name: '(tabs)', params: { screen: 'index', params: { library: decodeURIComponent(library[1]) } } };
     // Gestore casi comuni: /product/xxx, /(tabs), /scanner, /settings/xxx, /automations/xxx, /scanner-action, /+not-found
     if (href.startsWith('/product/edit/')) {
       return { name: 'ProductEdit', params: { id: href.replace('/product/edit/', '').split('?')[0] } };
@@ -53,7 +57,6 @@ function parseHref(href: Href): { name: string; params?: any } {
       return { name: map[base] || base };
     }
     // fallback tabs
-    if (href.startsWith('/?library=')) return { name: '(tabs)', params: { library: href.split('=')[1] } };
     return { name: href as any };
   } else {
     const { pathname, params } = href;
