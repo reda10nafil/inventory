@@ -13,6 +13,7 @@ import { formatPrice } from '../../utils/price';
 import { Backdrop } from '../../components/ui/Backdrop';
 import { GradientFill } from '../../components/ui/GradientFill';
 import { cardSurface, tileSurface } from '../../components/ui/surfaces';
+import { parseNumber } from '../../utils/number';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
@@ -49,10 +50,16 @@ export default function ScannerActionScreen() {
       // Existing Product Logic
       if (selectedAction === 'moved') {
         if (!selectedLocation) { Alert.alert('Errore', 'Seleziona una posizione'); return; }
-        moveProduct(product.id, selectedLocation);
+        if (!moveProduct(product.id, selectedLocation)) {
+          Alert.alert('Non spostato', product.deletedAt ? `${product.sku} è nel cestino.` : `${product.sku} è già in quella posizione.`);
+          return;
+        }
         Alert.alert('Spostamento Registrato', `${product.sku} spostato.`, [{ text: 'OK', onPress: () => router.back() }]);
       } else if (selectedAction === 'sold') {
-        sellProduct(product.id, finalPrice ? parseFloat(finalPrice) : undefined);
+        if (!sellProduct(product.id, parseNumber(finalPrice))) {
+          Alert.alert('Non venduto', product.deletedAt ? `${product.sku} è nel cestino.` : `${product.sku} risulta già venduto.`);
+          return;
+        }
         Alert.alert('Vendita Registrata', `${product.sku} venduto.`, [{ text: 'OK', onPress: () => router.back() }]);
       } else if (selectedAction === 'details') {
         router.replace(`/product/${product.id}` as any);

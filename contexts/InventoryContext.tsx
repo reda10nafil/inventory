@@ -6,6 +6,7 @@ import { isDormant, needsPromotion } from '../services/mockData';
 import { useAuth } from './AuthContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
+import { canMove, canSell } from '../utils/productRules';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
 export interface Library {
@@ -71,8 +72,8 @@ interface InventoryContextType {
   deleteProduct: (id: string) => void;
   restoreProduct: (id: string) => void;
   permanentlyDeleteProduct: (id: string) => void;
-  moveProduct: (id: string, newLocation: string) => void;
-  sellProduct: (id: string, finalPrice?: number) => void;
+  moveProduct: (id: string, newLocation: string) => boolean;
+  sellProduct: (id: string, finalPrice?: number) => boolean;
   scanProduct: (id: string) => void;
   dismissAlert: (alertId: string) => void;
   getProductById: (id: string) => Product | undefined;
@@ -491,9 +492,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     setDeletedProductIds((prev) => prev.includes(id) ? prev : [...prev, id]);
   };
 
-  const moveProduct = (id: string, newLocation: string) => {
+  // Restituisce false se non sposta: prodotto inesistente o nel cestino, oppure già in quella posizione
+  // (prima nasceva un evento «vetrina → vetrina»).
+  const moveProduct = (id: string, newLocation: string): boolean => {
     const product = products.find((p) => p.id === id);
-    if (!product) return;
+    if (!product || !canMove(product, newLocation)) return false;
 
     const oldLocation = product.location;
 
@@ -517,9 +520,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       timestamp: new Date().toISOString(),
       details: { from: oldLocation, to: newLocation },
     });
+    return true;
   };
 
-  const sellProduct = (id: string, finalPrice?: number) => {
+  // Restituisce false se non vende: prodotto inesistente, nel cestino o già venduto (P05, P06).
+  const sellProduct = (id: string, finalPrice?: number): boolean => {
+    const product = products.find((p) => p.id === id);
+    if (!canSell(product)) return false;
     setProducts((prev) =>
       prev.map((p) =>
         p.id === id
@@ -542,6 +549,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       timestamp: new Date().toISOString(),
       details: { finalPrice },
     });
+    return true;
   };
 
   const scanProduct = (id: string) => {

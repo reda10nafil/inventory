@@ -46,9 +46,17 @@ export default function ScannerScreen() {
 
     // 1. Try Product
     const product = products.find((p) => p.sku === data || p.id === data);
+    if (product?.deletedAt) {
+      // Un prodotto nel cestino non si apre per spostarlo o venderlo (P06)
+      setScanned(true);
+      soundService.playBlockingError();
+      Alert.alert('Nel cestino', `${product.sku} è nel cestino: ripristinalo da Impostazioni › Cestino.`);
+      setTimeout(() => setScanned(false), 2000);
+      return;
+    }
     if (product) {
       setScanned(true);
-      
+
       // Fragile check logic
       if (product.isFragile) {
         soundService.playSuccess().then(() => soundService.playFragileAlert());
@@ -138,6 +146,10 @@ export default function ScannerScreen() {
     setShowManualInput(false);
     setManualCode('');
 
+    if (product?.deletedAt) {
+      Alert.alert('Nel cestino', `${product.sku} è nel cestino: ripristinalo da Impostazioni › Cestino.`);
+      return;
+    }
     if (product) {
       scanProduct(product.id);
       router.push({

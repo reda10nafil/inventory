@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "contexts/InventoryContext.tsx": {
-    "mtime": 1795315119.893903,
-    "seen": 1795323475.1485813,
-    "ast_hash": "31767ab975b2522c9c04ed6dc044ddbb",
+    "mtime": 1795329820.2563245,
+    "seen": 1795330170.044272,
+    "ast_hash": "45094c5d7a174d1e5e5a33fdad159899",
     "semantic_hash": ""
   },
   "contexts/LayoutContext.tsx": {
@@ -1800,15 +1800,15 @@
     "semantic_hash": ""
   },
   "src/screens/ScannerActionScreen.tsx": {
-    "mtime": 1795323183.7422051,
-    "seen": 1795323475.1485813,
-    "ast_hash": "9aa1e05084f14936d4b3486f5f8bc162",
+    "mtime": 1795329770.6141744,
+    "seen": 1795330170.071672,
+    "ast_hash": "12614fe829bffed6d62caafc12a4cc4f",
     "semantic_hash": ""
   },
   "src/screens/ScannerScreen.tsx": {
-    "mtime": 1795321084.105013,
-    "seen": 1795323475.1485813,
-    "ast_hash": "a475cc8dc3ef997d70ab817a1bec7004",
+    "mtime": 1795329785.3609235,
+    "seen": 1795330170.071672,
+    "ast_hash": "a4ccc0497bbaba64f982137d29945ecb",
     "semantic_hash": ""
   },
   "src/screens/automations/AuditScreen.tsx": {
@@ -1842,9 +1842,9 @@
     "semantic_hash": ""
   },
   "src/screens/automations/ScanSellScreen.tsx": {
-    "mtime": 1795321060.2997363,
-    "seen": 1795323475.1485813,
-    "ast_hash": "353145f175f9ab69ead138633bf47f53",
+    "mtime": 1795329778.071512,
+    "seen": 1795330170.071672,
+    "ast_hash": "bf784414dc6947b3473bba88a445469c",
     "semantic_hash": ""
   },
   "src/screens/product/DetailScreen.tsx": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795329685.476633,
-    "seen": 1795329700.9928288,
-    "ast_hash": "7f92ef047aec9b97409cd25bf1462f92",
+    "mtime": 1795330155.2874155,
+    "seen": 1795330170.1194694,
+    "ast_hash": "eb4863754d12d73f2fb7f666c4329ad2",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -3363,6 +3363,24 @@
     "mtime": 1795329307.1137004,
     "seen": 1795329700.9121838,
     "ast_hash": "02d9db792d12f9de88402502a5c90ce3",
+    "semantic_hash": ""
+  },
+  "__tests__/productRules.test.ts": {
+    "mtime": 1795329813.589422,
+    "seen": 1795330170.026456,
+    "ast_hash": "1143b79a95a4b51285aff0e600774d7f",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stage.sh": {
+    "mtime": 1795329982.9875507,
+    "seen": 1795330170.0564039,
+    "ast_hash": "18e9b8ebb543a39714a26f2a85fd2724",
+    "semantic_hash": ""
+  },
+  "utils/productRules.ts": {
+    "mtime": 1795329813.484934,
+    "seen": 1795330170.1154118,
+    "ast_hash": "54f0bb8701e1850e3dea943e827be0c3",
     "semantic_hash": ""
   }
 }

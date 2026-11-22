@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C03: niente vendite doppie né dal cestino (P05, P06, P25)
+
+- Branch `funzioni/magazzino`.
+- **P05**: l'Azione rapida rivendeva un capo già venduto (nuovo `soldAt`, secondo evento). **P06**: Vendita flash vendeva un capo nel cestino e lo Scanner lo apriva in Azione rapida.
+- Fatto: regole `canSell` e `canMove` (`utils/productRules.ts`, test `__tests__/productRules.test.ts`, 7). `sellProduct` e `moveProduct` del contesto le applicano e restituiscono `false` se non fanno nulla: valgono per tutti i chiamanti (Vendita flash, Azione rapida, Esecuzione, Chat). `moveProduct` non scrive più un evento «vetrina → vetrina» se il capo è già lì. Azione rapida e Vendita flash mostrano «Non venduto» / «Non spostato» con il motivo; lo Scanner (fotocamera e codice scritto) dice «nel cestino» e non apre l'Azione rapida. Prezzi scritti letti con `parseNumber` anche in Azione rapida e Vendita flash.
+- **P25**: Vendita flash senza prezzo scriveva «0 €» a schermo e nel totale; ora vale il prezzo di listino (il dato salvato era già giusto).
+- Prova sul web: `a3-azione-vendi-gia-venduto` → «Non venduto», `soldAt` invariato, 0 eventi; `a3-cestino-vendita-flash` → avviso, stato resta disponibile; `a3-cestino-scanner-manuale` → avviso, Azione rapida non aperta; `a3-vendita-flash-senza-prezzo` → «PUZ-0012 - 1.900 €»; `a3-azione-vendi` e `a3-vendita-flash` vendono come prima.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 101 verdi, bundle Android 5,08 MB con 62 asset, 30 schermate senza errori in console. Nuovo `funzionalita/prova/stage.sh`: mette in stage conservando CRLF o LF come nel repository.
+
 ## 22 novembre 2026 — Fase B, C02: Modifica salva i dati giusti (P01, P02, P04)
 
 - Branch `funzioni/magazzino`.

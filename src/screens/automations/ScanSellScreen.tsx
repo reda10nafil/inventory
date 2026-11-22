@@ -12,6 +12,7 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { formatPrice } from '../../../utils/price';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
+import { parseNumber } from '../../../utils/number';
 
 export default function ScanSellScreen() {
     const styles = useStyles();
@@ -48,6 +49,10 @@ export default function ScanSellScreen() {
                 Alert.alert('Info', 'Questo prodotto risulta già venduto.');
                 return;
             }
+            if (product.deletedAt) {
+                Alert.alert('Info', 'Questo prodotto è nel cestino: ripristinalo da Impostazioni › Cestino.');
+                return;
+            }
 
             // Open price confirmation modal
             setPendingProduct(product);
@@ -71,13 +76,19 @@ export default function ScanSellScreen() {
     const confirmSale = () => {
         if (!pendingProduct) return;
 
-        const finalPrice = priceInput ? parseFloat(priceInput) : undefined;
-
-        sellProduct(pendingProduct.id, finalPrice);
+        const finalPrice = parseNumber(priceInput);
+        if (!sellProduct(pendingProduct.id, finalPrice)) {
+            setShowPriceModal(false);
+            setPendingProduct(null);
+            Alert.alert('Non venduto', `${pendingProduct.sku} è nel cestino o risulta già venduto.`);
+            return;
+        }
+        // Senza prezzo scritto vale quello di listino (P25: lo schermo scriveva «0 €»)
+        const soldPrice = finalPrice ?? pendingProduct.sellPrice ?? 0;
 
         setScannedCount(c => c + 1);
-        setTotalRevenue(r => r + (finalPrice || 0));
-        setLastSoldProduct(`${pendingProduct.sku} - ${formatPrice(finalPrice || 0)}`);
+        setTotalRevenue(r => r + soldPrice);
+        setLastSoldProduct(`${pendingProduct.sku} - ${formatPrice(soldPrice)}`);
 
         soundService.playSuccess();
 
