@@ -1,25 +1,29 @@
 // FurInventory Pro - Product Detail Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, useWindowDimensions, Share, Modal, StatusBar, Linking } from 'react-native';
+import { View, Pressable, ScrollView, Alert, useWindowDimensions, Share, Modal, StatusBar, Linking } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as Print from '../../lib/print';
 import * as FileSystem from '../../lib/fileSystem';
 import * as ImageManipulator from '../../lib/imageManipulator';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import * as Clipboard from '../../lib/clipboard';
 import * as Sharing from '../../lib/sharing';
 import { Image } from '../../lib/ExpoImage';
-import { theme, typography, shadows, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { nfcService } from '../../../utils/nfcService';
 import Barcode from '../../../components/Barcode';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 export default function ProductDetailScreen() {
+  const styles = useStyles();
+  const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -815,7 +819,7 @@ export default function ProductDetailScreen() {
         {/* Status Badge */}
         {product.status === 'sold' && (
           <View style={styles.soldBadge}>
-            <MaterialIcons name="sell" size={16} color="#FFF" />
+            <AppIcon name="sell" size={16} color="#FFF" />
             <Text style={styles.soldText}>VENDUTO</Text>
           </View>
         )}
@@ -828,13 +832,13 @@ export default function ProductDetailScreen() {
               <Text style={styles.furType}>{furType?.label || product.furType}</Text>
             </View>
             <Pressable style={styles.shareButton} onPress={handleShare}>
-              <MaterialIcons name="share" size={24} color={theme.primary} />
+              <AppIcon name="share" size={24} color={t.colors.accentInk} />
             </Pressable>
           </View>
 
           {/* Location Card */}
-          <View style={[styles.locationCard, { borderColor: location?.color || theme.border }]}>
-            <MaterialIcons name="location-on" size={24} color={location?.color || theme.primary} />
+          <View style={[styles.locationCard, { borderColor: location?.color || t.colors.border }]}>
+            <AppIcon name="location-on" size={24} color={location?.color || t.colors.accentInk} />
             <View style={styles.locationContent}>
               <Text style={styles.locationLabel}>POSIZIONE ATTUALE</Text>
               <Text style={styles.locationValue}>{location?.label || product.location}</Text>
@@ -855,7 +859,7 @@ export default function ProductDetailScreen() {
                 {product.sellPrice && (
                   <View style={styles.priceCard}>
                     <Text style={styles.priceLabel}>Vendita</Text>
-                    <Text style={[styles.priceValue, { color: theme.primary }]}>
+                    <Text style={[styles.priceValue, { color: t.colors.accentInk }]}>
                       €{product.sellPrice.toLocaleString()}
                     </Text>
                   </View>
@@ -871,21 +875,21 @@ export default function ProductDetailScreen() {
               <View style={styles.measureRow}>
                 {product.length && (
                   <View style={styles.measureCard}>
-                    <MaterialIcons name="straighten" size={20} color={theme.textSecondary} />
+                    <AppIcon name="straighten" size={20} color={t.colors.textSecondary} />
                     <Text style={styles.measureLabel}>Lunghezza</Text>
                     <Text style={styles.measureValue}>{product.length} cm</Text>
                   </View>
                 )}
                 {product.width && (
                   <View style={styles.measureCard}>
-                    <MaterialIcons name="width-wide" size={20} color={theme.textSecondary} />
+                    <AppIcon name="width-wide" size={20} color={t.colors.textSecondary} />
                     <Text style={styles.measureLabel}>Larghezza</Text>
                     <Text style={styles.measureValue}>{product.width} cm</Text>
                   </View>
                 )}
                 {product.weight && (
                   <View style={styles.measureCard}>
-                    <MaterialIcons name="scale" size={20} color={theme.textSecondary} />
+                    <AppIcon name="scale" size={20} color={t.colors.textSecondary} />
                     <Text style={styles.measureLabel}>Peso</Text>
                     <Text style={styles.measureValue}>{product.weight} kg</Text>
                   </View>
@@ -918,7 +922,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customNotesCard}>
                         <View style={styles.customNotesHeader}>
-                          <MaterialIcons name={field.icon as any || 'notes'} size={18} color={theme.textSecondary} />
+                          <AppIcon name={field.icon as any || 'notes'} size={18} color={t.colors.textSecondary} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <Text style={styles.customNotesText}>{String(value)}</Text>
@@ -932,7 +936,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customTagsCard}>
                         <View style={styles.customNotesHeader}>
-                          <MaterialIcons name={field.icon as any || 'label'} size={18} color={theme.textSecondary} />
+                          <AppIcon name={field.icon as any || 'label'} size={18} color={t.colors.textSecondary} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <View style={styles.customTagsRow}>
@@ -960,15 +964,15 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customNotesCard}>
                         <View style={styles.customNotesHeader}>
-                          <MaterialIcons name={field.icon as any || 'description'} size={18} color={theme.textSecondary} />
+                          <AppIcon name={field.icon as any || 'description'} size={18} color={t.colors.textSecondary} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <View style={{ gap: 8, marginTop: 8 }}>
                           {docs.map((docUri, i) => (
                             <Pressable key={i} style={styles.customDocumentItem} onPress={() => Sharing.shareAsync(docUri).catch(() => Alert.alert('Errore', 'Impossibile aprire il file'))}>
-                              <MaterialIcons name="insert-drive-file" size={20} color={theme.primary} />
+                              <AppIcon name="insert-drive-file" size={20} color={t.colors.accentInk} />
                               <Text style={styles.customDocumentText} numberOfLines={1}>{docUri.split('/').pop() || 'Documento Allegato'}</Text>
-                              <MaterialIcons name="open-in-new" size={20} color={theme.textSecondary} />
+                              <AppIcon name="open-in-new" size={20} color={t.colors.textSecondary} />
                             </Pressable>
                           ))}
                         </View>
@@ -982,7 +986,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customNotesCard}>
                         <View style={styles.customNotesHeader}>
-                          <MaterialIcons name={field.icon as any || 'image'} size={18} color={theme.textSecondary} />
+                          <AppIcon name={field.icon as any || 'image'} size={18} color={t.colors.textSecondary} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
@@ -1002,8 +1006,8 @@ export default function ProductDetailScreen() {
                     const displayDate = isNaN(rawDate.getTime()) ? value : rawDate.toLocaleDateString('it-IT');
                     return (
                       <View key={field.id || index} style={styles.customMiniCard}>
-                        <View style={[styles.customIconWrap, { backgroundColor: `${theme.info}20` }]}>
-                          <MaterialIcons name={field.icon as any || 'event'} size={20} color={theme.info} />
+                        <View style={[styles.customIconWrap, { backgroundColor: t.colors.infoSoft }]}>
+                          <AppIcon name={field.icon as any || 'event'} size={20} color={t.colors.info} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1017,12 +1021,12 @@ export default function ProductDetailScreen() {
                   if (field.type === 'currency') {
                     return (
                       <View key={field.id || index} style={styles.customMiniCard}>
-                        <View style={[styles.customIconWrap, { backgroundColor: `${theme.primary}20` }]}>
-                          <MaterialIcons name={field.icon as any || 'attach-money'} size={20} color={theme.primary} />
+                        <View style={[styles.customIconWrap, { backgroundColor: t.colors.iconWrap }]}>
+                          <AppIcon name={field.icon as any || 'attach-money'} size={20} color={t.colors.accentInk} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
-                          <Text style={[styles.customFieldValue, { color: theme.primary, fontWeight: '700' }]}>
+                          <Text style={[styles.customFieldValue, { color: t.colors.accentInk, fontWeight: '700' }]}>
                             €{Number(value).toLocaleString()}
                           </Text>
                         </View>
@@ -1042,7 +1046,7 @@ export default function ProductDetailScreen() {
                   return (
                     <View key={field.id || index} style={styles.customMiniCard}>
                       <View style={styles.customIconWrap}>
-                        <MaterialIcons name={field.icon as any || 'info'} size={20} color={theme.textSecondary} />
+                        <AppIcon name={field.icon as any || 'info'} size={20} color={t.colors.textSecondary} />
                       </View>
                       <View style={styles.customCardContent}>
                         <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1100,7 +1104,7 @@ export default function ProductDetailScreen() {
                   style={styles.showMoreButton}
                 >
                   <Text style={styles.showMoreText}>{showAllHistory ? 'Nascondi' : 'Altro'}</Text>
-                  <MaterialIcons name={showAllHistory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={theme.primary} />
+                  <AppIcon name={showAllHistory ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={20} color={t.colors.accentInk} />
                 </Pressable>
               )}
             </View>
@@ -1116,8 +1120,8 @@ export default function ProductDetailScreen() {
                   <QRCode
                     value={product.gs1DigitalLink}
                     size={160}
-                    color="#000"
-                    backgroundColor="#FFF"
+                    color={t.colors.qrInk}
+                    backgroundColor={t.colors.qrPaper}
                     logoSize={30}
                     logoBackgroundColor='transparent'
                   />
@@ -1131,12 +1135,12 @@ export default function ProductDetailScreen() {
                 
                 <View style={styles.gs1Actions}>
                   <Pressable style={styles.gs1ActionButton} onPress={handleCopyGS1Link}>
-                    <MaterialIcons name="content-copy" size={20} color={theme.primary} />
+                    <AppIcon name="content-copy" size={20} color={t.colors.accentInk} />
                     <Text style={styles.gs1ActionText}>Copia Link</Text>
                   </Pressable>
-                  <Pressable style={[styles.gs1ActionButton, { borderColor: theme.info }]} onPress={handleProgramNFC}>
-                    <MaterialIcons name="nfc" size={20} color={theme.info} />
-                    <Text style={[styles.gs1ActionText, { color: theme.info }]}>Programma Tag</Text>
+                  <Pressable style={[styles.gs1ActionButton, { borderColor: t.colors.info }]} onPress={handleProgramNFC}>
+                    <AppIcon name="nfc" size={20} color={t.colors.info} />
+                    <Text style={[styles.gs1ActionText, { color: t.colors.info }]}>Programma Tag</Text>
                   </Pressable>
                 </View>
               </View>
@@ -1144,7 +1148,7 @@ export default function ProductDetailScreen() {
               <View style={styles.gs1Card}>
                  <Text style={styles.gs1MissingText}>Questo prodotto non ha un Digital Link GS1 generato. Modifica e salva il prodotto per generarlo.</Text>
                  <Pressable style={styles.qrButton} onPress={() => setShowQRModal(true)}>
-                    <MaterialIcons name="qr-code-2" size={24} color={theme.textPrimary} />
+                    <AppIcon name="qr-code-2" size={24} color={t.colors.textPrimary} />
                     <Text style={styles.qrButtonText}>Mostra SKU QR (Legacy)</Text>
                   </Pressable>
               </View>
@@ -1153,8 +1157,8 @@ export default function ProductDetailScreen() {
             {/* Azioni PDF (moved below GS1) */}
             <View style={{ marginTop: 16 }}>
                <Pressable style={styles.qrButton} onPress={handlePrintPDF}>
-                 <MaterialIcons name="picture-as-pdf" size={24} color={theme.primary} />
-                 <Text style={[styles.qrButtonText, { color: theme.primary }]}>Stampa Scheda PDF</Text>
+                 <AppIcon name="picture-as-pdf" size={24} color={t.colors.accentInk} />
+                 <Text style={[styles.qrButtonText, { color: t.colors.accentInk }]}>Stampa Scheda PDF</Text>
                </Pressable>
             </View>
 
@@ -1171,7 +1175,7 @@ export default function ProductDetailScreen() {
           style={styles.actionButtonPrimary}
           onPress={() => router.push(`/product/edit/${product.id}`)}
         >
-          <MaterialIcons name="edit" size={20} color="#000" />
+          <AppIcon name="edit" size={20} color={t.colors.onButton} />
           <Text style={styles.actionButtonTextPrimary}>Modifica</Text>
         </Pressable>
       </View>
@@ -1187,7 +1191,7 @@ export default function ProductDetailScreen() {
             <View style={styles.qrHeader}>
               <Text style={styles.qrTitle}>Codice Prodotto</Text>
               <Pressable onPress={() => setShowQRModal(false)}>
-                <MaterialIcons name="close" size={24} color={theme.textSecondary} />
+                <AppIcon name="close" size={24} color={t.colors.textSecondary} />
               </Pressable>
             </View>
 
@@ -1211,8 +1215,8 @@ export default function ProductDetailScreen() {
                 <QRCode
                   value={product.sku}
                   size={200}
-                  color="black"
-                  backgroundColor="white"
+                  color={t.colors.qrInk}
+                  backgroundColor={t.colors.qrPaper}
                 />
               ) : (
                 <View style={{ padding: 10, alignItems: 'center' }}>
@@ -1229,7 +1233,7 @@ export default function ProductDetailScreen() {
             <Text style={styles.qrInfoText}>{furType?.label || product.furType}</Text>
 
             <Pressable style={styles.printLabelButton} onPress={handlePrintLabel}>
-              <MaterialIcons name="print" size={20} color="#FFF" />
+              <AppIcon name="print" size={20} color="#FFF" />
               <Text style={styles.printLabelText}>Stampa Etichetta</Text>
             </Pressable>
           </View>
@@ -1251,7 +1255,7 @@ export default function ProductDetailScreen() {
             style={[styles.closeButton, { top: insets.top + 10 }]}
             onPress={() => setModalVisible(false)}
           >
-            <MaterialIcons name="close" size={30} color="#FFF" />
+            <AppIcon name="close" size={30} color={t.colors.onData} />
           </Pressable>
 
           {/* Image Counter */}
@@ -1289,32 +1293,32 @@ export default function ProductDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
   },
   imageGalleryContainer: {
     position: 'relative',
   },
   heroImage: {
     height: 320,
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
   },
   imageCounter: {
     position: 'absolute',
     top: 16,
     left: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: t.colors.scrimStrong,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
   },
   imageCounterText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFF',
+    color: t.colors.onData,
   },
   paginationDots: {
     position: 'absolute',
@@ -1332,7 +1336,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   dotActive: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
     width: 24,
   },
   soldBadge: {
@@ -1342,10 +1346,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: theme.textSecondary,
+    backgroundColor: t.colors.soldBadge,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
   },
   soldText: {
     fontSize: 12,
@@ -1353,7 +1357,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   content: {
-    padding: spacing.screenPadding,
+    padding: t.spacing.screenPadding,
   },
   titleRow: {
     flexDirection: 'row',
@@ -1365,12 +1369,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sku: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 24,
     marginBottom: 4,
   },
   furType: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 16,
   },
   shareButton: {
@@ -1382,8 +1386,8 @@ const styles = StyleSheet.create({
   locationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 16,
     marginBottom: 24,
     borderWidth: 2,
@@ -1393,15 +1397,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   locationLabel: {
-    ...typography.heroLabel,
+    ...t.typography.heroLabel,
     marginBottom: 2,
   },
   locationValue: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 18,
   },
   sectionTitle: {
-    ...typography.sectionHeader,
+    ...t.typography.sectionHeader,
     marginBottom: 12,
   },
   priceSection: {
@@ -1413,17 +1417,17 @@ const styles = StyleSheet.create({
   },
   priceCard: {
     flex: 1,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 16,
   },
   priceLabel: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
     marginBottom: 4,
   },
   priceValue: {
-    ...typography.cardValue,
+    ...t.typography.cardValue,
     fontSize: 24,
   },
   measureSection: {
@@ -1435,30 +1439,30 @@ const styles = StyleSheet.create({
   },
   measureCard: {
     flex: 1,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 12,
     alignItems: 'center',
   },
   measureLabel: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 11,
     marginTop: 6,
     marginBottom: 2,
   },
   measureValue: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 16,
   },
   notesSection: {
     marginBottom: 24,
   },
   notesText: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 15,
     lineHeight: 22,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 16,
   },
   timelineSection: {
@@ -1472,7 +1476,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
     marginTop: 4,
     marginRight: 12,
   },
@@ -1480,16 +1484,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timelineType: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 15,
     marginBottom: 2,
   },
   timelineDate: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
   },
   timelineChanges: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 11,
     marginTop: 2,
     marginBottom: 2,
@@ -1503,9 +1507,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   showMoreText: {
-    ...typography.buttonSecondary,
+    ...t.typography.buttonSecondary,
     fontSize: 14,
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   qrSection: {
     marginTop: 24,
@@ -1517,18 +1521,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.buttonSecondary,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.button,
     borderWidth: 1,
-    borderColor: theme.border,
-    ...shadows.small,
+    borderColor: t.colors.buttonSecondaryBorder,
+    ...t.shadows.small,
   },
   qrButtonText: {
-    ...typography.buttonSecondary,
+    ...t.typography.buttonSecondary,
     fontSize: 14,
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
   },
   bottomActions: {
     position: 'absolute',
@@ -1537,23 +1541,23 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     gap: 12,
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     paddingTop: 16,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
     borderTopWidth: 1,
-    borderTopColor: theme.border,
+    borderTopColor: t.colors.border,
   },
   actionButtonSecondary: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.buttonSecondary,
+    borderRadius: t.radius.button,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.buttonSecondaryBorder,
   },
   actionButtonTextSecondary: {
-    ...typography.buttonSecondary,
+    ...t.typography.buttonSecondary,
     fontSize: 16,
   },
   actionButtonPrimary: {
@@ -1563,12 +1567,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    backgroundColor: theme.primary,
-    borderRadius: borderRadius.medium,
-    ...shadows.card,
+    backgroundColor: t.colors.button,
+    borderRadius: t.radius.button,
+    ...t.shadows.card,
   },
   actionButtonTextPrimary: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
     fontSize: 16,
   },
   errorContainer: {
@@ -1577,25 +1581,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 18,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: t.colors.scrim,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   qrModalContent: {
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
     borderRadius: 20,
     padding: 24,
     width: '100%',
     maxWidth: 340,
     alignItems: 'center',
-    ...shadows.card,
+    ...t.shadows.card,
   },
   qrHeader: {
     width: '100%',
@@ -1605,35 +1609,35 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   qrTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 20,
   },
   qrContainer: {
     padding: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: t.colors.qrPaper,
     borderRadius: 12,
     marginBottom: 20,
-    ...shadows.small,
+    ...t.shadows.small,
   },
   qrSkuText: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 24,
-    color: theme.primary,
+    color: t.colors.accentInk,
     marginBottom: 4,
   },
   qrInfoText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 16,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     marginBottom: 24,
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.surface,
     padding: 4,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
     marginBottom: 20,
     width: '100%',
   },
@@ -1641,15 +1645,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: borderRadius.small,
+    borderRadius: t.radius.small,
   },
   toggleButtonActive: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.accent,
   },
   toggleText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontWeight: '600',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   toggleTextActive: {
     color: '#FFF',
@@ -1658,13 +1662,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.button,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.button,
   },
   printLabelText: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
     fontSize: 16,
   },
   modalContainer: { // For the Image Viewer Modal
@@ -1683,18 +1687,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignSelf: 'center',
     zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: t.colors.scrim,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   modalCounterText: {
-    color: '#FFF',
+    color: t.colors.onData,
     fontSize: 14,
     fontWeight: '600',
   },
   customFieldsSection: {
-    paddingHorizontal: spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
     marginTop: 24,
   },
   customCardsContainer: {
@@ -1704,8 +1708,8 @@ const styles = StyleSheet.create({
   },
   customMiniCard: {
     width: '48%',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1715,7 +1719,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1729,24 +1733,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: theme.borderLight,
+    borderBottomColor: t.colors.borderLight,
   },
   customFieldLabel: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     textTransform: 'uppercase',
   },
   customFieldValue: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 14,
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     marginTop: 2,
   },
   customNotesCard: {
     width: '100%',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 14,
     marginBottom: 8,
   },
@@ -1757,15 +1761,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   customNotesText: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 14,
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     lineHeight: 20,
   },
   customTagsCard: {
     width: '100%',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.medium,
     padding: 14,
     marginBottom: 8,
   },
@@ -1775,72 +1779,72 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   customTag: {
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.chipBorder,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   customTagText: {
-    ...typography.caption,
-    color: theme.textPrimary,
+    ...t.typography.caption,
+    color: t.colors.textPrimary,
   },
   customDocumentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
     padding: 12,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
     gap: 12,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
   },
   customDocumentText: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 14,
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     flex: 1,
   },
   customNestedImageWrap: {
     width: 100,
     height: 100,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
     marginRight: 12,
     overflow: 'hidden',
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
   },
   customNestedImage: {
     width: '100%',
     height: '100%',
   },
   gs1Card: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 20,
     borderWidth: 1,
-    borderColor: theme.primary,
+    borderColor: t.colors.accent,
     alignItems: 'center',
     gap: 16,
   },
   gs1QrContainer: {
     padding: 12,
-    backgroundColor: '#FFF',
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.qrPaper,
+    borderRadius: t.radius.medium,
   },
   gs1Info: {
     alignItems: 'center',
     gap: 4,
   },
   gs1Label: {
-    ...typography.caption,
-    color: theme.textSecondary,
+    ...t.typography.caption,
+    color: t.colors.textSecondary,
     textTransform: 'uppercase',
   },
   gs1UrlText: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 13,
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     textAlign: 'center',
     fontFamily: 'monospace',
   },
@@ -1856,23 +1860,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.medium,
     borderWidth: 1,
-    borderColor: theme.primary,
-    backgroundColor: `${theme.primary}10`,
+    borderColor: t.colors.accent,
+    backgroundColor: withAlpha(t.colors.accent, 0.063),
     gap: 8,
   },
   gs1ActionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   gs1MissingText: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 14,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 8,
   }
-});
+}));
