@@ -1,5 +1,8 @@
 import type { Product, TimelineEvent } from '../types';
-import { editableUpdates, moveOf, movementOf, refusalText, saleOf, withInitialStock, withStartingStock, type OpResult } from '../utils/inventoryOps';
+import {
+  countDiffs, countOf, countRefusalText, countRows, editableUpdates, moveOf, movementOf, refusalText, saleOf, uniqueAt,
+  withInitialStock, withStartingStock, type OpResult,
+} from '../utils/inventoryOps';
 import { describeStockEvent, qtyAt, replayStock, stockOf, storedStock } from '../utils/stock';
 
 const NOW = '2026-11-22T10:00:00.000Z';
@@ -240,5 +243,93 @@ describe('storedStock (M04, cestino)', () => {
   it('un pezzo unico nel cestino resta senza giacenza', () => {
     expect(storedStock(item({ deletedAt: NOW }))).toEqual({});
     expect(storedStock(item())).toEqual({ vetrina: 1 });
+  });
+});
+
+describe('Conta (M07, ticket 06)', () => {
+  const list = (): Product[] => [
+    stocked({ magazzino: 5 }, { id: 'a', sku: 'B-2', location: 'magazzino' }),
+    stocked({ magazzino: 2, vetrina: 3 }, { id: 'b', sku: 'A-1', location: 'vetrina', unit: 'pz' }),
+    stocked({ magazzino: 0 }, { id: 'c', sku: 'C-3', location: 'magazzino' }), // esaurito, principale qui
+    item({ id: 'd', sku: 'U-1', location: 'magazzino' }), // pezzo unico
+    stocked({ magazzino: 4 }, { id: 'e', sku: 'T-1', location: 'magazzino', deletedAt: NOW }), // nel cestino
+    stocked({ vetrina: 1 }, { id: 'f', sku: 'V-1', location: 'vetrina' }), // altrove
+  ];
+
+  it('countRows: articoli a quantità qui (anche esauriti), in ordine di SKU; niente pezzi unici né cestino', () => {
+    expect(countRows(list(), 'magazzino')).toEqual([
+      { id: 'b', sku: 'A-1', furType: 'visone', unit: 'pz', expected: 2 },
+      { id: 'a', sku: 'B-2', furType: 'visone', unit: 'kg', expected: 5 },
+      { id: 'c', sku: 'C-3', furType: 'visone', unit: 'kg', expected: 0 },
+    ]);
+    expect(uniqueAt(list(), 'magazzino')).toBe(1);
+    expect(uniqueAt(list(), 'vetrina')).toBe(0);
+  });
+
+  it('countDiffs: solo le quantità scritte e diverse (vuota = non contata, mai 0)', () => {
+    const rows = countRows(list(), 'magazzino');
+    expect(countDiffs(rows, { a: 3, b: 2, c: 0.1 + 0.2 }).map((d) => [d.sku, d.counted, d.delta])).toEqual([
+      ['B-2', 3, -2],
+      ['C-3', 0.30000000000000004, 0.3],
+    ]);
+    expect(countDiffs(rows, {})).toEqual([]);
+  });
+
+  it('countOf: una rettifica «conta» per differenza, uguali senza eventi, giacenza = eventi rigiocati', () => {
+    const products = list();
+    const events: Omit<TimelineEvent, 'id'>[] = [];
+    for (const p of products) {
+      for (const [to, qty] of Object.entries(p.stock ?? {})) {
+        if (qty > 0) events.push({ productId: p.id, type: 'stock', timestamp: NOW, details: { movement: 'carico', qty, to, reason: 'iniziale' } });
+      }
+    }
+    const r = countOf(products, 'magazzino', { a: 3, b: 2, c: 1.5 }, NOW);
+    expect(r.adjusted).toEqual(['B-2', 'C-3']);
+    expect(r.unchanged).toEqual(['A-1']);
+    expect(r.refused).toEqual([]);
+    expect(r.events.map((e) => [e.productId, e.details.movement, e.details.reason, e.details.qty, e.details.from, e.details.to])).toEqual([
+      ['a', 'rettifica', 'conta', 2, 'magazzino', undefined],
+      ['c', 'rettifica', 'conta', 1.5, undefined, 'magazzino'],
+    ]);
+    expect(r.events.every((e) => e.timestamp === NOW)).toBe(true);
+    const after = products.map((p) => ({ ...p, ...r.patches.find((x) => x.id === p.id)?.patch }));
+    expect(after.find((p) => p.id === 'a')?.stock).toEqual({ magazzino: 3 });
+    expect(after.find((p) => p.id === 'c')?.stock).toEqual({ magazzino: 1.5 });
+    for (const p of after.filter((x) => x.id === 'a' || x.id === 'c')) {
+      expect(replayStock([...events, ...r.events].filter((e) => e.productId === p.id))).toEqual(stockOf(p));
+    }
+    expect(r.patches.map((x) => Object.keys(x.patch).sort())).toEqual([
+      ['lastScannedAt', 'location', 'stock', 'unit', 'updatedAt'],
+      ['lastScannedAt', 'location', 'stock', 'unit', 'updatedAt'],
+    ]);
+  });
+
+  it('countOf: posizione secondaria; 0 nella principale sposta la principale dove resta giacenza', () => {
+    const products = list();
+    const second = countOf(products, 'magazzino', { b: 0 }, NOW);
+    expect([second.patches[0].patch.stock, second.patches[0].patch.location]).toEqual([{ vetrina: 3 }, 'vetrina']);
+    const main = countOf(products, 'vetrina', { b: 0 }, NOW);
+    expect([main.patches[0].patch.stock, main.patches[0].patch.location]).toEqual([{ magazzino: 2 }, 'magazzino']);
+  });
+
+  it('countOf: rifiuta pezzi unici, cestino e prodotti spariti, ma rettifica gli altri', () => {
+    const r = countOf(list(), 'magazzino', { d: 0, e: 1, zz: 2, a: 6 }, NOW);
+    expect(r.adjusted).toEqual(['B-2']);
+    expect(r.refused).toEqual([
+      { sku: 'U-1', reason: 'unique' },
+      { sku: 'T-1', reason: 'not_allowed' },
+      { sku: 'zz', reason: 'missing' },
+    ]);
+    expect(r.patches.map((x) => x.id)).toEqual(['a']);
+    expect(countRefusalText('unique')).toMatch(/Audit/);
+    expect(countRefusalText('not_allowed')).toMatch(/non più disponibile/);
+  });
+
+  it('countOf: niente scritto o tutto uguale → nessuna patch e nessun evento', () => {
+    expect(countOf(list(), 'magazzino', {}, NOW)).toEqual({ patches: [], events: [], adjusted: [], unchanged: [], refused: [] });
+    const same = countOf(list(), 'magazzino', { a: 5, b: 2, c: 0 }, NOW);
+    expect(same.patches).toEqual([]);
+    expect(same.events).toEqual([]);
+    expect(same.unchanged).toEqual(['B-2', 'A-1', 'C-3']);
   });
 });

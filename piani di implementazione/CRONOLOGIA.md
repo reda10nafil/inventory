@@ -2,6 +2,18 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, M07: Conta di magazzino (ticket 06)
+
+- Branch `funzioni/magazzino`. Parere del revisore chiesto prima di scrivere: seguite le sue indicazioni (pezzi unici fuori, vuota = non contata, una sola scrittura, esito dato dal risultato della chiamata).
+- Schermata nuova **Conta** (`src/screens/automations/CountScreen.tsx`, indirizzo `automations/count`, voce «Conta Magazzino» in Automazioni): scelta della posizione (tutte, col numero di articoli da contare) → elenco degli articoli a quantità che sono lì con la quantità registrata e un campo «Contata» per ciascuno (sotto la riga «+1,5 kg», «−2 pz», «Uguale» o «Quantità non valida» mentre si scrive) → riepilogo con le rettifiche da registrare e i non contati → esito («2 rettifiche registrate in Magazzino; 1 uguale…», più gli eventuali non rettificati col motivo). Se nella posizione ci sono pezzi unici la schermata lo dice e apre l'Audit Posizione.
+- Logica pura in `utils/inventoryOps.ts` (test): `countRows` (articoli a quantità disponibili, non nel cestino, con `isAt`, quindi anche gli esauriti con la principale lì a 0), `uniqueAt`, `countDiffs`, `countOf` (una rettifica con causale «conta» per ogni differenza con `applyMovement`; uguali senza eventi; pezzi unici, cestino e prodotti spariti rifiutati, gli altri rettificati lo stesso), `countRefusalText`. Nel contesto `countStock(at, conteggi)`: calcolo sulla copia `productsRef` e **un solo aggiornamento** dello stato per tutta la conta, poi gli eventi.
+- Prova sul web `prova/m07-conta.cjs` (4 scenari, tutti come atteso): da Automazioni, Magazzino con VIS-0098 5 → 3, PUZ-0012 esaurito → 1,5 kg, AST-0033 uguale nella posizione secondaria, LIN-0021 vuota, VIS-0142 pezzo unico e VOL-0087 nel cestino fuori dall'elenco → 2 eventi nuovi `rettifica/conta` nello stesso istante, giacenza salvata = eventi rigiocati, gli altri 4 prodotti identici, righe «Rettifica: −2 pz in Magazzino» e «Rettifica: +1,5 kg in Magazzino» nel filtro Movimenti; 0 in Sartoria per AST-0033 → la principale passa a Magazzino; tutto uguale → «Nessuna differenza», nessun pulsante, nessun evento; niente scritto o «-2» → il riepilogo non si apre, nulla cambia.
+- Regressione: `a3-audit` e `a1-cronologia` uguali agli esiti dopo M03 (tolti orari e id); `m04-movimenta` con gli stessi esiti di M04.
+- Nei 5 stili: `FETTA=m07` (voce in Automazioni, posizioni, elenco con differenze, riepilogo, esito) → `prova/stili-m07.jpg`, 0 errori in console. `controllo.sh` fa anche la schermata `24-conta`.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 216 verdi, bundle Android 5,15 MB con 62 asset, 33 schermate senza errori in console.
+- Da verificare su Android: il tasto Indietro del telefono durante una conta chiude la schermata e perde le quantità scritte (la freccia in alto invece torna al passo prima); sul web non si prova.
+- Decisioni prese al posto dell'utente: 5 righe M07 in `DECISIONI_DA_RIVEDERE.md`.
+
 ## 22 novembre 2026 — Fase B, M06: scorta minima e avviso di riordino (ticket 05)
 
 - Branch `funzioni/magazzino`.

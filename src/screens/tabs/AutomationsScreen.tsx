@@ -38,6 +38,14 @@ const BUILTIN_AUTOMATIONS = [
         route: '/automations/audit'
     },
     {
+        id: 'count',
+        title: 'Conta Magazzino',
+        description: 'Conta le quantità di una posizione e registra le differenze come rettifiche.',
+        icon: 'inventory',
+        color: '#0EA5E9',
+        route: '/automations/count'
+    },
+    {
         id: 'tagging',
         title: 'Tagging di Massa',
         description: 'Applica note o etichette a un gruppo di prodotti.',

@@ -31,6 +31,7 @@ import AuditScreen from '../screens/automations/AuditScreen';
 import BatchMoveScreen from '../screens/automations/BatchMoveScreen';
 import ScanSellScreen from '../screens/automations/ScanSellScreen';
 import QuickTagScreen from '../screens/automations/QuickTagScreen';
+import CountScreen from '../screens/automations/CountScreen';
 
 export type RootStackParamList = {
   '(tabs)': undefined;
@@ -58,6 +59,7 @@ export type RootStackParamList = {
   BatchMove: undefined;
   ScanSell: undefined;
   QuickTag: undefined;
+  Count: undefined;
   NotFound: undefined;
 };
 
@@ -109,6 +111,7 @@ export default function RootNavigator() {
       <Stack.Screen name="BatchMove" component={BatchMoveScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ScanSell" component={ScanSellScreen} options={{ headerShown: false }} />
       <Stack.Screen name="QuickTag" component={QuickTagScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Count" component={CountScreen} options={{ headerShown: false }} />
       <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );

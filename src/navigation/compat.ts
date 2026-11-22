@@ -53,6 +53,7 @@ function parseHref(href: Href): { name: string; params?: any } {
         '/automations/batch-move': 'BatchMove',
         '/automations/scan-sell': 'ScanSell',
         '/automations/quick-tag': 'QuickTag',
+        '/automations/count': 'Count',
       };
       const base = href.split('?')[0];
       return { name: map[base] || base };

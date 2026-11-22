@@ -30,6 +30,7 @@ export const linking = {
       BatchMove: 'automations/batch-move',
       ScanSell: 'automations/scan-sell',
       QuickTag: 'automations/quick-tag',
+      Count: 'automations/count',
       AutomationFlow: 'automations/automation-flow/:id',
       CustomRunner: 'automations/custom-runner/:id',
       NotFound: '*',

@@ -8,7 +8,7 @@ import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { usage } from '../utils/productRules';
 import { describeChanges } from '../utils/productChanges';
-import { editableUpdates, moveOf, movementOf, saleOf, withInitialStock, withStartingStock } from '../utils/inventoryOps';
+import { countOf, editableUpdates, moveOf, movementOf, saleOf, withInitialStock, withStartingStock, type CountResult } from '../utils/inventoryOps';
 import { lowStockAlert, mergeAlerts } from '../utils/alerts';
 import type { Movement, MovementError } from '../utils/stock';
 
@@ -83,6 +83,8 @@ interface InventoryContextType {
   sellProduct: (id: string, finalPrice?: number, qty?: number) => boolean;
   /** Movimento di magazzino dalla Scheda (M04): carico, scarico, trasferimento, rettifica; il motivo se rifiutato. */
   moveStock: (id: string, movement: Movement) => { ok: true } | { ok: false; error: MovementError; available?: number };
+  /** Conferma della Conta (M07): id → quantità contata (solo quelle scritte); rettifiche «conta» in un solo aggiornamento. */
+  countStock: (at: string, counts: Record<string, number>) => Pick<CountResult, 'adjusted' | 'unchanged' | 'refused'>;
   scanProduct: (id: string) => void;
   dismissAlert: (alertId: string) => void;
   getProductById: (id: string) => Product | undefined;
@@ -527,6 +529,20 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return { ok: true };
   };
 
+  // Conta (M07): tutte le rettifiche calcolate sulla copia più recente e scritte con un solo aggiornamento, così
+  // nessuna si perde e `before`/`after` sono giusti; nello stato solo i campi dei movimenti.
+  const countStock = (at: string, counts: Record<string, number>) => {
+    const { patches, events, adjusted, unchanged, refused } = countOf(productsRef.current, at, counts, new Date().toISOString());
+    if (patches.length > 0) {
+      const byId = new Map(patches.map((x) => [x.id, x.patch]));
+      const apply = (list: Product[]) => list.map((p) => (byId.has(p.id) ? { ...p, ...byId.get(p.id) } : p));
+      productsRef.current = apply(productsRef.current);
+      setProducts(apply);
+      events.forEach(addTimelineEvent);
+    }
+    return { adjusted, unchanged, refused };
+  };
+
   const scanProduct = (id: string) => {
     patchProduct(id, { lastScannedAt: new Date().toISOString() });
 
@@ -653,6 +669,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         moveProduct,
         sellProduct,
         moveStock,
+        countStock,
         scanProduct,
         dismissAlert,
         getProductById,

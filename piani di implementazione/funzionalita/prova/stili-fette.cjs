@@ -129,6 +129,35 @@ const FETTE = {
       ['import', async (page) => { await page.getByText('Importa prodotti CSV', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
     ],
   },
+  // M07: Conta da Automazioni (scelta della posizione, elenco con differenze, riepilogo, esito)
+  m07: {
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      const set = (sku, extra) => Object.assign(list.find((p) => p.sku === sku), extra);
+      set('VIS-0098', { unit: 'pz', stock: { magazzino: 5 } });
+      set('PUZ-0012', { unit: 'kg', stock: { magazzino: 0 }, location: 'magazzino' });
+      set('AST-0033', { unit: 'pz', stock: { sartoria: 3, magazzino: 2 } });
+      set('LIN-0021', { unit: 'm', stock: { magazzino: 4 }, location: 'magazzino' });
+      set('VIS-0142', { location: 'magazzino' });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['automazioni', async (page) => {
+        await page.goto(`${APP}/automations`); await page.waitForTimeout(1800);
+        await page.getByText('Conta Magazzino', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['posizioni', async (page) => { await page.goto(`${APP}/automations/count`); await page.waitForTimeout(1800); }],
+      ['elenco', async (page) => {
+        await page.getByLabel('Conta Magazzino', { exact: true }).click(); await page.waitForTimeout(500);
+        await page.getByLabel('Contata VIS-0098', { exact: true }).fill('3');
+        await page.getByLabel('Contata PUZ-0012', { exact: true }).fill('1,5');
+        await page.getByLabel('Contata AST-0033', { exact: true }).fill('2');
+      }],
+      ['riepilogo', async (page) => { await page.getByLabel('Riepilogo della conta', { exact: true }).click(); }],
+      ['esito', async (page) => { await page.getByLabel('Registra rettifiche', { exact: true }).click(); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;
