@@ -1854,9 +1854,9 @@
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
-    "mtime": 1795329326.4230046,
-    "seen": 1795329700.9440513,
-    "ast_hash": "1a63e0d45567496522d16403ea46c124",
+    "mtime": 1795331860.3674736,
+    "seen": 1795332238.8374777,
+    "ast_hash": "132e56f416d21e675ac49724f40074e2",
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795331805.2960718,
-    "seen": 1795331820.3962822,
-    "ast_hash": "9c102b8e55e5cce3938a275c7ddab68c",
+    "mtime": 1795332223.687938,
+    "seen": 1795332238.8734205,
+    "ast_hash": "cf632f7d07525ae5d3dd7cd556c636d1",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2436,9 +2436,9 @@
     "semantic_hash": ""
   },
   "__tests__/layoutOrder.test.ts": {
-    "mtime": 1795322842.0397763,
-    "seen": 1795323475.1485813,
-    "ast_hash": "542f904e134befa2ab2e6ac7d4e4f1d1",
+    "mtime": 1795331860.0759706,
+    "seen": 1795332238.7955277,
+    "ast_hash": "e5bdd664d594774e11cf4efbde77f546",
     "semantic_hash": ""
   },
   "__tests__/theme.test.ts": {
@@ -2634,9 +2634,9 @@
     "semantic_hash": ""
   },
   "utils/layoutOrder.ts": {
-    "mtime": 1795322841.145958,
-    "seen": 1795323475.1495197,
-    "ast_hash": "c55a02a1ed0fe6e20fc41a3ddd8e95ec",
+    "mtime": 1795331848.853895,
+    "seen": 1795332238.8669,
+    "ast_hash": "bf48fae1b55d210ad471e54722400ab7",
     "semantic_hash": ""
   },
   "utils/price.ts": {
@@ -3252,9 +3252,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795331805.3353648,
-    "seen": 1795331820.3972788,
-    "ast_hash": "c7258ad73646c2f3461e77a24363c2e5",
+    "mtime": 1795332223.7359285,
+    "seen": 1795332238.874954,
+    "ast_hash": "10dfc51742c4ea94d0ec7b80a9a9d23b",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3417,6 +3417,12 @@
     "mtime": 1795331310.7758472,
     "seen": 1795331820.3915927,
     "ast_hash": "74af577888fa8b2f13fd9b27180e678b",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/c08-modifica-campi.cjs": {
+    "mtime": 1795332032.5849571,
+    "seen": 1795332238.8294165,
+    "ast_hash": "d21ca74978bfa2819402de1252f98b6e",
     "semantic_hash": ""
   }
 }

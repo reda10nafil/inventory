@@ -16,6 +16,7 @@ import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
 import { keepGS1DigitalLink } from '../../../utils/gs1';
+import { editableFields } from '../../../utils/layoutOrder';
 import type { Product } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -489,12 +490,10 @@ function EditProductForm({ product }: { product: Product }) {
             />
           </View>
 
-          {/* Custom Fields Section - Only show fields that exist in this product */}
+          {/* Campi personalizzati: quelli del modulo Aggiungi più quelli che il prodotto ha già (D03) */}
           {(() => {
-            // Get the field IDs that this product actually has
-            const productFieldIds = product?.customData?.map(d => d.fieldSnapshot?.id).filter(Boolean) || [];
-            // Filter to only show fields that exist in the product
-            const existingFields = customFields.filter(f => productFieldIds.includes(f.id));
+            const productFieldIds = (product.customData || []).map(d => d.fieldSnapshot?.id).filter(Boolean) as string[];
+            const existingFields = editableFields(customFields, layout.fields, productFieldIds);
 
             if (existingFields.length === 0) return null;
 

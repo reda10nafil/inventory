@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C08: Modifica mostra i campi del modulo, anche vuoti (D03)
+
+- Branch `funzioni/magazzino`.
+- **D03**: Modifica mostrava solo i campi personalizzati già compilati nel prodotto: un campo lasciato vuoto in Aggiungi, o creato dopo, non si poteva più compilare. Ora mostra i campi che il modulo Aggiungi mostra (nel layout e visibili) più quelli che il prodotto ha già (anche se tolti dal layout dopo), nell'ordine del layout: `editableFields` in `utils/layoutOrder.ts` (test, 2). La struttura della schermata resta (prima le scelte, poi gli altri campi).
+- Prova sul web: `a1-mod-d03` per PUZ-0012 compaiono la sezione, Taglia e Fornitore, per VOL-0087 anche Fornitore e Condizione (prima mancavano); `c08-modifica-campi.cjs`: Fornitore, vuoto in PUZ-0012, scritto e salvato in `customData`.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 112 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C07: modelli e campi nuovi nel modulo Aggiungi, Modelli di settore raggiungibili (D12, D13, P11)
 
 - Branch `funzioni/magazzino`.
