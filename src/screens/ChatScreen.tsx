@@ -17,6 +17,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
+import { Backdrop } from '../../components/ui/Backdrop';
+import { GradientFill } from '../../components/ui/GradientFill';
 
 type ChatMsg = {
   id: string;
@@ -129,6 +131,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
+      <Backdrop />
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
           <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
@@ -155,7 +158,7 @@ export default function ChatScreen() {
               value={input}
               onChangeText={setInput}
               placeholder="Messaggio team..."
-              placeholderTextColor={t.colors.textMuted}
+              placeholderTextColor={t.colors.placeholder}
               style={styles.input}
               multiline
             />
@@ -164,6 +167,7 @@ export default function ChatScreen() {
             <AppIcon name="inventory-2" size={20} color={t.colors.onButtonSecondary} />
           </Pressable>
           <Pressable onPress={sendText} style={styles.sendBtn} hitSlop={8}>
+            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
             <AppIcon name="send" size={20} color={t.colors.onButton} />
           </Pressable>
         </View>
@@ -178,7 +182,7 @@ const useStyles = makeStyles((t) => ({
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: t.spacing.screenPadding, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: t.colors.borderLight, backgroundColor: t.colors.background,
+    borderBottomWidth: 1, borderBottomColor: t.colors.border,
   },
   backBtn: { padding: 6, borderRadius: 20 },
   headerTitle: { ...t.typography.cardTitle, fontSize: 18 },
@@ -186,11 +190,11 @@ const useStyles = makeStyles((t) => ({
   composer: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
     paddingHorizontal: t.spacing.screenPadding, paddingVertical: 10,
-    borderTopWidth: 1, borderTopColor: t.colors.borderLight, backgroundColor: t.colors.background,
+    borderTopWidth: 1, borderTopColor: t.colors.border,
   },
   inputWrap: { flex: 1, backgroundColor: t.colors.input, borderRadius: t.radius.input, borderWidth: 1, borderColor: t.colors.inputBorder, paddingHorizontal: 12, paddingVertical: 8 },
   input: { color: t.colors.inputText, fontSize: 14, maxHeight: 90 },
   cardBtn: { width: 44, height: 44, borderRadius: t.radius.button, backgroundColor: t.colors.buttonSecondary, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder, alignItems: 'center', justifyContent: 'center' },
-  sendBtn: { width: 44, height: 44, borderRadius: t.radius.button, backgroundColor: t.colors.button, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 44, height: 44, borderRadius: t.radius.button, backgroundColor: t.colors.button, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...t.shadows.button },
   hint: { color: t.colors.textMuted, fontSize: 10, textAlign: 'center', paddingBottom: 6 },
 }));

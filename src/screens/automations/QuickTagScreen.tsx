@@ -10,6 +10,9 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 
 const COMMON_TAGS = [
     { label: 'Da Pulire', icon: 'cleaning-services', color: '#3B82F6' },
@@ -93,6 +96,7 @@ export default function QuickTagScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="close" size={24} color={t.colors.textPrimary} />
@@ -110,21 +114,21 @@ export default function QuickTagScreen() {
                         </Text>
                     </View>
 
-                    <Text style={styles.sectionLabel}>TAG COMUNI</Text>
+                    <Text style={styles.sectionLabel}>Tag comuni</Text>
                     <View style={styles.tagsGrid}>
                         {COMMON_TAGS.map(tag => (
                             <Pressable
                                 key={tag.label}
-                                style={[styles.tagCard, { borderColor: tag.color }]}
+                                style={styles.tagCard}
                                 onPress={() => handleStartTagging(tag.label)}
                             >
                                 <AppIcon name={tag.icon as any} size={32} color={tag.color} />
-                                <Text style={[styles.tagLabel, { color: tag.color }]}>{tag.label}</Text>
+                                <Text style={styles.tagLabel}>{tag.label}</Text>
                             </Pressable>
                         ))}
                     </View>
 
-                    <Text style={styles.sectionLabel}>O SCRIVI UN TAG PERSONALIZZATO</Text>
+                    <Text style={styles.sectionLabel}>O scrivi un tag personalizzato</Text>
                     <View style={styles.customTagContainer}>
                         <TextInput
                             style={styles.customInput}
@@ -138,6 +142,7 @@ export default function QuickTagScreen() {
                             onPress={() => handleStartTagging(customTag)}
                             disabled={!customTag}
                         >
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                             <AppIcon name="arrow-forward" size={24} color={t.colors.onButton} />
                         </Pressable>
                     </View>
@@ -147,7 +152,8 @@ export default function QuickTagScreen() {
                     <View style={styles.statusCard}>
                         <Text style={styles.statusLabel}>MODALITÀ TAGGING ATTIVA</Text>
                         <View style={styles.activeTagBadge}>
-                            <AppIcon name="label" size={20} color={t.colors.onData} />
+                            <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />
+                            <AppIcon name="label" size={20} color={t.colors.chipActiveText} />
                             <Text style={styles.activeTagText}>{activeTag}</Text>
                         </View>
                         <Text style={styles.countText}>{taggedCount} prodotti taggati</Text>
@@ -163,7 +169,8 @@ export default function QuickTagScreen() {
                     )}
 
                     <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
+                        <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onButton} />
                         <Text style={styles.scanButtonText}>Scansiona Prodotto</Text>
                     </Pressable>
 
@@ -238,12 +245,11 @@ const useStyles = makeStyles((t) => ({
         textAlign: 'center',
     },
     sectionLabel: {
-        alignSelf: 'flex-start',
-        fontSize: 12,
-        fontWeight: '700',
-        color: t.colors.textSecondary,
+        ...t.typography.sectionHeader,
+        alignSelf: 'stretch',
         marginBottom: 12,
         marginTop: 12,
+        ...(t.section.line ? { borderBottomWidth: 1, borderBottomColor: t.section.line, paddingBottom: 6 } : null),
     },
     tagsGrid: {
         flexDirection: 'row',
@@ -252,19 +258,18 @@ const useStyles = makeStyles((t) => ({
         width: '100%',
         marginBottom: 24,
     },
+    // Riquadri a scelta: il colore del tag (dato) resta sull'icona
     tagCard: {
+        ...tileSurface(t),
         width: '48%',
-        backgroundColor: t.colors.tile,
         padding: 20,
-        borderRadius: t.radius.tile,
         alignItems: 'center',
-        borderWidth: 1,
-        ...t.shadows.card,
     },
     tagLabel: {
         marginTop: 8,
         fontWeight: '600',
         fontSize: 14,
+        color: t.colors.textPrimary,
     },
     customTagContainer: {
         flexDirection: 'row',
@@ -273,7 +278,7 @@ const useStyles = makeStyles((t) => ({
     },
     customInput: {
         flex: 1,
-        height: 56,
+        height: t.input.height,
         backgroundColor: t.colors.input,
         borderRadius: t.radius.input,
         paddingHorizontal: 16,
@@ -283,23 +288,22 @@ const useStyles = makeStyles((t) => ({
         borderColor: t.colors.inputBorder,
     },
     goButton: {
-        width: 56,
-        height: 56,
+        width: t.input.height,
+        height: t.input.height,
         backgroundColor: t.colors.button,
         borderRadius: t.radius.button,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
+        ...t.shadows.button,
     },
     statusCard: {
+        ...cardSurface(t),
         width: '100%',
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.large,
         padding: 24,
         alignItems: 'center',
         marginBottom: 24,
         marginTop: 20,
-        borderWidth: 1,
-        borderColor: t.colors.border,
     },
     statusLabel: {
         fontSize: 12,
@@ -307,18 +311,22 @@ const useStyles = makeStyles((t) => ({
         marginBottom: 16,
         letterSpacing: 1,
     },
+    // Tag attivo: pillola attiva
     activeTagBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.info,
+        backgroundColor: t.colors.chipActive,
+        borderWidth: 1,
+        borderColor: t.colors.chipActiveBorder,
         paddingVertical: 8,
         paddingHorizontal: 16,
-        borderRadius: t.radius.full,
+        borderRadius: t.radius.chip,
+        overflow: 'hidden',
         gap: 8,
         marginBottom: 16,
     },
     activeTagText: {
-        color: t.colors.onData,
+        color: t.colors.chipActiveText,
         fontWeight: 'bold',
         fontSize: 18,
     },
@@ -329,15 +337,16 @@ const useStyles = makeStyles((t) => ({
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.info,
+        backgroundColor: t.colors.button,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: t.radius.full,
-        ...t.shadows.cardElevated,
+        borderRadius: t.radius.button,
+        overflow: 'hidden',
+        ...t.shadows.button,
         marginBottom: 24,
     },
     scanButtonText: {
-        color: t.colors.onData,
+        color: t.colors.onButton,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
@@ -347,7 +356,7 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         backgroundColor: t.colors.successSurface,
         padding: 12,
-        borderRadius: t.radius.medium,
+        borderRadius: t.radius.tile,
         marginBottom: 24,
         width: '100%',
     },

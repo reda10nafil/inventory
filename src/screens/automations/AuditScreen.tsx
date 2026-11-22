@@ -10,6 +10,9 @@ import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 
 type AuditStatus = 'missing' | 'found' | 'intruder';
 
@@ -178,24 +181,18 @@ export default function AuditScreen() {
 
     const renderAuditItem = ({ item }: { item: AuditItem }) => {
         let iconName = 'check-box-outline-blank';
-        let color = t.colors.textSecondary;
-        let bgColor = t.colors.surface;
+        let color = t.colors.textMuted;
 
         if (item.status === 'found') {
             iconName = 'check-box';
-            color = t.colors.success;
-            bgColor = t.colors.successSurface;
+            color = t.colors.onSuccessSurface;
         } else if (item.status === 'intruder') {
             iconName = 'warning';
-            color = t.colors.warning;
-            bgColor = t.colors.warningSurface;
-        } else if (item.status === 'missing') {
-            iconName = 'check-box-outline-blank';
-            color = t.colors.textMuted;
+            color = t.colors.onWarningSurface;
         }
 
         return (
-            <View style={[styles.itemCard, { backgroundColor: bgColor, borderColor: item.status === 'intruder' ? t.colors.warning : 'transparent' }]}>
+            <View style={[styles.itemCard, item.status === 'found' && styles.itemFound, item.status === 'intruder' && styles.itemIntruder]}>
                 <View style={styles.itemInfo}>
                     <Text style={[styles.itemSku, { color: item.status === 'missing' ? t.colors.textSecondary : t.colors.textPrimary }]}>
                         {item.sku}
@@ -212,6 +209,7 @@ export default function AuditScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="close" size={24} color={t.colors.textPrimary} />
@@ -227,20 +225,22 @@ export default function AuditScreen() {
                         Scansiona una posizione per vedere la lista dei prodotti attesi e verificare le discrepanze.
                     </Text>
                     <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
+                        <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onButton} />
                         <Text style={styles.scanButtonText}>Scansiona Posizione</Text>
                     </Pressable>
 
                     {/* Quick Select */}
-                    <Text style={styles.divider}>POSIZIONI RECENTI</Text>
+                    <Text style={styles.divider}>Posizioni recenti</Text>
                     <View style={styles.locationsGrid}>
                         {locations.slice(0, 6).map(loc => (
                             <Pressable
                                 key={loc.id}
-                                style={[styles.locationChip, { borderColor: loc.color }]}
+                                style={styles.locationChip}
                                 onPress={() => startAudit(loc)}
                             >
-                                <Text style={[styles.locationChipText, { color: loc.color }]}>{loc.label}</Text>
+                                <View style={[styles.locationDot, { backgroundColor: loc.color }]} />
+                                <Text style={styles.locationChipText}>{loc.label}</Text>
                             </Pressable>
                         ))}
                     </View>
@@ -280,7 +280,8 @@ export default function AuditScreen() {
 
                     <View style={styles.footer}>
                         <Pressable style={styles.scanFab} onPress={() => setShowScanner(true)}>
-                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: 32 }} />
+                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onButton} />
                         </Pressable>
                     </View>
                 </View>
@@ -340,25 +341,23 @@ const useStyles = makeStyles((t) => ({
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.warning,
+        backgroundColor: t.colors.button,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: t.radius.full,
-        ...t.shadows.card,
+        borderRadius: t.radius.button,
+        overflow: 'hidden',
+        ...t.shadows.button,
         marginBottom: 32,
     },
     scanButtonText: {
-        color: t.colors.onData,
+        color: t.colors.onButton,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
     },
     divider: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: t.colors.textSecondary,
+        ...t.typography.sectionHeader,
         marginBottom: 16,
-        letterSpacing: 1,
     },
     locationsGrid: {
         flexDirection: 'row',
@@ -366,16 +365,27 @@ const useStyles = makeStyles((t) => ({
         justifyContent: 'center',
         gap: 8,
     },
+    // Pillole delle posizioni come nella tela: fondo e testo della pillola, pallino del colore della posizione
     locationChip: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        height: 36,
+        paddingHorizontal: 14,
         borderRadius: t.radius.chip,
         borderWidth: 1,
+        borderColor: t.colors.chipBorder,
         backgroundColor: t.colors.chip,
     },
+    locationDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
     locationChipText: {
-        fontWeight: '600',
+        fontWeight: '500',
         fontSize: 14,
+        color: t.colors.chipText,
     },
     auditHeader: {
         flexDirection: 'row',
@@ -414,7 +424,8 @@ const useStyles = makeStyles((t) => ({
         flexDirection: 'row',
         justifyContent: 'space-around',
         padding: 12,
-        backgroundColor: t.colors.backgroundSecondary,
+        borderBottomWidth: 1,
+        borderBottomColor: t.colors.border,
     },
     statDetail: {
         fontSize: 14,
@@ -425,13 +436,18 @@ const useStyles = makeStyles((t) => ({
         gap: 12,
     },
     itemCard: {
+        ...cardSurface(t),
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.surface,
         padding: 16,
-        borderRadius: t.radius.card,
-        borderWidth: 1,
+    },
+    itemFound: {
+        backgroundColor: t.colors.successSurface,
         borderColor: 'transparent',
+    },
+    itemIntruder: {
+        backgroundColor: t.colors.warningSurface,
+        borderColor: t.colors.warningSurfaceBorder,
     },
     itemInfo: {
         flex: 1,
@@ -447,7 +463,7 @@ const useStyles = makeStyles((t) => ({
     intruderLabel: {
         fontSize: 10,
         fontWeight: '700',
-        color: t.colors.warning,
+        color: t.colors.onWarningSurface,
         marginTop: 4,
     },
     footer: {
@@ -459,9 +475,10 @@ const useStyles = makeStyles((t) => ({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: t.colors.warning,
+        backgroundColor: t.colors.button,
         justifyContent: 'center',
         alignItems: 'center',
-        ...t.shadows.cardElevated,
+        overflow: 'hidden',
+        ...t.shadows.button,
     },
 }));

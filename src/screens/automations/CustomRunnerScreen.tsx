@@ -22,6 +22,10 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { formatPrice } from '../../../utils/price';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 
 export default function CustomRunnerScreen() {
     const styles = useStyles();
@@ -57,6 +61,7 @@ export default function CustomRunnerScreen() {
     if (!automation) {
         return (
             <SafeAreaView edges={['top']} style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Backdrop />
                 <AppIcon name="error-outline" size={64} color={t.colors.textSecondary} />
                 <Text style={{ color: t.colors.textSecondary, marginTop: 16, fontSize: 16 }}>Automazione non trovata</Text>
                 <Pressable onPress={() => router.back()} style={{ marginTop: 24, padding: 12 }}>
@@ -287,7 +292,7 @@ export default function CustomRunnerScreen() {
         const price = priceInput ? parseFloat(priceInput) : undefined;
         sellProduct(pendingSellProductId, price);
         soundService.playSuccess();
-        showFeedback(`💰 Venduto! €${price || 0}`);
+        showFeedback(`💰 Venduto! ${formatPrice(price || 0)}`);
         setCompletedCount(c => c + 1);
         setShowPriceModal(false);
         setPendingSellProductId(null);
@@ -309,6 +314,7 @@ export default function CustomRunnerScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             {/* Header */}
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()}>
@@ -343,7 +349,8 @@ export default function CustomRunnerScreen() {
                     <AppIcon name="check-circle" size={80} color={t.colors.success} />
                     <Text style={styles.completedTitle}>Automazione Completata!</Text>
                     <Text style={styles.completedSub}>{completedCount} azioni eseguite</Text>
-                    <Pressable style={[styles.doneButton, { backgroundColor: automation.color }]} onPress={() => router.back()}>
+                    <Pressable style={styles.doneButton} onPress={() => router.back()}>
+                        <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                         <Text style={styles.doneButtonText}>Chiudi</Text>
                     </Pressable>
                 </View>
@@ -362,10 +369,11 @@ export default function CustomRunnerScreen() {
                     {/* Action button for scan steps */}
                     {(currentStep.type === 'scan_product' || currentStep.type === 'scan_location') && (
                         <Pressable
-                            style={[styles.scanButton, { backgroundColor: meta!.color }]}
+                            style={styles.scanButton}
                             onPress={() => setShowScanner(true)}
                         >
-                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onButton} />
                             <Text style={styles.scanButtonText}>
                                 {currentStep.type === 'scan_product' ? 'Scansiona Prodotto' : 'Scansiona Posizione'}
                             </Text>
@@ -374,7 +382,7 @@ export default function CustomRunnerScreen() {
 
                     {/* Mini flow (remaining steps) */}
                     <View style={styles.miniFlow}>
-                        <Text style={styles.miniFlowLabel}>PROSSIMI STEP</Text>
+                        <Text style={styles.miniFlowLabel}>Prossimi step</Text>
                         {steps.slice(currentStepIndex + 1, currentStepIndex + 4).map((s, i) => {
                             const m = STEP_TYPE_META[s.type];
                             return (
@@ -428,7 +436,8 @@ export default function CustomRunnerScreen() {
                             placeholderTextColor={t.colors.placeholder}
                             autoFocus
                         />
-                        <Pressable style={[styles.confirmButton, { backgroundColor: automation.color }]} onPress={confirmSale}>
+                        <Pressable style={styles.confirmButton} onPress={confirmSale}>
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                             <Text style={styles.confirmButtonText}>CONFERMA</Text>
                         </Pressable>
                     </Pressable>
@@ -456,21 +465,21 @@ const useStyles = makeStyles((t) => ({
     },
     stepContainer: { flex: 1, padding: t.spacing.screenPadding, alignItems: 'center', justifyContent: 'center' },
     stepCard: {
-        backgroundColor: t.colors.surface, borderRadius: t.radius.large,
+        ...cardSurface(t),
         padding: 32, alignItems: 'center', width: '100%', marginBottom: 24,
-        borderWidth: 1, borderColor: t.colors.border,
     },
     stepIcon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
     stepLabel: { fontSize: 20, fontWeight: 'bold', color: t.colors.textPrimary, textAlign: 'center', marginBottom: 8 },
     stepMeta: { fontSize: 13, color: t.colors.textSecondary },
     scanButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 18, paddingHorizontal: 32, borderRadius: t.radius.full,
+        paddingVertical: 18, paddingHorizontal: 32, borderRadius: t.radius.button,
+        backgroundColor: t.colors.button, overflow: 'hidden', ...t.shadows.button,
         gap: 12, width: '100%', marginBottom: 24,
     },
-    scanButtonText: { color: t.colors.onData, fontSize: 18, fontWeight: 'bold' },
+    scanButtonText: { color: t.colors.onButton, fontSize: 18, fontWeight: 'bold' },
     miniFlow: { width: '100%', marginTop: 8 },
-    miniFlowLabel: { fontSize: 11, fontWeight: '700', color: t.colors.textSecondary, letterSpacing: 1, marginBottom: 8 },
+    miniFlowLabel: { ...t.typography.sectionHeader, marginBottom: 8 },
     miniFlowItem: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
     miniFlowDot: { width: 8, height: 8, borderRadius: 4 },
     miniFlowText: { fontSize: 14, color: t.colors.textSecondary },
@@ -478,8 +487,11 @@ const useStyles = makeStyles((t) => ({
     completedContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
     completedTitle: { fontSize: 24, fontWeight: 'bold', color: t.colors.textPrimary, marginTop: 20 },
     completedSub: { fontSize: 16, color: t.colors.textSecondary, marginTop: 8 },
-    doneButton: { marginTop: 32, paddingVertical: 16, paddingHorizontal: 40, borderRadius: t.radius.full },
-    doneButtonText: { color: t.colors.onData, fontSize: 18, fontWeight: 'bold' },
+    doneButton: {
+        marginTop: 32, paddingVertical: 16, paddingHorizontal: 40, borderRadius: t.radius.button,
+        backgroundColor: t.colors.button, overflow: 'hidden', ...t.shadows.button,
+    },
+    doneButtonText: { color: t.colors.onButton, fontSize: 18, fontWeight: 'bold' },
     feedbackOverlay: {
         position: 'absolute', top: '50%', left: '15%', right: '15%',
         backgroundColor: withAlpha(t.colors.shadow, 0.85), padding: 20, borderRadius: 16,
@@ -492,15 +504,20 @@ const useStyles = makeStyles((t) => ({
     },
     toastText: { color: t.colors.onData, fontSize: 16, fontWeight: '600' },
     modalOverlay: { flex: 1, backgroundColor: t.colors.scrimStrong, justifyContent: 'center', padding: 20 },
+    // Finestra sopra il velo: fondo opaco
     modalContent: {
-        backgroundColor: t.colors.surface, borderRadius: t.radius.large, padding: 24, alignItems: 'center',
+        backgroundColor: t.colors.backgroundSecondary, borderRadius: t.radius.card, padding: 24, alignItems: 'center',
+        borderWidth: 1, borderColor: t.colors.border,
     },
     modalTitle: { fontSize: 20, fontWeight: 'bold', color: t.colors.textPrimary, marginBottom: 20 },
     priceInput: {
-        width: '100%', backgroundColor: t.colors.background, borderRadius: t.radius.input,
+        width: '100%', backgroundColor: t.colors.input, borderRadius: t.radius.input,
         padding: 16, fontSize: 24, color: t.colors.inputText, textAlign: 'center',
         marginBottom: 20, borderWidth: 1, borderColor: t.colors.inputBorder,
     },
-    confirmButton: { width: '100%', padding: 16, borderRadius: t.radius.button, alignItems: 'center' },
-    confirmButtonText: { color: t.colors.onData, fontSize: 16, fontWeight: 'bold' },
+    confirmButton: {
+        width: '100%', padding: 16, borderRadius: t.radius.button, alignItems: 'center',
+        backgroundColor: t.colors.button, overflow: 'hidden', ...t.shadows.button,
+    },
+    confirmButtonText: { color: t.colors.onButton, fontSize: 16, fontWeight: 'bold' },
 }));

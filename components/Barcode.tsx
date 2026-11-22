@@ -48,11 +48,13 @@ export default function Barcode({
     width = 300,
     height = 100,
     color,
-    backgroundColor = 'transparent',
+    backgroundColor,
     style
 }: BarcodeProps) {
     const t = useTheme();
+    // Inchiostro e carta dei codici: nero su bianco in tutti gli stili
     const ink = color ?? t.colors.qrInk;
+    const paper = backgroundColor ?? t.colors.qrPaper;
 
     const bars = useMemo(() => {
         // Default to Code 128B implementation (good for alphanumeric)
@@ -118,7 +120,7 @@ export default function Barcode({
     }, [value, width, height, ink]);
 
     return (
-        <View style={[{ width, height, backgroundColor }, style]}>
+        <View style={[{ width, height, backgroundColor: paper }, style]}>
             <Svg width={width} height={height}>
                 {bars}
             </Svg>

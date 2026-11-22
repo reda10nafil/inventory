@@ -26,6 +26,8 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 
 // ---------------------------------------------------------------------------
 // WatermelonDB reactive — JSI sync read, fallback InventoryContext
@@ -244,7 +246,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, sku, selectable
       {/* Checkbox selezione sottoinsieme */}
       {selectable && (
         <Pressable onPress={() => onToggle?.(sku)} style={[styles.checkbox, selected ? styles.checkboxSelected : styles.checkboxIdle]} hitSlop={8}>
-          {selected ? <AppIcon name="check-circle" size={22} color={t.colors.onAccent} /> : <AppIcon name="radio-button-unchecked" size={22} color="#FFF" />}
+          {selected ? <AppIcon name="check-circle" size={22} color={t.colors.onAccent} /> : <AppIcon name="radio-button-unchecked" size={22} color={t.colors.onData} />}
         </Pressable>
       )}
       <View style={[styles.badge, { backgroundColor: locationColor }]}>
@@ -269,6 +271,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, sku, selectable
             <Text style={[styles.btnOutlineText, isSold && styles.btnTextDisabled]}>Sposta</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.btn, styles.btnPrimary, isSold && styles.btnDisabled]} onPress={handleVendi} activeOpacity={0.8} disabled={isSold}>
+            {!isSold && <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />}
             <Text style={[styles.btnPrimaryText, isSold && styles.btnTextDisabled]}>Vendi</Text>
           </TouchableOpacity>
         </View>
@@ -369,6 +372,7 @@ const HydratedProductCard: React.FC<HydratedProductCardProps> = memo(({ payload,
           <View style={styles.bulkBar}>
             <Text style={styles.bulkText}>1 prodotto • {automationId}</Text>
             <TouchableOpacity style={[styles.bulkBtn, selected.size===0 && styles.btnDisabled]} onPress={handleApprove} disabled={selected.size===0}>
+              {selected.size > 0 && <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />}
               <AppIcon name="task-alt" size={18} color={selected.size? t.colors.onButton : t.colors.textMuted} />
               <Text style={[styles.bulkBtnText, selected.size===0 && styles.btnTextDisabled]}>Approva Spostamento</Text>
             </TouchableOpacity>
@@ -405,6 +409,7 @@ const HydratedProductCard: React.FC<HydratedProductCardProps> = memo(({ payload,
             <Text style={styles.bulkInfoText} numberOfLines={1}>Automazione: {automationId}</Text>
           </View>
           <TouchableOpacity style={[styles.bulkBtn, selected.size===0 && styles.btnDisabled]} onPress={handleApprove} disabled={selected.size===0} activeOpacity={0.85}>
+            {selected.size > 0 && <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />}
             <AppIcon name="task-alt" size={18} color={selected.size ? t.colors.onButton : t.colors.textMuted} />
             <Text style={[styles.bulkBtnText, selected.size===0 && styles.btnTextDisabled]}>Approva Spostamento ({selected.size}/{skus.length})</Text>
           </TouchableOpacity>
@@ -428,7 +433,7 @@ const useStyles = makeStyles((t) => ({
   scroll: { flexGrow: 0 },
   scrollContent: { paddingVertical: 6, paddingHorizontal: 4, gap: 12 },
   scrollItem: { width: 260 },
-  card: { backgroundColor: t.colors.surface, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: t.colors.border, shadowColor:t.colors.shadow, shadowOffset:{width:0,height:4}, shadowOpacity:0.4, shadowRadius:12, elevation:8, position:'relative' },
+  card: { ...cardSurface(t), overflow: 'hidden', position:'relative' },
   cardSold: { opacity: 0.92, borderColor: t.colors.sold },
   cardSelected: { borderColor: t.colors.accent, borderWidth: 1.5 },
   goldHairline: { position:'absolute', bottom:0, left:0, right:0, height:2, backgroundColor:t.colors.accent, opacity:0.85 },
@@ -437,35 +442,35 @@ const useStyles = makeStyles((t) => ({
   imagePlaceholderText: { color:t.colors.textMuted, fontSize:13, fontWeight:'500' },
   skeletonText: { color:t.colors.textSecondary, fontSize:12, marginTop:6 },
   checkbox: { position:'absolute', top:10, right:10, width:28, height:28, borderRadius:14, alignItems:'center', justifyContent:'center', borderWidth:1.5, zIndex:5 },
-  checkboxIdle: { backgroundColor:withAlpha(t.colors.shadow, 0.45), borderColor:'rgba(255,255,255,0.9)' },
+  checkboxIdle: { backgroundColor:withAlpha(t.colors.shadow, 0.45), borderColor:withAlpha(t.colors.onData, 0.9) },
   checkboxSelected: { backgroundColor:t.colors.checkOn, borderColor:t.colors.checkOn },
-  badge: { position:'absolute', top:10, left:10, paddingHorizontal:8, paddingVertical:4, borderRadius:9999 },
+  badge: { position:'absolute', top:10, left:10, paddingHorizontal:8, paddingVertical:4, borderRadius:t.radius.badge },
   badgeText: { color:t.colors.onData, fontSize:10, fontWeight:'700', letterSpacing:0.6 },
-  soldOverlay: { position:'absolute', top:10, right:38, backgroundColor:t.colors.sold, paddingHorizontal:8, paddingVertical:4, borderRadius:9999 },
-  soldText: { color:'#FFFFFF', fontSize:10, fontWeight:'800', letterSpacing:0.8 },
+  soldOverlay: { position:'absolute', top:10, right:38, backgroundColor:t.colors.soldBadge, paddingHorizontal:8, paddingVertical:4, borderRadius:t.radius.badge },
+  soldText: { color:t.colors.soldBadgeText, fontSize:10, fontWeight:'700', letterSpacing:0.8 },
   cardBody: { padding:12, gap:6 },
   skuText: { color:t.colors.textPrimary, fontSize:15, fontWeight:'700', letterSpacing:0.3 },
   furTypeText: { color:t.colors.accentInk, fontSize:13, fontWeight:'600', textTransform:'capitalize' },
   metaRow: { flexDirection:'row', gap:10, marginTop:8 },
-  metaChip: { flex:1, backgroundColor:t.colors.backgroundSecondary, borderRadius:10, paddingHorizontal:10, paddingVertical:8, borderWidth:1, borderColor:t.colors.borderLight },
+  metaChip: { ...tileSurface(t), flex:1, paddingHorizontal:10, paddingVertical:8 },
   metaLabel: { color:t.colors.textMuted, fontSize:10, fontWeight:'600', textTransform:'uppercase', letterSpacing:0.5, marginBottom:2 },
   metaValue: { fontSize:13, fontWeight:'700', textTransform:'capitalize' },
   metaMuted: { color:t.colors.textSecondary, fontSize:12, marginTop:4 },
   actionsRow: { flexDirection:'row', gap:8, marginTop:10 },
   btn: { flex:1, height:38, borderRadius:t.radius.button, justifyContent:'center', alignItems:'center', borderWidth:1 },
-  btnPrimary: { backgroundColor:t.colors.button, borderColor:t.colors.button },
-  btnOutline: { backgroundColor:'transparent', borderColor:t.colors.accent },
+  btnPrimary: { backgroundColor:t.colors.button, borderColor:t.colors.button, overflow:'hidden' },
+  btnOutline: { backgroundColor:t.colors.buttonSecondary, borderColor:t.colors.buttonSecondaryBorder },
   btnDisabled: { opacity:0.45, borderColor:t.colors.border, backgroundColor:t.colors.surfaceElevated },
-  btnPrimaryText: { color:'#0A0A0A', fontSize:13, fontWeight:'700', letterSpacing:0.3 },
+  btnPrimaryText: { color:t.colors.onButton, fontSize:13, fontWeight:'700', letterSpacing:0.3 },
   btnOutlineText: { color:t.colors.onButtonSecondary, fontSize:13, fontWeight:'700', letterSpacing:0.3 },
   btnTextDisabled: { color:t.colors.textMuted },
-  bulkBar: { backgroundColor:t.colors.surface, borderRadius:12, padding:10, gap:8, borderWidth:1, borderColor:t.colors.borderLight },
+  bulkBar: { ...cardSurface(t), padding:10, gap:8 },
   bulkInfo: { flexDirection:'row', gap:6, alignItems:'center' },
   bulkInfoText: { color:t.colors.textSecondary, fontSize:12, fontWeight:'600', flex:1 },
-  bulkBtn: { flexDirection:'row', gap:8, backgroundColor:t.colors.button, borderRadius:10, paddingVertical:10, alignItems:'center', justifyContent:'center' },
-  bulkBtnText: { color:t.colors.onButton, fontWeight:'800', fontSize:13 },
+  bulkBtn: { flexDirection:'row', gap:8, backgroundColor:t.colors.button, borderRadius:t.radius.button, paddingVertical:10, alignItems:'center', justifyContent:'center', overflow:'hidden', ...t.shadows.button },
+  bulkBtnText: { color:t.colors.onButton, fontWeight:'700', fontSize:13 },
   bulkText: { color:t.colors.textSecondary, fontSize:12 },
   bulkHint: { color:t.colors.textMuted, fontSize:10, textAlign:'center' },
-  textFallback: { backgroundColor:t.colors.surface, borderRadius:12, padding:12, borderWidth:1, borderColor:t.colors.border },
+  textFallback: { ...cardSurface(t), padding:12 },
   textFallbackContent: { color:t.colors.textPrimary, fontSize:14, lineHeight:20 },
 }));

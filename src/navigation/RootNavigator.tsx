@@ -64,7 +64,16 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   const t = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        // Intestazioni native (lavoro L6): fondo dello stile, frecce d'accento, titolo come i testi; carattere e
+        // filetto sotto (`border`) vengono dal tema di navigazione di App.tsx
+        headerStyle: { backgroundColor: t.colors.background },
+        headerTintColor: t.colors.accentInk,
+        headerTitleStyle: { color: t.colors.textPrimary },
+      }}
+    >
       <Stack.Screen name="(tabs)" component={TabsNavigator} options={{ headerShown: false }} />
       <Stack.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
       <Stack.Screen
@@ -73,20 +82,18 @@ export default function RootNavigator() {
         options={{
           presentation: 'modal',
           headerShown: true,
-          headerStyle: { backgroundColor: t.colors.backgroundSecondary } as any,
-          headerTintColor: t.colors.accent,
           headerTitle: 'Azione Rapida',
         }}
       />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProductEdit" component={ProductEditScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="SettingsLocations" component={LocationsScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Gestisci Posizioni' }} />
-      <Stack.Screen name="SettingsFields" component={FieldsScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Campi Personalizzati' }} />
-      <Stack.Screen name="SettingsFolders" component={FoldersScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Gestisci Cartelle' }} />
-      <Stack.Screen name="SettingsLayoutBuilder" component={LayoutBuilderScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Configura Layout Aggiungi' }} />
-      <Stack.Screen name="SettingsGs1" component={Gs1ConfigScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'GS1 Digital Link' }} />
-      <Stack.Screen name="SettingsHardware" component={HardwareScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Scanner & Hardware' }} />
-      <Stack.Screen name="SettingsAppearance" component={AppearanceScreen} options={{ headerShown: true, headerStyle: { backgroundColor: t.colors.background } as any, headerTintColor: t.colors.accent, headerTitle: 'Aspetto' }} />
+      <Stack.Screen name="SettingsLocations" component={LocationsScreen} options={{ headerShown: true, headerTitle: 'Gestisci Posizioni' }} />
+      <Stack.Screen name="SettingsFields" component={FieldsScreen} options={{ headerShown: true, headerTitle: 'Campi Personalizzati' }} />
+      <Stack.Screen name="SettingsFolders" component={FoldersScreen} options={{ headerShown: true, headerTitle: 'Gestisci Cartelle' }} />
+      <Stack.Screen name="SettingsLayoutBuilder" component={LayoutBuilderScreen} options={{ headerShown: true, headerTitle: 'Configura Layout Aggiungi' }} />
+      <Stack.Screen name="SettingsGs1" component={Gs1ConfigScreen} options={{ headerShown: true, headerTitle: 'GS1 Digital Link' }} />
+      <Stack.Screen name="SettingsHardware" component={HardwareScreen} options={{ headerShown: true, headerTitle: 'Scanner & Hardware' }} />
+      <Stack.Screen name="SettingsAppearance" component={AppearanceScreen} options={{ headerShown: true, headerTitle: 'Aspetto' }} />
       <Stack.Screen name="SettingsTrash" component={TrashScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsShare" component={ShareScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsSector" component={SectorTemplatesScreen} options={{ headerShown: false }} />

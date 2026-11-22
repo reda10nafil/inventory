@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Pressable, Button, Dimensions } from 'react-native';
+import { StyleSheet, View, Pressable, Dimensions } from 'react-native';
 import { CameraView, Camera } from '../src/lib/camera';
 import { AppIcon } from './ui/AppIcon';
+import { GradientFill } from './ui/GradientFill';
 import { Text } from './ui/Text';
-import { makeStyles } from '../contexts/ThemeContext';
+import { makeStyles, useTheme } from '../contexts/ThemeContext';
 import { withAlpha } from '../utils/color';
 
 interface BarcodeScannerProps {
@@ -14,6 +15,7 @@ interface BarcodeScannerProps {
 
 export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: BarcodeScannerProps) {
     const styles = useStyles();
+    const t = useTheme();
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [scanned, setScanned] = useState(false);
 
@@ -46,9 +48,12 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
         return (
             <View style={styles.container}>
                 <Text style={styles.text}>Nessun accesso alla fotocamera</Text>
-                <Button title={'Consenti Fotocamera'} onPress={() => Camera.requestCameraPermissionsAsync()} />
+                <Pressable style={styles.permissionButton} onPress={() => Camera.requestCameraPermissionsAsync()}>
+                    <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                    <Text style={styles.permissionButtonText}>Consenti Fotocamera</Text>
+                </Pressable>
                 <Pressable style={styles.closeButton} onPress={onClose}>
-                    <AppIcon name="close" size={32} color="#FFF" />
+                    <AppIcon name="close" size={32} color={t.colors.onData} />
                 </Pressable>
             </View>
         );
@@ -84,7 +89,7 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
             <View style={styles.controls}>
                 <Text style={styles.instructions}>Inquadra il codice</Text>
                 <Pressable style={styles.closeRoundButton} onPress={onClose}>
-                    <AppIcon name="close" size={32} color="#FFF" />
+                    <AppIcon name="close" size={32} color={t.colors.onData} />
                 </Pressable>
             </View>
         </View>
@@ -100,8 +105,9 @@ const useStyles = makeStyles((t) => ({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    // Sopra la fotocamera e i veli: bianco fisso in tutti gli stili
     text: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 16,
         marginBottom: 20,
     },
@@ -132,7 +138,7 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
     },
     instructions: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 16,
         marginBottom: 20,
         backgroundColor: t.colors.scrimStrong,
@@ -141,6 +147,22 @@ const useStyles = makeStyles((t) => ({
         borderRadius: 8,
         overflow: 'hidden',
     },
+    // Sul fondo nero della fotocamera: anello bianco fisso, come il pulsante di chiusura (Minimal ha il pulsante nero)
+    permissionButton: {
+        backgroundColor: t.colors.button,
+        borderWidth: 1,
+        borderColor: t.colors.onData,
+        borderRadius: t.radius.button,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        overflow: 'hidden',
+        ...t.shadows.button,
+    },
+    permissionButtonText: {
+        color: t.colors.onButton,
+        fontSize: 16,
+        fontWeight: '600',
+    },
     closeButton: {
         marginTop: 20,
     },
@@ -148,14 +170,16 @@ const useStyles = makeStyles((t) => ({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: t.colors.error,
+        backgroundColor: t.colors.scrimStrong,
+        borderWidth: 2,
+        borderColor: t.colors.onData,
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
     },
     // Corner markers
-    cornerTL: { position: 'absolute', top: 0, left: 0, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: t.colors.accent },
-    cornerTR: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: t.colors.accent },
-    cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: t.colors.accent },
-    cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: t.colors.accent },
+    cornerTL: { position: 'absolute', top: 0, left: 0, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: t.colors.onData },
+    cornerTR: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: t.colors.onData },
+    cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: t.colors.onData },
+    cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: t.colors.onData },
 }));

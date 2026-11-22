@@ -2,6 +2,18 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L6c-f: Aggiungi, Modifica, Impostazioni, Cronologia, Automazioni, scanner, chat
+
+- Branch / SHA: `ui-ux/stili`, quattro commit (L6c, L6d, L6e, L6f) dopo L6b; ogni corsia fatta da un subagente su file separati, con le regole comuni del brief L6.
+- L6c Aggiungi (`AddScreen.tsx`, nuovo `components/ui/formStyles.ts`, test `__tests__/formChoice.test.ts`): titolo «Aggiungi prodotto», titoli di sezione da `sectionLabel`, etichette su due righe al massimo, controlli della riga allineati in basso, campi con altezza e raggi dello stile (1/3 con `inputSmall`, segnaposto corti e unità a destra), scelte a riquadri con `tileSurface`, **D01** (la scelta multipla a riquadri ora è multipla, con logica pura testata), **D09** (pillole di Posizione e Cartella che vanno a capo), finestra dal basso opaca, pulsante principale con sfumatura.
+- L6d Modifica (`EditScreen.tsx`): stessi controlli di Aggiungi tramite `formStyles`, struttura invariata (D03 fuori), barra Annulla/Salva con `Glass`.
+- L6e Impostazioni (`SettingsScreen.tsx` e 11 schermate di `settings/`, Aspetto esclusa): card e righe con `cardSurface`, campi, pulsanti, pillole, riquadri, controlli a segmenti e interruttori sui ruoli, Layout builder con sezioni da `sectionLabel` e barra di salvataggio come la Scheda, finestre opache; il riquadro del Cestino è il rosso di dati `#EF4444` (il rosso d'errore di alcuni stili è troppo chiaro sotto il bianco).
+- L6f (18 file: Cronologia, scheda Automazioni, `automations/*`, Scanner, Azione rapida, Chat e card del prodotto, lettore e disegno dei codici, pagina non trovata, Accesso, intestazioni native in `RootNavigator`): **D10** (pillole della Cronologia alte 36, non più gonfie), card e pulsanti sui ruoli, «Lo sapevi?» sulle superfici d'avviso, fotocamera su `cameraBackground` con bianchi fissi, codici su `qrPaper`/`qrInk`, intestazioni native con fondo dello stile e frecce `accentInk`.
+- Verifiche: tsc 0, eslint 0, jest 68 verdi; **31 schermate × 5 stili** senza errori; carattere dello stile su ogni testo (in Aspetto solo i campioni degli altri stili, voluti); in console un solo messaggio del database web («Deleting database failed… blocked») in uno dei 5 giri lanciati insieme, non ripetuto rifacendo lo stesso stile due volte: corsa tra browser, non dell'app. `cambio-stile.cjs` attuale → minimal: 6 prove su 6. Schermate guardate stile per stile.
+- Non verificato a schermo (servono scansioni vere o dati che il campionario non ha): righe Audit trovato/intruso, finestre del prezzo di Vendita flash e del Runner, card della chat venduta, Modelli di settore (nessuna voce li apre, D13).
+- Ruoli che mancano (per dopo): testo sopra `error` e sopra i riempimenti di stato, pulsanti disattivati, raggio delle finestre dal basso, controlli a segmenti e interruttori.
+- Note per dopo: `CustomRunnerScreen` va in errore se aperto da indirizzo o ricaricato (hook dopo il ritorno anticipato, difetto di prima); interruttore acceso sul web con il pallino predefinito di react-native-web; frecce interne `textPrimary`, native `accentInk`.
+
 ## 22 novembre 2026 — UI/UX L6a e L6b: Inventario e Scheda capo sulla tela
 
 - Branch / SHA: `ui-ux/stili`, due commit (L6a, L6b) dopo la base comune di L6 (`Backdrop`, `GradientFill`, `Glass`, `surfaces`, `formatPrice`, `sectionLabel`, barra in basso nuova) e la correzione degli id dei bagliori.

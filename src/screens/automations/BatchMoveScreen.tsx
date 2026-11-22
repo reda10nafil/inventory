@@ -12,6 +12,9 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 
 type Step = 'scan_location' | 'scan_products';
 
@@ -172,6 +175,7 @@ export default function BatchMoveScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="close" size={24} color={t.colors.textPrimary} />
@@ -190,20 +194,22 @@ export default function BatchMoveScreen() {
                         </Text>
 
                         <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onButton} />
                             <Text style={styles.scanButtonText}>Scansiona Posizione</Text>
                         </Pressable>
 
                         {/* Manual Selection Fallback */}
-                        <Text style={styles.divider}>OPPURE SELEZIONA</Text>
+                        <Text style={styles.divider}>Oppure seleziona</Text>
                         <View style={styles.locationsGrid}>
                             {locations.map(loc => (
                                 <Pressable
                                     key={loc.id}
-                                    style={[styles.locationChip, { borderColor: loc.color }]}
+                                    style={styles.locationChip}
                                     onPress={() => checkCapacityAndSetLocation(loc)}
                                 >
-                                    <Text style={[styles.locationChipText, { color: loc.color }]}>{loc.label}</Text>
+                                    <View style={[styles.locationDot, { backgroundColor: loc.color }]} />
+                                    <Text style={styles.locationChipText}>{loc.label}</Text>
                                 </Pressable>
                             ))}
                         </View>
@@ -234,8 +240,9 @@ export default function BatchMoveScreen() {
                             </View>
                         )}
 
-                        <Pressable style={[styles.scanButton, { backgroundColor: t.colors.info }]} onPress={() => setShowScanner(true)}>
-                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
+                        <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onButton} />
                             <Text style={styles.scanButtonText}>Scansiona Prodotto</Text>
                         </Pressable>
                     </View>
@@ -313,23 +320,19 @@ const useStyles = makeStyles((t) => ({
         backgroundColor: t.colors.button,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: t.radius.full, // Fixed
-        elevation: 4,
-        shadowColor: t.colors.accent,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        borderRadius: t.radius.button,
+        overflow: 'hidden',
+        ...t.shadows.button,
         marginBottom: 24,
     },
     scanButtonText: {
-        color: t.colors.onData,
+        color: t.colors.onButton,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
     },
     divider: {
-        ...t.typography.caption,
-        color: t.colors.textSecondary,
+        ...t.typography.sectionHeader,
         marginBottom: 16,
     },
     locationsGrid: {
@@ -338,25 +341,33 @@ const useStyles = makeStyles((t) => ({
         justifyContent: 'center',
         gap: 8,
     },
+    // Pillole delle posizioni come nella tela: fondo e testo della pillola, pallino del colore della posizione
     locationChip: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: t.radius.chip, // Fixed
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        height: 36,
+        paddingHorizontal: 14,
+        borderRadius: t.radius.chip,
         borderWidth: 1,
+        borderColor: t.colors.chipBorder,
         backgroundColor: t.colors.chip,
     },
+    locationDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
     locationChipText: {
-        fontWeight: '600',
+        fontWeight: '500',
         fontSize: 14,
+        color: t.colors.chipText,
     },
     targetCard: {
+        ...cardSurface(t),
         width: '100%',
-        backgroundColor: t.colors.surface,
         padding: 16,
-        borderRadius: t.radius.large, // Fixed
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: t.colors.border,
         marginBottom: 24,
     },
     targetLabel: {
@@ -406,7 +417,7 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         backgroundColor: t.colors.successSurface,
         padding: 12,
-        borderRadius: t.radius.medium, // Fixed
+        borderRadius: t.radius.tile,
         marginBottom: 24,
         width: '100%',
     },

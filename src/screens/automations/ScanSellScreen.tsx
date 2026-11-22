@@ -9,6 +9,9 @@ import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { formatPrice } from '../../../utils/price';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
 
 export default function ScanSellScreen() {
     const styles = useStyles();
@@ -74,7 +77,7 @@ export default function ScanSellScreen() {
 
         setScannedCount(c => c + 1);
         setTotalRevenue(r => r + (finalPrice || 0));
-        setLastSoldProduct(`${pendingProduct.sku} - €${finalPrice || 0}`);
+        setLastSoldProduct(`${pendingProduct.sku} - ${formatPrice(finalPrice || 0)}`);
 
         soundService.playSuccess();
 
@@ -88,6 +91,7 @@ export default function ScanSellScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="close" size={24} color={t.colors.textPrimary} />
@@ -104,7 +108,7 @@ export default function ScanSellScreen() {
                     </View>
                     <View style={[styles.statBox, { borderColor: t.colors.accent }]}>
                         <Text style={[styles.statValue, { color: t.colors.statNumber }]}>
-                            €{totalRevenue.toLocaleString()}
+                            {formatPrice(totalRevenue)}
                         </Text>
                         <Text style={styles.statLabel}>Totale</Text>
                     </View>
@@ -126,7 +130,8 @@ export default function ScanSellScreen() {
                     </Text>
 
                     <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
+                        <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onButton} />
                         <Text style={styles.scanButtonText}>Scansiona Prodotto</Text>
                     </Pressable>
                 </View>
@@ -163,6 +168,7 @@ export default function ScanSellScreen() {
                         />
 
                         <Pressable style={styles.confirmButton} onPress={confirmSale}>
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                             <Text style={styles.confirmButtonText}>CONFERMA VENDITA</Text>
                         </Pressable>
                     </Pressable>
@@ -213,7 +219,7 @@ const useStyles = makeStyles((t) => ({
     },
     statBox: {
         alignItems: 'center',
-        backgroundColor: t.colors.surface,
+        backgroundColor: t.colors.tile,
         padding: 16,
         borderRadius: t.radius.tile,
         minWidth: 140,
@@ -236,7 +242,7 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         backgroundColor: t.colors.successSurface,
         padding: 12,
-        borderRadius: t.radius.medium,
+        borderRadius: t.radius.tile,
         marginBottom: 24,
         width: '100%',
     },
@@ -259,18 +265,15 @@ const useStyles = makeStyles((t) => ({
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.success,
+        backgroundColor: t.colors.button,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: t.radius.full,
-        elevation: 4,
-        shadowColor: t.colors.success,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        borderRadius: t.radius.button,
+        overflow: 'hidden',
+        ...t.shadows.button,
     },
     scanButtonText: {
-        color: t.colors.onData,
+        color: t.colors.onButton,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
@@ -281,9 +284,12 @@ const useStyles = makeStyles((t) => ({
         justifyContent: 'center',
         padding: 20,
     },
+    // Finestra sopra il velo: fondo opaco
     modalContent: {
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.large,
+        backgroundColor: t.colors.backgroundSecondary,
+        borderRadius: t.radius.card,
+        borderWidth: 1,
+        borderColor: t.colors.border,
         padding: 24,
         alignItems: 'center',
     },
@@ -315,7 +321,7 @@ const useStyles = makeStyles((t) => ({
     },
     priceInput: {
         width: '100%',
-        backgroundColor: t.colors.backgroundSecondary,
+        backgroundColor: t.colors.input,
         borderRadius: t.radius.input,
         padding: 16,
         fontSize: 24,
@@ -327,13 +333,15 @@ const useStyles = makeStyles((t) => ({
     },
     confirmButton: {
         width: '100%',
-        backgroundColor: t.colors.success,
+        backgroundColor: t.colors.button,
         borderRadius: t.radius.button,
         padding: 16,
         alignItems: 'center',
+        overflow: 'hidden',
+        ...t.shadows.button,
     },
     confirmButtonText: {
-        color: t.colors.onData,
+        color: t.colors.onButton,
         fontSize: 16,
         fontWeight: 'bold',
     },

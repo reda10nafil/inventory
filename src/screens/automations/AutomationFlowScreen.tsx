@@ -15,6 +15,10 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { Glass } from '../../../components/ui/Glass';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 
 export default function AutomationFlowScreen() {
     const styles = useStyles();
@@ -29,6 +33,7 @@ export default function AutomationFlowScreen() {
     if (!automation) {
         return (
             <SafeAreaView edges={['top']} style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Backdrop />
                 <AppIcon name="error-outline" size={64} color={t.colors.textSecondary} />
                 <Text style={{ color: t.colors.textSecondary, marginTop: 16, fontSize: 16 }}>Automazione non trovata</Text>
                 <Pressable onPress={() => router.back()} style={{ marginTop: 24, padding: 12 }}>
@@ -62,6 +67,7 @@ export default function AutomationFlowScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
@@ -106,7 +112,7 @@ export default function AutomationFlowScreen() {
                 </View>
 
                 {/* ── FLOW MAP ── */}
-                <Text style={styles.sectionLabel}>MAPPA DEL FLUSSO</Text>
+                <Text style={styles.sectionLabel}>Mappa del flusso</Text>
                 <View style={styles.flowMap}>
                     {/* START node */}
                     <View style={styles.flowStartEnd}>
@@ -151,7 +157,7 @@ export default function AutomationFlowScreen() {
                 </View>
 
                 {/* ── QR CODE ── */}
-                <Text style={styles.sectionLabel}>QR CODE DELL'AUTOMAZIONE</Text>
+                <Text style={styles.sectionLabel}>QR code dell'automazione</Text>
                 <View style={styles.qrContainer}>
                     <View style={styles.qrWrapper}>
                         <QRCode value={automation.qrValue} size={180} backgroundColor={t.colors.qrPaper} color={t.colors.qrInk} />
@@ -159,7 +165,7 @@ export default function AutomationFlowScreen() {
                     <Text style={styles.qrValue}>{automation.qrValue}</Text>
                     <Text style={styles.qrHint}>Stampa o salva questo QR. Scansionalo per avviare l'automazione.</Text>
                     <Pressable onPress={handleShare} style={styles.shareButton}>
-                        <AppIcon name="share" size={20} color={t.colors.onData} />
+                        <AppIcon name="share" size={20} color={t.colors.onButtonSecondary} />
                         <Text style={styles.shareButtonText}>Condividi</Text>
                     </Pressable>
                 </View>
@@ -167,8 +173,10 @@ export default function AutomationFlowScreen() {
 
             {/* ── Floating Run Button ── */}
             <View style={[styles.floatingBar, { paddingBottom: insets.bottom + 16 }]}>
-                <Pressable style={[styles.runButton, { backgroundColor: automation.color }]} onPress={handleRun}>
-                    <AppIcon name="play-arrow" size={28} color={t.colors.onData} />
+                <Glass />
+                <Pressable style={styles.runButton} onPress={handleRun}>
+                    <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                    <AppIcon name="play-arrow" size={28} color={t.colors.onButton} />
                     <Text style={styles.runButtonText}>Avvia Automazione</Text>
                 </Pressable>
             </View>
@@ -185,9 +193,8 @@ const useStyles = makeStyles((t) => ({
     backButton: { marginRight: 12 },
     headerTitle: { fontSize: 18, fontWeight: '600', color: t.colors.textPrimary, flex: 1 },
     infoCard: {
-        backgroundColor: t.colors.surface, borderRadius: t.radius.large,
+        ...cardSurface(t),
         padding: 24, alignItems: 'center', marginBottom: 24,
-        borderWidth: 1, borderColor: t.colors.border,
     },
     infoIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
     infoName: { fontSize: 22, fontWeight: 'bold', color: t.colors.textPrimary, marginBottom: 4 },
@@ -196,15 +203,18 @@ const useStyles = makeStyles((t) => ({
     stat: { alignItems: 'center' },
     statValue: { fontSize: 18, fontWeight: 'bold', color: t.colors.textPrimary },
     statLabel: { fontSize: 11, color: t.colors.textSecondary, marginTop: 2, textTransform: 'uppercase' },
-    sectionLabel: { fontSize: 12, fontWeight: '700', color: t.colors.textSecondary, marginBottom: 12, letterSpacing: 1 },
+    sectionLabel: {
+        ...t.typography.sectionHeader, marginBottom: 12,
+        ...(t.section.line ? { borderBottomWidth: 1, borderBottomColor: t.section.line, paddingBottom: 6 } : null),
+    },
     flowMap: { alignItems: 'center', marginBottom: 32 },
     flowStartEnd: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     flowStartEndText: { fontSize: 12, fontWeight: '700', color: t.colors.textSecondary, letterSpacing: 1 },
     connectorLine: { width: 2, height: 16, backgroundColor: t.colors.border },
     connectorArrow: { alignItems: 'center', paddingVertical: 2 },
     flowCard: {
-        width: '100%', backgroundColor: t.colors.surface, borderRadius: t.radius.card,
-        padding: 16, borderWidth: 1, borderColor: t.colors.border,
+        ...cardSurface(t),
+        width: '100%', padding: 16,
     },
     flowCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
     stepBadge: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
@@ -213,25 +223,28 @@ const useStyles = makeStyles((t) => ({
     flowCardLabel: { fontSize: 16, fontWeight: '600', color: t.colors.textPrimary },
     flowCardLoop: { fontSize: 12, color: t.colors.warning, marginTop: 6 },
     qrContainer: {
-        backgroundColor: t.colors.surface, borderRadius: t.radius.large,
-        padding: 24, alignItems: 'center', borderWidth: 1, borderColor: t.colors.border,
+        ...cardSurface(t),
+        padding: 24, alignItems: 'center',
     },
-    qrWrapper: { backgroundColor: t.colors.qrPaper, padding: 16, borderRadius: 12, marginBottom: 16 },
+    qrWrapper: { backgroundColor: t.colors.qrPaper, padding: 16, borderRadius: t.radius.tile, marginBottom: 16 },
     qrValue: { fontSize: 13, color: t.colors.textSecondary, fontFamily: 'monospace', marginBottom: 8 },
     qrHint: { fontSize: 13, color: t.colors.textSecondary, textAlign: 'center', marginBottom: 16 },
     shareButton: {
-        flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.colors.info,
-        paddingVertical: 10, paddingHorizontal: 20, borderRadius: t.radius.full,
+        flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.colors.buttonSecondary,
+        borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder,
+        paddingVertical: 10, paddingHorizontal: 20, borderRadius: t.radius.button,
     },
-    shareButtonText: { color: t.colors.onData, fontWeight: '600' },
+    shareButtonText: { color: t.colors.onButtonSecondary, fontWeight: '600' },
+    // Barra fissa in fondo (regola delle barre): vetro, filetto in alto, pulsante principale
     floatingBar: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         paddingHorizontal: t.spacing.screenPadding, paddingTop: 12,
-        backgroundColor: t.colors.background, borderTopWidth: 1, borderTopColor: t.colors.border,
+        borderTopWidth: 1, borderTopColor: t.colors.border,
     },
     runButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 16, borderRadius: t.radius.full, gap: 8,
+        paddingVertical: 16, borderRadius: t.radius.button, gap: 8,
+        backgroundColor: t.colors.button, overflow: 'hidden', ...t.shadows.button,
     },
-    runButtonText: { color: t.colors.onData, fontSize: 18, fontWeight: 'bold' },
+    runButtonText: { color: t.colors.onButton, fontSize: 18, fontWeight: 'bold' },
 }));

@@ -16,6 +16,7 @@ import { View } from 'react-native';
 import HydratedProductCard, { HydratedPayload } from './HydratedProductCard';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 // ---------------------------------------------------------------------------
 // Types — compat con ChatMessage model + InventoryContext chat
@@ -146,7 +147,7 @@ const ChatMessageItem: React.FC<ChatMessageItemProps> = memo(({ message, payload
         {/* Bolla caption opzionale sopra le cards (se payload contiene text) */}
         {text ? (
           <View style={[styles.captionBubble, isOwn ? styles.captionOwn : styles.captionOther]}>
-            <Text style={styles.captionText}>{text}</Text>
+            <Text style={[styles.captionText, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}>{text}</Text>
           </View>
         ) : null}
 
@@ -200,12 +201,12 @@ const useStyles = makeStyles((t) => ({
 
   // Hydrated wrapper — cards hanno già surface #1F1F1F + gold hairline
   hydratedWrapper: {
-    borderRadius: 16,
+    borderRadius: t.radius.card,
     overflow: 'hidden',
   },
 
   captionBubble: {
-    borderRadius: 12,
+    borderRadius: t.radius.tile,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 6,
@@ -230,7 +231,7 @@ const useStyles = makeStyles((t) => ({
 
   // Text bubble
   bubble: {
-    borderRadius: 16,
+    borderRadius: t.radius.card,
     paddingHorizontal: 14,
     paddingVertical: 10,
     maxWidth: 320,
@@ -257,7 +258,7 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 20,
   },
   bubbleTextOwn: {
-    color: '#0A0A0A',
+    color: t.colors.onAccent,
     fontWeight: '500',
   },
   bubbleTextOther: {
@@ -269,7 +270,7 @@ const useStyles = makeStyles((t) => ({
     fontWeight: '600',
   },
   bubbleTimeOwn: {
-    color: 'rgba(10,10,10,0.6)',
+    color: withAlpha(t.colors.onAccent, 0.6),
     alignSelf: 'flex-end',
   },
   bubbleTimeOther: {

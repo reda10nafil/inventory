@@ -9,7 +9,10 @@ import { useLocations } from '../../contexts/LocationsContext';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
-import { withAlpha } from '../../utils/color';
+import { formatPrice } from '../../utils/price';
+import { Backdrop } from '../../components/ui/Backdrop';
+import { GradientFill } from '../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../components/ui/surfaces';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
@@ -77,6 +80,7 @@ export default function ScannerActionScreen() {
   if (type === 'location' && location) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
+        <Backdrop />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={[styles.headerCard, { borderLeftColor: location.color, borderLeftWidth: 6 }]}>
             <AppIcon name="location-on" size={40} color={location.color} />
@@ -87,11 +91,11 @@ export default function ScannerActionScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>AZIONI DISPONIBILI</Text>
+          <Text style={styles.sectionTitle}>Azioni disponibili</Text>
 
           <Pressable style={styles.actionButton} onPress={() => router.push('/automations/batch-move')}>
             <View style={[styles.actionIcon, { backgroundColor: t.colors.accent }]}>
-              <AppIcon name="move-to-inbox" size={24} color="#FFF" />
+              <AppIcon name="move-to-inbox" size={24} color={t.colors.onAccent} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>SPOSTAMENTO DI MASSA</Text>
@@ -101,8 +105,8 @@ export default function ScannerActionScreen() {
           </Pressable>
 
           <Pressable style={styles.actionButton} onPress={() => router.push('/automations/audit')}>
-            <View style={[styles.actionIcon, { backgroundColor: t.colors.warning }]}>
-              <AppIcon name="fact-check" size={24} color="#FFF" />
+            <View style={[styles.actionIcon, { backgroundColor: '#F59E0B' }]}>
+              <AppIcon name="fact-check" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>INVENTARIO / AUDIT</Text>
@@ -122,6 +126,7 @@ export default function ScannerActionScreen() {
   if (type === 'library' && library) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
+        <Backdrop />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={[styles.headerCard, { borderLeftColor: t.colors.accent, borderLeftWidth: 6 }]}>
             <AppIcon name={library.icon as any || 'folder'} size={40} color={t.colors.accentInk} />
@@ -131,11 +136,11 @@ export default function ScannerActionScreen() {
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>AZIONI</Text>
+          <Text style={styles.sectionTitle}>Azioni</Text>
 
           <Pressable style={styles.actionButton} onPress={() => router.push(`/(tabs)/?library=${library.id}` as any)}>
             <View style={[styles.actionIcon, { backgroundColor: t.colors.accent }]}>
-              <AppIcon name="list" size={24} color="#FFF" />
+              <AppIcon name="list" size={24} color={t.colors.onAccent} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>VEDI PRODOTTI</Text>
@@ -157,6 +162,7 @@ export default function ScannerActionScreen() {
   if (type === 'product' && product) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
+        <Backdrop />
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -183,7 +189,7 @@ export default function ScannerActionScreen() {
           </View>
 
           {/* Quick Actions */}
-          <Text style={styles.sectionTitle}>AZIONE RAPIDA</Text>
+          <Text style={styles.sectionTitle}>Azione rapida</Text>
 
           <Pressable
             style={[
@@ -204,7 +210,7 @@ export default function ScannerActionScreen() {
             <AppIcon
               name={selectedAction === 'moved' ? 'radio-button-checked' : 'radio-button-unchecked'}
               size={24}
-              color={selectedAction === 'moved' ? t.colors.checkOn : t.colors.textSecondary}
+              color={selectedAction === 'moved' ? t.colors.checkOn : t.colors.checkRing}
             />
           </Pressable>
 
@@ -255,7 +261,7 @@ export default function ScannerActionScreen() {
             <AppIcon
               name={selectedAction === 'sold' ? 'radio-button-checked' : 'radio-button-unchecked'}
               size={24}
-              color={selectedAction === 'sold' ? t.colors.checkOn : t.colors.textSecondary}
+              color={selectedAction === 'sold' ? t.colors.checkOn : t.colors.checkRing}
             />
           </Pressable>
 
@@ -264,7 +270,7 @@ export default function ScannerActionScreen() {
               <Text style={styles.optionsLabel}>Prezzo di vendita finale (opzionale):</Text>
               <TextInput
                 style={styles.priceInput}
-                placeholder={`€${product.sellPrice || 0}`}
+                placeholder={formatPrice(product.sellPrice || 0)}
                 placeholderTextColor={t.colors.placeholder}
                 keyboardType="numeric"
                 value={finalPrice}
@@ -292,7 +298,7 @@ export default function ScannerActionScreen() {
             <AppIcon
               name={selectedAction === 'details' ? 'radio-button-checked' : 'radio-button-unchecked'}
               size={24}
-              color={selectedAction === 'details' ? t.colors.checkOn : t.colors.textSecondary}
+              color={selectedAction === 'details' ? t.colors.checkOn : t.colors.checkRing}
             />
           </Pressable>
 
@@ -305,6 +311,7 @@ export default function ScannerActionScreen() {
             onPress={handleAction}
             disabled={!selectedAction}
           >
+            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
             <Text style={styles.executeButtonText}>
               {selectedAction === 'moved' && 'Conferma Spostamento'}
               {selectedAction === 'sold' && 'Conferma Vendita'}
@@ -326,6 +333,7 @@ function NotFoundScreen({ message, router }: { message: string, router: any }) {
   const styles = useStyles();
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <Backdrop />
       <View style={styles.errorContainer}>
         <AppIcon name="error-outline" size={64} color={t.colors.error} />
         <Text style={styles.errorText}>{message}</Text>
@@ -340,19 +348,17 @@ function NotFoundScreen({ message, router }: { message: string, router: any }) {
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: t.colors.backgroundSecondary,
+    backgroundColor: t.colors.background,
   },
   scrollContent: {
     padding: 16,
   },
   headerCard: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.surface,
     padding: 24,
-    borderRadius: t.radius.large,
     marginBottom: 32,
-    ...t.shadows.card,
   },
   headerTitle: {
     fontSize: 12,
@@ -371,17 +377,15 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.textSecondary,
   },
   productPreview: {
+    ...cardSurface(t),
     flexDirection: 'row',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
     padding: 12,
     marginBottom: 24,
-    ...t.shadows.card,
   },
   productImage: {
     width: 100,
     height: 100,
-    borderRadius: t.radius.medium,
+    borderRadius: t.radius.tile,
     backgroundColor: t.colors.backgroundSecondary,
   },
   productDetails: {
@@ -411,18 +415,17 @@ const useStyles = makeStyles((t) => ({
   sectionTitle: {
     ...t.typography.sectionHeader,
     marginBottom: 12,
+    ...(t.section.line ? { borderBottomWidth: 1, borderBottomColor: t.section.line, paddingBottom: 6 } : null),
   },
   actionButton: {
+    ...tileSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.tile,
-    borderRadius: t.radius.tile,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   actionButtonActive: {
+    backgroundColor: t.colors.tileSelected,
     borderColor: t.colors.tileSelectedBorder,
   },
   actionIcon: {
@@ -446,9 +449,8 @@ const useStyles = makeStyles((t) => ({
     fontSize: 13,
   },
   optionsContainer: {
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.medium,
-    padding: 16,
+    paddingHorizontal: 8,
+    paddingTop: 4,
     marginBottom: 12,
   },
   optionsLabel: {
@@ -458,17 +460,14 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 12,
   },
   optionChip: {
+    ...tileSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.tile,
-    borderRadius: t.radius.tile,
     padding: 12,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: t.colors.tileBorder,
   },
   optionChipActive: {
-    backgroundColor: withAlpha(t.colors.accent, 0.082),
+    backgroundColor: t.colors.tileSelected,
     borderColor: t.colors.tileSelectedBorder,
   },
   optionDot: {
@@ -486,9 +485,10 @@ const useStyles = makeStyles((t) => ({
     fontWeight: '600',
   },
   priceInput: {
+    height: t.input.height,
     backgroundColor: t.colors.input,
     borderRadius: t.radius.input,
-    padding: 14,
+    paddingHorizontal: 14,
     fontSize: 16,
     color: t.colors.inputText,
     borderWidth: 1,
@@ -500,10 +500,11 @@ const useStyles = makeStyles((t) => ({
     padding: 16,
     alignItems: 'center',
     marginTop: 12,
-    ...t.shadows.card,
+    overflow: 'hidden',
+    ...t.shadows.button,
   },
   executeButtonDisabled: {
-    backgroundColor: t.colors.surface,
+    opacity: 0.5,
   },
   executeButtonText: {
     ...t.typography.buttonPrimary,
@@ -523,6 +524,8 @@ const useStyles = makeStyles((t) => ({
   },
   closeButton: {
     backgroundColor: t.colors.buttonSecondary,
+    borderWidth: 1,
+    borderColor: t.colors.buttonSecondaryBorder,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: t.radius.button,

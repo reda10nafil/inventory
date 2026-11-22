@@ -8,6 +8,9 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 
 const BUILTIN_AUTOMATIONS = [
     {
@@ -72,6 +75,7 @@ export default function AutomationsScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <ScrollView
                 contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
                 showsVerticalScrollIndicator={false}
@@ -86,12 +90,13 @@ export default function AutomationsScreen() {
                 {/* ── Custom Automations ── */}
                 <View style={styles.content}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>LE MIE AUTOMAZIONI</Text>
+                        <Text style={styles.sectionTitle}>Le mie automazioni</Text>
                         <Pressable
                             onPress={() => router.push('/settings/automation-builder' as any)}
                             style={styles.createButton}
                         >
-                            <AppIcon name="add" size={20} color="#FFF" />
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                            <AppIcon name="add" size={20} color={t.colors.onButton} />
                             <Text style={styles.createButtonText}>Crea Nuova</Text>
                         </Pressable>
                     </View>
@@ -132,7 +137,7 @@ export default function AutomationsScreen() {
 
                 {/* ── Built-in Templates ── */}
                 <View style={styles.content}>
-                    <Text style={styles.sectionTitle}>TEMPLATE PREDEFINITI</Text>
+                    <Text style={[styles.sectionTitle, styles.sectionTitleLine]}>Template predefiniti</Text>
                     <Text style={styles.sectionDescription}>
                         Automazioni pronte all'uso per le operazioni più comuni.
                     </Text>
@@ -157,7 +162,7 @@ export default function AutomationsScreen() {
 
                 {/* Pro Tip Section */}
                 <View style={styles.proTip}>
-                    <AppIcon name="lightbulb" size={24} color={t.colors.warning} />
+                    <AppIcon name="lightbulb" size={24} color={t.colors.onWarningSurface} />
                     <View style={styles.proTipContent}>
                         <Text style={styles.proTipTitle}>Lo sapevi?</Text>
                         <Text style={styles.proTipText}>
@@ -170,6 +175,7 @@ export default function AutomationsScreen() {
     );
 }
 
+// Filetto sotto i titoli di sezione solo negli stili che lo prevedono (`t.section.line`).
 const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
@@ -180,18 +186,21 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: t.spacing.screenPadding,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: t.colors.border,
+        paddingTop: 20,
+        paddingBottom: 8,
     },
     scannerButton: {
-        padding: 8,
-        backgroundColor: withAlpha(t.colors.accent, 0.082),
-        borderRadius: t.radius.medium,
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: t.colors.iconWrap,
+        borderRadius: t.radius.iconWrap,
     },
     headerTitle: {
-        ...t.typography.h2 || { fontSize: 24, fontWeight: '700' },
-        fontSize: 20,
+        fontSize: t.title.size,
+        fontWeight: t.title.weight,
+        letterSpacing: t.title.tracking,
         color: t.colors.textPrimary,
     },
     sectionHeader: {
@@ -199,27 +208,28 @@ const useStyles = makeStyles((t) => ({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 16,
+        ...(t.section.line ? { borderBottomWidth: 1, borderBottomColor: t.section.line, paddingBottom: 8 } : null),
     },
     sectionTitle: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: t.colors.textSecondary,
-        letterSpacing: 1,
+        ...t.typography.sectionHeader,
         marginBottom: 4,
     },
+    sectionTitleLine: t.section.line ? { borderBottomWidth: 1, borderBottomColor: t.section.line, paddingBottom: 6 } : {},
     createButton: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
+        height: 36,
         backgroundColor: t.colors.button,
         paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: t.radius.full,
+        borderRadius: t.radius.button,
+        overflow: 'hidden',
+        ...t.shadows.button,
     },
     createButtonText: {
         color: t.colors.onButton,
-        fontWeight: '700',
-        fontSize: 13,
+        fontWeight: '600',
+        fontSize: 14,
     },
     content: {
         padding: t.spacing.screenPadding,
@@ -227,11 +237,11 @@ const useStyles = makeStyles((t) => ({
     sectionDescription: {
         ...t.typography.body,
         color: t.colors.textSecondary,
+        marginTop: 4,
         marginBottom: 16,
     },
     emptyCard: {
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.large,
+        ...cardSurface(t),
         padding: 32,
         alignItems: 'center',
         borderWidth: 2,
@@ -244,6 +254,7 @@ const useStyles = makeStyles((t) => ({
         fontWeight: '600',
         color: t.colors.textSecondary,
         marginTop: 12,
+        textAlign: 'center',
     },
     emptyHint: {
         fontSize: 13,
@@ -252,19 +263,11 @@ const useStyles = makeStyles((t) => ({
         textAlign: 'center',
     },
     card: {
+        ...cardSurface(t),
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.surface,
         padding: 16,
-        borderRadius: t.radius.large,
         marginBottom: 12,
-        shadowColor: t.colors.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: t.colors.border,
     },
     iconContainer: {
         width: 56,
@@ -279,7 +282,7 @@ const useStyles = makeStyles((t) => ({
         marginRight: 8,
     },
     cardTitle: {
-        ...t.typography.h3 || { fontSize: 18, fontWeight: '600' },
+        ...t.typography.h3,
         fontSize: 18,
         marginBottom: 4,
         color: t.colors.textPrimary,
@@ -295,7 +298,7 @@ const useStyles = makeStyles((t) => ({
         backgroundColor: t.colors.warningSurface,
         marginHorizontal: t.spacing.screenPadding,
         padding: 16,
-        borderRadius: t.radius.medium,
+        borderRadius: t.radius.card,
         borderWidth: 1,
         borderColor: t.colors.warningSurfaceBorder,
         alignItems: 'flex-start',
@@ -306,13 +309,13 @@ const useStyles = makeStyles((t) => ({
     },
     proTipTitle: {
         fontSize: 14,
-        fontWeight: '700',
+        fontWeight: t.weights.strong,
         color: t.colors.onWarningSurface,
         marginBottom: 4,
     },
     proTipText: {
         fontSize: 13,
-        color: '#92400E',
+        color: t.colors.onWarningSurface,
         lineHeight: 18,
     },
 }));

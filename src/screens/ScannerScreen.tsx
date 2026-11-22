@@ -16,6 +16,8 @@ import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
 import { withAlpha } from '../../utils/color';
+import { Backdrop } from '../../components/ui/Backdrop';
+import { GradientFill } from '../../components/ui/GradientFill';
 
 export default function ScannerScreen() {
   const t = useTheme();
@@ -255,6 +257,7 @@ export default function ScannerScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <Backdrop />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Scanner QR/Barcode</Text>
         <Pressable
@@ -380,7 +383,8 @@ export default function ScannerScreen() {
                 style={[styles.modalButton, styles.modalButtonSearch]}
                 onPress={handleManualSearch}
               >
-                <AppIcon name="search" size={20} color="#fff" />
+                <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                <AppIcon name="search" size={20} color={t.colors.onButton} />
                 <Text style={styles.modalButtonTextSearch}>Cerca</Text>
               </Pressable>
             </View>
@@ -416,9 +420,9 @@ const useStyles = makeStyles((t) => ({
   cameraContainer: {
     flex: 1,
     margin: 16,
-    borderRadius: t.radius.large,
+    borderRadius: t.radius.card,
     overflow: 'hidden',
-    backgroundColor: t.colors.backgroundSecondary,
+    backgroundColor: t.colors.cameraBackground,
   },
   camera: {
     flex: 1,
@@ -428,11 +432,12 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Angoli del riquadro sopra la fotocamera: bianco fisso, leggibile in tutti gli stili
   corner: {
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: t.colors.accent,
+    borderColor: t.colors.onData,
   },
   cornerTopLeft: {
     top: '25%',
@@ -521,6 +526,8 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: t.radius.button,
+    overflow: 'hidden',
+    ...t.shadows.button,
   },
   permissionButtonText: {
     ...t.typography.buttonPrimary,
@@ -533,9 +540,10 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     padding: 20,
   },
+  // Finestra sopra il velo: fondo opaco
   modalContent: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.card,
     padding: 24,
     width: '100%',
     maxWidth: 400,
@@ -555,12 +563,12 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 20,
   },
   modalInput: {
-    backgroundColor: t.colors.background,
+    height: t.input.height,
+    backgroundColor: t.colors.input,
     borderWidth: 1,
     borderColor: t.colors.inputBorder,
     borderRadius: t.radius.input,
     paddingHorizontal: 16,
-    paddingVertical: 14,
     fontSize: 16,
     color: t.colors.inputText,
     marginBottom: 20,
@@ -579,17 +587,19 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radius.button,
   },
   modalButtonCancel: {
-    backgroundColor: t.colors.background,
+    backgroundColor: t.colors.buttonSecondary,
     borderWidth: 1,
-    borderColor: t.colors.border,
+    borderColor: t.colors.buttonSecondaryBorder,
   },
   modalButtonSearch: {
     backgroundColor: t.colors.button,
+    overflow: 'hidden',
+    ...t.shadows.button,
   },
   modalButtonTextCancel: {
     ...t.typography.cardTitle,
     fontSize: 15,
-    color: t.colors.textPrimary,
+    color: t.colors.onButtonSecondary,
   },
   modalButtonTextSearch: {
     ...t.typography.buttonPrimary,

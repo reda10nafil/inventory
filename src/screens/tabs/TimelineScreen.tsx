@@ -9,9 +9,29 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { formatPrice } from '../../../utils/price';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 
 type FilterType = 'all' | 'created' | 'moved' | 'modified' | 'sold' | 'photo_added';
 type DateFilter = 'all' | 'today' | 'week' | 'month';
+
+const TYPE_FILTERS: [FilterType, string][] = [
+  ['all', 'Tutti'],
+  ['created', 'Creati'],
+  ['moved', 'Spostati'],
+  ['modified', 'Modificati'],
+  ['sold', 'Venduti'],
+  ['photo_added', 'Foto'],
+];
+
+const DATE_FILTERS: [DateFilter, string][] = [
+  ['all', 'Tutti i Periodi'],
+  ['today', 'Oggi'],
+  ['week', 'Questa Settimana'],
+  ['month', 'Questo Mese'],
+];
 
 export default function TimelineScreen() {
   const t = useTheme();
@@ -65,7 +85,7 @@ export default function TimelineScreen() {
         }
         return `${sku} - Modificato`;
       case 'sold':
-        const price = event.details.finalPrice ? ` - €${event.details.finalPrice.toLocaleString()}` : '';
+        const price = event.details.finalPrice ? ` - ${formatPrice(event.details.finalPrice)}` : '';
         return `${sku} - Venduto${price}`;
       case 'scanned':
         return `${sku} - Scansionato`;
@@ -122,6 +142,7 @@ export default function TimelineScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <Backdrop />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Cronologia Completa</Text>
         <Text style={styles.headerCount}>{filteredTimeline.length} eventi</Text>
@@ -131,98 +152,36 @@ export default function TimelineScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterScrollContent}
+        contentContainerStyle={styles.chipRowContent}
         style={styles.filterScroll}
       >
-        <Pressable
-          style={[styles.filterChip, filterType === 'all' && styles.filterChipActive]}
-          onPress={() => setFilterType('all')}
-        >
-          <Text style={[styles.filterChipText, filterType === 'all' && styles.filterChipTextActive]}>
-            Tutti
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.filterChip, filterType === 'created' && styles.filterChipActive]}
-          onPress={() => setFilterType('created')}
-        >
-          <Text style={[styles.filterChipText, filterType === 'created' && styles.filterChipTextActive]}>
-            Creati
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.filterChip, filterType === 'moved' && styles.filterChipActive]}
-          onPress={() => setFilterType('moved')}
-        >
-          <Text style={[styles.filterChipText, filterType === 'moved' && styles.filterChipTextActive]}>
-            Spostati
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.filterChip, filterType === 'modified' && styles.filterChipActive]}
-          onPress={() => setFilterType('modified')}
-        >
-          <Text style={[styles.filterChipText, filterType === 'modified' && styles.filterChipTextActive]}>
-            Modificati
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.filterChip, filterType === 'sold' && styles.filterChipActive]}
-          onPress={() => setFilterType('sold')}
-        >
-          <Text style={[styles.filterChipText, filterType === 'sold' && styles.filterChipTextActive]}>
-            Venduti
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.filterChip, filterType === 'photo_added' && styles.filterChipActive]}
-          onPress={() => setFilterType('photo_added')}
-        >
-          <Text style={[styles.filterChipText, filterType === 'photo_added' && styles.filterChipTextActive]}>
-            Foto
-          </Text>
-        </Pressable>
+        {TYPE_FILTERS.map(([value, label]) => {
+          const active = filterType === value;
+          return (
+            <Pressable key={value} style={[styles.chip, active && styles.chipActive]} onPress={() => setFilterType(value)}>
+              {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       {/* Date Filters */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.dateFilterScrollContent}
+        contentContainerStyle={styles.chipRowContent}
         style={styles.dateFilterScroll}
       >
-        <Pressable
-          style={[styles.dateChip, dateFilter === 'all' && styles.dateChipActive]}
-          onPress={() => setDateFilter('all')}
-        >
-          <Text style={[styles.dateChipText, dateFilter === 'all' && styles.dateChipTextActive]}>
-            Tutti i Periodi
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.dateChip, dateFilter === 'today' && styles.dateChipActive]}
-          onPress={() => setDateFilter('today')}
-        >
-          <Text style={[styles.dateChipText, dateFilter === 'today' && styles.dateChipTextActive]}>
-            Oggi
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.dateChip, dateFilter === 'week' && styles.dateChipActive]}
-          onPress={() => setDateFilter('week')}
-        >
-          <Text style={[styles.dateChipText, dateFilter === 'week' && styles.dateChipTextActive]}>
-            Questa Settimana
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.dateChip, dateFilter === 'month' && styles.dateChipActive]}
-          onPress={() => setDateFilter('month')}
-        >
-          <Text style={[styles.dateChipText, dateFilter === 'month' && styles.dateChipTextActive]}>
-            Questo Mese
-          </Text>
-        </Pressable>
+        {DATE_FILTERS.map(([value, label]) => {
+          const active = dateFilter === value;
+          return (
+            <Pressable key={value} style={[styles.chip, active && styles.chipActive]} onPress={() => setDateFilter(value)}>
+              {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       {/* Timeline List */}
@@ -283,86 +242,65 @@ const useStyles = makeStyles((t) => ({
   },
   header: {
     paddingHorizontal: t.spacing.screenPadding,
-    paddingVertical: 12,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   headerTitle: {
-    ...t.typography.cardTitle,
-    fontSize: 24,
+    fontSize: t.title.size,
+    fontWeight: t.title.weight,
+    letterSpacing: t.title.tracking,
+    color: t.colors.textPrimary,
   },
   headerCount: {
     ...t.typography.caption,
-    fontSize: 14,
-    marginTop: 4,
+    marginTop: 2,
   },
+  // Le righe orizzontali non devono allungarsi né stringersi: su web lo ScrollView ha `flex: 1` e le pillole
+  // venivano gonfiate e tagliate (D10).
   filterScroll: {
-    marginBottom: 8,
-  },
-  filterScrollContent: {
-    paddingHorizontal: t.spacing.screenPadding,
-    gap: 8,
+    flexGrow: 0,
+    flexShrink: 0,
+    paddingVertical: 4,
   },
   dateFilterScroll: {
-    marginBottom: 16,
+    flexGrow: 0,
+    flexShrink: 0,
+    paddingVertical: 4,
+    marginBottom: 12,
   },
-  dateFilterScrollContent: {
+  chipRowContent: {
     paddingHorizontal: t.spacing.screenPadding,
     gap: 8,
+    alignItems: 'center',
   },
-  filterChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  chip: {
+    height: 36,
+    paddingHorizontal: 14,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: t.colors.chip,
     borderRadius: t.radius.chip,
     borderWidth: 1,
     borderColor: t.colors.chipBorder,
-    minHeight: 48,
-    minWidth: 80,
+    overflow: 'hidden',
   },
-  filterChipActive: {
+  chipActive: {
     backgroundColor: t.colors.chipActive,
     borderColor: t.colors.chipActiveBorder,
   },
-  filterChipText: {
-    ...t.typography.caption,
-    fontSize: 13,
-    fontWeight: '600',
+  chipText: {
+    fontSize: 14,
+    fontWeight: '500',
     color: t.colors.chipText,
   },
-  filterChipTextActive: {
+  chipTextActive: {
+    fontWeight: '600',
     color: t.colors.chipActiveText,
   },
-  dateChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: t.colors.chip,
-    borderRadius: t.radius.medium,
-    borderWidth: 1,
-    borderColor: t.colors.chipBorder,
-    minHeight: 48,
-    minWidth: 90,
-  },
-  dateChipActive: {
-    backgroundColor: withAlpha(t.colors.accent, 0.19),
-    borderColor: t.colors.accent,
-  },
-  dateChipText: {
-    ...t.typography.caption,
-    fontSize: 12,
-    fontWeight: '600',
-    color: t.colors.chipText,
-  },
-  dateChipTextActive: {
-    color: t.colors.accentInk,
-  },
   timelineItem: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.card,
     padding: 14,
     marginBottom: 8,
   },

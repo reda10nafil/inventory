@@ -3,11 +3,12 @@
  */
 
 // Powered by OnSpace.AI
-import { LinearGradient } from '../lib/LinearGradient';
 import { useRouter } from '../navigation/compat';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppIcon } from '../../components/ui/AppIcon';
+import { Backdrop } from '../../components/ui/Backdrop';
+import { GradientFill } from '../../components/ui/GradientFill';
 import { Text } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
 
@@ -17,11 +18,8 @@ export default function NotFoundScreen() {
   const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={[t.colors.background, t.colors.backgroundSecondary]}
-        style={StyleSheet.absoluteFillObject}
-      />
-      
+      <Backdrop />
+
       <View style={styles.content}>
         <AppIcon name="photo-camera" size={80} color={t.colors.accentInk} />
         <Text style={styles.title}>Page Not Found</Text>
@@ -33,6 +31,7 @@ export default function NotFoundScreen() {
           style={styles.homeButton}
           onPress={() => router.push('/')}
         >
+          <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
           <Text style={styles.homeButtonText}>Return Home</Text>
         </TouchableOpacity>
       </View>
@@ -70,10 +69,12 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: t.radius.button,
+    overflow: 'hidden',
+    ...t.shadows.button,
   },
   homeButtonText: {
     color: t.colors.onButton,
-    fontWeight: 'bold',
+    fontWeight: '600',
     fontSize: 16,
   },
 }));
