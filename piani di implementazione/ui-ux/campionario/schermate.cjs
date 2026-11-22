@@ -19,6 +19,11 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
   const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   page.setDefaultTimeout(15000);
+  // errori della pagina e della console (richiesti verdi per chiudere un lavoro); una riga per messaggio diverso
+  const visti = new Set();
+  const errore = (testo) => { const k = testo.slice(0, 160); if (!visti.has(k)) { visti.add(k); log('CONSOLE', k); } };
+  page.on('pageerror', (e) => errore(`pageerror ${e.message}`));
+  page.on('console', (m) => { if (m.type() === 'error') errore(m.text()); });
 
   const extra = () => page.evaluate(() => {
     let m = 0;
