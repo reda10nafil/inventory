@@ -9,7 +9,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { Product } from '../../../types';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
-import { libraryIdFromCsv, productCsvRows } from '../../../utils/productCsv';
+import { libraryIdFromCsv, movementCsvRows, parseStockCell, productCsvRows, stockCsvRows } from '../../../utils/productCsv';
+import { useLocations } from '../../../contexts/LocationsContext';
+import { useCategories } from '../../../contexts/CategoriesContext';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
@@ -26,7 +28,10 @@ export default function SettingsScreen() {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { products, addProduct, getProductBySku, libraries } = useInventory();
+  const { products, timeline, addProduct, getProductBySku, libraries } = useInventory();
+  const { getLocation } = useLocations();
+  const { labelOf } = useCategories();
+  const reportLabels = { place: (id: string) => getLocation(id)?.label ?? id, category: labelOf };
   const { session, organizationId, organizations, user, signOut, switchOrganization } = useAuth();
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -80,22 +85,23 @@ export default function SettingsScreen() {
     Alert.alert('Prossimamente', `${feature} sarà disponibile nella prossima versione`);
   };
 
-  const exportToCSV = async () => {
+  // Un solo modo di scaricare (web) o condividere (telefono) un CSV: prodotti, giacenze e movimenti (M08)
+  const exportCsv = async (name: string, rows: readonly (readonly unknown[])[]) => {
     try {
-      const csvContent = stringifyCsv(productCsvRows(products, libraries));
+      const csvContent = stringifyCsv(rows);
 
       if (Platform.OS === 'web') {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `inventario_${Date.now()}.csv`;
+        link.download = `${name}_${Date.now()}.csv`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         return;
       }
 
-      const fileUri = FileSystem.documentDirectory + `inventario_${Date.now()}.csv`;
+      const fileUri = FileSystem.documentDirectory + `${name}_${Date.now()}.csv`;
       await FileSystem.writeAsStringAsync(fileUri, csvContent, {
         encoding: FileSystem.EncodingType.UTF8,
       });
@@ -110,6 +116,9 @@ export default function SettingsScreen() {
       Alert.alert('Errore', 'Impossibile esportare i dati');
     }
   };
+  const exportToCSV = () => exportCsv('inventario', productCsvRows(products, libraries));
+  const exportStockCsv = () => exportCsv('giacenze', stockCsvRows(products, reportLabels));
+  const exportMovementsCsv = () => exportCsv('movimenti', movementCsvRows(timeline, products, reportLabels));
 
   const backupToDrive = async () => {
     const accessToken = (session as any)?.provider_token as string | undefined;
@@ -177,6 +186,10 @@ export default function SettingsScreen() {
     const productionDateIndex = column('data produzione', 'production date');
     const gs1Index = column('gs1 digital link', 'gs1');
     const backupAttachmentsIndex = column('link allegati drive json', 'drive attachments json');
+    // M08: articoli a quantità (intestazioni senza accenti: «Unità» → «unita»)
+    const unitIndex = column('unita', 'unit');
+    const stockIndex = column('giacenza', 'stock');
+    const minStockIndex = column('scorta minima', 'min stock');
 
     let imported = 0;
     let skipped = 0;
@@ -188,19 +201,29 @@ export default function SettingsScreen() {
         skipped += 1;
         return;
       }
+      // Giacenza vuota: pezzo unico come prima; scritta ma non valida: riga saltata (non diventa 1 pezzo)
+      const stock = parseStockCell(valueAt(row, stockIndex));
+      if (stock === undefined) {
+        skipped += 1;
+        return;
+      }
       seenSkus.add(normalizedSku);
+      const minStock = numberAt(row, minStockIndex);
 
       const rawStatus = valueAt(row, statusIndex).toLocaleLowerCase();
-      const status: Product['status'] = rawStatus === 'sold' || rawStatus === 'venduto'
-        ? 'sold'
-        : rawStatus === 'archived' || rawStatus === 'archiviato'
-          ? 'archived'
-          : 'available';
+      // Un articolo a quantità non è mai «venduto» (ticket 03): con la giacenza è disponibile
+      const status: Product['status'] = stock
+        ? 'available'
+        : rawStatus === 'sold' || rawStatus === 'venduto'
+          ? 'sold'
+          : rawStatus === 'archived' || rawStatus === 'archiviato'
+            ? 'archived'
+            : 'available';
       const rawImages = valueAt(row, imagesIndex);
       const images = jsonAt<string[]>(row, imagesIndex, rawImages ? rawImages.split(';').map((image) => image.trim()).filter(Boolean) : []);
       const backupImageLinks = Array.isArray(images) ? images.filter((image) => /^https?:\/\//i.test(image)) : [];
 
-      addProduct({
+      const added = addProduct({
         sku,
         furType: valueAt(row, furTypeIndex),
         location: valueAt(row, locationIndex),
@@ -219,8 +242,11 @@ export default function SettingsScreen() {
         gs1DigitalLink: valueAt(row, gs1Index) || undefined,
         libraryId: libraryIdFromCsv(valueAt(row, column('cartella', 'folder', 'library')), libraries),
         isFragile: false,
-      });
-      imported += 1;
+        ...(stock && { unit: valueAt(row, unitIndex) || undefined }),
+        ...(stock && minStock != null && minStock >= 0 && { minStock }),
+      }, stock ? { stock } : undefined);
+      if (added) imported += 1;
+      else skipped += 1;
     });
 
     return { imported, skipped };
@@ -236,7 +262,7 @@ export default function SettingsScreen() {
       if (result.canceled || !result.assets[0]) return;
       const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
       const outcome = importCsvContent(content);
-      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente).`);
+      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`);
     } catch (error) {
       Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
     }
@@ -251,7 +277,7 @@ export default function SettingsScreen() {
     }
     try {
       const outcome = importCsvContent(await file.text());
-      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente).`);
+      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`);
     } catch (error) {
       Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
     }
@@ -589,6 +615,36 @@ export default function SettingsScreen() {
               <Text style={styles.settingTitle}>Esporta Inventario</Text>
               <Text style={styles.settingDescription}>
                 Esporta CSV completo, apribile anche in Excel
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
+        <Pressable style={styles.settingRow} onPress={exportStockCsv}>
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="inventory" size={24} color={t.colors.onAccent} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Esporta giacenze</Text>
+              <Text style={styles.settingDescription}>
+                CSV con quantità per posizione e articoli sotto scorta
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
+        <Pressable style={styles.settingRow} onPress={exportMovementsCsv}>
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="swap-vert" size={24} color={t.colors.onAccent} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Esporta movimenti</Text>
+              <Text style={styles.settingDescription}>
+                CSV di carichi, scarichi, trasferimenti e rettifiche
               </Text>
             </View>
           </View>

@@ -89,6 +89,17 @@ const FETTE = {
       ['cestino', async (page) => { await page.goto(APP); await page.waitForTimeout(1500); await page.getByText('Cestino').locator('visible=true').first().click(); await page.waitForTimeout(800); }],
     ],
   },
+  // M08: le tre voci di export e l'import in Impostazioni › Dati e backup
+  m08: {
+    prepara: () => {},
+    schermate: [
+      ['dati-e-backup', async (page) => {
+        await page.goto(`${APP}/settings`); await page.waitForTimeout(1800);
+        await page.getByText('Esporta giacenze', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['import', async (page) => { await page.getByText('Importa prodotti CSV', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

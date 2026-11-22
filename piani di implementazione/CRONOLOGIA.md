@@ -2,6 +2,19 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, M08: CSV con giacenza, report giacenze e movimenti (ticket 09)
+
+- Branch `funzioni/magazzino`. Parere del revisore chiesto prima di scrivere (forma delle colonne): seguite le sue indicazioni (id nel CSV dei prodotti e nomi nei report, giacenza non valida = riga saltata, scrittura con `applyMovement`, conteggio degli importati dal risultato di `addProduct`).
+- CSV dei prodotti: tre colonne in fondo, **Unità**, **Giacenza** («magazzino:12; vetrina:2.5», posizione principale per prima e anche a 0, così un esaurito resta articolo a quantità) e **Scorta minima**; vuote per i pezzi unici (`stockCell`, `productCsvRows` in `utils/productCsv.ts`).
+- Import (Impostazioni, pulsante e trascinamento): Giacenza vuota o colonna assente = pezzo unico come prima; Giacenza valida = articolo a quantità creato con `addProduct(dati, { stock })`, che chiama `withStartingStock` (`utils/inventoryOps.ts`): un carico «iniziale» per posizione con `applyMovement`, la posizione del prodotto per prima, così resta la principale e gli eventi ridanno la giacenza salvata; `withInitialStock` di Aggiungi ora passa da lì. Giacenza scritta ma non valida: riga saltata. Una riga con la giacenza è disponibile anche se lo Status dice venduto. Gli importati si contano dal risultato di `addProduct` (prima una riga rifiutata contava come importata).
+- Report nuovi in Impostazioni › Dati e backup: **Esporta giacenze** (SKU, Categoria, Posizione, Quantità, Unità, Scorta minima, Sotto scorta; una riga per posizione, pezzi unici a 1, esauriti a 0) ed **Esporta movimenti** (Data, SKU, Tipo, Quantità, Unità, Da, A, Causale, Prezzo, Contatto, Nota; gli eventi `stock` dal più vecchio), con lo stesso meccanismo dell'export di prima (`exportCsv`). Nei report posizioni e categorie hanno il nome. `isLowStock` in `utils/stock.ts` (sotto la scorta minima, strettamente), pronta per M06.
+- Test jest: `withStartingStock`, `isLowStock`, `stockCell`, `parseStockCell`, colonne nuove, giro esporta-reimporta in memoria (giacenza, posizione principale, eventi), i due report.
+- Prova sul web `prova/m08-csv.cjs` (4 scenari, tutti come atteso): giro esporta-reimporta con VIS-0098 (12 in Magazzino e 2,5 in Vetrina principale, kg, scorta 20), LIN-0021 esaurito, AST-0033 0,125 m → i 6 prodotti «RT-» identici in posizione, stato, unità, scorta minima, giacenza, e giacenza salvata = eventi rigiocati; CSV di prima importato come prima (venduto resta venduto, nessuna giacenza), due giacenze non valide saltate, «vetrina:2,5; magazzino:4» con Status venduto → disponibile, `magazzino:0` senza posizione → esaurito in Magazzino; report giacenze (6 righe, nomi, esaurito a 0 «sì», venduto assente); report movimenti dopo uno scarico dalla Scheda (4 righe = 4 eventi `stock`, ordine giusto, nota con la virgola).
+- Regressione: `a2-csv.cjs` come dopo M03 (19 colonne invece di 16; nel messaggio «o giacenza non valida»); `m03-giacenza.cjs` e `m04-movimenta.cjs` con gli stessi esiti.
+- Nei 5 stili: `FETTA=m08` (Dati e backup, import) → `prova/stili-m08.jpg`, 0 errori in console.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 204 verdi, bundle Android 5,14 MB con 62 asset, 32 schermate senza errori in console.
+- Decisioni prese al posto dell'utente: 7 righe M08 in `DECISIONI_DA_RIVEDERE.md`. Da fare quando torna il login: il backup su Drive ha ancora la sua copia delle colonne di prima.
+
 ## 22 novembre 2026 — Fase B, M04: «Movimenta» nella Scheda e filtro Movimenti (ticket 02)
 
 - Branch `funzioni/magazzino`.

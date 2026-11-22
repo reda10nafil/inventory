@@ -3,6 +3,7 @@ import {
   applyMovement,
   formatQty,
   isAt,
+  isLowStock,
   isOutOfStock,
   isStocked,
   mainLocation,
@@ -223,5 +224,21 @@ describe('replayStock', () => {
   it('ignora gli eventi che non sono movimenti', () => {
     const other = [{ type: 'moved' as const, details: { from: 'a', to: 'b' } }, { type: 'sold' as const, details: { finalPrice: 3 } }];
     expect(replayStock(other)).toEqual({});
+  });
+});
+
+describe('isLowStock (ticket 05)', () => {
+  const s = (stock: Record<string, number>, extra: Partial<Product> = {}) => item({ stock, unit: 'pz', ...extra });
+  it('sotto scorta solo strettamente sotto la scorta minima, sommando le posizioni', () => {
+    expect(isLowStock(s({ vetrina: 2, magazzino: 2 }, { minStock: 5 }))).toBe(true);
+    expect(isLowStock(s({ vetrina: 3, magazzino: 2 }, { minStock: 5 }))).toBe(false);
+    expect(isLowStock(s({ vetrina: 0 }, { minStock: 1 }))).toBe(true);
+    expect(isLowStock(s({ vetrina: 0.1, magazzino: 0.2 }, { minStock: 0.3 }))).toBe(false);
+  });
+  it('senza scorta minima, pezzo unico o nel cestino: mai', () => {
+    expect(isLowStock(s({ vetrina: 0 }))).toBe(false);
+    expect(isLowStock(s({ vetrina: 0 }, { minStock: 0 }))).toBe(false);
+    expect(isLowStock(item({ minStock: 5 }))).toBe(false);
+    expect(isLowStock(s({ vetrina: 0 }, { minStock: 5, deletedAt: '2026-11-22' }))).toBe(false);
   });
 });

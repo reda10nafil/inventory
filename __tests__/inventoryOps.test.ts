@@ -1,5 +1,5 @@
 import type { Product, TimelineEvent } from '../types';
-import { editableUpdates, moveOf, movementOf, refusalText, saleOf, withInitialStock, type OpResult } from '../utils/inventoryOps';
+import { editableUpdates, moveOf, movementOf, refusalText, saleOf, withInitialStock, withStartingStock, type OpResult } from '../utils/inventoryOps';
 import { describeStockEvent, qtyAt, replayStock, stockOf, storedStock } from '../utils/stock';
 
 const NOW = '2026-11-22T10:00:00.000Z';
@@ -104,6 +104,39 @@ describe('withInitialStock', () => {
   it('rifiuta quantità negative o non numeriche', () => {
     expect(withInitialStock(item(), -1, NOW)).toEqual({ ok: false, reason: 'bad_qty' });
     expect(withInitialStock(item(), Number.NaN, NOW)).toEqual({ ok: false, reason: 'bad_qty' });
+  });
+});
+
+describe('withStartingStock (import CSV, M08)', () => {
+  it('un carico «iniziale» per posizione, la posizione del prodotto per prima e principale', () => {
+    const r = withStartingStock(item({ location: 'vetrina' }), { magazzino: 12, vetrina: 2.5 }, NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.product).toMatchObject({ stock: { vetrina: 2.5, magazzino: 12 }, location: 'vetrina', unit: 'pz', updatedAt: base.updatedAt });
+    expect(r.events.map((e) => [e.details.to, e.details.qty, e.details.reason, e.details.before, e.details.after])).toEqual([
+      ['vetrina', 2.5, 'iniziale', 0, 2.5],
+      ['magazzino', 12, 'iniziale', 2.5, 14.5],
+    ]);
+    expect(replayStock(r.events)).toEqual(stockOf(r.product));
+  });
+  it('posizione del prodotto senza quantità: diventa principale quella caricata', () => {
+    const r = withStartingStock(item({ location: '' }), { magazzino: 3 }, NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.product).toMatchObject({ stock: { magazzino: 3 }, location: 'magazzino' });
+  });
+  it('tutto a 0: esaurito nella sua posizione, senza eventi; posizione vuota → quella del CSV', () => {
+    const r = withStartingStock(item(), { vetrina: 0 }, NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.product).toMatchObject({ stock: { vetrina: 0 }, location: 'vetrina' });
+    expect(r.events).toEqual([]);
+    const s = withStartingStock(item({ location: '' }), { magazzino: 0 }, NOW);
+    if (!s.ok) throw new Error(s.reason);
+    expect(s.product).toMatchObject({ stock: { magazzino: 0 }, location: 'magazzino' });
+  });
+  it('rifiuta quantità non valide e prodotti non disponibili', () => {
+    expect(withStartingStock(item(), { vetrina: -1 }, NOW)).toEqual({ ok: false, reason: 'bad_qty' });
+    expect(withStartingStock(item(), { '': 1 }, NOW)).toEqual({ ok: false, reason: 'bad_qty' });
+    expect(withStartingStock(item({ status: 'sold' }), { vetrina: 1 }, NOW)).toEqual({ ok: false, reason: 'not_allowed' });
+    expect(withStartingStock(item({ status: 'sold' }), { vetrina: 0 }, NOW)).toEqual({ ok: false, reason: 'not_allowed' });
   });
 });
 

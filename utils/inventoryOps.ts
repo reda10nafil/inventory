@@ -61,22 +61,41 @@ export function saleOf(product: Product | undefined, finalPrice: number | undefi
   return { ok: true, patch: stockPatch(r.product), events: r.events };
 }
 
+export type StartResult = { ok: true; product: Product; events: NewEvent[] } | { ok: false; reason: 'bad_qty' | 'not_allowed' };
+
+/**
+ * Prodotto nuovo con la sua giacenza per posizione (import CSV, M08): articolo a quantità con un carico
+ * «iniziale» per ogni posizione con quantità, così gli eventi ridanno la giacenza salvata. Si carica prima la
+ * posizione del prodotto, che resta la principale se ha quantità. Tutto a 0: articolo esaurito senza eventi.
+ */
+export function withStartingStock(product: Product, stock: Readonly<Record<string, number>>, now: string): StartResult {
+  const entries = Object.entries(stock);
+  if (entries.some(([place, qty]) => !place || !Number.isFinite(qty) || qty < 0)) return { ok: false, reason: 'bad_qty' };
+  const loads = entries.filter(([, qty]) => round3(qty) > 0);
+  loads.sort(([a], [b]) => Number(b === product.location) - Number(a === product.location));
+  let current: Product = { ...product, unit: product.unit || DEFAULT_UNIT, stock: {} };
+  const events: NewEvent[] = [];
+  for (const [to, qty] of loads) {
+    const r = applyMovement(current, { kind: 'carico', qty, to, reason: 'iniziale' }, now);
+    if (!r.ok) return { ok: false, reason: r.error === 'bad_qty' ? 'bad_qty' : 'not_allowed' };
+    current = r.product;
+    events.push(...r.events);
+  }
+  if (!loads.length) {
+    if (product.deletedAt || product.status !== 'available') return { ok: false, reason: 'not_allowed' };
+    const location = product.location || entries[0]?.[0] || '';
+    return { ok: true, product: { ...current, location, stock: { [location]: 0 } }, events: [] };
+  }
+  // Il carico iniziale non è una scansione: date del prodotto come per un pezzo unico appena creato
+  return { ok: true, product: { ...current, updatedAt: product.updatedAt, lastScannedAt: product.lastScannedAt }, events };
+}
+
 /**
  * Prodotto nuovo con una quantità (Aggiungi): diventa articolo a quantità con un carico «iniziale» nella sua
  * posizione, così gli eventi ridanno la giacenza salvata. Quantità 0: articolo a quantità esaurito, senza eventi.
  */
-export function withInitialStock(
-  product: Product,
-  qty: number,
-  now: string,
-): { ok: true; product: Product; events: NewEvent[] } | { ok: false; reason: 'bad_qty' | 'not_allowed' } {
-  if (!Number.isFinite(qty) || qty < 0) return { ok: false, reason: 'bad_qty' };
-  const start: Product = { ...product, unit: product.unit || DEFAULT_UNIT, stock: {} };
-  if (round3(qty) === 0) return { ok: true, product: { ...start, stock: { [product.location]: 0 } }, events: [] };
-  const r = applyMovement(start, { kind: 'carico', qty, to: product.location, reason: 'iniziale' }, now);
-  if (!r.ok) return { ok: false, reason: r.error === 'bad_qty' ? 'bad_qty' : 'not_allowed' };
-  // Il carico iniziale non è una scansione: date del prodotto come per un pezzo unico appena creato
-  return { ok: true, product: { ...r.product, updatedAt: product.updatedAt, lastScannedAt: product.lastScannedAt }, events: r.events };
+export function withInitialStock(product: Product, qty: number, now: string): StartResult {
+  return withStartingStock(product, { [product.location]: qty }, now);
 }
 
 /**

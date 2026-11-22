@@ -89,6 +89,16 @@ export function totalStock(product: StockProduct): number {
 export const isOutOfStock = (product: StockProduct): boolean =>
   isStocked(product) && !product.deletedAt && totalStock(product) === 0;
 
+/**
+ * Sotto scorta (ticket 05): articolo a quantità, non nel cestino, con scorta minima scritta e giacenza totale
+ * strettamente minore. Un pezzo unico non ha scorta minima. Usata dal CSV delle giacenze (M08) e dagli avvisi (M06).
+ */
+export function isLowStock(product: StockProduct & Pick<Product, 'minStock'>): boolean {
+  const min = product.minStock;
+  if (!isStocked(product) || product.deletedAt || typeof min !== 'number' || !Number.isFinite(min) || min <= 0) return false;
+  return Object.values(milliOf(product)).reduce((a, b) => a + b, 0) < toMilli(min);
+}
+
 /** Il prodotto è in questa posizione: è la sua posizione principale o ci ha giacenza. Sostituisce `p.location === x`. */
 export function isAt(product: StockProduct, place: string): boolean {
   return product.location === place || (milliOf(product)[place] ?? 0) > 0;

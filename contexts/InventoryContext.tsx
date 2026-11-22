@@ -8,7 +8,7 @@ import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { usage } from '../utils/productRules';
 import { describeChanges } from '../utils/productChanges';
-import { editableUpdates, moveOf, movementOf, saleOf, withInitialStock } from '../utils/inventoryOps';
+import { editableUpdates, moveOf, movementOf, saleOf, withInitialStock, withStartingStock } from '../utils/inventoryOps';
 import type { Movement, MovementError } from '../utils/stock';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
@@ -70,8 +70,9 @@ interface InventoryContextType {
   timeline: TimelineEvent[];
   alerts: Alert[];
   libraries: Library[];
-  /** Con `qty` il prodotto nasce articolo a quantità (carico iniziale nella sua posizione); false se la quantità non va. */
-  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>, options?: { qty?: number }) => boolean;
+  /** Con `qty` il prodotto nasce articolo a quantità (carico iniziale nella sua posizione), con `stock` con la giacenza
+   *  per posizione (import CSV, un carico iniziale per posizione); false se la quantità non va. */
+  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>, options?: { qty?: number; stock?: Record<string, number> }) => boolean;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   restoreProduct: (id: string) => void;
@@ -399,7 +400,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     setProducts(apply);
   };
 
-  const addProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>, options?: { qty?: number }): boolean => {
+  const addProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>, options?: { qty?: number; stock?: Record<string, number> }): boolean => {
     const sku = productData.sku || generateSKU();
     const now = new Date().toISOString();
 
@@ -410,10 +411,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       createdAt: now,
       updatedAt: now,
     };
-    // Quantità scritta in Aggiungi: articolo a quantità, con il carico iniziale come evento (M03)
+    // Quantità scritta in Aggiungi (M03) o giacenza per posizione dall'import CSV (M08): articolo a quantità,
+    // con un carico iniziale come evento per ogni posizione
     let stockEvents: Omit<TimelineEvent, 'id'>[] = [];
-    if (options?.qty != null) {
-      const r = withInitialStock(newProduct, options.qty, now);
+    if (options?.stock != null || options?.qty != null) {
+      const r = options.stock != null
+        ? withStartingStock(newProduct, options.stock, now)
+        : withInitialStock(newProduct, options.qty ?? 0, now);
       if (!r.ok) return false;
       newProduct = r.product;
       stockEvents = r.events;
