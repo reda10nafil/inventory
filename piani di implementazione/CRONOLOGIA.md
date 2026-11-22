@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, punto 1: prova di tutte le funzioni sul web, mappa del gestionale (bozza)
+
+- Branch `funzioni/magazzino`, commit di soli documenti e script di prova (nessun file dell'app).
+- Prova: `funzionalita/prova-funzioni.md` (riepilogo con le righe della lista B.1, 30 difetti nuovi P01-P30, ordine delle correzioni C01-C14); dettagli per area in `funzionalita/prova/esito-a1.md` … `esito-a4.md`; script Playwright `a1-…` `a4-…` con `lib.cjs`. 4 aree provate da 4 subagenti in parallelo, poi 95 scenari rilanciati dalla sessione principale con gli stessi esiti. «Funziona» = lo stato salvato cambia come deve.
+- Esiti: A1 Inventario, Scheda, Modifica, Cronologia, Cestino 24 funzionano / 16 no / 4 non verificabili; A2 Aggiungi, Campi, Layout, Modelli, CSV 15 / 12 / 4; A3 Automazioni, Scanner, Azione rapida, Chat 37 / 8 / 5; A4 Impostazioni 29 / 10 / 5. Più gravi: Modifica cambia il link GS1, cancella i valori dei campi nel cestino e tronca «2,5»; si rivende un capo venduto e si vende dal cestino; posizioni e cartelle eliminate lasciano prodotti orfani; i modelli del Layout builder salvano un solo campo; il giro CSV perde cartella e foto.
+- Difetti noti: confermati D02, D03, D12-D16, D18, D19, D21; già corretti D01, D04-D07 (D07 resta nel PDF), D11, D17, D22-D24.
+- Mappa Wayfinder (bozza, si chiude dopo le correzioni): `funzionalita/map.md`, ticket `issues/01-10` decisi dall'agente (regola 4), `grafo-lavori.md` con le fette M01-M10. Rivista dopo il parere del revisore (venduto solo per i pezzi unici; scritture e letture della posizione da `stockOf`/`isAt` nello stesso commit; decimali; categorie e contatti in contesti propri).
+- Verifiche: nessun file dell'app cambiato; tsc, eslint, jest come dopo F00.
+
 ## 22 novembre 2026 — Fase B, F00: conferme e avvisi funzionanti sul web
 
 - Branch / SHA: `funzioni/magazzino` (tagliato da `ui-ux/stili` c2734a0), primo commit della fase B.
