@@ -28,7 +28,7 @@ export default function AuditScreen() {
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, getProductBySku, updateProduct } = useInventory();
+    const { products, getProductBySku, moveProduct } = useInventory();
     const { locations } = useLocations();
 
     const [step, setStep] = useState<'scan_location' | 'audit_loop'>('scan_location');
@@ -44,7 +44,9 @@ export default function AuditScreen() {
         intruders: auditItems.filter(i => i.status === 'intruder').length,
     }), [auditItems]);
 
-    const progress = stats.total > 0 ? (stats.found / (stats.total - stats.intruders)) : 0; // Exclude intruders from base total for progress? Or include? Let's keep simple.
+    // Avanzamento sui soli capi attesi: gli intrusi non abbassano la percentuale (P22)
+    const expected = stats.total - stats.intruders;
+    const progress = expected > 0 ? stats.found / expected : 0;
 
     const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
         setShowScanner(false);
@@ -147,7 +149,7 @@ export default function AuditScreen() {
                             text: 'Sposta Qui & Aggiungi',
                             onPress: () => {
                                 if (targetLocation) {
-                                    updateProduct(product.id, { location: targetLocation.id });
+                                    moveProduct(product.id, targetLocation.id); // «spostato» in cronologia (D15)
                                     addIntruder(product);
                                     Alert.alert('Spostato', 'Posizione aggiornata.');
                                 }
@@ -254,7 +256,7 @@ export default function AuditScreen() {
                         </View>
                         <View style={styles.progressContainer}>
                             <Text style={styles.progressText}>
-                                {Math.round((stats.found / (stats.total || 1)) * 100)}%
+                                {Math.round(progress * 100)}%
                             </Text>
                         </View>
                     </View>

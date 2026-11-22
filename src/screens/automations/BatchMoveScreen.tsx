@@ -23,7 +23,7 @@ export default function BatchMoveScreen() {
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, updateProduct, getProductBySku } = useInventory();
+    const { products, moveProduct, getProductBySku } = useInventory();
     const { locations, getLocation, getNextLocation } = useLocations();
 
     const [step, setStep] = useState<Step>('scan_location');
@@ -142,10 +142,12 @@ export default function BatchMoveScreen() {
                 return;
             }
 
-            // Move product
-            updateProduct(product.id, {
-                location: targetLocation.id,
-            });
+            // Spostamento vero: in cronologia «spostato», non «modificato» (D15)
+            if (!moveProduct(product.id, targetLocation.id)) {
+                setFeedbackMessage(`${product.sku} è nel cestino`);
+                setTimeout(() => setFeedbackMessage(null), 1500);
+                return;
+            }
 
             setScannedCount(c => c + 1);
             setLastScannedProduct(`${product.sku} (${product.furType})`);

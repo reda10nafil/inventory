@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C04: Spostamento rapido e Audit registrano «spostato» (D15, P22)
+
+- Branch `funzioni/magazzino`.
+- **D15**: Spostamento rapido e «Sposta qui» dell'Audit cambiavano la posizione con `updateProduct`, quindi in cronologia risultava «modificato». Ora usano `moveProduct` (evento `moved` con da/a, `lastScannedAt` aggiornato); Spostamento rapido dice «… è nel cestino» se il capo letto è nel cestino. Serve anche alle fette del magazzino: tutti gli spostamenti passano da un solo punto.
+- **P22**: la percentuale dell'Audit scendeva a 50% con un intruso anche con tutti gli attesi trovati; ora conta solo i capi attesi.
+- Prova sul web: `a3-batch-sposta` evento `moved` stand_c → vetrina (prima `modified`); `a3-audit-intruso-sposta` evento `moved` vetrina → stand_b e 100% con un intruso (prima 50%); cambio di destinazione e posizione piena come prima.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 101 verdi, bundle Android 5,08 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C03: niente vendite doppie né dal cestino (P05, P06, P25)
 
 - Branch `funzioni/magazzino`.

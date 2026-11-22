@@ -10,6 +10,12 @@ Aggiornato il 22 novembre 2026, notte, dalla prima sessione della fase B. Le reg
   - **Prova di tutte le funzioni** (7dd83ac): `prova-funzioni.md` (riepilogo, difetti P01-P30, ordine C01-C14), esiti per area in `prova/esito-a1.md` … `a4`, script Playwright in `prova/`.
   - **Mappa Wayfinder in bozza**: `map.md`, `issues/01-10` (decise dall'agente, regola 4), `grafo-lavori.md` (fette M01-M10). Si conferma dopo le correzioni.
 
+## Stato delle correzioni (aggiornato a ogni task)
+
+- C01 fatto (d3128a6 + 908c316 per i fine riga), C02 fatto (7baa3f8 + 50c60d4), C03 fatto (bdf04fa), C04 fatto. Prossimo: **C05**.
+- Fine riga: alcuni file sono CRLF nell'indice (`EditScreen.tsx`, `InventoryContext.tsx`…), gli altri LF. Mettere in stage con `bash "piani di implementazione/funzionalita/prova/stage.sh" <file>…` (conserva lo stile del repository) e controllare con `git diff --cached --numstat` che il numero di righe cambiate sia piccolo. Per modificare i file usare lo strumento Edit (conserva i fine riga), non script Python che riscrivono il file.
+- Chiusura di un task: `bash "piani di implementazione/funzionalita/prova/controllo.sh" <cartella scratch>` (tsc, eslint, jest, bundle, 30 schermate).
+
 ## Cosa fare adesso, in ordine
 
 1. Correzioni **C01 → C14** della tabella in fondo a `prova-funzioni.md`, una per task (difetti con la stessa causa nello stesso task). Prima di correggere un difetto rileggi la riga in `prova/esito-aN.md` (file:riga) e rilancia lo scenario che lo mostra: dopo la correzione lo stesso scenario deve dare l'esito giusto.
