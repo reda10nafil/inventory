@@ -1746,9 +1746,9 @@
     "semantic_hash": ""
   },
   "index.js": {
-    "mtime": 1795315119.9594169,
-    "seen": 1795323475.1485813,
-    "ast_hash": "13d08b1bd57516e28f897c4b75fa74d3",
+    "mtime": 1795325819.1218228,
+    "seen": 1795326113.490437,
+    "ast_hash": "ce8f20945996351abceb0960a2e6af91",
     "semantic_hash": ""
   },
   "metro.config.js": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795323418.267525,
-    "seen": 1795323475.1495197,
-    "ast_hash": "5179d5ba149358f465269b7006531b3b",
+    "mtime": 1795326095.1669216,
+    "seen": 1795326113.5483456,
+    "ast_hash": "0a375af8c81b98b762089c0f1bd17d5a",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2430,9 +2430,9 @@
     "semantic_hash": ""
   },
   "__tests__/formValidation.test.ts": {
-    "mtime": 1795323093.950462,
-    "seen": 1795323475.1485813,
-    "ast_hash": "35b63909663b8a792182499cf8fac0c8",
+    "mtime": 1795324267.37402,
+    "seen": 1795326113.4662652,
+    "ast_hash": "52080ab6abd4047d883c56314606be02",
     "semantic_hash": ""
   },
   "__tests__/layoutOrder.test.ts": {
@@ -2442,9 +2442,9 @@
     "semantic_hash": ""
   },
   "__tests__/theme.test.ts": {
-    "mtime": 1795319763.736407,
-    "seen": 1795323475.1485813,
-    "ast_hash": "1f935c59352a76893cedb75c2b407728",
+    "mtime": 1795324226.966728,
+    "seen": 1795326113.4677863,
+    "ast_hash": "775372e48525a93ab21e7571a4cd72b2",
     "semantic_hash": ""
   },
   "components/ui/AppIcon.tsx": {
@@ -2454,9 +2454,9 @@
     "semantic_hash": ""
   },
   "components/ui/Backdrop.tsx": {
-    "mtime": 1795321734.1669788,
-    "seen": 1795323475.1485813,
-    "ast_hash": "9aab119950c22a8a781a6ab5cab89f78",
+    "mtime": 1795324226.9661157,
+    "seen": 1795326113.479438,
+    "ast_hash": "31112e89ae1edadfa34f9ac207c00e4a",
     "semantic_hash": ""
   },
   "components/ui/Glass.tsx": {
@@ -2622,9 +2622,9 @@
     "semantic_hash": ""
   },
   "utils/color.ts": {
-    "mtime": 1795315854.972711,
-    "seen": 1795323475.1495197,
-    "ast_hash": "41d142074a199521608abda93bf89b9c",
+    "mtime": 1795324226.964607,
+    "seen": 1795326113.5452828,
+    "ast_hash": "3751b5e7ef963b2bd8aceb945901148c",
     "semantic_hash": ""
   },
   "utils/formValidation.ts": {
@@ -2688,9 +2688,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795323418.267525,
-    "seen": 1795323475.1495197,
-    "ast_hash": "e05c3a26ea47d83cc534ca80f555e408",
+    "mtime": 1795326095.1679218,
+    "seen": 1795326113.5483456,
+    "ast_hash": "7798952938cbcd79931f08c94cb69ae9",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -2700,9 +2700,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/PASSAGGIO_UI_UX.md": {
-    "mtime": 1795320185.860364,
-    "seen": 1795323475.1495197,
-    "ast_hash": "286891c779d93537463c75f23757f71f",
+    "mtime": 1795323501.624337,
+    "seen": 1795326113.5493386,
+    "ast_hash": "6dd41d7cf6b0caa1dcce3fa7a8394243",
     "semantic_hash": ""
   },
   "piani di implementazione/ui-ux/audit-tema.md": {
@@ -2979,6 +2979,84 @@
     "mtime": 1795315120.0321987,
     "seen": 1795323475.1495197,
     "ast_hash": "2c0e39de388c9657f1fefc6193d08fff",
+    "semantic_hash": ""
+  },
+  "__tests__/webAlert.test.ts": {
+    "mtime": 1795325818.8926878,
+    "seen": 1795326113.4677863,
+    "ast_hash": "553a76fa332f493f908633261909e438",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/lib.cjs": {
+    "mtime": 1795325886.4371169,
+    "seen": 1795326113.49146,
+    "ast_hash": "ca3aaac43b4b9a2ae679d8189b9e3135",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/t-alert.cjs": {
+    "mtime": 1795325917.9749906,
+    "seen": 1795326113.49146,
+    "ast_hash": "431656a303f5f747790f8ea5db74bd2a",
+    "semantic_hash": ""
+  },
+  "utils/webAlert.ts": {
+    "mtime": 1795325818.753559,
+    "seen": 1795326113.5457869,
+    "ast_hash": "0d1f4334b5a02b8b53d849af242eb760",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/01-inventario.jpg": {
+    "mtime": 1795323978.498243,
+    "seen": 1795326113.558681,
+    "ast_hash": "d35ec618edf405d732d3f25254ae3037",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/02-scheda.jpg": {
+    "mtime": 1795323978.7223983,
+    "seen": 1795326113.558681,
+    "ast_hash": "0f43f4b5264b994811f686ca6c2e0bf2",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/03-aggiungi.jpg": {
+    "mtime": 1795323979.0010726,
+    "seen": 1795326113.558681,
+    "ast_hash": "f5192c41ac9a3c9a41271a0091cfcf15",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/04-cronologia.jpg": {
+    "mtime": 1795323979.2375798,
+    "seen": 1795326113.558681,
+    "ast_hash": "7f1224cd583b6afad2359189ca4f6c3d",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/05-modifica.jpg": {
+    "mtime": 1795323979.511422,
+    "seen": 1795326113.558681,
+    "ast_hash": "1be74ef035a327952d3b28f1fca633a1",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/06-impostazioni.jpg": {
+    "mtime": 1795323979.7860777,
+    "seen": 1795326113.558681,
+    "ast_hash": "60b429d951176e13c3fcc816606cb8bf",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/07-campi.jpg": {
+    "mtime": 1795323980.0054061,
+    "seen": 1795326113.558681,
+    "ast_hash": "45af6b44f7d4414f689c7018f7fa4f49",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/08-layout-builder.jpg": {
+    "mtime": 1795323980.2432108,
+    "seen": 1795326113.558681,
+    "ast_hash": "efdb3812bb735ab20d502b4058807c00",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/ui-ux/schermate-dopo/09-automazioni.jpg": {
+    "mtime": 1795323980.4628546,
+    "seen": 1795326113.558681,
+    "ast_hash": "8e7d0da506701e60696ea6fd18df80cb",
     "semantic_hash": ""
   }
 }

@@ -1,5 +1,9 @@
-import { AppRegistry, Platform } from 'react-native';
+import { Alert, AppRegistry, Platform } from 'react-native';
 import App from './App';
+import { installWebAlert } from './utils/webAlert';
+
+// Sul web Alert.alert di react-native-web è vuoto: conferme e avvisi diventano finestre del browser.
+if (Platform.OS === 'web') installWebAlert(Alert, window);
 
 // Package android: com.redako35.syncroflow, scheme syncroflow://
 // MainActivity getMainComponentName = "main" (expo legacy) — mantenuto per compatibilità Fase 1-5

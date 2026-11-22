@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, F00: conferme e avvisi funzionanti sul web
+
+- Branch / SHA: `funzioni/magazzino` (tagliato da `ui-ux/stili` c2734a0), primo commit della fase B.
+- Trovato preparando la prova delle funzioni: su react-native-web `Alert.alert` è vuoto (`static alert() {}`), quindi sul web nessun avviso compariva e nessun pulsante di conferma funzionava (138 chiamate: elimina, svuota cestino, ripristina, condividi, messaggi d'errore…).
+- Fatto: `utils/webAlert.ts` (solo web, installato in `index.js`): senza pulsanti o con un solo OK → `window.alert`; una scelta più Annulla → `window.confirm`; più scelte → `window.prompt` col numero. Test `__tests__/webAlert.test.ts` (6). Su Android e iOS resta l'Alert nativo.
+- Prova sul web (`funzionalita/prova/t-alert.cjs`, Playwright, campionario in un browser pulito): selezione multipla › cestino › conferma sì → prodotto con `deletedAt` ed evento «deleted» in cronologia; conferma no → nulla cambia.
+- Aiuti per le prove della fase B: `funzionalita/prova/lib.cjs` (un browser pulito per scenario, campionario caricato, finestre del browser gestite, lettura dello stato salvato).
+- Verifiche: base prima del task tsc 0, eslint 0, jest 76, bundle Android 5,08 MB; dopo tsc 0, eslint 0, jest 82 verdi (9 suite), bundle Android 5,08 MB con 62 asset, 30 schermate del campionario (`schermate.cjs`, `EXTRA=1`, porta 8082) senza errori in console.
+
 ## 22 novembre 2026 — UI/UX: bagliori con la trasparenza giusta sul telefono (dopo L9)
 
 - Branch / SHA: `ui-ux/stili`, commit dopo L9.
