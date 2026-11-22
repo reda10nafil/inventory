@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L0: punto di partenza
+
+- Branch / SHA: `ui-ux/stili` da 81d78aa, worktree `D:\FurInventory Pro\inventory-stili` (copia di `node_modules` del checkout principale). Versione web del worktree sulla porta 8082 (configurazione `syncro-flow-stili-web` in `D:\FurInventory Pro\.claude\launch.json`; la 8081 è occupata dal checkout principale), seed su 8765 (`campionario-seed`).
+- Verifiche: `npx tsc --noEmit` 0 errori; `npx eslint .` 0 problemi; jest 4 suite, 46 test verdi; bundle Android `--dev false` riuscito (5,0 MB, 62 asset); avvio web riuscito.
+- Schermate «prima»: le 18 del campionario rifatte nel worktree sono **identiche pixel per pixel** a quelle del ticket 03 (`schermate-attuali/`): il campionario è deterministico, quindi il controllo G1 può confrontare pixel per pixel.
+- `campionario/schermate.cjs`: nuovi parametri facoltativi `[stile] [cartella]` e variabile `APP` per la porta; lo stile viene scritto in `@syncro/stile` prima di caricare.
+- Ancora da fare: L1.
+
 ## 22 novembre 2026 — UI/UX: mappa chiusa, branch `ui-ux/stili`
 
 - Branch / SHA: nuovo branch `ui-ux/stili` da main a cfcdecb, con un commit dei soli documenti del piano; pubblicato su GitHub (repository pubblico) con il sì dell'utente. Il checkout principale resta su main.

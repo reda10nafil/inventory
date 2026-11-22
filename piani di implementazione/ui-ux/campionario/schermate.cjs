@@ -1,10 +1,13 @@
 // Schermate del campionario a 375 px (ticket 03) - solo per sviluppo, NON fa parte dell'app.
-// Uso: node schermate.cjs <percorso di playwright>   (app web su 8081 e serve-seed.mjs su 8765 accesi)
+// Uso: node schermate.cjs <percorso di playwright> [stile] [cartella]   (app web e serve-seed.mjs su 8765 accesi)
+//   stile: attuale | babilonia | ishtar | ardesia | minimal (scritto in AsyncStorage prima di caricare; vuoto = predefinito)
+//   cartella: dove salvare (predefinito ../schermate-attuali); APP=http://localhost:8082 per un'altra porta
 const { chromium } = require(process.argv[2] || 'playwright');
 const path = require('path');
 
-const DIR = path.resolve(__dirname, '..', 'schermate-attuali');
-const APP = 'http://localhost:8081';
+const STILE = process.argv[3] || '';
+const DIR = path.resolve(process.argv[4] || path.join(__dirname, '..', 'schermate-attuali'));
+const APP = process.env.APP || 'http://localhost:8081';
 const W = 375, H = 812;
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -38,7 +41,8 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
   await page.goto(APP);
   await page.waitForTimeout(4000);
-  const seeded = await page.evaluate(async () => {
+  const seeded = await page.evaluate(async (stile) => {
+    if (stile) localStorage.setItem('@syncro/stile', stile);
     const org = 'local';
     if (JSON.parse(localStorage.getItem(`inventory:v1:${org}:products`) || '[]').length) return 'già presente';
     const seed = await (await fetch('http://localhost:8765/seed.json')).json();
@@ -48,8 +52,8 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
     localStorage.setItem(`inventory:v1:${org}:alerts`, '[]');
     localStorage.setItem(`inventory:v1:${org}:deleted_product_ids`, '[]');
     return 'caricato';
-  });
-  log('campionario', seeded);
+  }, STILE);
+  log('campionario', seeded, STILE ? `stile ${STILE}` : 'stile predefinito');
 
   await step('inventario', async () => { await home(); await shot('01-inventario.png'); await tall('01b-inventario-intero.png'); });
   await step('scheda', async () => { await home(); await vis('VIS-0142').click(); await vis('CAMPI STRUTTURATI').waitFor(); await shot('02-scheda.png'); await tall('02b-scheda-intera.png'); });
