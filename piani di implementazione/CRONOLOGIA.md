@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C02: Modifica salva i dati giusti (P01, P02, P04)
+
+- Branch `funzioni/magazzino`.
+- **P01**: ogni salvataggio in Modifica rigenerava il link GS1 con un seriale nuovo (QR, etichette e tag NFC già fatti non corrispondevano più). Ora `keepGS1DigitalLink` (`utils/gs1.ts`, con `parseGS1DigitalLink`): il link resta com'è finché SKU e lotto non cambiano; se cambiano, link nuovo con lo stesso seriale. Test `__tests__/gs1Keep.test.ts` (6).
+- **P02**: salvare un prodotto cancellava il valore dei campi personalizzati nel cestino (il cestino promette che i dati restano). Ora il valore resta con la scheda del campo salvata nel prodotto.
+- **P04**: Modifica aperta dall'indirizzo o ricaricata mostrava il modulo vuoto (i prodotti si leggono dopo) e salvando si sovrascriveva il prodotto. Ora la schermata crea il modulo solo quando il prodotto c'è (`EditProductForm` con `key` = id).
+- Prova sul web: `a1-mod-base` e `a4-gs1-modifica` link uguale prima e dopo (prima cambiava); `a1-mod-campo-nel-cestino` valore conservato (prima «perso»); `a1-mod-d03` aperta da `product/edit/cmp-1` mostra lo SKU VIS-0142 (prima vuoto). Restano D03 (C08) e il codice finto del QR (D02, C11).
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 94 verdi, bundle Android 5,08 MB con 62 asset, 30 schermate senza errori in console. Fine riga CRLF di `EditScreen.tsx` e `utils/gs1.ts` conservati.
+
 ## 22 novembre 2026 — Fase B, C01: numeri in formato italiano (P03)
 
 - Branch `funzioni/magazzino`.

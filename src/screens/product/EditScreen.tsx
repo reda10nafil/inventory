@@ -15,7 +15,8 @@ import { useLocations } from '../../../contexts/LocationsContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
-import { generateGS1DigitalLink } from '../../../utils/gs1';
+import { keepGS1DigitalLink } from '../../../utils/gs1';
+import type { Product } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { Glass } from '../../../components/ui/Glass';
@@ -24,16 +25,36 @@ import { Text, TextInput } from '../../../components/ui/Text';
 import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
+// Il modulo nasce solo quando il prodotto c'è. Aperta dall'indirizzo o ricaricata, la schermata partiva prima
+// che i prodotti fossero letti e il modulo restava vuoto: salvando si sovrascriveva il prodotto (P04).
 export default function EditProductScreen() {
+  const styles = useStyles();
+  const { id } = useLocalSearchParams();
+  const { getProductById } = useInventory();
+  const product = getProductById(id as string);
+
+  if (!product) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <Backdrop />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Prodotto non trovato</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  return <EditProductForm key={product.id} product={product} />;
+}
+
+function EditProductForm({ product }: { product: Product }) {
   const styles = useStyles();
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const { getProductById, updateProduct, libraries } = useInventory();
+  const id = product.id;
+  const { updateProduct, libraries } = useInventory();
   const { locations } = useLocations();
 
-  const product = getProductById(id as string);
   const { customFields } = useCustomFields();
   const { layout } = useLayout();
   const { gs1Config } = useGS1Config();
@@ -126,22 +147,17 @@ export default function EditProductScreen() {
       return;
     }
 
-    // GS1 Digital Link generation
-    let gs1DigitalLink = product?.gs1DigitalLink;
+    // Link GS1: resta quello di prima finché SKU e lotto non cambiano (P01)
+    let gs1DigitalLink = product.gs1DigitalLink;
     if (gs1Config.baseUrl) {
       const lottoValue = gs1Config.enableLotto && gs1Config.lottoFieldId
         ? customFieldValues[gs1Config.lottoFieldId]?.toString()
         : undefined;
-      // We pass products.length here for the progressive serial fallback if regenerating.
-      // Ideally, if the product already has a serial, we shouldn't overwrite it unless GTIN changes,
-      // but for this MVP, regenerating or ensuring it's attached is fine.
-      gs1DigitalLink = generateGS1DigitalLink(
-        gs1Config,
-        formData.sku.trim(),
-        products.length,
-        lottoValue,
-      );
+      gs1DigitalLink = keepGS1DigitalLink(gs1Config, product.gs1DigitalLink, formData.sku.trim(), products.length, lottoValue);
     }
+
+    // Un campo nel cestino non è più tra i campi attivi: il suo valore resta con la sua scheda di prima (P02)
+    const previous = new Map((product.customData || []).map((entry) => [entry.fieldSnapshot?.id, entry.fieldSnapshot]));
 
     updateProduct(id as string, {
       sku: formData.sku.trim(),
@@ -158,7 +174,7 @@ export default function EditProductScreen() {
       gs1DigitalLink,
       customData: Object.keys(customFieldValues)
         .map(fieldId => {
-          const field = customFields.find(f => f.id === fieldId);
+          const field = customFields.find(f => f.id === fieldId) ?? previous.get(fieldId);
           return field ? { value: customFieldValues[fieldId], fieldSnapshot: field } : null;
         }).filter(Boolean) as any,
     });
@@ -169,17 +185,6 @@ export default function EditProductScreen() {
       [{ text: 'OK', onPress: () => router.back() }]
     );
   };
-
-  if (!product) {
-    return (
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <Backdrop />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Prodotto non trovato</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Titolo di sezione scritto nel codice: iniziale maiuscola, filetto solo se lo stile lo prevede
   const renderSection = (title: React.ReactNode) => (
