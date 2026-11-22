@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C10: la Cronologia registra tutte le modifiche (P13)
+
+- Branch `funzioni/magazzino`.
+- **P13**: si registravano solo posizione, prezzi, note e foto aggiunte; peso, misure, tipo, SKU, cartella, data di produzione, foto tolte e campi personalizzati cambiavano senza traccia, anche lo spostamento in cartella dalla selezione multipla. Ora `describeChanges` (`utils/productChanges.ts`, test 4) scrive una riga per ogni campo cambiato davvero, con numeri e prezzi in formato italiano («Peso: 2,1 → 2,5», «Prezzo vendita: 4.200 € → 4.500 €», «Taglia: M → L»); un salvataggio senza cambiamenti non scrive nulla.
+- Prova sul web: `a1-mod-base` un evento «Posizione … | Cartella … | Prezzo vendita … | Peso: 2,1 → 2,5» (prima mancavano cartella e peso); `a1-mod-personalizzati` «Taglia: M → L | Condizione … | Colore … | Fornitore … | Dettagli …» (prima nessun evento); `a1-mod-peso-annulla` «Peso: 2,1 → 2,4»; `a1-inv-cartelle` 5 eventi per lo spostamento in cartella (prima 0).
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 120 verdi, bundle Android 5,09 MB con 62 asset, 30 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, C09: ricerca, Attenzione e filtro della cartella nell'Inventario (P14, P15, D14)
 
 - Branch `funzioni/magazzino`.

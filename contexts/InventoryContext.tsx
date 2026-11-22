@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { canMove, canSell, usage } from '../utils/productRules';
+import { describeChanges } from '../utils/productChanges';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
 export interface Library {
@@ -406,21 +407,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     const product = products.find((p) => p.id === id);
     if (!product) return;
 
-    const changes: string[] = [];
-
-    // Track specific changes
-    if (updates.location && updates.location !== product.location) {
-      changes.push(`Posizione: ${product.location} → ${updates.location}`);
-    }
-    if (updates.sellPrice && updates.sellPrice !== product.sellPrice) {
-      changes.push(`Prezzo vendita: €${product.sellPrice || 0} → €${updates.sellPrice}`);
-    }
-    if (updates.purchasePrice && updates.purchasePrice !== product.purchasePrice) {
-      changes.push(`Prezzo acquisto: €${product.purchasePrice || 0} → €${updates.purchasePrice}`);
-    }
-    if (updates.technicalNotes && updates.technicalNotes !== product.technicalNotes) {
-      changes.push('Note aggiornate');
-    }
+    // Tutto ciò che cambia davvero, compresi peso, misure, SKU, tipo, cartella e campi personalizzati (P13)
+    const changes = describeChanges(product, updates);
     if (updates.images && updates.images.length > product.images.length) {
       const newPhotos = updates.images.length - product.images.length;
       changes.push(`${newPhotos} foto aggiunte`);

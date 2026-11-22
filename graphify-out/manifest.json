@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "contexts/InventoryContext.tsx": {
-    "mtime": 1795330543.2912455,
-    "seen": 1795330900.077646,
-    "ast_hash": "06fe0e2ff59618343d86fd5b052b1f4c",
+    "mtime": 1795332712.021216,
+    "seen": 1795333076.3974047,
+    "ast_hash": "3b74455898f0aaa38402e4646bc7765b",
     "semantic_hash": ""
   },
   "contexts/LayoutContext.tsx": {
@@ -2406,9 +2406,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795332649.830475,
-    "seen": 1795332665.2713823,
-    "ast_hash": "e41bce4c6a6cc36382fa71c734d8c36d",
+    "mtime": 1795333061.2209547,
+    "seen": 1795333076.48111,
+    "ast_hash": "3e96e2ce204dc18467956216321d69af",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -3252,9 +3252,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795332649.8928683,
-    "seen": 1795332665.2724128,
-    "ast_hash": "f1a765f183959680c1fce44f8371d154",
+    "mtime": 1795333061.2694829,
+    "seen": 1795333076.4831185,
+    "ast_hash": "4cf876095d1add1a1ff67b96476e87e7",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3435,6 +3435,18 @@
     "mtime": 1795332275.2577865,
     "seen": 1795332665.2664132,
     "ast_hash": "8a00352935a9d0ab38ae498f4e836031",
+    "semantic_hash": ""
+  },
+  "__tests__/productChanges.test.ts": {
+    "mtime": 1795332711.7043748,
+    "seen": 1795333076.3852618,
+    "ast_hash": "a7c55fd31b739e8765ce9274cfdaa0a1",
+    "semantic_hash": ""
+  },
+  "utils/productChanges.ts": {
+    "mtime": 1795332711.5878692,
+    "seen": 1795333076.4643357,
+    "ast_hash": "b652e597d83b3720e5d180185dc45cac",
     "semantic_hash": ""
   }
 }
