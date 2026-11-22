@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795366140.5515618,
-    "seen": 1795366156.318544,
-    "ast_hash": "81b207191d0fb826be577abd083ea7af",
+    "mtime": 1795366517.938308,
+    "seen": 1795366530.207362,
+    "ast_hash": "747291b76025b2f2b09b50bbde79b70b",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795365721.588828,
-    "seen": 1795366156.318544,
-    "ast_hash": "7897fe4d1646472f7479dd5c707abda4",
+    "mtime": 1795366360.5451694,
+    "seen": 1795366530.207362,
+    "ast_hash": "f59f1e692e3cbc14ce773c90a392fa58",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795365745.5340483,
-    "seen": 1795366156.318544,
-    "ast_hash": "238601a4d5178e6d507bced5b2526fd2",
+    "mtime": 1795366360.5451694,
+    "seen": 1795366530.207362,
+    "ast_hash": "1300f48826d327f44029d984a51c8243",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3324,9 +3324,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova-funzioni.md": {
-    "mtime": 1795335069.8117137,
-    "seen": 1795335721.7831342,
-    "ast_hash": "a14b21d50ea42560766e3faae93d8637",
+    "mtime": 1795366360.5441954,
+    "seen": 1795366530.208377,
+    "ast_hash": "8231544828565168436417fa2edab36c",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/esito-a1.md": {
@@ -3645,6 +3645,12 @@
     "mtime": 1795365954.0700693,
     "seen": 1795366156.327021,
     "ast_hash": "b588c79a9c9c5fe24a4b831125982cf9",
+    "semantic_hash": ""
+  },
+  "public/index.html": {
+    "mtime": 1795366295.839118,
+    "seen": 1795366530.2108862,
+    "ast_hash": "e766fa947b4f8f7ab49f00343f88d38e",
     "semantic_hash": ""
   }
 }

@@ -1,23 +1,23 @@
 # Graph Report - inventory-stili  (2026-11-22)
 
 ## Corpus Check
-- 476 files · ~1,237,235 words
+- 476 files · ~1,237,825 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 97 file(s) not represented in the graph (top: .xml 18, .ttf 16, (none) 11)
 
 ## Summary
-- 4073 nodes · 8452 edges · 235 communities (198 shown, 37 thin omitted)
+- 4074 nodes · 8453 edges · 233 communities (195 shown, 38 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 475 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `278b1295`
+- Built from commit: `153d1dd1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - win32_window.cpp
-- theme.ts
+- react-native-safe-area-context
 - expo
 - exportImport.ts
 - layout_config.dart
@@ -38,10 +38,10 @@
 - profileRam.js
 - dependencies
 - GApplication
-- Decisioni da rivedere
+- productCsv.ts
 - custom_field.dart
 - add_product_screen.dart
-- package:flutter/material.dart
+- ../core/theme/app_typography.dart
 - sound_service.dart
 - timeline_event.dart
 - 7. Automazioni — 6 flussi
@@ -63,7 +63,7 @@
 - custom_fields_provider.dart
 - supabase/context.tsx
 - storageServiceProvider
-- 7. Cosa non deve cambiare (vincolo)
+- soundService
 - barcode_decoder_service.dart
 - library.dart
 - Migrazione Syncro Flow: da Expo/React Native → Flutter
@@ -73,14 +73,14 @@
 - Fase 6: Schermate Impostazioni
 - nfc_service.dart
 - compilerOptions
-- home_scanner_button_test.dart
+- package:flutter/material.dart
 - layout_provider.dart
 - manifest.json
 - syncroflow/MainActivity.kt
 - dynamic_field_renderer.dart
-- useTheme
+- useInventory
 - Welcome to
-- AuthContext.tsx
+- supabase/client.ts
 - MainApplication.kt
 - app_image.dart
 - a1-modifica.cjs
@@ -97,7 +97,7 @@
 - decodeBarcodeImage
 - custom_runner_screen.dart
 - linux/flutter/generated_plugin_registrant.cc
-- ref_path
+- product_detail_screen.dart
 - AppDelegate
 - RegisterGeneratedPlugins
 - widget_test.dart
@@ -105,9 +105,9 @@
 - a3-util.cjs
 - genera_temi.py
 - audit_screen.dart
-- string
-- notifyLocalChat
-- themes/index.ts
+- Backdrop.tsx
+- Difetti nuovi
+- fonts.web.ts
 - gradlew
 - categories.ts
 - quick_tag_screen.dart
@@ -119,14 +119,14 @@
 - syncro_flow
 - AGENTS.md
 - m08-csv.cjs
-- ScannerActionScreen.tsx
+- useTheme
 - devDependencies
-- @react-native-async-storage/async-storage
+- sync.ts
 - ✅ Setup Completato - Synchroflow
-- cardSurface
+- RootNavigator.tsx
 - db/index.ts
 - nfc_coordinator.dart
-- Barcode.tsx
+- react
 - Win32Window
 - ios/RunnerTests/RunnerTests.swift
 - Syncro Flow (FurInventory Pro) — React Native v1
@@ -143,16 +143,16 @@
 - Q
 - tableSchema
 - reset-project.js
-- CustomRunnerScreen.tsx
-- Audit del tema (misurato il 22 novembre 2026)
-- AppearanceScreen.tsx
+- 2. Matrice Sostituzioni (ricerca approfondita, alternative community mantenute)
+- AuthScreen
+- ThemeContext.tsx
 - Passaggio di consegne — aggiornamento UI/UX di Syncro Flow (React Native)
 - add.tsx
 - inventoryOps.ts
 - build-seed.py
-- react
+- Text
 - Lavori
-- storage_service.dart
+- themes/index.ts
 - types/index.ts
 - inventoryFilter.ts
 - battery.ts
@@ -165,8 +165,8 @@
 - Analisi App Attuale
 - Cronologia e Stato della Migrazione: Syncro Flow (Expo → Flutter)
 - Fase 8: Widget Riutilizzabili
-- useCustomFields
-- m03-giacenza.cjs
+- themes/types.ts
+- 6. Sotto-Impostazioni (10)
 - Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente)
 - Notte 22 → 23 novembre 2026: lavoro in autonomia su Syncro Flow
 - m09-azione.cjs
@@ -174,19 +174,18 @@
 - Mappa funzionale di Syncro Flow (React Native v1)
 - 4. Piano ordinato
 - serve-seed.mjs
-- gs1_service.dart
+- Temi dell'app
 - m06-scorta.cjs
 - 10. Servizi
 - MessageHandler
 - Piano di Implementazione — Colmare il gap Flutter ↔ React Native
-- imagePicker.ts
+- Prova delle funzioni sul web (fase B, punto 1)
 - Fase 3: Servizi
 - cambio-stile.cjs
-- adapter.ts
+- ts
 - Modello delle quantità
 - regole-temi.md
 - difetti-trovati.md
-- web_download_helper_web.dart
 - Venduto ed esaurito
 - Movimenti
 - Scorta minima e riordino
@@ -197,7 +196,6 @@
 - Sincronizzazione
 - Codice a barre
 - Report ed export
-- nfcService
 - stock.ts
 - a2-aggiungi.cjs
 - Fase 7: Schermate Automazioni
@@ -207,7 +205,7 @@
 - Passaggio di consegne — fase B, funzionalità di magazzino (Syncro Flow)
 - Automazioni — Engine Completo (per qualsiasi settore)
 - watermelondb-shim.d.ts
-- productChanges.ts
+- Decisioni da rivedere
 - funzionalita/map.md
 - Proposed Changes
 - Point
@@ -268,15 +266,15 @@
 ## Import Cycles
 - 2-file cycle: `src/services/meshServer.ts -> src/services/meshSync.ts -> src/services/meshServer.ts`
 
-## Communities (235 total, 37 thin omitted)
+## Communities (233 total, 38 thin omitted)
 
 ### Community 0 - "win32_window.cpp"
 Cohesion: 0.16
 Nodes (15): dwmapi, wchar_t, Scale(), Create, Destroy, SetQuitOnClose, Show, UpdateTheme (+7 more)
 
-### Community 1 - "theme.ts"
-Cohesion: 0.12
-Nodes (31): styles, COMMON_TAGS, styles, styles, styles, ActionType, styles, ICON_OPTIONS (+23 more)
+### Community 1 - "react-native-safe-area-context"
+Cohesion: 0.09
+Nodes (45): AuditItem, AuditStatus, styles, styles, Step, styles, styles, COMMON_TAGS (+37 more)
 
 ### Community 2 - "expo"
 Cohesion: 0.06
@@ -299,8 +297,8 @@ Cohesion: 0.07
 Nodes (29): static const Color, accentGold, accentGoldLight, alert, AppColors, available, background, backgroundSecondary (+21 more)
 
 ### Community 7 - "package:flutter_riverpod/flutter_riverpod.dart"
-Cohesion: 0.04
-Nodes (61): automations/audit_screen.dart, automations/batch_move_screen.dart, automations/custom_runner_screen.dart, automations/quick_tag_screen.dart, automations/scan_sell_screen.dart, ConsumerWidget, ../core/theme/app_colors.dart, ../core/theme/app_typography.dart (+53 more)
+Cohesion: 0.05
+Nodes (46): automations/audit_screen.dart, automations/batch_move_screen.dart, automations/custom_runner_screen.dart, automations/quick_tag_screen.dart, automations/scan_sell_screen.dart, ../core/theme/app_colors.dart, custom_runner_screen.dart, MaterialPageRoute (+38 more)
 
 ### Community 8 - "scripts"
 Cohesion: 0.14
@@ -315,8 +313,8 @@ Cohesion: 0.06
 Nodes (34): CustomField, barcode, copyWith, createdAt, customData, customFields, deletedAt, fieldSnapshot (+26 more)
 
 ### Community 11 - "InventoryContext.tsx"
-Cohesion: 0.14
-Nodes (23): driveRequest(), ensureOrganizationDriveFolder(), uploadDriveFile(), uploadLocalUriToDrive(), DEFAULT_LIBRARIES, hydrateSharedProductImages(), inferMediaType(), InventoryContext (+15 more)
+Cohesion: 0.13
+Nodes (26): driveRequest(), ensureOrganizationDriveFolder(), uploadDriveFile(), uploadLocalUriToDrive(), DEFAULT_LIBRARIES, hydrateSharedProductImages(), inferMediaType(), InventoryContext (+18 more)
 
 ### Community 12 - "inventory_provider.dart"
 Cohesion: 0.06
@@ -328,15 +326,15 @@ Nodes (35): StepType, AutomationStep, AutomationStepConfig, color, config, copyW
 
 ### Community 14 - "home_screen.dart"
 Cohesion: 0.06
-Nodes (34): _FilterType, Route /scanner, _activeFilter, _activeLibraryId, _buildActionModal, _buildEmptyState, _buildFilterChips, _buildHeader (+26 more)
+Nodes (35): _FilterType, Route /scanner, _activeFilter, _activeLibraryId, _buildActionModal, _buildEmptyState, _buildFilterChips, _buildHeader (+27 more)
 
 ### Community 15 - "package.json"
 Cohesion: 0.02
-Nodes (105): main, name, private, version, @apollo/client, @babel/core, date-fns, dedent (+97 more)
+Nodes (106): main, name, private, version, @apollo/client, @babel/core, date-fns, dedent (+98 more)
 
 ### Community 17 - "configManager"
-Cohesion: 0.11
-Nodes (14): ref_react_native_url_polyfill_auto, getSharedSupabaseClient(), SupabaseManager, configManager, createConfig(), CreateConfigOptions, AuthConfig, ModuleConfig (+6 more)
+Cohesion: 0.12
+Nodes (13): getSharedSupabaseClient(), SupabaseManager, configManager, createConfig(), CreateConfigOptions, AuthConfig, ModuleConfig, OnSpaceConfig (+5 more)
 
 ### Community 18 - "📦 Modelli Dati Dart (Fase 1)"
 Cohesion: 0.07
@@ -354,9 +352,9 @@ Nodes (123): dependencies, @apollo/client, date-fns, dedent, es6-error, expo, ex
 Cohesion: 0.22
 Nodes (9): FlPluginRegistry, GApplication, gboolean, gchar, fl_register_plugins(), my_application_activate(), my_application_local_command_line(), my_application_shutdown() (+1 more)
 
-### Community 22 - "Decisioni da rivedere"
-Cohesion: 0.13
-Nodes (24): RFC-4180, 22 novembre 2026 — Fase B, C06: export CSV con la cartella e senza cestino, import col pulsante sul web (P07, P18), 22 novembre 2026 — Fase B, M06: scorta minima e avviso di riordino (ticket 05), 22 novembre 2026 — Fase B, M08: CSV con giacenza, report giacenze e movimenti (ticket 09), Decisioni da rivedere, libraries, Product, lowStockAlert() (+16 more)
+### Community 22 - "productCsv.ts"
+Cohesion: 0.17
+Nodes (17): RFC-4180, 22 novembre 2026 — Fase B, C06: export CSV con la cartella e senza cestino, import col pulsante sul web (P07, P18), 22 novembre 2026 — Fase B, M08: CSV con giacenza, report giacenze e movimenti (ticket 09), libraries, parseCsv(), stringifyCsv(), csvDateTime(), Labels (+9 more)
 
 ### Community 23 - "custom_field.dart"
 Cohesion: 0.08
@@ -366,9 +364,9 @@ Nodes (23): copyWith, CustomField, dataset, deletedAt, FieldUIType, fromJson, ic
 Cohesion: 0.03
 Nodes (63): dart:math, DropdownMenuItem, FormState, ../../providers/gs1_config_provider.dart, ../services/gs1_service.dart, _buildDynamicFieldWidget, _buildImagesPickerSection, _buildImageThumb (+55 more)
 
-### Community 25 - "package:flutter/material.dart"
+### Community 25 - "../core/theme/app_typography.dart"
 Cohesion: 0.08
-Nodes (21): dart:io, package:flutter/material.dart, ../services/nfc_coordinator.dart, settings/fields_screen.dart, settings/folders_screen.dart, settings/gs1_config_screen.dart, settings/hardware_screen.dart, settings/layout_builder_screen.dart (+13 more)
+Nodes (23): ../core/theme/app_typography.dart, IconData, Route /add, Route /automations, Route /settings, Route /timeline, AppShell, build (+15 more)
 
 ### Community 26 - "sound_service.dart"
 Cohesion: 0.07
@@ -383,16 +381,16 @@ Cohesion: 0.29
 Nodes (7): 7.1 Audit `app/automations/audit.tsx:1`, 7.2 Flow `app/automations/automation-flow.tsx:1`, 7.3 Batch Move `app/automations/batch-move.tsx:1`, 7.4 Custom Runner `app/automations/custom-runner.tsx:1`, 7.5 Quick Tag `app/automations/quick-tag.tsx:1`, 7.6 Scan Sell `app/automations/scan-sell.tsx:1`, 7. Automazioni — 6 flussi
 
 ### Community 29 - "LayoutContext.tsx"
-Cohesion: 0.13
-Nodes (19): COMMON_ICONS, LayoutBuilderScreen(), SIZE_OPTIONS, styles, DEFAULT_LAYOUT, DEFAULT_SECTION_LABELS, FieldSize, LayoutContext (+11 more)
+Cohesion: 0.14
+Nodes (16): COMMON_ICONS, SIZE_OPTIONS, styles, DEFAULT_LAYOUT, DEFAULT_SECTION_LABELS, FieldSize, LayoutContext, LayoutContextType (+8 more)
 
 ### Community 30 - "main.dart"
 Cohesion: 0.06
-Nodes (33): AppLinks, ../core/theme/app_theme.dart, core/utils/nfc_route_guard.dart, GoRouter, NavigatorState, package:app_links/app_links.dart, providers/storage_provider.dart, screens/add_product_screen.dart (+25 more)
+Nodes (35): AppLinks, ../core/theme/app_theme.dart, core/utils/nfc_route_guard.dart, GoRouter, NavigatorState, package:app_links/app_links.dart, providers/storage_provider.dart, screens/add_product_screen.dart (+27 more)
 
 ### Community 31 - "CustomFieldsContext.tsx"
-Cohesion: 0.09
-Nodes (28): COMMON_ICONS, styles, CustomFieldOption, CustomFieldsContext, CustomFieldsContextType, CustomFieldsProvider(), DEFAULT_CUSTOM_FIELDS, FIELD_TYPE_INFO (+20 more)
+Cohesion: 0.07
+Nodes (30): COMMON_ICONS, styles, SectorTemplate, USER_TEMPLATES_KEY, CustomAutomation, CustomFieldOption, CustomFieldsContext, CustomFieldsContextType (+22 more)
 
 ### Community 32 - "auth.ts"
 Cohesion: 0.29
@@ -404,11 +402,11 @@ Nodes (10): Colori: nome di oggi → ruolo → token della tela, Raggi, ombre, m
 
 ### Community 34 - "layout_builder_screen.dart"
 Cohesion: 0.05
-Nodes (61): ConsumerState, ConsumerStatefulWidget, ../../core/constants/sector_templates.dart, ../models/custom_field.dart, ../providers/custom_fields_provider.dart, ../../providers/layout_provider.dart, Route /, SectorTemplate? (+53 more)
+Nodes (59): ConsumerState, ConsumerStatefulWidget, ../../core/constants/sector_templates.dart, ../models/custom_field.dart, ../providers/custom_fields_provider.dart, ../../providers/layout_provider.dart, Route /, SectorTemplate? (+51 more)
 
 ### Community 35 - "DynamicFieldRenderer.tsx"
 Cohesion: 0.10
-Nodes (19): DynamicFieldRenderer(), DynamicFieldRendererProps, formatDateToInput(), FurType, SIZE_FLEX, styles, DORMANT_THRESHOLD_DAYS, FIELD_TYPES (+11 more)
+Nodes (21): DynamicFieldRenderer(), DynamicFieldRendererProps, formatDateToInput(), FurType, SIZE_FLEX, styles, DORMANT_THRESHOLD_DAYS, FIELD_TYPES (+13 more)
 
 ### Community 36 - "scanner_screen.dart"
 Cohesion: 0.04
@@ -432,7 +430,7 @@ Nodes (27): Map, package:flutter/services.dart, SingleTickerProviderStateMixin, 
 
 ### Community 42 - "meshSync.ts"
 Cohesion: 0.13
-Nodes (32): 🟢 2026-09-03 — Fix Mesh Reale + UI Corretta + APK Non-Buggata, expo-crypto, useMeshRole(), UseMeshRoleReturn, broadcastToMeshClients(), buildQrPayload(), ChatListener, chatListeners (+24 more)
+Nodes (32): 🟢 2026-09-03 — Fix Mesh Reale + UI Corretta + APK Non-Buggata, expo-crypto, useMeshRole(), UseMeshRoleReturn, buildQrPayload(), ChatListener, chatListeners, createHostRoom() (+24 more)
 
 ### Community 43 - "ui/context.tsx"
 Cohesion: 0.27
@@ -450,17 +448,17 @@ Nodes (11): AuthContext, AuthContextActions, AuthContextState, AuthContextType, 
 Cohesion: 0.16
 Nodes (13): HardwareConfig, ../../models/hardware_config.dart, build, HardwareConfigNotifier, _hwConfigStorageKey, resetConfig, updateConfig, build (+5 more)
 
-### Community 47 - "7. Cosa non deve cambiare (vincolo)"
-Cohesion: 0.23
-Nodes (3): 4. Esecuzione, 7. Cosa non deve cambiare (vincolo), 10. Navigazione — `_layout.tsx` + `(tabs)/_layout.tsx` + `+not-found.tsx`
+### Community 47 - "soundService"
+Cohesion: 0.29
+Nodes (3): 4. Esecuzione, 7. Cosa non deve cambiare (vincolo), soundService
 
 ### Community 48 - "barcode_decoder_service.dart"
-Cohesion: 0.13
-Nodes (14): package:flutter/foundation.dart, package:http/http.dart, BarcodeDecodeResult, BarcodeDecoderService, data, decodeBytes, decodeImage, error (+6 more)
+Cohesion: 0.06
+Nodes (31): dart:convert, dart:html, package:flutter/foundation.dart, package:http/http.dart, package:shared_preferences/shared_preferences.dart, SharedPreferences, BarcodeDecodeResult, BarcodeDecoderService (+23 more)
 
 ### Community 49 - "library.dart"
-Cohesion: 0.18
-Nodes (10): custom_field.dart, copyWith, createdAt, fields, fromJson, icon, id, LibraryModel (+2 more)
+Cohesion: 0.17
+Nodes (11): custom_field.dart, DateTime?, copyWith, createdAt, fields, fromJson, icon, id (+3 more)
 
 ### Community 50 - "Migrazione Syncro Flow: da Expo/React Native → Flutter"
 Cohesion: 0.17
@@ -490,9 +488,9 @@ Nodes (16): dart:async, package:nfc_manager/nfc_manager.dart, package:nfc_manage
 Cohesion: 0.08
 Nodes (23): expo/tsconfig.base, compilerOptions, allowJs, allowSyntheticDefaultImports, baseUrl, customConditions, esModuleInterop, jsx (+15 more)
 
-### Community 57 - "home_scanner_button_test.dart"
-Cohesion: 0.15
-Nodes (12): package:go_router/go_router.dart, package:syncro_flow/providers/storage_provider.dart, package:syncro_flow/screens/add_product_screen.dart, package:syncro_flow/screens/app_shell.dart, package:syncro_flow/screens/automations_screen.dart, package:syncro_flow/screens/home_screen.dart, package:syncro_flow/screens/scanner_screen.dart, package:syncro_flow/screens/settings_screen.dart (+4 more)
+### Community 57 - "package:flutter/material.dart"
+Cohesion: 0.10
+Nodes (18): dart:io, package:flutter/material.dart, package:go_router/go_router.dart, package:syncro_flow/providers/storage_provider.dart, package:syncro_flow/screens/add_product_screen.dart, package:syncro_flow/screens/app_shell.dart, package:syncro_flow/screens/automations_screen.dart, package:syncro_flow/screens/home_screen.dart (+10 more)
 
 ### Community 58 - "layout_provider.dart"
 Cohesion: 0.17
@@ -507,20 +505,20 @@ Cohesion: 0.21
 Nodes (7): MainActivity, build, Bundle, defaultreactactivitydelegate, fabricenabled, ReactActivity, ReactActivityDelegate
 
 ### Community 61 - "dynamic_field_renderer.dart"
-Cohesion: 0.03
-Nodes (68): app_image.dart, ../core/constants/config.dart, Route /add, Route /automations, Route /settings, Route /timeline, Set, StatelessWidget (+60 more)
+Cohesion: 0.04
+Nodes (52): app_image.dart, ../core/constants/config.dart, Set, StatelessWidget, _TimelineEventTile, build, _ChoiceChips, _controller (+44 more)
 
-### Community 62 - "useTheme"
+### Community 62 - "useInventory"
 Cohesion: 0.10
-Nodes (58): AuditScreen(), AutomationFlowScreen(), BatchMoveScreen(), CustomRunnerScreen(), QuickTagScreen(), ScanSellScreen(), ScannerActionScreen(), ScannerScreen() (+50 more)
+Nodes (43): AuditScreen(), AutomationFlowScreen(), BatchMoveScreen(), CustomRunnerScreen(), QuickTagScreen(), ScanSellScreen(), ProductDetailScreen(), ScannerActionScreen() (+35 more)
 
 ### Community 63 - "Welcome to"
 Cohesion: 0.20
 Nodes (9): 1. Install Dependencies, 2. Start the Project, 3. Lint the Code, Contributing, Development Tools, Getting Started, License, Main Dependencies (+1 more)
 
-### Community 64 - "AuthContext.tsx"
-Cohesion: 0.11
-Nodes (18): OperatorSync, supabase, logSyncAction(), subscribeToProducts(), subscribeToSyncLogs(), Database, Json, AuthContext (+10 more)
+### Community 64 - "supabase/client.ts"
+Cohesion: 0.16
+Nodes (10): OperatorSync, supabase, logSyncAction(), subscribeToProducts(), subscribeToSyncLogs(), Database, Json, expo-constants (+2 more)
 
 ### Community 65 - "MainApplication.kt"
 Cohesion: 0.17
@@ -547,16 +545,16 @@ Cohesion: 0.40
 Nodes (4): Flutter, FlutterSceneDelegate, SceneDelegate, UIKit
 
 ### Community 71 - "EditScreen.tsx"
-Cohesion: 0.10
-Nodes (28): choiceList(), ChoiceOption, formStyles(), isChoiceSelected(), Named, sheet(), toggleChoice(), PhotoPlaceholder() (+20 more)
+Cohesion: 0.13
+Nodes (32): EditProductScreen(), GS1ConfigScreen(), LayoutBuilderScreen(), AddProductScreen(), choiceList(), ChoiceOption, formStyles(), isChoiceSelected() (+24 more)
 
 ### Community 72 - "sector_templates.dart"
 Cohesion: 0.11
 Nodes (18): FieldUIType, color, dataset, description, emoji, fields, icon, id (+10 more)
 
 ### Community 74 - "App.tsx"
-Cohesion: 0.06
-Nodes (42): AuditItem, AuditStatus, styles, Step, styles, styles, navigationTheme(), styles (+34 more)
+Cohesion: 0.07
+Nodes (41): navigationTheme(), AVAILABLE_STEPS, COLOR_OPTIONS, ICON_OPTIONS, styles, SignedInApp(), useStyles, AuthContext (+33 more)
 
 ### Community 75 - "Fase 2: State Management (Providers → Riverpod)"
 Cohesion: 0.29
@@ -567,24 +565,24 @@ Cohesion: 0.17
 Nodes (11): ../../models/automation.dart, addAutomation, _automationsStorageKey, build, deleteAutomation, getAutomationById, getAutomationByQR, incrementUsageCount (+3 more)
 
 ### Community 77 - "location.dart"
-Cohesion: 0.15
-Nodes (12): int?, barcode, capacity, color, copyWith, fromJson, id, label (+4 more)
+Cohesion: 0.14
+Nodes (13): Color, int?, barcode, capacity, color, copyWith, fromJson, id (+5 more)
 
 ### Community 78 - "decodeBarcodeImage"
-Cohesion: 0.24
-Nodes (8): 4. Scanner & Acquisizione (da `app/scanner.tsx:5`, `components/BarcodeScanner.tsx:3`, `utils/barcodeDecoder.ts:6`), expo-image-manipulator, SaveFormat, BarcodeDecodeResult, createImageVariations(), decodeBarcodeImage(), tryQRServer(), tryZXing()
+Cohesion: 0.27
+Nodes (7): 4. Scanner & Acquisizione (da `app/scanner.tsx:5`, `components/BarcodeScanner.tsx:3`, `utils/barcodeDecoder.ts:6`), SaveFormat, BarcodeDecodeResult, createImageVariations(), decodeBarcodeImage(), tryQRServer(), tryZXing()
 
 ### Community 79 - "custom_runner_screen.dart"
-Cohesion: 0.11
-Nodes (19): _advanceToNextScanStep, automationId, _completedCount, _confirmSale, createState, _currentStepIndex, CustomRunnerScreen, _CustomRunnerScreenState (+11 more)
+Cohesion: 0.04
+Nodes (50): CustomAutomation?, ../models/gs1_config.dart, package:uuid/uuid.dart, static const Uuid, automationsProvider, _handleDelete, _advanceToNextScanStep, automationId (+42 more)
 
 ### Community 80 - "linux/flutter/generated_plugin_registrant.cc"
 Cohesion: 0.22
 Nodes (7): audioplayers_linux_plugin, file_selector_plugin, flutter_linux, flutter_secure_storage_linux_plugin, gtk_plugin, printing_plugin, url_launcher_plugin
 
-### Community 81 - "ref_path"
-Cohesion: 0.12
-Nodes (12): { scenario }, stile(), { chromium }, path, { chromium }, FETTE, path, STILI (+4 more)
+### Community 81 - "product_detail_screen.dart"
+Cohesion: 0.08
+Nodes (23): PageController, _buildInfoGrid, _buildSectionHeader, createState, _currentImageIndex, _deleteProduct, dispose, _generateClientText (+15 more)
 
 ### Community 82 - "AppDelegate"
 Cohesion: 0.47
@@ -599,28 +597,24 @@ Cohesion: 0.17
 Nodes (9): package:flutter_test/flutter_test.dart, package:syncro_flow/core/theme/app_colors.dart, package:syncro_flow/core/utils/nfc_route_guard.dart, package:syncro_flow/models/location.dart, package:syncro_flow/models/product.dart, package:syncro_flow/services/nfc_coordinator.dart, main, main (+1 more)
 
 ### Community 86 - "a3-util.cjs"
-Cohesion: 0.11
-Nodes (22): fab(), { scan, iconAt, product, timelineIds, newEvents }, { scenario }, { scan, product, timelineIds, newEvents }, { scenario }, { scan, iconAt, product, timelineIds, newEvents }, { scenario }, { scan, product } (+14 more)
+Cohesion: 0.09
+Nodes (28): fab(), { scan, iconAt, product, timelineIds, newEvents }, { scenario }, { scan, product, timelineIds, newEvents }, { scenario }, { scan, iconAt, product, timelineIds, newEvents }, { scenario }, { scan, product } (+20 more)
 
 ### Community 87 - "genera_temi.py"
-Cohesion: 0.18
-Nodes (20): border_color(), build(), on(), contrast(), em(), fill(), glows(), gradient() (+12 more)
+Cohesion: 0.20
+Nodes (19): border_color(), build(), on(), contrast(), em(), fill(), glows(), gradient() (+11 more)
 
 ### Community 88 - "audit_screen.dart"
 Cohesion: 0.04
 Nodes (62): AuditStatus, int get, Location?, ../../models/location.dart, ../providers/locations_provider.dart, addLocation, build, defaultLocations (+54 more)
 
-### Community 89 - "string"
-Cohesion: 0.12
-Nodes (16): product_detail_screen.dart, string, build, createState, entityId, _handleMove, _handleSell, ScannerActionScreen (+8 more)
+### Community 89 - "Backdrop.tsx"
+Cohesion: 0.23
+Nodes (12): Backdrop(), gradientPoints(), GradientFill(), Gradient, 22 novembre 2026 — UI/UX L6a e L6b: Inventario e Scheda capo sulla tela, LinearGradient(), Step, NotFoundScreen() (+4 more)
 
-### Community 90 - "notifyLocalChat"
-Cohesion: 0.50
-Nodes (3): Difetti nuovi, Esito A3 — Automazioni, Scanner, Azione rapida, Chat (web, 22 novembre 2026), notifyLocalChat()
-
-### Community 91 - "themes/index.ts"
-Cohesion: 0.05
-Nodes (44): ardesia, attuale, babilonia, FONT_SOURCES, DEFAULT_STYLE, isStyleId(), themeFor(), THEMES (+36 more)
+### Community 91 - "fonts.web.ts"
+Cohesion: 0.11
+Nodes (16): FONT_SOURCES, expo-font, ref_expo_google_fonts_inter_400regular, ref_expo_google_fonts_inter_500medium, ref_expo_google_fonts_inter_600semibold, ref_expo_google_fonts_manrope_400regular, ref_expo_google_fonts_manrope_500medium, ref_expo_google_fonts_manrope_600semibold (+8 more)
 
 ### Community 92 - "gradlew"
 Cohesion: 0.83
@@ -632,11 +626,11 @@ Nodes (12): CategoriesContextType, CategoriesProvider(), Category, CATEGORY_FIEL
 
 ### Community 94 - "quick_tag_screen.dart"
 Cohesion: 0.07
-Nodes (29): Color, IconData, _activeTag, build, color, CommonTagItem, commonTags, createState (+21 more)
+Nodes (27): string, _activeTag, build, color, CommonTagItem, commonTags, createState, _customTagController (+19 more)
 
 ### Community 95 - "timeline_screen.dart"
 Cohesion: 0.05
-Nodes (41): ../models/product.dart, ../models/timeline_event.dart, Product, build, _confirmSale, createState, dispose, _handleProductScan (+33 more)
+Nodes (42): ../models/product.dart, ../models/timeline_event.dart, Product, build, _confirmSale, createState, dispose, _handleProductScan (+34 more)
 
 ### Community 96 - "eslint.config.js"
 Cohesion: 0.29
@@ -648,7 +642,7 @@ Nodes (7): FlutterActivity, FlutterEngine, intent, methodchannel, NfcAdapter, Pe
 
 ### Community 98 - "Cronologia aggiornabile"
 Cohesion: 0.06
-Nodes (33): 20 ottobre 2026 — Analisi e decisioni SaaS/backup, 20 ottobre 2026 — Documenti creati e pubblicati, 20 ottobre 2026 — Pubblicazione richiesta su main, 21 novembre 2026 — Allineamento locale, verifica RN e avvio web, 21 novembre 2026 — Proposte di stile fermate, passaggio a nuova sessione, 22 novembre 2026 — Fase B, C04: Spostamento rapido e Audit registrano «spostato» (D15, P22), 22 novembre 2026 — Fase B, C05: posizioni e cartelle eliminate senza prodotti orfani (P08, P09), 22 novembre 2026 — Fase B, C07: modelli e campi nuovi nel modulo Aggiungi, Modelli di settore raggiungibili (D12, D13, P11) (+25 more)
+Nodes (34): 20 ottobre 2026 — Analisi e decisioni SaaS/backup, 20 ottobre 2026 — Documenti creati e pubblicati, 20 ottobre 2026 — Pubblicazione richiesta su main, 21 novembre 2026 — Allineamento locale, verifica RN e avvio web, 21 novembre 2026 — Proposte di stile fermate, passaggio a nuova sessione, 22 novembre 2026 — Fase B, C04: Spostamento rapido e Audit registrano «spostato» (D15, P22), 22 novembre 2026 — Fase B, C05: posizioni e cartelle eliminate senza prodotti orfani (P08, P09), 22 novembre 2026 — Fase B, C07: modelli e campi nuovi nel modulo Aggiungi, Modelli di settore raggiungibili (D12, D13, P11) (+26 more)
 
 ### Community 99 - "m04-movimenta.cjs"
 Cohesion: 0.26
@@ -658,37 +652,37 @@ Nodes (10): again(), apri(), check(), label(), movimento(), positive(), replay()
 Cohesion: 0.18
 Nodes (7): fs, parseCsv(), preparaCampionario(), { product }, rendiAQuantita(), scarica(), { scenario }
 
-### Community 103 - "ScannerActionScreen.tsx"
-Cohesion: 0.19
-Nodes (23): 22 novembre 2026 — Fase B, C01: numeri in formato italiano (P03), 22 novembre 2026 — Fase B, C13: dominio GS1, numeri della Scheda, Svuota cestino, visore delle foto (P10, P19, P24, P21), 22 novembre 2026 — Fase B, M03: articoli a quantità (ticket 01 e 03), 22 novembre 2026 — Fase B: rilettura finale delle correzioni (numeri del CSV, note vuote, prove), Cosa fare adesso, in ordine, ScanSellScreen(), useStyles, ProductDetailScreen() (+15 more)
+### Community 103 - "useTheme"
+Cohesion: 0.15
+Nodes (22): Glass(), makeStyles(), useTheme(), Regole per ogni fetta, Aggiornamento del 22 novembre 2026, quinta parte (esecuzione: L0, L1, L2 e G1 fatti), @react-navigation/bottom-tabs, TabBar(), useStyles (+14 more)
 
 ### Community 104 - "devDependencies"
 Cohesion: 0.20
 Nodes (10): devDependencies, @babel/core, eslint, eslint-config-expo, expo-doctor, react-dev-inspector, @react-native-community/cli, @react-native/metro-config (+2 more)
 
-### Community 105 - "@react-native-async-storage/async-storage"
+### Community 105 - "sync.ts"
 Cohesion: 0.20
-Nodes (11): ref_nozbe_watermelondb_sync, @react-native-async-storage/async-storage, getLastPulledAt(), pullChanges(), PullResponse, pushChanges(), PushPayload, setLastPulledAt() (+3 more)
+Nodes (10): ref_nozbe_watermelondb_sync, getLastPulledAt(), pullChanges(), PullResponse, pushChanges(), PushPayload, setLastPulledAt(), sync() (+2 more)
 
 ### Community 106 - "✅ Setup Completato - Synchroflow"
 Cohesion: 0.14
 Nodes (13): Cosa fare, Credenziali, Documentazione, File pronti, Funzionalità²² abilitate, Google Cloud - DA COMPLETARE ⚠️, Prossimi passi Supabase, ✅ Setup Completato - Synchroflow (+5 more)
 
-### Community 107 - "cardSurface"
-Cohesion: 0.10
-Nodes (33): HardwareSettingsScreen(), createGoogleSheetBackup(), cardSurface(), tileSurface(), LOGIN_ENABLED, ScanMode, useHardwareConfig(), sectionLabel() (+25 more)
+### Community 107 - "RootNavigator.tsx"
+Cohesion: 0.09
+Nodes (43): SectorTemplatesScreen(), BarcodeScanner(), BarcodeScannerProps, useStyles, { width }, cardSurface(), tileSurface(), SECTOR_TEMPLATES (+35 more)
 
 ### Community 108 - "db/index.ts"
-Cohesion: 0.08
-Nodes (24): @nozbe/watermelondb, ref_nozbe_watermelondb_decorators, ref_nozbe_watermelondb_react, enhance, LiveCard, database, Automation, AutomationStep (+16 more)
+Cohesion: 0.07
+Nodes (28): @nozbe/watermelondb, ref_nozbe_watermelondb_adapters_lokijs, ref_nozbe_watermelondb_adapters_sqlite, ref_nozbe_watermelondb_decorators, ref_nozbe_watermelondb_react, enhance, LiveCard, adapter (+20 more)
 
 ### Community 109 - "nfc_coordinator.dart"
 Cohesion: 0.07
 Nodes (29): nfc_foreground_dispatch.dart, static bool get, static const Duration, static DateTime?, static DateTime? get, static NfcMode?, static NfcMode? get, static String? (+21 more)
 
-### Community 110 - "Barcode.tsx"
-Cohesion: 0.33
-Nodes (5): Barcode(), BarcodeProps, CODE128_PATTERNS, Componenti condivisi, react-native-svg
+### Community 110 - "react"
+Cohesion: 0.12
+Nodes (27): Barcode(), BarcodeProps, CODE128_PATTERNS, ICON_REPLACEMENTS, IconProps, Replacement, PhotoPlaceholder(), CategoriesContext (+19 more)
 
 ### Community 111 - "Win32Window"
 Cohesion: 0.16
@@ -704,10 +698,10 @@ Nodes (6): Architettura e stack, Comandi, Decisioni architetturali, Roadmap e st
 
 ### Community 114 - "meshServer.ts"
 Cohesion: 0.12
-Nodes (27): RFC-6455, ref_crypto, react-native-tcp-socket, isMeshRequestAuthorized(), appendChatMessage(), applyPushPayload(), broadcastWs(), ClientMeta (+19 more)
+Nodes (29): RFC-6455, ref_crypto, react-native-tcp-socket, isMeshRequestAuthorized(), appendChatMessage(), applyPushPayload(), broadcastToMeshClients(), broadcastWs() (+21 more)
 
 ### Community 115 - "auth/types.ts"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (26): MockAuthContext, MockAuthContextActions, MockAuthContextState, MockAuthContextType, MockAuthProvider(), MockAuthProviderProps, useMockAuthContext(), useMockAuth() (+18 more)
 
 ### Community 116 - "my_application.cc"
@@ -727,56 +721,56 @@ Cohesion: 0.06
 Nodes (27): { scenario }, { scenario }, { scenario }, run(), { scenario }, CSV, fs, run() (+19 more)
 
 ### Community 120 - "fileSystem.ts"
-Cohesion: 0.08
-Nodes (20): expo-print, Difetti nuovi, Esito A1 - Inventario, Scheda, Modifica, Cronologia, Cestino (web, 22 novembre 2026), Difetti nuovi, Esito A2 — Aggiungi, Campi, Layout, Modelli, Import/Export (22 novembre 2026), Difetti trovati (nuovi), in ordine di gravità, La prova (prima delle correzioni), Ordine delle correzioni (punto 2) (+12 more)
+Cohesion: 0.12
+Nodes (12): expo-print, Difetti nuovi, Esito A1 - Inventario, Scheda, Modifica, Cronologia, Cestino (web, 22 novembre 2026), Difetti nuovi, Esito A2 — Aggiungi, Campi, Layout, Modelli, Import/Export (22 novembre 2026), expo-print, documentDirectory, EncodingType (+4 more)
 
 ### Community 126 - "reset-project.js"
-Cohesion: 0.10
-Nodes (12): IMPORTANT: keep the reminder string free of backticks and $(...) constructs., fs, { scenario }, ref_fs, ref_readline, exampleDirPath, fs, oldDirs (+4 more)
+Cohesion: 0.05
+Nodes (24): IMPORTANT: keep the reminder string free of backticks and $(...) constructs., fs, { scenario }, { scenario }, stile(), { chromium }, path, { chromium } (+16 more)
 
-### Community 127 - "CustomRunnerScreen.tsx"
-Cohesion: 0.09
-Nodes (22): AVAILABLE_STEPS, COLOR_OPTIONS, ICON_OPTIONS, styles, AutomationStep, CustomAutomation, STEP_TYPE_META, StepType (+14 more)
+### Community 127 - "2. Matrice Sostituzioni (ricerca approfondita, alternative community mantenute)"
+Cohesion: 0.15
+Nodes (8): 2. Matrice Sostituzioni (ricerca approfondita, alternative community mantenute), ref_react_native_document_picker, setStringAsync(), getDocumentAsync(), shareAsync(), SoundWrapper, Stack(), Tabs()
 
-### Community 128 - "Audit del tema (misurato il 22 novembre 2026)"
-Cohesion: 0.22
-Nodes (8): 11. Regole per i temi, Audit del tema (misurato il 22 novembre 2026), Colori scritti a mano, Come rifare i conteggi, Icone, Tipografia, forme, effetti, Token esistenti (`constants/theme.ts`), rgba()
+### Community 128 - "AuthScreen"
+Cohesion: 0.20
+Nodes (9): 9.6 Altre, Audit del tema (misurato il 22 novembre 2026), Colori scritti a mano, Come rifare i conteggi, Icone, Tipografia, forme, effetti, Token esistenti (`constants/theme.ts`), AuthScreen() (+1 more)
 
-### Community 129 - "AppearanceScreen.tsx"
-Cohesion: 0.22
-Nodes (11): SystemBars(), fontStyle(), loadThemeFonts(), StyleId, ThemeContextValue, useStyleChoice(), Aggiornamento del 22 novembre 2026, quinta parte (esecuzione: L0, L1, L2 e G1 fatti), TabsNavigator() (+3 more)
+### Community 129 - "ThemeContext.tsx"
+Cohesion: 0.25
+Nodes (11): SystemBars(), fontStyle(), loadThemeFonts(), StyleId, STYLE_STORAGE_KEY, ThemeContext, ThemeContextValue, useStyleChoice() (+3 more)
 
 ### Community 130 - "Passaggio di consegne — aggiornamento UI/UX di Syncro Flow (React Native)"
 Cohesion: 0.13
 Nodes (14): Aggiornamento del 22 novembre 2026, Aggiornamento del 22 novembre 2026, quarta parte (mappa chiusa, si esegue), Aggiornamento del 22 novembre 2026, seconda sessione (ticket 03-06 chiusi), Aggiornamento del 22 novembre 2026, sesta parte (L4, L5a, L3, L5b-e fatti; L6 in corso), Aggiornamento del 22 novembre 2026, settima parte (tema chiuso: L6, L7, L9 fatti), Aggiornamento del 22 novembre 2026, terza parte (tutti e 5 gli stili), Cosa deve uscire, in ordine, Cosa vuole l'utente (+6 more)
 
 ### Community 131 - "add.tsx"
-Cohesion: 0.15
-Nodes (25): EditProductScreen(), styles, GS1ConfigScreen(), AddProductScreen(), styles, FUR_TYPES, GS1ConfigContext, GS1ConfigContextType (+17 more)
+Cohesion: 0.18
+Nodes (17): styles, styles, GS1ConfigContext, GS1ConfigContextType, [NEW] `lib/services/gs1_service.dart`, 22 novembre 2026 — Fase B, C02: Modifica salva i dati giusti (P01, P02, P04), expo-document-picker, expo-sharing (+9 more)
 
 ### Community 132 - "inventoryOps.ts"
-Cohesion: 0.13
-Nodes (27): 22 novembre 2026 — Fase B, C03: niente vendite doppie né dal cestino (P05, P06, P25), 22 novembre 2026 — Fase B, M07: Conta di magazzino (ticket 06), Dove siamo, events(), CountScreen(), signed(), base, item() (+19 more)
+Cohesion: 0.14
+Nodes (37): 22 novembre 2026 — Fase B, C03: niente vendite doppie né dal cestino (P05, P06, P25), 22 novembre 2026 — Fase B, M03: articoli a quantità (ticket 01 e 03), 22 novembre 2026 — Fase B, M07: Conta di magazzino (ticket 06), Cosa fare adesso, in ordine, Dove siamo, ScannerActionScreen(), base, item() (+29 more)
 
 ### Community 133 - "build-seed.py"
-Cohesion: 0.18
-Nodes (7): base64, DateTime?, json, os, ev(), iso(), product()
+Cohesion: 0.20
+Nodes (6): base64, json, os, ev(), iso(), product()
 
-### Community 134 - "react"
+### Community 134 - "Text"
 Cohesion: 0.14
-Nodes (43): AppIcon(), ICON_REPLACEMENTS, IconProps, Replacement, Backdrop(), gradientPoints(), Glass(), GradientFill() (+35 more)
+Nodes (22): AppIcon(), InsideText, Text, TextInput, WEIGHTS, withFont(), 22 novembre 2026 — Fase B, C13: dominio GS1, numeri della Scheda, Svuota cestino, visore delle foto (P10, P19, P24, P21), 22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti (+14 more)
 
 ### Community 135 - "Lavori"
 Cohesion: 0.15
 Nodes (12): Grafo, Grafo dei lavori — i 5 stili nell'app, scelti in Impostazioni (fase 4), L0 — Punto di partenza, L3 — Selettore dello stile in Impostazioni (nuovo), L4 — Icone nuove, L5 — I 5 temi, uno alla volta, L6 — Ritocchi per schermata, una volta per tutti gli stili, L7 — Difetti approvati (+4 more)
 
-### Community 136 - "storage_service.dart"
-Cohesion: 0.17
-Nodes (11): package:shared_preferences/shared_preferences.dart, SharedPreferences, clear, getJson, getString, init, _prefs, remove (+3 more)
+### Community 136 - "themes/index.ts"
+Cohesion: 0.22
+Nodes (10): ardesia, attuale, babilonia, DEFAULT_STYLE, isStyleId(), THEMES, ishtar, minimal (+2 more)
 
 ### Community 137 - "types/index.ts"
-Cohesion: 0.15
-Nodes (15): KINDS, MovementSheet(), REASONS_BY_KIND, useStyles, 22 novembre 2026 — Fase B, C08: Modifica mostra i campi del modulo, anche vuoti (D03), 22 novembre 2026 — Fase B, M09: Carico e Scarico dall'Azione rapida (ticket 08), Library, MovementKind (+7 more)
+Cohesion: 0.13
+Nodes (19): KINDS, MovementSheet(), REASONS_BY_KIND, useStyles, 22 novembre 2026 — Fase B, C08: Modifica mostra i campi del modulo, anche vuoti (D03), 22 novembre 2026 — Fase B, M09: Carico e Scarico dall'Azione rapida (ticket 08), CountScreen(), signed() (+11 more)
 
 ### Community 138 - "inventoryFilter.ts"
 Cohesion: 0.25
@@ -795,20 +789,20 @@ Cohesion: 0.18
 Nodes (10): generated_plugin_registrant, optional, DartProject, HWND, LPARAM, LRESULT, UINT, WPARAM (+2 more)
 
 ### Community 142 - "m07-conta.cjs"
-Cohesion: 0.25
-Nodes (8): 6. Settore-agnostico — esempi, conta(), label(), positive(), replay(), same(), { scenario }, stato()
+Cohesion: 0.29
+Nodes (7): conta(), label(), positive(), replay(), same(), { scenario }, stato()
 
 ### Community 143 - "meshQRLoop.detox.test.ts"
-Cohesion: 0.05
-Nodes (34): App(), 1. Palette, 2. Typography, 3. Spacing & Radius & Shadow, 4. Componenti critici (per confronto screenshot), 5. Icone, 6. Verifica visiva, Design System — La Palais (vincolo visivo post-eject) (+26 more)
+Cohesion: 0.10
+Nodes (17): 1. Palette, 2. Typography, 3. Spacing & Radius & Shadow, 4. Componenti critici (per confronto screenshot), 5. Icone, 6. Verifica visiva, Design System — La Palais (vincolo visivo post-eject), 6.5 Layout Builder `app/settings/layout-builder.tsx:1` (+9 more)
 
 ### Community 144 - "inventoryProvider"
 Cohesion: 0.05
-Nodes (52): ../../models/library.dart, package:file_picker/file_picker.dart, package:pdf/pdf.dart, package:pdf/widgets.dart, package:printing/printing.dart, PageController, ../providers/inventory_provider.dart, inventoryProvider (+44 more)
+Nodes (45): ConsumerWidget, ../../models/library.dart, package:file_picker/file_picker.dart, package:pdf/pdf.dart, package:pdf/widgets.dart, package:printing/printing.dart, product_detail_screen.dart, ../providers/inventory_provider.dart (+37 more)
 
 ### Community 145 - "gs1_config_provider.dart"
-Cohesion: 0.22
-Nodes (8): GS1Config, ../models/gs1_config.dart, storage_provider.dart, build, GS1ConfigNotifier, _gs1ConfigStorageKey, resetConfig, updateConfig
+Cohesion: 0.25
+Nodes (7): GS1Config, storage_provider.dart, build, GS1ConfigNotifier, _gs1ConfigStorageKey, resetConfig, updateConfig
 
 ### Community 146 - "Analisi App Attuale"
 Cohesion: 0.40
@@ -822,17 +816,17 @@ Nodes (4): 🛠 Cosa Manca Ancora da Fare (I Prossimi Passi), 📂 Cosa è stato
 Cohesion: 0.40
 Nodes (5): Fase 8: Widget Riutilizzabili, [NEW] `lib/widgets/barcode_widget.dart` + `barcode_scanner_widget.dart`, [NEW] `lib/widgets/dynamic_field_renderer.dart`, [NEW] `lib/widgets/product_card.dart`, [NEW] `lib/widgets/stat_card.dart`
 
-### Community 149 - "useCustomFields"
-Cohesion: 0.27
-Nodes (9): ProductDetailScreen(), CustomFieldsScreen(), SectorTemplatesScreen(), styles, TrashScreen(), SECTOR_TEMPLATES, SectorTemplate, USER_TEMPLATES_KEY (+1 more)
+### Community 149 - "themes/types.ts"
+Cohesion: 0.18
+Nodes (10): FontWeight, Glow, TabIndicator, ThemeColors, ThemeFont, ThemeId, ThemeRadii, ThemeShadows (+2 more)
 
-### Community 150 - "m03-giacenza.cjs"
-Cohesion: 0.31
-Nodes (6): check(), positive(), replay(), same(), { scan, product, timelineIds, newEvents }, { scenario }
+### Community 150 - "6. Sotto-Impostazioni (10)"
+Cohesion: 0.18
+Nodes (10): 6.10 Builder Automazioni `app/settings/automation-builder.tsx:1`, 6.1 GS1 Config `app/settings/gs1-config.tsx:1`, 6.2 Hardware `app/settings/hardware.tsx:1`, 6.3 Cartelle `app/settings/folders.tsx:1`, 6.4 Campi `app/settings/fields.tsx:1`, 6.6 Cestino `app/settings/trash.tsx:1`, 6.7 Posizioni `app/settings/locations.tsx:1`, 6.8 Condivisione `app/settings/share.tsx:1` (+2 more)
 
 ### Community 151 - "Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente)"
-Cohesion: 0.18
-Nodes (10): exportToCSV(), 11. Interazioni trasversali (come ogni componente parla con gli altri), 1. Home — `app/(tabs)/index.tsx:16`, 2. Cronologia — `app/(tabs)/timeline.tsx:14`, 3. Automazioni Hub — `app/(tabs)/automations.tsx:45`, 5. Impostazioni Hub — `app/(tabs)/settings.tsx:12`, 9. Prodotto — Dettaglio + Modifica, Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente) (+2 more)
+Cohesion: 0.10
+Nodes (16): exportToCSV(), 10. Navigazione — `_layout.tsx` + `(tabs)/_layout.tsx` + `+not-found.tsx`, 11. Interazioni trasversali (come ogni componente parla con gli altri), 1. Home — `app/(tabs)/index.tsx:16`, 2. Cronologia — `app/(tabs)/timeline.tsx:14`, 3. Automazioni Hub — `app/(tabs)/automations.tsx:45`, 4. Aggiungi Prodotto — `app/(tabs)/add.tsx:22`, 5. Impostazioni Hub — `app/(tabs)/settings.tsx:12` (+8 more)
 
 ### Community 152 - "Notte 22 → 23 novembre 2026: lavoro in autonomia su Syncro Flow"
 Cohesion: 0.29
@@ -847,8 +841,8 @@ Cohesion: 0.50
 Nodes (3): Size, height, width
 
 ### Community 155 - "Mappa funzionale di Syncro Flow (React Native v1)"
-Cohesion: 0.22
-Nodes (8): 1. A cosa serve, 2. Navigazione, 4. Layout builder, 5. Modulo Aggiungi (`src/screens/tabs/AddScreen.tsx`), 6. Scheda capo (`src/screens/product/DetailScreen.tsx`), 7. Modifica (`src/screens/product/EditScreen.tsx`), 8. Inventario (`src/screens/tabs/HomeScreen.tsx`), Mappa funzionale di Syncro Flow (React Native v1)
+Cohesion: 0.20
+Nodes (9): 11. Regole per i temi, 1. A cosa serve, 2. Navigazione, 4. Layout builder, 5. Modulo Aggiungi (`src/screens/tabs/AddScreen.tsx`), 6. Scheda capo (`src/screens/product/DetailScreen.tsx`), 7. Modifica (`src/screens/product/EditScreen.tsx`), 8. Inventario (`src/screens/tabs/HomeScreen.tsx`) (+1 more)
 
 ### Community 156 - "4. Piano ordinato"
 Cohesion: 0.06
@@ -858,9 +852,9 @@ Nodes (27): Google login, Drive backup, and Sheets export, One-time Google Conso
 Cohesion: 0.33
 Nodes (5): here, ref_node_fs_promises, ref_node_http, ref_node_path, ref_node_url
 
-### Community 158 - "gs1_service.dart"
-Cohesion: 0.22
-Nodes (8): package:uuid/uuid.dart, static const Uuid, buildPreviewLink, generateGS1DigitalLink, generateSerial, GS1Service, _uuid, validateGTIN
+### Community 158 - "Temi dell'app"
+Cohesion: 0.25
+Nodes (8): themeFor(), Regola dei ruoli, Temi dell'app, Tipografia, Trasparenze, fontsOf(), ThemeProvider(), 22 novembre 2026 — UI/UX L5a: caratteri e Attuale rifinito predefinito
 
 ### Community 160 - "10. Servizi"
 Cohesion: 0.22
@@ -874,25 +868,17 @@ Nodes (10): HWND, LPARAM, LRESULT, UINT, WPARAM, EnableFullDpiSupportIfAvailable
 Cohesion: 0.08
 Nodes (22): 1.1 Diagnosi `flutter_app/` (quella testata sul telefono) — "involucro" confermato, 1. Causa radice: ESISTONO DUE PROGETTI FLUTTER, 2.1 Bloccanti (l'app appare "vuota"), 2.2 Renderer campi dinamici (causa "campi non modificabili"), 2.3 Aggiungi prodotto (`add_product_screen.dart`), 2.4 Home (`home_screen.dart`), 2.5 Automazioni — esecuzione non reale, 2.6 Impostazioni ridotte (vs RN) (+14 more)
 
-### Community 163 - "imagePicker.ts"
-Cohesion: 0.25
-Nodes (5): 4. Aggiungi Prodotto — `app/(tabs)/add.tsx:22`, 8. Scanner — `app/scanner.tsx:1` + `scanner-action.tsx:6` + `BarcodeScanner.tsx:1`, launchCameraAsync(), launchImageLibraryAsync(), MediaTypeOptions
+### Community 163 - "Prova delle funzioni sul web (fase B, punto 1)"
+Cohesion: 0.22
+Nodes (8): Difetti trovati (nuovi), in ordine di gravità, La prova (prima delle correzioni), Ordine delle correzioni (punto 2), Prova delle funzioni sul web (fase B, punto 1), Riepilogo per funzione (righe della lista B.1), Rilancio di controllo, Stato attuale (22 novembre, mattina, dopo le correzioni), P
 
 ### Community 164 - "Fase 3: Servizi"
 Cohesion: 0.17
 Nodes (9): Fase 3: Servizi, [NEW] `lib/services/barcode_decoder_service.dart`, [NEW] `lib/services/nfc_service.dart`, [NEW] `lib/services/sound_service.dart`, [NEW] `lib/services/storage_service.dart`, Difetti nuovi, Difetti precedenti ricontrollati, Esito a4: Impostazioni, Posizioni, Cartelle, GS1, Hardware, Condivisione, Team, Aspetto, Dati (+1 more)
 
-### Community 166 - "adapter.ts"
-Cohesion: 0.32
-Nodes (5): ref_nozbe_watermelondb_adapters_lokijs, ref_nozbe_watermelondb_adapters_sqlite, adapter, adapter, syncroFlowSchema
-
 ### Community 167 - "Modello delle quantità"
 Cohesion: 0.33
 Nodes (5): Come si torna indietro, Modello delle quantità, Opzioni, Question, Risposta
-
-### Community 171 - "web_download_helper_web.dart"
-Cohesion: 0.29
-Nodes (6): dart:convert, dart:html, blob, bytes, downloadJsonWeb, url
 
 ### Community 172 - "Venduto ed esaurito"
 Cohesion: 0.33
@@ -911,8 +897,8 @@ Cohesion: 0.33
 Nodes (5): Categorie, Come si torna indietro, Opzioni, Question, Risposta
 
 ### Community 176 - "9. Altre schermate"
-Cohesion: 0.25
-Nodes (8): 9.1 Barra in basso e intestazioni, 9.2 Cronologia, 9.3 Automazioni, 9.4 Scanner e Azione rapida, 9.5 Impostazioni, 9.6 Altre, 9.7 Elementi ripetuti in molti file, 9. Altre schermate
+Cohesion: 0.29
+Nodes (7): 9.1 Barra in basso e intestazioni, 9.2 Cronologia, 9.3 Automazioni, 9.4 Scanner e Azione rapida, 9.5 Impostazioni, 9.7 Elementi ripetuti in molti file, 9. Altre schermate
 
 ### Community 177 - "Fornitori e clienti"
 Cohesion: 0.33
@@ -935,8 +921,8 @@ Cohesion: 0.33
 Nodes (5): Come si torna indietro, Opzioni, Question, Report ed export, Risposta
 
 ### Community 183 - "stock.ts"
-Cohesion: 0.14
-Nodes (30): 22 novembre 2026 — Fase B, M02: logica della giacenza (ticket 01-03), 22 novembre 2026 — Fase B, M04: «Movimenta» nella Scheda e filtro Movimenti (ticket 02), 22 novembre 2026 — Fase B, punto 1: prova di tutte le funzioni sul web, mappa del gestionale (bozza), Grafo, Grafo dei lavori — gestionale di magazzino (fase B), Decisions so far, Notes, EditProductForm() (+22 more)
+Cohesion: 0.13
+Nodes (28): 22 novembre 2026 — Fase B, M02: logica della giacenza (ticket 01-03), 22 novembre 2026 — Fase B, M04: «Movimenta» nella Scheda e filtro Movimenti (ticket 02), 22 novembre 2026 — Fase B, punto 1: prova di tutte le funzioni sul web, mappa del gestionale (bozza), Grafo, Grafo dei lavori — gestionale di magazzino (fase B), Decisions so far, Notes, events() (+20 more)
 
 ### Community 184 - "a2-aggiungi.cjs"
 Cohesion: 0.29
@@ -959,20 +945,20 @@ Cohesion: 0.25
 Nodes (7): 1. Crea un progetto Supabase, 2. Configura il database, 3. Abilita Real-time, 4. Configura le variabili ambiente, 5. Verifica la connessione, Note, Setup Supabase (Synchroflow)
 
 ### Community 189 - "Passaggio di consegne — fase B, funzionalità di magazzino (Syncro Flow)"
-Cohesion: 0.50
-Nodes (3): Cose da sapere, Domande aperte per l'utente (domattina), Passaggio di consegne — fase B, funzionalità di magazzino (Syncro Flow)
+Cohesion: 0.20
+Nodes (10): App(), Come si verifica un task (tutto verde prima del commit), Cose da sapere, Domande aperte per l'utente (domattina), Passaggio di consegne — fase B, funzionalità di magazzino (Syncro Flow), dialogs(), BrowserDialogs, installWebAlert() (+2 more)
 
 ### Community 191 - "Automazioni — Engine Completo (per qualsiasi settore)"
-Cohesion: 0.33
-Nodes (5): 1. Modelli, 2. Store & Persistenza, 5. QR Trigger, Automazioni — Engine Completo (per qualsiasi settore), Checklist parità automazioni
+Cohesion: 0.29
+Nodes (6): 1. Modelli, 2. Store & Persistenza, 5. QR Trigger, 6. Settore-agnostico — esempi, Automazioni — Engine Completo (per qualsiasi settore), Checklist parità automazioni
 
 ### Community 192 - "watermelondb-shim.d.ts"
 Cohesion: 0.13
 Nodes (8): Database, Model, @nozbe/watermelondb, @nozbe/watermelondb/adapters/sqlite, @nozbe/watermelondb/decorators, @nozbe/watermelondb/react, @nozbe/watermelondb/sync, SQLiteAdapter
 
-### Community 193 - "productChanges.ts"
-Cohesion: 0.30
-Nodes (9): 22 novembre 2026 — Fase B, C10: la Cronologia registra tutte le modifiche (P13), before, describeChanges(), describeCustomChanges(), empty(), num(), price(), same() (+1 more)
+### Community 193 - "Decisioni da rivedere"
+Cohesion: 0.19
+Nodes (15): 22 novembre 2026 — Fase B, C01: numeri in formato italiano (P03), 22 novembre 2026 — Fase B, C10: la Cronologia registra tutte le modifiche (P13), 22 novembre 2026 — Fase B: rilettura finale delle correzioni (numeri del CSV, note vuote, prove), Decisioni da rivedere, before, formatNumberInput(), parseNumber(), parseStoredNumber() (+7 more)
 
 ### Community 194 - "funzionalita/map.md"
 Cohesion: 0.40
@@ -1063,24 +1049,24 @@ Cohesion: 0.29
 Nodes (6): **1\. Panoramica e Obiettivi del Modulo**, **2\. Architettura di Rete e Connettività Locale**, **3\. Pipeline di Acquisizione e Compressione Media (Bare React Native)**, **4\. Chat Operativa con "Hydrated Product Cards"**, **5\. Fasi di Implementazione e Librerie (Roadmap Tecnica)**, **Product Requirements Document (PRD): SyncroFlow \- Modulo Mesh, Chat Avanzata e Storage Ottimizzato**
 
 ## Knowledge Gaps
-- **1859 isolated node(s):** `$schema`, `plugin`, `type`, `command`, `enabled` (+1854 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2321 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **37 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1860 isolated node(s):** `$schema`, `plugin`, `type`, `command`, `enabled` (+1855 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2322 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **38 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `rgba()` connect `Audit del tema (misurato il 22 novembre 2026)` to `react`, `genera_temi.py`?**
+- **Why does `rgba()` connect `genera_temi.py` to `AuthScreen`, `Mappa funzionale di Syncro Flow (React Native v1)`, `Text`?**
   _High betweenness centrality (0.199) - this node is a cross-community bridge._
-- **Why does `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` connect `react` to `Audit del tema (misurato il 22 novembre 2026)`, `AppearanceScreen.tsx`, `Cronologia aggiornabile`, `cardSurface`, `themes/index.ts`, `useTheme`?**
+- **Why does `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` connect `Text` to `ThemeContext.tsx`, `Cronologia aggiornabile`, `useTheme`, `themes/index.ts`, `RootNavigator.tsx`, `genera_temi.py`?**
   _High betweenness centrality (0.191) - this node is a cross-community bridge._
-- **Why does `shadow()` connect `genera_temi.py` to `chip`, `react`?**
+- **Why does `shadow()` connect `genera_temi.py` to `chip`, `Text`?**
   _High betweenness centrality (0.182) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `useTheme()` (e.g. with `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` and `Regole per ogni fetta`) actually correct?**
   _`useTheme()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 2 inferred relationships involving `useInventory()` (e.g. with `🟣 2026-09-02 — Queen Coordinator Ruflo Swarm: Mesh, Chat e Storage Offline-First (Bare RN)` and `Fase 3 — Chat Hydration + WebP [Worker2 done component, compressor da installare react-native-compressor + react-native-image-crop-picker]`) actually correct?**
   _`useInventory()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `$schema`, `plugin`, `type` to the rest of the system?**
-  _1859 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `theme.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.11607843137254902 - nodes in this community are weakly interconnected._
+  _1860 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `react-native-safe-area-context` be split into smaller, more focused modules?**
+  _Cohesion score 0.09194053208137715 - nodes in this community are weakly interconnected._

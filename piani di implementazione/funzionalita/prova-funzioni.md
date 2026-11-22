@@ -20,6 +20,7 @@ La prova qui sotto descrive l'app **prima** delle correzioni. Le correzioni C01-
 | C12 niente immagine d'esempio senza foto | D18 | 77c0549 |
 | C13 dominio GS1, numeri della Scheda, Svuota cestino, visore delle foto | P10, P19, P24, P21 | a71ef0a |
 | C14 una sola copia delle posizioni predefinite | D21 | 42301ae |
+| C15 pagina web in italiano e senza traduzione automatica (22 pomeriggio, dopo M09) | P31 | vedi `git log` |
 
 **Restano aperti**: D16 (PDF senza campi personalizzati, codici da servizi esterni), D19 (preferenze Scanner & NFC non lette), P12 (modifiche del Layout builder non salvate ma già applicate), P16-P17 (esecuzione delle automazioni), P20 (foto `blob:` sul web), P23 (esito dell'Audit non salvato), P26 (lettura da fotocamera senza «scansionato»), P27 (etichetta per i capi con link GS1; PDF ed etichetta sul web), P28 (Chat), P29 (Team sul web), P30 (voci «Prossimamente»), il messaggio di LokiJS al primo avvio web. Non verificabili da qui: fotocamera, NFC, stampa, condivisione del telefono, mesh LAN, Drive.
 
@@ -103,6 +104,7 @@ I difetti già numerati (D02, D03, D12-D16, D18, D19, D21) restano in `ui-ux/dif
 | P28 | Chat | Messaggi doppi; «Approva spostamento» sempre verso Vetrina; «Vendi» senza conferma né prezzo; storico non per spazio | comportamento |
 | P29 | Team (web) | «Host pronto» anche se la creazione fallisce; Team e Chat danno NotFound ricaricando | comportamento (web) |
 | P30 | Impostazioni | «Alert Prodotti Dormienti», «Suggerimenti AI» e Condivisione dicono solo «Prossimamente» | da decidere |
+| P31 | Pagina web | Trovato il 22 pomeriggio dalla sessione orchestratrice: la pagina servita da :8082 aveva `<html lang="en">` (modello di Expo), così il Chrome dell'utente la traduceva da solo in italiano storpiando i testi («Magazzino» → «Rivista», «Venduti» → «Venditi»; `<html class="translated-ltr">`), e la traduzione inserisce nodi `<font>` nel DOM gestito da React. Corretto con `public/index.html` (C15) | comportamento (web) |
 
 Note aperte della settima parte di `PASSAGGIO_UI_UX.md`, chiarite dalla prova: visore della Scheda (P21, sul web; sul telefono da provare); pesi non in formato italiano (P19); ricerca per id della posizione (P14); messaggio di WatermelonDB al primo avvio (eccezione nota, resta per la fase B); ruoli del tema mancanti (estetica, non provati qui).
 

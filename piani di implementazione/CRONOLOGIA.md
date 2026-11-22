@@ -2,6 +2,14 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, C15: pagina web in italiano e senza traduzione automatica (P31)
+
+- Branch `funzioni/magazzino`. Difetto segnalato dalla sessione orchestratrice: la pagina servita da :8082 aveva `<html lang="en">` (modello di Expo), quindi il Chrome dell'utente la traduceva da solo («Magazzino» → «Rivista», «Venduti» → «Venditi») e la traduzione inserisce nodi `<font>` nel DOM gestito da React.
+- Correzione: modello proprio `public/index.html` (copia di quello di Expo 54, che lo rilegge a ogni richiesta, senza riavviare Metro) con `lang="it"`, `translate="no"`, classe `notranslate`, `<meta name="google" content="notranslate">` e il testo di `noscript` in italiano.
+- Verifiche: `curl` su :8082 (e su `/automations/count`) restituisce `<html lang="it" translate="no" class="notranslate">`, il meta e lo script dell'app; in un browser pulito `document.documentElement.lang` = `it`, l'app si apre, 0 errori in console. Annotato come P31 in `funzionalita/prova-funzioni.md`.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 217 verdi, bundle Android 5,15 MB con 62 asset, 33 schermate senza errori in console.
+- Decisione presa al posto dell'utente: 1 riga P31 in `DECISIONI_DA_RIVEDERE.md`.
+
 ## 22 novembre 2026 — Fase B, M09: Carico e Scarico dall'Azione rapida (ticket 08)
 
 - Branch `funzioni/magazzino`.

@@ -27,7 +27,7 @@ Aggiornato il 22 novembre 2026 (pomeriggio) dalla sessione delle fette M, dopo M
    - **Prezzo e contatto**: oggi `sellProduct` ha il prezzo e non il contatto, lo scarico della finestra ha il contatto e non il prezzo. O si aggiunge un prezzo facoltativo allo scarico con causale vendita (`Movement` ha già `finalPrice`), o si annota il buco in `DECISIONI_DA_RIVEDERE.md`.
    - **Nomi**: `describeStockEvent` riceve un risolutore facoltativo del nome del contatto («· Fornitore Rossi»); aggiornare **tutti** i chiamanti nello stesso commit (Cronologia, Scheda, Azione rapida). In `SettingsScreen` passare `contact` a `movementCsvRows`: il risolutore deve restituire `undefined` per un id sconosciuto (il ripiego è `??`, quindi `''` stamperebbe vuoto).
    - Prova `prova/m10-contatti.cjs` (stato salvato: chiave dei contatti, `contactId` negli eventi, report movimenti con il nome), regressione `m04-movimenta`, `m09-azione`, `m08-csv`, `a1-cronologia`, `a4-impostazioni`; `FETTA=m10` in `stili-fette.cjs`.
-2. Dopo le fette, i difetti rimasti (riga «dopo» della tabella delle correzioni in `prova-funzioni.md`): D16, D19, P16-P17, P20, P23, P26-P30, il messaggio di LokiJS al primo avvio web.
+2. Dopo le fette, i difetti rimasti (riga «dopo» della tabella delle correzioni in `prova-funzioni.md`): D16, D19, P16-P17, P20, P23, P26-P30, il messaggio di LokiJS al primo avvio web. P31 (pagina web in inglese tradotta da Chrome) è già corretto (C15, `public/index.html`).
 
 Fatte e chiuse (indicazioni di allora in `git log` e `CRONOLOGIA.md`): M07, M09.
 
@@ -42,6 +42,8 @@ Cose pronte da riusare: `moveStock` e `MovementSheet` (M04, con `initialKind` e 
 
 ## Cose da sapere
 
+- **Pagina web**: il modello HTML è `public/index.html` (Expo lo rilegge a ogni richiesta; `app.json` invece resta in memoria fino al riavvio di Metro).
+- **Orchestratrice**: dal 22 pomeriggio la sessione «Syncro Flow: orchestratore e funzioni mancanti» (`local_12e15b39…`) coordina `funzioni/magazzino`. Dopo ogni push le si manda una riga con commit e fetta; prima di iniziare una fetta che tocca NFC, CSV o posizioni la si avvisa (prepara una mappa che tocca quei file). Usa :8082 per mostrare l'app all'utente.
 - **Fine riga**: alcuni file sono CRLF nell'indice (`EditScreen.tsx`, `InventoryContext.tsx`, `CustomFieldsContext.tsx`, `LayoutContext.tsx`…), gli altri LF; `core.autocrlf=true`. Modificare con lo strumento Edit (o Python con `newline=''`), mettere in stage con `bash "piani di implementazione/funzionalita/prova/stage.sh" <file>…` e controllare con `git diff --cached --numstat` che le righe cambiate siano poche. L'errore è già successo due volte (corretto con 908c316 e 50c60d4).
 - **Server**: app web su `:8082` e campionario su `:8765` (configurazioni `syncro-flow-stili-web` e `campionario-seed` in `D:\FurInventory Pro\.claude\launch.json`). Il 22 pomeriggio non giravano più: riavviati con `preview_start` per nome dalla sessione di M07. Controllare con `curl -s -o /dev/null -w "%{http_code}" http://localhost:8082` prima di una prova; per le prove usare Playwright (`lib.cjs`), non il profilo del pannello Browser. Non riavviare né uccidere Metro; evitare modifiche che richiedono un riavvio (dipendenze native, babel, metro).
 - **Mai modificare codice dell'app mentre gira una prova** su `:8082` (Fast Refresh cambia il codice sotto la prova).
