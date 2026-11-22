@@ -7,6 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { SECTOR_TEMPLATES, SectorTemplate, USER_TEMPLATES_KEY } from '../../../constants/sectorTemplates';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -155,6 +158,7 @@ export default function SectorTemplatesScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
@@ -174,13 +178,13 @@ export default function SectorTemplatesScreen() {
                 </Text>
 
                 {/* Built-in Templates */}
-                <Text style={styles.sectionTitle}>MODELLI DISPONIBILI ({SECTOR_TEMPLATES.length})</Text>
+                <Text style={styles.sectionTitle}>Modelli disponibili ({SECTOR_TEMPLATES.length})</Text>
                 {SECTOR_TEMPLATES.map(tpl => renderTemplateCard(tpl))}
 
                 {/* User Templates */}
                 {userTemplates.length > 0 && (
                     <>
-                        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>I TUOI MODELLI ({userTemplates.length})</Text>
+                        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>I tuoi modelli ({userTemplates.length})</Text>
                         {userTemplates.map(tpl => (
                             <View key={tpl.id}>
                                 {renderTemplateCard(tpl, true)}
@@ -198,6 +202,7 @@ export default function SectorTemplatesScreen() {
 
                 {/* Save Current */}
                 <Pressable style={styles.saveTemplateButton} onPress={handleSaveCurrentAsTemplate}>
+                    <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                     <AppIcon name="save" size={24} color={t.colors.onButton} />
                     <Text style={styles.saveTemplateText}>Salva Campi Attuali come Modello</Text>
                 </Pressable>
@@ -231,7 +236,7 @@ export default function SectorTemplatesScreen() {
                             </View>
 
                             {/* Fields Preview */}
-                            <Text style={styles.sectionTitle}>CAMPI INCLUSI ({selectedTemplate.fields.length})</Text>
+                            <Text style={styles.sectionTitle}>Campi inclusi ({selectedTemplate.fields.length})</Text>
                             {selectedTemplate.fields.map((field, index) => (
                                 <View key={index} style={styles.fieldPreview}>
                                     <View style={[styles.fieldPreviewIcon, { backgroundColor: withAlpha(selectedTemplate.color, 0.082) }]}>
@@ -287,7 +292,7 @@ const useStyles = makeStyles((t) => ({
         borderBottomColor: t.colors.border,
     },
     backButton: { marginRight: 16 },
-    title: { ...t.typography.cardTitle, fontSize: 20 },
+    title: { ...t.typography.cardTitle, fontSize: 20, fontWeight: t.title.weight, letterSpacing: t.title.tracking },
     subtitle: {
         ...t.typography.body,
         color: t.colors.textSecondary,
@@ -296,21 +301,19 @@ const useStyles = makeStyles((t) => ({
         marginBottom: 24,
         lineHeight: 20,
     },
-    sectionTitle: { ...t.typography.sectionHeader, marginBottom: 12 },
+    sectionTitle: { ...t.typography.sectionHeader, lineHeight: 18, marginBottom: 10, ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null) },
 
     templateCard: {
+        ...cardSurface(t),
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.medium,
         padding: 16,
         marginBottom: 10,
-        ...t.shadows.small,
     },
     templateEmoji: {
         width: 52,
         height: 52,
-        borderRadius: t.radius.medium,
+        borderRadius: t.radius.iconWrap,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 14,
@@ -318,8 +321,8 @@ const useStyles = makeStyles((t) => ({
     templateEmojiText: { fontSize: 28 },
     templateContent: { flex: 1 },
     templateHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-    templateName: { ...t.typography.cardTitle, fontSize: 15 },
-    customBadge: { backgroundColor: t.colors.accentSoft, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+    templateName: { ...t.typography.cardTitle, fontSize: 15, fontWeight: t.weights.strong },
+    customBadge: { backgroundColor: t.colors.accentSoft, borderRadius: t.radius.badge, paddingHorizontal: 6, paddingVertical: 2 },
     customBadgeText: { fontSize: 10, color: t.colors.accentInk, fontWeight: '600' },
     templateDesc: { ...t.typography.caption, fontSize: 12, marginBottom: 2 },
     templateFields: { ...t.typography.caption, fontSize: 11, color: t.colors.accentInk, fontWeight: '600' },
@@ -339,14 +342,18 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
+        minHeight: 54,
         backgroundColor: t.colors.button,
         borderRadius: t.radius.button,
+        ...t.shadows.button,
+        overflow: 'hidden',
         padding: 16,
         marginTop: 24,
     },
-    saveTemplateText: { ...t.typography.buttonPrimary, fontSize: 15 },
+    saveTemplateText: { ...t.typography.buttonPrimary, fontSize: 15, color: t.colors.onButton },
 
-    modalContainer: { flex: 1, backgroundColor: t.colors.background },
+    // Anteprima del modello: fondo opaco (sta sopra la schermata)
+    modalContainer: { flex: 1, backgroundColor: t.colors.backgroundSecondary },
     modalHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -356,7 +363,7 @@ const useStyles = makeStyles((t) => ({
         borderBottomWidth: 1,
         borderBottomColor: t.colors.border,
     },
-    modalTitle: { ...t.typography.cardTitle, fontSize: 18 },
+    modalTitle: { ...t.typography.cardTitle, fontSize: 18, fontWeight: t.title.weight, letterSpacing: t.title.tracking },
     importButton: { color: t.colors.accentInk, fontWeight: '600', fontSize: 16 },
     modalContent: { flex: 1, paddingHorizontal: t.spacing.screenPadding },
 
@@ -370,23 +377,22 @@ const useStyles = makeStyles((t) => ({
     templateInfoDesc: { ...t.typography.caption, fontSize: 14, textAlign: 'center' },
 
     fieldPreview: {
+        ...tileSurface(t),
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.medium,
         padding: 14,
         marginBottom: 8,
     },
     fieldPreviewIcon: {
         width: 44,
         height: 44,
-        borderRadius: 10,
+        borderRadius: t.radius.iconWrap,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
     },
     fieldPreviewContent: { flex: 1 },
-    fieldPreviewName: { ...t.typography.cardTitle, fontSize: 14, marginBottom: 2 },
+    fieldPreviewName: { ...t.typography.cardTitle, fontSize: 14, fontWeight: t.weights.strong, marginBottom: 2 },
     fieldPreviewType: { ...t.typography.caption, fontSize: 12 },
     fieldPreviewOptions: { ...t.typography.caption, fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
 
@@ -395,6 +401,7 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
+        minHeight: 54,
         padding: 16,
         borderRadius: t.radius.button,
         marginTop: 24,

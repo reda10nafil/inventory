@@ -7,6 +7,9 @@ import { useGS1Config } from '../../../contexts/GS1ConfigContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { buildPreviewLink } from '../../../utils/gs1';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -52,9 +55,10 @@ export default function GS1ConfigScreen() {
   };
 
   return (
+    <View style={styles.container}>
+    <Backdrop />
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      contentContainerStyle={{ paddingHorizontal: t.spacing.screenPadding, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header Info */}
@@ -71,7 +75,7 @@ export default function GS1ConfigScreen() {
       </View>
 
       {/* Section: Endpoint */}
-      <Text style={styles.sectionTitle}>ENDPOINT DI RISOLUZIONE</Text>
+      <Text style={styles.sectionTitle}>Endpoint di risoluzione</Text>
       <View style={styles.card}>
         <Text style={styles.fieldLabel}>Dominio Base</Text>
         <View style={styles.inputContainer}>
@@ -82,7 +86,7 @@ export default function GS1ConfigScreen() {
             onChangeText={setBaseUrlLocal}
             onBlur={handleBaseUrlBlur}
             placeholder="https://syncroflow.app/id"
-            placeholderTextColor={t.colors.textMuted}
+            placeholderTextColor={t.colors.placeholder}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -94,13 +98,13 @@ export default function GS1ConfigScreen() {
       </View>
 
       {/* Section: Application Identifiers */}
-      <Text style={styles.sectionTitle}>MAPPATURA GS1 (APPLICATION IDENTIFIERS)</Text>
+      <Text style={styles.sectionTitle}>Mappatura GS1 (Application Identifiers)</Text>
 
       {/* AI 01 - GTIN (Always On) */}
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
-            <View style={[styles.aiBadge, { backgroundColor: withAlpha(t.colors.accent, 0.19) }]}>
+            <View style={[styles.aiBadge, { backgroundColor: t.colors.accentSoft }]}>
               <Text style={[styles.aiBadgeText, { color: t.colors.accentInk }]}>AI 01</Text>
             </View>
             <View style={styles.toggleTextWrap}>
@@ -130,7 +134,7 @@ export default function GS1ConfigScreen() {
           <Switch
             value={gs1Config.enableSerial}
             onValueChange={(val) => updateGS1Config({ enableSerial: val })}
-            trackColor={{ false: t.colors.border, true: withAlpha(t.colors.success, 0.502) }}
+            trackColor={{ false: t.colors.checkRing, true: withAlpha(t.colors.success, 0.502) }}
             thumbColor={gs1Config.enableSerial ? t.colors.success : t.colors.textMuted}
           />
         </View>
@@ -147,7 +151,7 @@ export default function GS1ConfigScreen() {
                 <AppIcon
                   name="fingerprint"
                   size={16}
-                  color={gs1Config.serialMode === 'uuid' ? t.colors.onAccent : t.colors.textSecondary}
+                  color={gs1Config.serialMode === 'uuid' ? t.colors.accentInk : t.colors.textSecondary}
                 />
                 <Text style={[styles.segmentText, gs1Config.serialMode === 'uuid' && styles.segmentTextActive]}>UUID</Text>
               </Pressable>
@@ -158,7 +162,7 @@ export default function GS1ConfigScreen() {
                 <AppIcon
                   name="format-list-numbered"
                   size={16}
-                  color={gs1Config.serialMode === 'progressive' ? t.colors.onAccent : t.colors.textSecondary}
+                  color={gs1Config.serialMode === 'progressive' ? t.colors.accentInk : t.colors.textSecondary}
                 />
                 <Text style={[styles.segmentText, gs1Config.serialMode === 'progressive' && styles.segmentTextActive]}>Progressivo</Text>
               </Pressable>
@@ -182,7 +186,7 @@ export default function GS1ConfigScreen() {
           <Switch
             value={gs1Config.enableLotto}
             onValueChange={(val) => updateGS1Config({ enableLotto: val })}
-            trackColor={{ false: t.colors.border, true: withAlpha(t.colors.info, 0.502) }}
+            trackColor={{ false: t.colors.checkRing, true: withAlpha(t.colors.info, 0.502) }}
             thumbColor={gs1Config.enableLotto ? t.colors.info : t.colors.textMuted}
           />
         </View>
@@ -203,6 +207,7 @@ export default function GS1ConfigScreen() {
                     style={[styles.fieldPickerChip, gs1Config.lottoFieldId === cf.id && styles.fieldPickerChipActive]}
                     onPress={() => updateGS1Config({ lottoFieldId: cf.id })}
                   >
+                    {gs1Config.lottoFieldId === cf.id && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
                     <AppIcon
                       name={(cf.icon || 'label') as any}
                       size={16}
@@ -220,7 +225,7 @@ export default function GS1ConfigScreen() {
       </View>
 
       {/* Live Preview */}
-      <Text style={styles.sectionTitle}>ANTEPRIMA STRINGA</Text>
+      <Text style={styles.sectionTitle}>Anteprima stringa</Text>
       <View style={styles.previewCard}>
         <View style={styles.previewHeader}>
           <AppIcon name="qr-code" size={20} color={t.colors.accentInk} />
@@ -265,6 +270,7 @@ export default function GS1ConfigScreen() {
         <Text style={styles.resetText}>Ripristina Predefiniti</Text>
       </Pressable>
     </ScrollView>
+    </View>
   );
 }
 
@@ -272,12 +278,11 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
     backgroundColor: t.colors.background,
-    paddingHorizontal: t.spacing.screenPadding,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: withAlpha(t.colors.accent, 0.063),
-    borderRadius: t.radius.large,
+    backgroundColor: t.colors.accentSoft,
+    borderRadius: t.radius.card,
     padding: 16,
     marginTop: 16,
     marginBottom: 24,
@@ -288,7 +293,7 @@ const useStyles = makeStyles((t) => ({
   infoIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: t.radius.iconWrap,
     backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
@@ -307,46 +312,43 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: t.colors.textSecondary,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    marginBottom: 12,
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
+    marginBottom: 10,
     marginTop: 8,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   card: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    ...cardSurface(t),
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: t.colors.borderLight,
-    ...t.shadows.card,
   },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: t.colors.textPrimary,
-    marginBottom: 10,
+    fontSize: t.label.size,
+    fontWeight: t.label.weight,
+    color: t.label.color,
+    lineHeight: 18,
+    marginBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.backgroundSecondary,
+    minHeight: t.input.height,
+    backgroundColor: t.colors.input,
     borderRadius: t.radius.input,
     borderWidth: 1,
     borderColor: t.colors.inputBorder,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
   inputIcon: {
     marginRight: 8,
   },
   input: {
     flex: 1,
+    minWidth: 0,
     fontSize: 15,
     color: t.colors.inputText,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   helperText: {
     ...t.typography.caption,
@@ -369,7 +371,7 @@ const useStyles = makeStyles((t) => ({
   aiBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: t.radius.badge,
   },
   aiBadgeText: {
     fontSize: 11,
@@ -381,7 +383,7 @@ const useStyles = makeStyles((t) => ({
   },
   toggleTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: t.weights.strong,
     color: t.colors.textPrimary,
     marginBottom: 2,
   },
@@ -392,10 +394,10 @@ const useStyles = makeStyles((t) => ({
   alwaysOnBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: withAlpha(t.colors.accent, 0.082),
+    backgroundColor: t.colors.accentSoft,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: t.radius.full,
+    borderRadius: t.radius.badge,
     gap: 4,
   },
   alwaysOnText: {
@@ -410,17 +412,19 @@ const useStyles = makeStyles((t) => ({
     borderTopColor: t.colors.borderLight,
   },
   subOptionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: t.colors.textSecondary,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: t.label.size,
+    fontWeight: t.label.weight,
+    color: t.label.color,
+    lineHeight: 18,
+    marginBottom: 8,
   },
+  // Controllo a segmenti come il selettore dell'unità di Aggiungi (tela): campo con il segmento attivo velato
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.input,
+    borderWidth: 1,
+    borderColor: t.colors.inputBorder,
+    borderRadius: t.radius.inputSmall,
     padding: 3,
     gap: 4,
   },
@@ -430,19 +434,20 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    borderRadius: t.radius.small,
+    borderRadius: t.radius.inputSmall,
     gap: 6,
   },
   segmentButtonActive: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.accentSoft,
   },
   segmentText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: t.colors.textSecondary,
   },
   segmentTextActive: {
-    color: t.colors.onAccent,
+    fontWeight: '600',
+    color: t.colors.accentInk,
   },
   fieldPickerGrid: {
     flexDirection: 'row',
@@ -455,9 +460,10 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: t.radius.chip,
-    backgroundColor: t.colors.backgroundSecondary,
+    backgroundColor: t.colors.chip,
     borderWidth: 1,
     borderColor: t.colors.chipBorder,
+    overflow: 'hidden',
     gap: 6,
   },
   fieldPickerChipActive: {
@@ -466,10 +472,11 @@ const useStyles = makeStyles((t) => ({
   },
   fieldPickerText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: t.colors.chipText,
   },
   fieldPickerTextActive: {
+    fontWeight: '600',
     color: t.colors.chipActiveText,
   },
   noFieldsText: {
@@ -479,13 +486,10 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
   },
   previewCard: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    ...cardSurface(t),
+    borderColor: t.colors.accent,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: t.colors.accent,
-    ...t.shadows.cardElevated,
   },
   previewHeader: {
     flexDirection: 'row',
@@ -495,14 +499,14 @@ const useStyles = makeStyles((t) => ({
   },
   previewLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: t.weights.strong,
     color: t.colors.accentInk,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   previewUrlContainer: {
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.input,
+    borderWidth: 1,
+    borderColor: t.colors.inputBorder,
+    borderRadius: t.radius.inputSmall,
     padding: 14,
     marginBottom: 12,
   },
@@ -533,9 +537,10 @@ const useStyles = makeStyles((t) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    minHeight: 48,
+    padding: 14,
     marginTop: 12,
-    borderRadius: t.radius.medium,
+    borderRadius: t.radius.button,
     borderWidth: 1,
     borderColor: withAlpha(t.colors.error, 0.19),
     gap: 8,

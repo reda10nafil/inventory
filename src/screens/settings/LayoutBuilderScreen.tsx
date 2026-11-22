@@ -4,10 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Pressable, ScrollView, Alert, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
-import { useLayout, LayoutField, FieldSize } from '../../../contexts/LayoutContext';
+import { useLayout, LayoutField, FieldSize, sectionLabel } from '../../../contexts/LayoutContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { PREDEFINED_TEMPLATES } from '../../../lib/templates';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { Glass } from '../../../components/ui/Glass';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -208,6 +212,7 @@ export default function LayoutBuilderScreen() {
 
     return (
         <SafeAreaView edges={['bottom']} style={styles.container}>
+            <Backdrop />
             {/* Instructions */}
             <View style={styles.instructionsContainer}>
                 <AppIcon name="info-outline" size={20} color={t.colors.accentInk} />
@@ -217,22 +222,23 @@ export default function LayoutBuilderScreen() {
             </View>
 
             <View style={styles.previewHeader}>
-                <Text style={styles.previewTitle}>CONFIGURA CAMPI</Text>
+                <Text style={styles.previewTitle}>Configura campi</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                    <Pressable onPress={() => setShowTemplatesModal(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.colors.accentSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-                        <AppIcon name="auto-awesome" size={18} color={t.colors.accentInk} />
-                        <Text style={{ ...t.typography.caption, color: t.colors.accentInk, fontWeight: '600' }}>MODELLI</Text>
+                    <Pressable onPress={() => setShowTemplatesModal(true)} style={[styles.chip, styles.chipActive]}>
+                        <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />
+                        <AppIcon name="auto-awesome" size={18} color={t.colors.chipActiveText} />
+                        <Text style={[styles.chipText, styles.chipTextActive]}>MODELLI</Text>
                     </Pressable>
                     <Pressable onPress={() => {
-                        addSectionHeader('NUOVA SEZIONE');
+                        addSectionHeader('Nuova sezione');
                         setHasChanges(true);
-                    }} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.colors.buttonSecondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder }}>
-                        <AppIcon name="playlist-add" size={18} color={t.colors.onButtonSecondary} />
-                        <Text style={{ ...t.typography.caption, color: t.colors.onButtonSecondary, fontWeight: '600' }}>SEZIONE</Text>
+                    }} style={styles.chip}>
+                        <AppIcon name="playlist-add" size={18} color={t.colors.textSecondary} />
+                        <Text style={styles.chipText}>SEZIONE</Text>
                     </Pressable>
-                    <Pressable onPress={() => setShowAddFieldModal(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.colors.buttonSecondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder }}>
-                        <AppIcon name="add" size={18} color={t.colors.onButtonSecondary} />
-                        <Text style={{ ...t.typography.caption, color: t.colors.onButtonSecondary, fontWeight: '600' }}>CAMPO</Text>
+                    <Pressable onPress={() => setShowAddFieldModal(true)} style={styles.chip}>
+                        <AppIcon name="add" size={18} color={t.colors.textSecondary} />
+                        <Text style={styles.chipText}>CAMPO</Text>
                     </Pressable>
                 </ScrollView>
             </View>
@@ -254,7 +260,7 @@ export default function LayoutBuilderScreen() {
                                     styles.fieldCard,
                                     !item.visible && styles.fieldCardHidden,
                                     isSelected && styles.fieldCardSelected,
-                                    isSection && { borderColor: t.colors.dash, borderStyle: 'dashed' }
+                                    isSection && styles.sectionCard
                                 ]}
                             >
                                 <View style={styles.fieldCardHeader}>
@@ -288,8 +294,8 @@ export default function LayoutBuilderScreen() {
                                         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                             <AppIcon name="menu" size={20} color={t.colors.textSecondary} />
                                             <TextInput
-                                                style={{ flex: 1, ...t.typography.cardTitle, fontSize: 15, paddingVertical: 0 }}
-                                                value={item.label}
+                                                style={styles.sectionInput}
+                                                value={sectionLabel(item.label)}
                                                 onChangeText={(text) => {
                                                     const newFields = localFields.map(f => f.id === item.id ? { ...f, label: text } : f);
                                                     setLocalFields(newFields);
@@ -318,7 +324,7 @@ export default function LayoutBuilderScreen() {
                                             <AppIcon
                                                 name={getFieldIconForItem(item) as any}
                                                 size={20}
-                                                color={item.visible ? t.colors.accent : t.colors.textSecondary}
+                                                color={item.visible ? t.colors.accentInk : t.colors.textSecondary}
                                             />
                                             <Text style={[
                                                 styles.fieldCardTitle,
@@ -343,7 +349,7 @@ export default function LayoutBuilderScreen() {
                                                 <AppIcon
                                                     name={item.visible ? 'visibility' : 'visibility-off'}
                                                     size={20}
-                                                    color={item.visible ? t.colors.accent : t.colors.textSecondary}
+                                                    color={item.visible ? t.colors.accentInk : t.colors.textSecondary}
                                                 />
                                             </Pressable>
 
@@ -410,16 +416,9 @@ export default function LayoutBuilderScreen() {
                                                         updateFieldIcon(item.id, icon);
                                                         setHasChanges(true);
                                                     }}
-                                                    style={{
-                                                        width: 40,
-                                                        height: 40,
-                                                        borderRadius: 8,
-                                                        backgroundColor: getFieldIconForItem(item) === icon ? t.colors.accent : t.colors.backgroundSecondary,
-                                                        justifyContent: 'center',
-                                                        alignItems: 'center'
-                                                    }}
+                                                    style={[styles.iconTile, getFieldIconForItem(item) === icon && styles.iconTileSelected]}
                                                 >
-                                                    <AppIcon name={icon as any} size={20} color={getFieldIconForItem(item) === icon ? t.colors.onAccent : t.colors.textSecondary} />
+                                                    <AppIcon name={icon as any} size={20} color={getFieldIconForItem(item) === icon ? t.colors.tileSelectedText : t.colors.textSecondary} />
                                                 </Pressable>
                                             ))}
                                         </ScrollView>
@@ -433,11 +432,13 @@ export default function LayoutBuilderScreen() {
 
             {/* Save Button */}
             <View style={styles.bottomBar}>
+                <Glass />
                 <Pressable
-                    style={[styles.saveButton, !hasChanges && styles.saveButtonDisabled]}
+                    style={[styles.saveButton, hasChanges ? styles.saveButtonActive : styles.saveButtonDisabled]}
                     onPress={handleSave}
                     disabled={!hasChanges}
                 >
+                    {hasChanges && <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />}
                     <AppIcon name="save" size={24} color={hasChanges ? t.colors.onButton : t.colors.textSecondary} />
                     <Text style={[styles.saveButtonText, !hasChanges && styles.saveButtonTextDisabled]}>
                         {hasChanges ? 'Salva Layout' : 'Nessuna Modifica'}
@@ -447,12 +448,12 @@ export default function LayoutBuilderScreen() {
 
             {/* Templates Selector Modal */}
             <Modal visible={showTemplatesModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowTemplatesModal(false)}>
-                <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }}>
+                <SafeAreaView style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
                         <Pressable onPress={() => setShowTemplatesModal(false)}>
                             <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                         </Pressable>
-                        <Text style={{ ...t.typography.cardTitle, fontSize: 18 }}>Modelli di Settore</Text>
+                        <Text style={styles.modalTitle}>Modelli di Settore</Text>
                         <View style={{ width: 24 }} />
                     </View>
                     <ScrollView style={{ flex: 1, padding: t.spacing.screenPadding }}>
@@ -463,14 +464,14 @@ export default function LayoutBuilderScreen() {
                         {PREDEFINED_TEMPLATES.map(template => (
                             <Pressable
                                 key={template.id}
-                                style={{ backgroundColor: t.colors.tile, padding: 16, borderRadius: t.radius.tile, marginBottom: 16, borderWidth: 1, borderColor: t.colors.tileBorder, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                                style={[styles.modalRow, { marginBottom: 16 }]}
                                 onPress={() => loadTemplate(template.id)}
                             >
-                                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: t.colors.iconWrap, alignItems: 'center', justifyContent: 'center' }}>
+                                <View style={[styles.modalRowIcon, { width: 50, height: 50 }]}>
                                     <AppIcon name={template.icon as any} size={24} color={t.colors.accentInk} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ ...t.typography.cardTitle, fontSize: 16, marginBottom: 4 }}>{template.name}</Text>
+                                    <Text style={[styles.modalRowTitle, { marginBottom: 4 }]}>{template.name}</Text>
                                     <Text style={{ ...t.typography.caption, color: t.colors.textSecondary }}>{template.description}</Text>
                                 </View>
                                 <AppIcon name="arrow-forward-ios" size={16} color={t.colors.textSecondary} />
@@ -482,12 +483,12 @@ export default function LayoutBuilderScreen() {
 
             {/* Add Field Modal */}
             <Modal visible={showAddFieldModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddFieldModal(false)}>
-                <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }}>
+                <SafeAreaView style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
                         <Pressable onPress={() => setShowAddFieldModal(false)}>
                             <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                         </Pressable>
-                        <Text style={{ ...t.typography.cardTitle, fontSize: 18 }}>Aggiungi Campo</Text>
+                        <Text style={styles.modalTitle}>Aggiungi Campo</Text>
                         <View style={{ width: 24 }} />
                     </View>
                     <ScrollView style={{ flex: 1, padding: t.spacing.screenPadding }}>
@@ -497,7 +498,7 @@ export default function LayoutBuilderScreen() {
                         {customFields.filter(cf => !localFields.some(lf => lf.id === cf.id)).map(cf => (
                             <Pressable
                                 key={cf.id}
-                                style={{ backgroundColor: t.colors.tile, padding: 16, borderRadius: t.radius.tile, marginBottom: 12, borderWidth: 1, borderColor: t.colors.tileBorder, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+                                style={[styles.modalRow, { marginBottom: 12 }]}
                                 onPress={() => {
                                     const newField: LayoutField = {
                                         id: cf.id,
@@ -512,11 +513,11 @@ export default function LayoutBuilderScreen() {
                                     setShowAddFieldModal(false);
                                 }}
                             >
-                                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.colors.iconWrap, alignItems: 'center', justifyContent: 'center' }}>
+                                <View style={[styles.modalRowIcon, { width: 40, height: 40 }]}>
                                     <AppIcon name={(cf.icon as any) || 'text-fields'} size={20} color={t.colors.accentInk} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ ...t.typography.cardTitle, fontSize: 16, marginBottom: 2 }}>{cf.name}</Text>
+                                    <Text style={[styles.modalRowTitle, { marginBottom: 2 }]}>{cf.name}</Text>
                                     <Text style={{ ...t.typography.caption, color: t.colors.textSecondary }}>{cf.isSystem ? 'Campo Originale di Sistema' : 'Campo Personalizzato'}</Text>
                                 </View>
                                 <AppIcon name="add-circle-outline" size={24} color={t.colors.accentInk} />
@@ -565,8 +566,33 @@ const useStyles = makeStyles((t) => ({
     },
     previewTitle: {
         ...t.typography.sectionHeader,
-        fontSize: 12,
-        color: t.colors.textSecondary,
+        marginRight: 12,
+    },
+    // Pillole MODELLI / SEZIONE / CAMPO
+    chip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        height: 34,
+        paddingHorizontal: 12,
+        borderRadius: t.radius.chip,
+        backgroundColor: t.colors.chip,
+        borderWidth: 1,
+        borderColor: t.colors.chipBorder,
+        overflow: 'hidden',
+    },
+    chipActive: {
+        backgroundColor: t.colors.chipActive,
+        borderColor: t.colors.chipActiveBorder,
+    },
+    chipText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: t.colors.chipText,
+    },
+    chipTextActive: {
+        fontWeight: '600',
+        color: t.colors.chipActiveText,
     },
     previewLegend: {
         flexDirection: 'row',
@@ -595,18 +621,25 @@ const useStyles = makeStyles((t) => ({
         paddingBottom: 100,
     },
     fieldCard: {
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.card,
+        ...cardSurface(t),
         marginBottom: 8,
-        borderWidth: 2,
-        borderColor: 'transparent',
         overflow: 'hidden',
     },
     fieldCardHidden: {
         opacity: 0.5,
     },
     fieldCardSelected: {
-        borderColor: t.colors.accent,
+        borderColor: t.colors.tileSelectedBorder,
+    },
+    sectionCard: {
+        borderColor: t.colors.dash,
+        borderStyle: 'dashed',
+    },
+    sectionInput: {
+        flex: 1,
+        minWidth: 0,
+        ...t.typography.sectionHeader,
+        paddingVertical: 0,
     },
     fieldCardHeader: {
         flexDirection: 'row',
@@ -635,7 +668,9 @@ const useStyles = makeStyles((t) => ({
     sizeIndicatorContainer: {
         width: 40,
         height: 8,
-        backgroundColor: t.colors.backgroundSecondary,
+        backgroundColor: t.colors.tile,
+        borderWidth: 1,
+        borderColor: t.colors.tileBorder,
         borderRadius: 4,
         overflow: 'hidden',
     },
@@ -645,15 +680,15 @@ const useStyles = makeStyles((t) => ({
     },
     sizeIndicatorSmall: {
         width: '33%',
-        backgroundColor: withAlpha(t.colors.accent, 0.376),
+        backgroundColor: withAlpha(t.colors.tileSelectedBorder, 0.376),
     },
     sizeIndicatorMedium: {
         width: '50%',
-        backgroundColor: withAlpha(t.colors.accent, 0.502),
+        backgroundColor: withAlpha(t.colors.tileSelectedBorder, 0.502),
     },
     sizeIndicatorFull: {
         width: '100%',
-        backgroundColor: t.colors.accent,
+        backgroundColor: t.colors.tileSelectedBorder,
     },
     visibilityButton: {
         padding: 4,
@@ -666,23 +701,21 @@ const useStyles = makeStyles((t) => ({
         paddingTop: 12,
     },
     sizeSelectorLabel: {
-        ...t.typography.caption,
-        fontSize: 12,
-        color: t.colors.textSecondary,
-        marginBottom: 8,
+        fontSize: t.label.size,
+        fontWeight: t.label.weight,
+        color: t.label.color,
+        lineHeight: 18,
+        marginBottom: 6,
     },
     sizeOptions: {
         flexDirection: 'row',
         gap: 8,
     },
     sizeOption: {
+        ...tileSurface(t),
         flex: 1,
-        backgroundColor: t.colors.backgroundSecondary,
-        borderRadius: t.radius.tile,
         padding: 12,
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: 'transparent',
     },
     sizeOptionActive: {
         backgroundColor: t.colors.tileSelected,
@@ -691,10 +724,25 @@ const useStyles = makeStyles((t) => ({
     sizeOptionText: {
         ...t.typography.cardTitle,
         fontSize: 14,
-        color: t.colors.textSecondary,
+        fontWeight: '500',
+        color: t.colors.textPrimary,
     },
     sizeOptionTextActive: {
+        fontWeight: '600',
         color: t.colors.tileSelectedText,
+    },
+    // Scelta dell'icona: riquadri come le scelte a riquadri di Aggiungi
+    iconTile: {
+        ...tileSurface(t),
+        width: 40,
+        height: 40,
+        borderRadius: t.radius.iconWrap,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    iconTileSelected: {
+        backgroundColor: t.colors.tileSelected,
+        borderColor: t.colors.tileSelectedBorder,
     },
     sizeOptionSubtext: {
         ...t.typography.caption,
@@ -705,12 +753,12 @@ const useStyles = makeStyles((t) => ({
     sizeOptionSubtextActive: {
         color: t.colors.tileSelectedText,
     },
+    // Barra fissa di salvataggio: vetro e filetto in alto come le altre barre fisse
     bottomBar: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: t.colors.background,
         paddingHorizontal: t.spacing.screenPadding,
         paddingTop: 12,
         paddingBottom: Platform.OS === 'ios' ? 30 : 16,
@@ -722,19 +770,56 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: t.colors.button,
+        minHeight: 52,
         borderRadius: t.radius.button,
+        overflow: 'hidden',
         paddingVertical: 14,
     },
+    saveButtonActive: {
+        backgroundColor: t.colors.button,
+        ...t.shadows.button,
+    },
     saveButtonDisabled: {
-        backgroundColor: t.colors.surface,
+        backgroundColor: t.colors.buttonSecondary,
+        borderWidth: 1,
+        borderColor: t.colors.buttonSecondaryBorder,
     },
     saveButtonText: {
         ...t.typography.buttonPrimary,
         fontSize: 16,
+        color: t.colors.onButton,
     },
     saveButtonTextDisabled: {
         color: t.colors.textSecondary,
+    },
+    // Finestre Modelli e Aggiungi campo: fondo opaco (stanno sopra la schermata)
+    modalContainer: {
+        flex: 1,
+        backgroundColor: t.colors.backgroundSecondary,
+    },
+    modalTitle: {
+        ...t.typography.cardTitle,
+        fontSize: 18,
+        fontWeight: t.title.weight,
+        letterSpacing: t.title.tracking,
+    },
+    modalRow: {
+        ...tileSurface(t),
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    modalRowIcon: {
+        borderRadius: t.radius.iconWrap,
+        backgroundColor: t.colors.iconWrap,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalRowTitle: {
+        ...t.typography.cardTitle,
+        fontSize: 16,
+        fontWeight: t.weights.strong,
     },
     modalHeader: {
         flexDirection: 'row',

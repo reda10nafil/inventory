@@ -7,6 +7,8 @@ import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useCustomFields, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { cardSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -77,6 +79,7 @@ export default function TrashScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
@@ -100,11 +103,11 @@ export default function TrashScreen() {
                             {deletedFields.length > 0 && (
                                 <View style={styles.section}>
                                     <Text style={styles.sectionTitle}>
-                                        CAMPI ELIMINATI ({deletedFields.length})
+                                        Campi eliminati ({deletedFields.length})
                                     </Text>
                                     {deletedFields.map((field) => (
                                         <View key={field.id} style={styles.fieldCard}>
-                                            <View style={[styles.fieldIconBox, { backgroundColor: withAlpha(t.colors.accent, 0.082) }]}>
+                                            <View style={styles.fieldIconBox}>
                                                 <AppIcon
                                                     name={field.icon as any || 'text-fields'}
                                                     size={22}
@@ -146,7 +149,7 @@ export default function TrashScreen() {
                             {trashProducts.length > 0 && (
                                 <View style={styles.section}>
                                     <Text style={styles.sectionTitle}>
-                                        PRODOTTI ELIMINATI ({trashProducts.length})
+                                        Prodotti eliminati ({trashProducts.length})
                                     </Text>
                                 </View>
                             )}
@@ -220,13 +223,17 @@ const useStyles = makeStyles((t) => ({
     title: {
         ...t.typography.cardTitle,
         fontSize: 20,
+        fontWeight: t.title.weight,
+        letterSpacing: t.title.tracking,
     },
     section: {
         marginBottom: 8,
     },
     sectionTitle: {
         ...t.typography.sectionHeader,
-        marginBottom: 12,
+        lineHeight: 18,
+        ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
+        marginBottom: 10,
         marginTop: 8,
     },
     listContent: {
@@ -234,26 +241,24 @@ const useStyles = makeStyles((t) => ({
         gap: 8,
     },
     card: {
+        ...cardSurface(t),
         flexDirection: 'row',
-        backgroundColor: t.colors.surface,
         padding: 12,
-        borderRadius: t.radius.medium,
         alignItems: 'center',
         marginBottom: 8,
-        ...t.shadows.small,
     },
     fieldCard: {
+        ...cardSurface(t),
         flexDirection: 'row',
-        backgroundColor: t.colors.surface,
         padding: 12,
-        borderRadius: t.radius.medium,
         alignItems: 'center',
         marginBottom: 8,
     },
     fieldIconBox: {
         width: 44,
         height: 44,
-        borderRadius: 10,
+        borderRadius: t.radius.iconWrap,
+        backgroundColor: t.colors.iconWrap,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
@@ -264,6 +269,7 @@ const useStyles = makeStyles((t) => ({
     fieldName: {
         ...t.typography.cardTitle,
         fontSize: 14,
+        fontWeight: t.weights.strong,
         marginBottom: 2,
     },
     fieldType: {
@@ -273,8 +279,8 @@ const useStyles = makeStyles((t) => ({
     image: {
         width: 60,
         height: 60,
-        borderRadius: t.radius.small,
-        backgroundColor: t.colors.backgroundSecondary,
+        borderRadius: t.radius.iconWrap,
+        backgroundColor: t.colors.iconWrap,
     },
     imagePlaceholder: {
         alignItems: 'center',
@@ -287,6 +293,7 @@ const useStyles = makeStyles((t) => ({
     sku: {
         ...t.typography.cardTitle,
         fontSize: 16,
+        fontWeight: t.weights.strong,
     },
     details: {
         ...t.typography.caption,
@@ -309,10 +316,9 @@ const useStyles = makeStyles((t) => ({
         borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: t.colors.background,
     },
     restoreButton: {
-        backgroundColor: withAlpha(t.colors.accent, 0.082),
+        backgroundColor: t.colors.accentSoft,
     },
     deleteButton: {
         backgroundColor: withAlpha(t.colors.error, 0.063),

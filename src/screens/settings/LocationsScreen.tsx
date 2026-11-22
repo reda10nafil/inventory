@@ -7,6 +7,9 @@ import QRCode from 'react-native-qrcode-svg';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -126,6 +129,7 @@ export default function ManageLocationsScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Backdrop />
         <ActivityIndicator size="large" color={t.colors.accentInk} />
       </View>
     );
@@ -133,12 +137,13 @@ export default function ManageLocationsScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <Backdrop />
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Form Section */}
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>
-            {editingId ? 'MODIFICA POSIZIONE' : 'AGGIUNGI POSIZIONE'}
+            {editingId ? 'Modifica posizione' : 'Aggiungi posizione'}
           </Text>
 
           <Text style={styles.label}>Nome</Text>
@@ -170,7 +175,7 @@ export default function ManageLocationsScreen() {
           <Text style={styles.label}>Barcode / NFC (Opzionale)</Text>
           <View style={styles.barcodeRow}>
             <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }]}
+              style={[styles.input, { flex: 1, minWidth: 0, marginBottom: 0 }]}
               placeholder="Scansiona o Genera..."
               placeholderTextColor={t.colors.placeholder}
               value={barcode}
@@ -199,6 +204,7 @@ export default function ManageLocationsScreen() {
               </Pressable>
             )}
             <Pressable style={styles.saveButton} onPress={handleSave}>
+              <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
               <Text style={styles.saveButtonText}>
                 {editingId ? 'Salva Modifiche' : 'Crea Posizione'}
               </Text>
@@ -207,7 +213,7 @@ export default function ManageLocationsScreen() {
         </View>
 
         {/* List Section */}
-        <Text style={styles.listTitle}>POSIZIONI ({locations.length})</Text>
+        <Text style={styles.listTitle}>Posizioni ({locations.length})</Text>
         {locations.map((loc) => (
           <Pressable key={loc.id} style={styles.locationItem} onPress={() => handleEdit(loc)}>
             <View style={[styles.locationColor, { backgroundColor: loc.color }]} />
@@ -267,27 +273,29 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: 40,
   },
   formCard: {
-    backgroundColor: t.colors.surface,
+    ...cardSurface(t),
     padding: 16,
-    borderRadius: t.radius.large,
     marginBottom: 24,
   },
   formTitle: {
-    ...t.typography.cardTitle,
-    fontSize: 16,
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
     marginBottom: 16,
-    textTransform: 'uppercase',
-    color: t.colors.textSecondary,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   label: {
-    ...t.typography.caption,
-    marginBottom: 8,
-    color: t.colors.textSecondary,
+    fontSize: t.label.size,
+    fontWeight: t.label.weight,
+    color: t.label.color,
+    lineHeight: 18,
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: t.colors.backgroundSecondary,
+    minHeight: t.input.height,
+    backgroundColor: t.colors.input,
     borderRadius: t.radius.input,
-    padding: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
     color: t.colors.inputText,
     borderWidth: 1,
     borderColor: t.colors.inputBorder,
@@ -317,17 +325,20 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 16,
   },
   iconButton: {
-    padding: 10,
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.medium,
+    width: t.input.height,
+    height: t.input.height,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: t.colors.buttonSecondary,
+    borderRadius: t.radius.input,
     borderWidth: 1,
-    borderColor: t.colors.border,
+    borderColor: t.colors.buttonSecondaryBorder,
   },
   qrPreview: {
     alignItems: 'center',
     padding: 16,
     backgroundColor: t.colors.qrPaper,
-    borderRadius: t.radius.medium,
+    borderRadius: t.radius.tile,
     marginBottom: 16,
     alignSelf: 'center',
   },
@@ -343,38 +354,50 @@ const useStyles = makeStyles((t) => ({
   },
   saveButton: {
     flex: 1,
+    minHeight: 48,
+    justifyContent: 'center',
     backgroundColor: t.colors.button,
-    padding: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: t.radius.button,
+    ...t.shadows.button,
+    overflow: 'hidden',
     alignItems: 'center',
   },
   saveButtonText: {
+    textAlign: 'center',
     ...t.typography.buttonPrimary,
+    color: t.colors.onButton,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: t.colors.backgroundSecondary,
-    padding: 14,
+    minHeight: 48,
+    justifyContent: 'center',
+    backgroundColor: t.colors.buttonSecondary,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: t.radius.button,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: t.colors.buttonSecondaryBorder,
   },
   cancelButtonText: {
-    color: t.colors.textPrimary,
-    fontWeight: '600',
+    textAlign: 'center',
+    ...t.typography.buttonSecondary,
+    color: t.colors.onButtonSecondary,
   },
   listTitle: {
     ...t.typography.sectionHeader,
-    marginBottom: 12,
+    lineHeight: 18,
+    marginBottom: 10,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   locationItem: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.surface,
     padding: 16,
-    borderRadius: t.radius.medium,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   locationColor: {
     width: 12,
@@ -388,6 +411,7 @@ const useStyles = makeStyles((t) => ({
   locationLabel: {
     ...t.typography.cardTitle,
     fontSize: 16,
+    fontWeight: t.weights.strong,
   },
   locationMeta: {
     ...t.typography.caption,
@@ -407,7 +431,7 @@ const useStyles = makeStyles((t) => ({
   qrCard: {
     backgroundColor: t.colors.qrPaper,
     padding: 32,
-    borderRadius: t.radius.large,
+    borderRadius: t.radius.card,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,

@@ -5,9 +5,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useCustomFields, FieldType, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
 import { FieldUIType, CustomField } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
-import { withAlpha } from '../../../utils/color';
 
 const COMMON_ICONS = [
   'tune', 'text-fields', 'tag', 'calendar-today', 'image', 'list', 'check-box',
@@ -168,6 +170,7 @@ export default function CustomFieldsScreen() {
   if (loading) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
+        <Backdrop />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={t.colors.accentInk} />
           <Text style={styles.loadingText}>Caricamento...</Text>
@@ -178,6 +181,7 @@ export default function CustomFieldsScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <Backdrop />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: t.spacing.screenPadding,
@@ -188,14 +192,14 @@ export default function CustomFieldsScreen() {
         {/* Existing Fields Section */}
         {customFields.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>CAMPI ATTIVI ({customFields.length})</Text>
+            <Text style={styles.sectionTitle}>Campi attivi ({customFields.length})</Text>
             {customFields.map((field) => (
               <View key={field.id} style={styles.fieldCard}>
                 <View style={styles.fieldIcon}>
                   <AppIcon
                     name={field.icon as any || 'text-fields'}
                     size={24}
-                    color={field.isSystem ? t.colors.textSecondary : t.colors.accent}
+                    color={field.isSystem ? t.colors.textSecondary : t.colors.accentInk}
                   />
                 </View>
                 <View style={styles.fieldContent}>
@@ -250,6 +254,7 @@ export default function CustomFieldsScreen() {
           style={styles.addButton}
           onPress={() => setShowAddModal(true)}
         >
+          <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
           <AppIcon name="add-circle" size={24} color={t.colors.onButton} />
           <Text style={styles.addButtonText}>Crea Nuovo Campo</Text>
         </Pressable>
@@ -293,7 +298,7 @@ export default function CustomFieldsScreen() {
             {/* 1. SELEZIONE TIPO BASE */}
             {!selectedBaseType ? (
               <>
-                <Text style={styles.modalSectionTitle}>TIPI DI CAMPO DISPONIBILI</Text>
+                <Text style={styles.modalSectionTitle}>Tipi di campo disponibili</Text>
                 {Object.entries(FIELD_TYPE_INFO).map(([key, info]) => (
                   <Pressable
                     key={key}
@@ -367,16 +372,9 @@ export default function CustomFieldsScreen() {
                     <Pressable
                       key={icon}
                       onPress={() => setSelectedIcon(icon)}
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 12,
-                        backgroundColor: selectedIcon === icon ? t.colors.accent : t.colors.backgroundSecondary,
-                        justifyContent: 'center',
-                        alignItems: 'center'
-                      }}
+                      style={[styles.iconTile, selectedIcon === icon && styles.iconTileSelected]}
                     >
-                      <AppIcon name={icon as any} size={24} color={selectedIcon === icon ? t.colors.onAccent : t.colors.textSecondary} />
+                      <AppIcon name={icon as any} size={24} color={selectedIcon === icon ? t.colors.tileSelectedText : t.colors.textSecondary} />
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -386,7 +384,7 @@ export default function CustomFieldsScreen() {
                   <View style={styles.datasetBox}>
                     <Text style={styles.inputLabel}>Intelligenza Avanzata</Text>
                     <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 }} onPress={() => setIsBarcode(!isBarcode)}>
-                      <AppIcon name={isBarcode ? 'qr-code-scanner' : 'qr-code'} size={24} color={isBarcode ? t.colors.accent : t.colors.textSecondary} />
+                      <AppIcon name={isBarcode ? 'qr-code-scanner' : 'qr-code'} size={24} color={isBarcode ? t.colors.checkOn : t.colors.textSecondary} />
                       <Text style={styles.requiredToggleText}>Abilita Scanner Barcode / QR</Text>
                     </Pressable>
                     <Text style={[styles.subtext, { marginTop: 6, marginLeft: 36 }]}>
@@ -403,16 +401,10 @@ export default function CustomFieldsScreen() {
                         <Pressable
                           key={ui}
                           onPress={() => setSelectedUIType(ui as FieldUIType)}
-                          style={{
-                            paddingHorizontal: 16,
-                            paddingVertical: 8,
-                            borderRadius: 16,
-                            backgroundColor: selectedUIType === ui ? t.colors.chipActive : t.colors.chip,
-                            borderWidth: 1,
-                            borderColor: selectedUIType === ui ? t.colors.chipActiveBorder : t.colors.chipBorder
-                          }}
+                          style={[styles.chip, selectedUIType === ui && styles.chipActive]}
                         >
-                          <Text style={{ color: selectedUIType === ui ? t.colors.chipActiveText : t.colors.textPrimary, fontWeight: '600' }}>{ui.toUpperCase()}</Text>
+                          {selectedUIType === ui && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                          <Text style={[styles.chipText, selectedUIType === ui && styles.chipTextActive]}>{ui.toUpperCase()}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -428,16 +420,10 @@ export default function CustomFieldsScreen() {
                         <Pressable
                           key={String(l.id)}
                           onPress={() => setLinkTo(l.id as any)}
-                          style={{
-                            paddingHorizontal: 16,
-                            paddingVertical: 8,
-                            borderRadius: 16,
-                            backgroundColor: linkTo === l.id ? t.colors.chipActive : t.colors.chip,
-                            borderWidth: 1,
-                            borderColor: linkTo === l.id ? t.colors.chipActiveBorder : t.colors.chipBorder
-                          }}
+                          style={[styles.chip, linkTo === l.id && styles.chipActive]}
                         >
-                          <Text style={{ color: linkTo === l.id ? t.colors.chipActiveText : t.colors.textPrimary, fontWeight: '600' }}>{l.label}</Text>
+                          {linkTo === l.id && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                          <Text style={[styles.chipText, linkTo === l.id && styles.chipTextActive]}>{l.label}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -475,18 +461,10 @@ export default function CustomFieldsScreen() {
                     <Text style={styles.inputLabel}>Contatore UI (Opzionale)</Text>
                     <Pressable
                       onPress={() => setSelectedUIType(selectedUIType === 'stepper' ? null : 'stepper')}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 8,
-                        borderRadius: 16,
-                        backgroundColor: selectedUIType === 'stepper' ? t.colors.chipActive : t.colors.chip,
-                        borderWidth: 1,
-                        borderColor: selectedUIType === 'stepper' ? t.colors.chipActiveBorder : t.colors.chipBorder,
-                        alignSelf: 'flex-start',
-                        marginBottom: 16
-                      }}
+                      style={[styles.chip, selectedUIType === 'stepper' && styles.chipActive, { alignSelf: 'flex-start', marginBottom: 16 }]}
                     >
-                      <Text style={{ color: selectedUIType === 'stepper' ? t.colors.chipActiveText : t.colors.textPrimary, fontWeight: '600' }}>STEPPER (+ / -)</Text>
+                      {selectedUIType === 'stepper' && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                      <Text style={[styles.chipText, selectedUIType === 'stepper' && styles.chipTextActive]}>STEPPER (+ / -)</Text>
                     </Pressable>
 
                     {selectedUIType === 'stepper' && (
@@ -511,7 +489,7 @@ export default function CustomFieldsScreen() {
                   <AppIcon
                     name={isRequired ? 'check-box' : 'check-box-outline-blank'}
                     size={24}
-                    color={isRequired ? t.colors.checkOn : t.colors.textSecondary}
+                    color={isRequired ? t.colors.checkOn : t.colors.checkRing}
                   />
                   <Text style={styles.requiredToggleText}>Campo obbligatorio in fase di aggiunta</Text>
                 </Pressable>
@@ -528,57 +506,82 @@ const useStyles = makeStyles((t) => ({
   container: { flex: 1, backgroundColor: t.colors.background },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { ...t.typography.body, marginTop: 12 },
-  sectionTitle: { ...t.typography.sectionHeader, marginTop: 24, marginBottom: 12 },
+  sectionTitle: {
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
+    marginTop: 24,
+    marginBottom: 10,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
+  },
 
-  fieldCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface, borderRadius: t.radius.card, padding: 16, marginBottom: 12 },
-  fieldIcon: { width: 48, height: 48, borderRadius: t.radius.iconWrap, backgroundColor: withAlpha(t.colors.accent, 0.082), alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  fieldCard: { ...cardSurface(t), flexDirection: 'row', alignItems: 'center', padding: 16, marginBottom: 10 },
+  fieldIcon: { width: 48, height: 48, borderRadius: t.radius.iconWrap, backgroundColor: t.colors.iconWrap, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   fieldContent: { flex: 1 },
   fieldHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  fieldName: { ...t.typography.cardTitle, fontSize: 15 },
-  systemBadge: { backgroundColor: t.colors.backgroundSecondary, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  fieldName: { ...t.typography.cardTitle, fontSize: 15, fontWeight: t.weights.strong },
+  systemBadge: { backgroundColor: t.colors.iconWrap, borderRadius: t.radius.badge, paddingHorizontal: 6, paddingVertical: 2 },
   systemBadgeText: { fontSize: 10, color: t.colors.textSecondary, fontWeight: '600' },
-  requiredBadge: { backgroundColor: t.colors.warningSoft, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  requiredBadge: { backgroundColor: t.colors.warningSoft, borderRadius: t.radius.badge, paddingHorizontal: 6, paddingVertical: 2 },
   requiredText: { fontSize: 10, color: t.colors.warningText, fontWeight: '600' },
   fieldType: { ...t.typography.caption, fontSize: 12 },
   fieldOptions: { ...t.typography.caption, fontSize: 11, color: t.colors.textMuted, marginTop: 2 },
   fieldActions: { flexDirection: 'row', gap: 4 },
-  editButton: { padding: 8, backgroundColor: withAlpha(t.colors.accent, 0.082), borderRadius: 8 },
+  editButton: { padding: 8, backgroundColor: t.colors.accentSoft, borderRadius: t.radius.inputSmall },
   deleteButton: { padding: 8 },
 
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: t.colors.button, borderRadius: t.radius.button, padding: 16, marginTop: 16 },
-  addButtonText: { ...t.typography.buttonPrimary, fontSize: 16 },
-  infoCard: { flexDirection: 'row', gap: 12, backgroundColor: t.colors.surface, borderRadius: t.radius.medium, padding: 16, marginTop: 16 },
+  addButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 54,
+    backgroundColor: t.colors.button, borderRadius: t.radius.button, ...t.shadows.button, overflow: 'hidden', padding: 16, marginTop: 16,
+  },
+  addButtonText: { ...t.typography.buttonPrimary, fontSize: 16, color: t.colors.onButton },
+  infoCard: { ...cardSurface(t), flexDirection: 'row', gap: 12, padding: 16, marginTop: 16 },
   infoText: { ...t.typography.caption, fontSize: 13, lineHeight: 18, flex: 1 },
 
-  modalContainer: { flex: 1, backgroundColor: t.colors.background },
+  // Finestra del costruttore: fondo opaco (sta sopra la schermata)
+  modalContainer: { flex: 1, backgroundColor: t.colors.backgroundSecondary },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: t.spacing.screenPadding, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: t.colors.border },
-  modalTitle: { ...t.typography.cardTitle, fontSize: 18 },
+  modalTitle: { ...t.typography.cardTitle, fontSize: 18, fontWeight: t.title.weight, letterSpacing: t.title.tracking },
   saveButton: { color: t.colors.accentInk, fontWeight: '600', fontSize: 16 },
   modalContent: { flex: 1, paddingHorizontal: t.spacing.screenPadding },
-  modalSectionTitle: { ...t.typography.sectionHeader, marginTop: 24, marginBottom: 16 },
+  modalSectionTitle: {
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
+    marginTop: 24,
+    marginBottom: 12,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
+  },
 
-  typeOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.tile, borderRadius: t.radius.tile, padding: 16, marginBottom: 12 },
-  typeOptionIcon: { width: 48, height: 48, borderRadius: t.radius.iconWrap, backgroundColor: withAlpha(t.colors.accent, 0.082), alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  typeOption: { ...tileSurface(t), flexDirection: 'row', alignItems: 'center', padding: 16, marginBottom: 10 },
+  typeOptionIcon: { width: 48, height: 48, borderRadius: t.radius.iconWrap, backgroundColor: t.colors.iconWrap, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   typeOptionContent: { flex: 1 },
-  typeOptionLabel: { ...t.typography.cardTitle, fontSize: 15, marginBottom: 2 },
+  typeOptionLabel: { ...t.typography.cardTitle, fontSize: 15, fontWeight: t.weights.strong, marginBottom: 2 },
   typeOptionDesc: { ...t.typography.caption, fontSize: 12 },
 
-  selectedTypeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.colors.surface, borderRadius: t.radius.medium, padding: 16, marginTop: 24, marginBottom: 24 },
-  selectedTypeLabel: { ...t.typography.cardTitle, fontSize: 16, flex: 1 },
+  selectedTypeHeader: { ...tileSurface(t), flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, marginTop: 24, marginBottom: 8 },
+  selectedTypeLabel: { ...t.typography.cardTitle, fontSize: 16, fontWeight: t.weights.strong, flex: 1 },
   changeTypeButton: { padding: 8 },
   changeTypeText: { color: t.colors.accentInk, fontWeight: '600' },
 
-  inputLabel: { ...t.typography.caption, fontWeight: '600', marginBottom: 8, marginTop: 16 },
-  input: { backgroundColor: t.colors.input, borderRadius: t.radius.input, padding: 14, fontSize: 16, color: t.colors.inputText, borderWidth: 1, borderColor: t.colors.inputBorder },
+  inputLabel: { fontSize: t.label.size, fontWeight: t.label.weight, color: t.label.color, lineHeight: 18, marginBottom: 6, marginTop: 16 },
+  input: { minHeight: t.input.height, backgroundColor: t.colors.input, borderRadius: t.radius.input, paddingHorizontal: 14, fontSize: 15, color: t.colors.inputText, borderWidth: 1, borderColor: t.colors.inputBorder },
   subtext: { ...t.typography.caption, fontSize: 11, marginBottom: 4, color: t.colors.textSecondary },
 
-  datasetBox: { backgroundColor: t.colors.backgroundSecondary, padding: 16, borderRadius: t.radius.medium, marginTop: 16 },
+  // Scelta dell'icona: riquadri come le scelte a riquadri di Aggiungi
+  iconTile: { ...tileSurface(t), width: 48, height: 48, borderRadius: t.radius.iconWrap, justifyContent: 'center', alignItems: 'center' },
+  iconTileSelected: { backgroundColor: t.colors.tileSelected, borderColor: t.colors.tileSelectedBorder },
+  // Pillole (aspetto, sorgente dati, contatore)
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: t.radius.chip, backgroundColor: t.colors.chip, borderWidth: 1, borderColor: t.colors.chipBorder, overflow: 'hidden' },
+  chipActive: { backgroundColor: t.colors.chipActive, borderColor: t.colors.chipActiveBorder },
+  chipText: { fontSize: 13, fontWeight: '500', color: t.colors.chipText },
+  chipTextActive: { fontWeight: '600', color: t.colors.chipActiveText },
+
+  datasetBox: { ...tileSurface(t), padding: 16, marginTop: 16 },
 
   optionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  optionInput: { flex: 1 },
+  optionInput: { flex: 1, minWidth: 0 },
   removeOptionButton: { padding: 4 },
   addOptionButton: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, marginTop: 8 },
   addOptionText: { color: t.colors.accentInk, fontWeight: '600' },
-  requiredToggle: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, padding: 16, backgroundColor: t.colors.surface, borderRadius: t.radius.medium, marginBottom: 40 },
+  requiredToggle: { ...tileSurface(t), flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, padding: 16, marginBottom: 40 },
   requiredToggleText: { ...t.typography.body, fontSize: 15 },
 }));

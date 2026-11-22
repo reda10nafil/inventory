@@ -5,6 +5,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useHardwareConfig, ScanMode } from '../../../contexts/HardwareConfigContext';
 import { nfcService } from '../../../utils/nfcService';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { cardSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -43,7 +45,7 @@ export default function HardwareSettingsScreen() {
         <AppIcon
           name={icon as any}
           size={18}
-          color={isActive ? t.colors.onAccent : t.colors.textSecondary}
+          color={isActive ? t.colors.accentInk : t.colors.textSecondary}
         />
         <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>{label}</Text>
       </Pressable>
@@ -51,9 +53,10 @@ export default function HardwareSettingsScreen() {
   };
 
   return (
+    <View style={styles.container}>
+    <Backdrop />
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      contentContainerStyle={{ paddingHorizontal: t.spacing.screenPadding, paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header Info */}
@@ -69,7 +72,7 @@ export default function HardwareSettingsScreen() {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>MODALITÀ DI LETTURA PREFERITA</Text>
+      <Text style={styles.sectionTitle}>Modalità di lettura preferita</Text>
       <View style={styles.card}>
         <Text style={styles.fieldLabel}>Metodo di Scansione Azione Rapida</Text>
         <Text style={styles.helperText}>
@@ -83,7 +86,7 @@ export default function HardwareSettingsScreen() {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>AUTOMAZIONI E FLUSSO</Text>
+      <Text style={styles.sectionTitle}>Automazioni e flusso</Text>
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
@@ -100,13 +103,13 @@ export default function HardwareSettingsScreen() {
           <Switch
             value={hwConfig.autoWriteNfcOnSave}
             onValueChange={(val) => updateHwConfig({ autoWriteNfcOnSave: val })}
-            trackColor={{ false: t.colors.border, true: withAlpha(t.colors.accent, 0.502) }}
+            trackColor={{ false: t.colors.checkRing, true: withAlpha(t.colors.accent, 0.502) }}
             thumbColor={hwConfig.autoWriteNfcOnSave ? t.colors.accent : t.colors.textMuted}
           />
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>DIAGNOSTICA</Text>
+      <Text style={styles.sectionTitle}>Diagnostica</Text>
       <View style={styles.card}>
         <Pressable style={styles.actionRow} onPress={handleTestNfc}>
           <View style={styles.actionRowContent}>
@@ -117,6 +120,7 @@ export default function HardwareSettingsScreen() {
         </Pressable>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -124,12 +128,11 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
     backgroundColor: t.colors.background,
-    paddingHorizontal: t.spacing.screenPadding,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: withAlpha(t.colors.accent, 0.063),
-    borderRadius: t.radius.large,
+    backgroundColor: t.colors.accentSoft,
+    borderRadius: t.radius.card,
     padding: 16,
     marginTop: 16,
     marginBottom: 24,
@@ -140,7 +143,7 @@ const useStyles = makeStyles((t) => ({
   infoIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: t.radius.iconWrap,
     backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
@@ -159,26 +162,20 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: t.colors.textSecondary,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    marginBottom: 12,
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
+    marginBottom: 10,
     marginTop: 8,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   card: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    ...cardSurface(t),
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: t.colors.borderLight,
-    ...t.shadows.card,
   },
   fieldLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: t.weights.strong,
     color: t.colors.textPrimary,
     marginBottom: 4,
   },
@@ -189,10 +186,13 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 16,
     lineHeight: 16,
   },
+  // Controllo a segmenti come il selettore dell'unità di Aggiungi (tela): campo con il segmento attivo velato
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.input,
+    borderWidth: 1,
+    borderColor: t.colors.inputBorder,
+    borderRadius: t.radius.inputSmall,
     padding: 3,
     gap: 4,
   },
@@ -202,19 +202,20 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: t.radius.small,
+    borderRadius: t.radius.inputSmall,
     gap: 6,
   },
   segmentButtonActive: {
-    backgroundColor: t.colors.accent,
+    backgroundColor: t.colors.accentSoft,
   },
   segmentText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: t.colors.textSecondary,
   },
   segmentTextActive: {
-    color: t.colors.onAccent,
+    fontWeight: '600',
+    color: t.colors.accentInk,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -230,7 +231,7 @@ const useStyles = makeStyles((t) => ({
   iconBadge: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: t.radius.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -240,7 +241,7 @@ const useStyles = makeStyles((t) => ({
   },
   toggleTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: t.weights.strong,
     color: t.colors.textPrimary,
     marginBottom: 4,
   },

@@ -19,6 +19,9 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from '../../navigation/compat';
 import useMeshRole from '../../hooks/useMeshRole';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -231,6 +234,7 @@ export default function TeamScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
+      <Backdrop />
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
@@ -246,7 +250,7 @@ export default function TeamScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* TEAM E ACCESSO */}
-        <Text style={styles.sectionTitle}>TEAM E ACCESSO</Text>
+        <Text style={styles.sectionTitle}>Team e accesso</Text>
         <Text style={styles.sectionDesc}>
           Condividi i dati supportati sulla rete locale tramite pairing temporaneo. Host genera un QR e il client lo scansiona per avviare la sincronizzazione.
         </Text>
@@ -272,7 +276,7 @@ export default function TeamScreen() {
               setIsScanning(false);
             }}
           >
-            <AppIcon name="qr-code-2" size={18} color={mode === 'host' ? t.colors.onAccent : t.colors.textSecondary} />
+            <AppIcon name="qr-code-2" size={18} color={mode === 'host' ? t.colors.accentInk : t.colors.textSecondary} />
             <Text style={[styles.segText, mode === 'host' && styles.segTextActive]}>Host (Genera QR)</Text>
           </Pressable>
           <Pressable
@@ -283,7 +287,7 @@ export default function TeamScreen() {
               setIsScanning(false);
             }}
           >
-            <AppIcon name="qr-code-scanner" size={18} color={mode === 'client' ? t.colors.onAccent : t.colors.textSecondary} />
+            <AppIcon name="qr-code-scanner" size={18} color={mode === 'client' ? t.colors.accentInk : t.colors.textSecondary} />
             <Text style={[styles.segText, mode === 'client' && styles.segTextActive]}>Client (Scansiona)</Text>
           </Pressable>
         </View>
@@ -338,6 +342,7 @@ export default function TeamScreen() {
 
                 <View style={styles.rowGap}>
                   <Pressable style={styles.primaryBtn} onPress={handleCreateHost}>
+                    <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                     <AppIcon name="refresh" size={18} color={t.colors.onButton} />
                     <Text style={styles.primaryBtnText}>Rigenera QR</Text>
                   </Pressable>
@@ -355,6 +360,7 @@ export default function TeamScreen() {
               </>
             ) : (
               <Pressable style={styles.primaryBtn} onPress={handleCreateHost}>
+                <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                 <AppIcon name="qr-code" size={20} color={t.colors.onButton} />
                 <Text style={styles.primaryBtnText}>Genera QR Host</Text>
               </Pressable>
@@ -420,7 +426,7 @@ export default function TeamScreen() {
                     <Text style={styles.scanLabel}>Inquadra il QR Host</Text>
                   </View>
                   <Pressable style={styles.closeScan} onPress={() => setIsScanning(false)}>
-                    <AppIcon name="close" size={22} color="#FFF" />
+                    <AppIcon name="close" size={22} color={t.colors.onData} />
                   </Pressable>
                 </View>
               )}
@@ -433,12 +439,13 @@ export default function TeamScreen() {
                 value={manualPayload}
                 onChangeText={setManualPayload}
                 placeholder="ws://192.168.1.50:8080?token=0123456789ABCDEF"
-                placeholderTextColor={t.colors.textMuted}
+                placeholderTextColor={t.colors.placeholder}
                 style={styles.input}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
               <Pressable style={styles.goBtn} onPress={handleManualJoin}>
+                <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.input }} />
                 <AppIcon name="login" size={20} color={t.colors.onButton} />
               </Pressable>
             </View>
@@ -515,33 +522,34 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: t.colors.borderLight,
-    backgroundColor: t.colors.background,
   },
   backBtn: { padding: 6, borderRadius: 20 },
-  headerTitle: { color: t.colors.textPrimary, fontSize: 18, fontWeight: '700', letterSpacing: 0.3 },
+  headerTitle: { color: t.colors.textPrimary, fontSize: 18, fontWeight: t.title.weight, letterSpacing: t.title.tracking },
   scrollContent: { padding: 16, paddingBottom: 28, gap: 14 },
-  sectionTitle: { color: t.colors.textSecondary, fontSize: 12, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' },
+  sectionTitle: {
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
+  },
   sectionDesc: { color: t.colors.textSecondary, fontSize: 13, lineHeight: 18 },
   linkRow: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: t.colors.surface,
-    borderWidth: 1,
-    borderColor: t.colors.borderLight,
-    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   linkText: { flex: 1, color: t.colors.textPrimary, fontWeight: '600', fontSize: 13 },
+  // Controllo a segmenti come il selettore dell'unità di Aggiungi (tela)
   segment: {
     flexDirection: 'row',
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: 12,
-    padding: 4,
-    gap: 6,
+    backgroundColor: t.colors.input,
+    borderRadius: t.radius.inputSmall,
+    padding: 3,
+    gap: 4,
     borderWidth: 1,
-    borderColor: t.colors.borderLight,
+    borderColor: t.colors.inputBorder,
   },
   segBtn: {
     flex: 1,
@@ -550,42 +558,36 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 11,
-    borderRadius: 9,
+    borderRadius: t.radius.inputSmall,
   },
-  segBtnActive: { backgroundColor: t.colors.accent },
-  segText: { color: t.colors.textSecondary, fontWeight: '700', fontSize: 13 },
-  segTextActive: { color: t.colors.onAccent },
+  segBtnActive: { backgroundColor: t.colors.accentSoft },
+  segText: { color: t.colors.textSecondary, fontWeight: '500', fontSize: 13 },
+  segTextActive: { color: t.colors.accentInk, fontWeight: '600' },
   statusCard: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: t.colors.surface,
-    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: t.colors.borderLight,
   },
   dot: { width: 10, height: 10, borderRadius: 5 },
   statusText: { flex: 1, color: t.colors.textSecondary, fontSize: 12, fontWeight: '600' },
-  disconnectBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: t.colors.backgroundSecondary, borderWidth: 1, borderColor: t.colors.border },
-  disconnectText: { color: t.colors.textPrimary, fontSize: 12, fontWeight: '700' },
+  disconnectBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: t.radius.button, backgroundColor: t.colors.buttonSecondary, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder },
+  disconnectText: { color: t.colors.onButtonSecondary, fontSize: 12, fontWeight: '600' },
   card: {
-    backgroundColor: t.colors.surface,
-    borderRadius: 16,
+    ...cardSurface(t),
     padding: 16,
-    borderWidth: 1,
-    borderColor: t.colors.borderLight,
     gap: 12,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardTitle: { color: t.colors.textPrimary, fontSize: 15, fontWeight: '800' },
+  cardTitle: { color: t.colors.textPrimary, fontSize: 15, fontWeight: t.weights.strong },
   cardDesc: { color: t.colors.textSecondary, fontSize: 13, lineHeight: 18 },
   qrLoading: { alignItems: 'center', gap: 10, paddingVertical: 24 },
   muted: { color: t.colors.textSecondary, fontSize: 13 },
   mutedSmall: { color: t.colors.textMuted, fontSize: 11, textAlign: 'center' },
   qrWrap: { alignItems: 'center', gap: 10, paddingVertical: 8 },
-  qrBox: { backgroundColor: t.colors.qrPaper, padding: 14, borderRadius: 12 },
+  qrBox: { backgroundColor: t.colors.qrPaper, padding: 14, borderRadius: t.radius.tile },
   qrPayload: { color: t.colors.accentInk, fontSize: 11, fontWeight: '700', textAlign: 'center' },
   qrHint: { color: t.colors.textMuted, fontSize: 11, textAlign: 'center' },
   qrProgressTrack: { height: 4, backgroundColor: t.colors.borderLight, borderRadius: 2, overflow: 'hidden', marginTop: 6 },
@@ -607,40 +609,41 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    minHeight: 44,
     backgroundColor: t.colors.button,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: t.radius.button,
+    ...t.shadows.button,
+    overflow: 'hidden',
   },
-  primaryBtnText: { color: t.colors.onButton, fontWeight: '800', fontSize: 13 },
+  primaryBtnText: { color: t.colors.onButton, fontWeight: '600', fontSize: 13 },
   secondaryBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: t.colors.backgroundSecondary,
+    minHeight: 44,
+    backgroundColor: t.colors.buttonSecondary,
     borderWidth: 1,
-    borderColor: withAlpha(t.colors.accent, 0.333),
+    borderColor: t.colors.buttonSecondaryBorder,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: t.radius.button,
   },
-  secondaryBtnText: { color: t.colors.onButtonSecondary, fontWeight: '800', fontSize: 13 },
+  secondaryBtnText: { color: t.colors.onButtonSecondary, fontWeight: '600', fontSize: 13 },
   metaText: { color: t.colors.textMuted, fontSize: 11, lineHeight: 15 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 },
   // camera
-  cameraWrap: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: t.colors.borderLight, backgroundColor: t.colors.cameraBackground },
+  cameraWrap: { borderRadius: t.radius.tile, overflow: 'hidden', borderWidth: 1, borderColor: t.colors.tileBorder },
   cameraPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 28,
     paddingHorizontal: 16,
-    backgroundColor: t.colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: t.colors.borderLight,
-    borderRadius: 12,
+    backgroundColor: t.colors.tile,
   },
-  cameraPlaceholderTitle: { color: t.colors.textPrimary, fontWeight: '800', fontSize: 14, marginTop: 6 },
+  cameraPlaceholderTitle: { color: t.colors.textPrimary, fontWeight: t.weights.strong, fontSize: 14, marginTop: 6 },
   cameraPlaceholderDesc: { color: t.colors.textSecondary, fontSize: 11, textAlign: 'center' },
   badge: { marginTop: 6, backgroundColor: withAlpha(t.colors.accent, 0.133), borderWidth: 1, borderColor: withAlpha(t.colors.accent, 0.333), paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   badgeText: { color: t.colors.accentInk, fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
@@ -652,30 +655,31 @@ const useStyles = makeStyles((t) => ({
   cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
-  scanLabel: { color: '#FFF', fontWeight: '700', fontSize: 12, backgroundColor: withAlpha(t.colors.shadow, 0.55), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, overflow: 'hidden' },
+  scanLabel: { color: t.colors.onData, fontWeight: '700', fontSize: 12, backgroundColor: withAlpha(t.colors.shadow, 0.55), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, overflow: 'hidden' },
   closeScan: { position: 'absolute', top: 10, right: 10, backgroundColor: withAlpha(t.colors.shadow, 0.6), padding: 8, borderRadius: 999 },
-  label: { color: t.colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 4 },
+  label: { fontSize: t.label.size, fontWeight: t.label.weight, color: t.label.color, lineHeight: 18, marginTop: 4 },
   inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   input: {
     flex: 1,
-    backgroundColor: t.colors.backgroundSecondary,
+    minWidth: 0,
+    minHeight: t.input.height,
+    backgroundColor: t.colors.input,
     borderWidth: 1,
     borderColor: t.colors.inputBorder,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: t.radius.input,
+    paddingHorizontal: 14,
     color: t.colors.inputText,
-    fontSize: 12,
+    fontSize: 13,
   },
-  goBtn: { width: 44, height: 44, borderRadius: 10, backgroundColor: t.colors.button, alignItems: 'center', justifyContent: 'center' },
+  goBtn: { width: t.input.height, height: t.input.height, borderRadius: t.radius.input, backgroundColor: t.colors.button, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   scannedCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: t.colors.backgroundSecondary,
+    backgroundColor: t.colors.successSurface,
     borderWidth: 1,
     borderColor: withAlpha(t.colors.success, 0.267),
-    borderRadius: 10,
+    borderRadius: t.radius.inputSmall,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -683,10 +687,10 @@ const useStyles = makeStyles((t) => ({
   infoCard: {
     flexDirection: 'row',
     gap: 10,
-    backgroundColor: withAlpha(t.colors.accent, 0.071),
+    backgroundColor: t.colors.accentSoft,
     borderWidth: 1,
     borderColor: withAlpha(t.colors.accent, 0.19),
-    borderRadius: 12,
+    borderRadius: t.radius.card,
     padding: 12,
   },
   infoText: { flex: 1, color: t.colors.textSecondary, fontSize: 12, lineHeight: 16 },

@@ -13,7 +13,10 @@ import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
 import { AppIcon } from '../../../components/ui/AppIcon';
-import { Text, TextInput } from '../../../components/ui/Text';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
+import { Text, TextInput, fontStyle } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
 export default function SettingsScreen() {
@@ -277,6 +280,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
+      <Backdrop />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: t.spacing.screenPadding,
@@ -292,7 +296,7 @@ export default function SettingsScreen() {
 
 
         {/* ASPETTO: stile dell'app, scelto su questo dispositivo */}
-        <Text style={styles.sectionTitle}>ASPETTO</Text>
+        <Text style={styles.sectionTitle}>Aspetto</Text>
 
         <Pressable
           style={styles.settingRow}
@@ -313,7 +317,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         {/* CONFIGURAZIONE HARDWARE E GS1 - NEW */}
-        <Text style={styles.sectionTitle}>CONFIGURAZIONE HARDWARE</Text>
+        <Text style={styles.sectionTitle}>Configurazione hardware</Text>
 
         <Pressable
           style={styles.settingRow}
@@ -352,7 +356,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         {/* GESTIONE INVENTARIO */}
-        <Text style={styles.sectionTitle}>GESTIONE INVENTARIO</Text>
+        <Text style={styles.sectionTitle}>Gestione inventario</Text>
 
         <Pressable
           style={styles.settingRow}
@@ -413,7 +417,7 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/trash')}
         >
           <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: t.colors.error }]}>
+            <View style={[styles.iconContainer, { backgroundColor: '#EF4444' }]}>
               <AppIcon name="delete" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
@@ -446,7 +450,7 @@ export default function SettingsScreen() {
 
 
         {/* CONDIVISIONE */}
-        <Text style={styles.sectionTitle}>CONDIVISIONE</Text>
+        <Text style={styles.sectionTitle}>Condivisione</Text>
 
         <Pressable
           style={styles.settingRow}
@@ -467,7 +471,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         {/* ALERT E NOTIFICHE */}
-        <Text style={styles.sectionTitle}>ALERT E NOTIFICHE</Text>
+        <Text style={styles.sectionTitle}>Alert e notifiche</Text>
 
         <Pressable
           style={styles.settingRow}
@@ -506,7 +510,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         {/* DATI E BACKUP */}
-        <Text style={styles.sectionTitle}>TEAM E SPAZI DI LAVORO</Text>
+        <Text style={styles.sectionTitle}>Team e spazi di lavoro</Text>
         <View style={styles.teamPanel}>
           <Text style={styles.settingTitle}>Organizzazione attiva</Text>
           <Text style={styles.settingDescription}>{activeOrganization?.name || 'Workspace'}</Text>
@@ -532,6 +536,7 @@ export default function SettingsScreen() {
               style={styles.teamInput}
             />
             <Pressable disabled={inviteBusy} style={styles.teamButton} onPress={() => void createOperatorInvite()}>
+              <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
               <Text style={styles.teamButtonText}>{inviteBusy ? 'Attendi…' : 'Crea e condividi invito'}</Text>
             </Pressable>
           </>}
@@ -544,6 +549,7 @@ export default function SettingsScreen() {
             style={styles.teamInput}
           />
           <Pressable disabled={inviteBusy} style={styles.teamButton} onPress={() => void acceptOperatorInvite()}>
+            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
             <Text style={styles.teamButtonText}>{inviteBusy ? 'Attendi…' : 'Unisciti a un team'}</Text>
           </Pressable>
           <Text style={styles.settingDescription}>Gli inviti sono legati all’email indicata e scadono dopo 7 giorni.</Text>
@@ -553,7 +559,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* DATI E BACKUP */}
-        <Text style={styles.sectionTitle}>DATI E BACKUP</Text>
+        <Text style={styles.sectionTitle}>Dati e backup</Text>
 
         <Pressable
           style={styles.settingRow}
@@ -594,10 +600,13 @@ export default function SettingsScreen() {
           onDragOver: (event: any) => event.preventDefault(),
           onDrop: handleCsvDrop,
           style: {
-            border: `2px dashed ${t.colors.accent}`,
-            borderRadius: 12,
+            ...fontStyle(t, '400'),
+            fontSize: 13,
+            lineHeight: '18px',
+            border: `1px dashed ${t.colors.dash}`,
+            borderRadius: t.radius.card,
             padding: 18,
-            marginBottom: 12,
+            marginBottom: 10,
             color: t.colors.textSecondary,
             background: t.colors.surface,
             textAlign: 'center',
@@ -644,7 +653,7 @@ export default function SettingsScreen() {
         </Pressable>}
 
         {/* TEAM E ACCESSO */}
-        <Text style={styles.sectionTitle}>TEAM E ACCESSO</Text>
+        <Text style={styles.sectionTitle}>Team e accesso</Text>
 
         <Pressable
           style={styles.settingRow}
@@ -665,7 +674,7 @@ export default function SettingsScreen() {
         </Pressable>
 
         {/* INFO */}
-        <Text style={styles.sectionTitle}>INFO</Text>
+        <Text style={styles.sectionTitle}>Info</Text>
 
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>FurInventory Pro</Text>
@@ -674,7 +683,7 @@ export default function SettingsScreen() {
             Sistema di gestione inventario professionale per pellicce di lusso
           </Text>
           <View style={styles.infoDivider} />
-          <Text style={styles.infoLabel}>SPAZIO DI LAVORO SICURO</Text>
+          <Text style={styles.infoLabel}>Spazio di lavoro sicuro</Text>
           <Text style={styles.infoText}>
             Prodotti e impostazioni inventario sono separati per organizzazione. La cache locale permette di continuare offline; la sincronizzazione avviene con Supabase.
           </Text>
@@ -690,25 +699,29 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.background,
   },
   header: {
-    paddingVertical: 12,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   headerTitle: {
-    ...t.typography.cardTitle,
-    fontSize: 24,
+    fontSize: t.title.size,
+    fontWeight: t.title.weight,
+    letterSpacing: t.title.tracking,
+    color: t.colors.textPrimary,
   },
   sectionTitle: {
     ...t.typography.sectionHeader,
+    lineHeight: 18,
     marginTop: 24,
-    marginBottom: 12,
+    marginBottom: 10,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   settingRow: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.card,
     padding: 14,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -729,6 +742,7 @@ const useStyles = makeStyles((t) => ({
   settingTitle: {
     ...t.typography.cardTitle,
     fontSize: 15,
+    fontWeight: t.weights.strong,
     marginBottom: 2,
   },
   settingDescription: {
@@ -736,14 +750,15 @@ const useStyles = makeStyles((t) => ({
     fontSize: 12,
   },
   infoCard: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    ...cardSurface(t),
     padding: 20,
     marginBottom: 16,
   },
   infoTitle: {
     ...t.typography.cardTitle,
     fontSize: 20,
+    fontWeight: t.title.weight,
+    letterSpacing: t.title.tracking,
     marginBottom: 4,
   },
   infoVersion: {
@@ -759,12 +774,12 @@ const useStyles = makeStyles((t) => ({
   },
   infoDivider: {
     height: 1,
-    backgroundColor: t.colors.border,
+    backgroundColor: t.colors.borderLight,
     marginVertical: 16,
   },
   infoLabel: {
     ...t.typography.sectionHeader,
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 8,
   },
   infoText: {
@@ -773,37 +788,38 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
   },
   teamPanel: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    ...cardSurface(t),
     padding: 16,
     marginBottom: 12,
   },
   workspaceChoice: {
+    ...tileSurface(t),
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginTop: 8,
-    borderRadius: t.radius.medium,
-    backgroundColor: t.colors.background,
   },
-  workspaceChoiceActive: { borderWidth: 1, borderColor: t.colors.accent },
+  workspaceChoiceActive: { backgroundColor: t.colors.tileSelected, borderColor: t.colors.tileSelectedBorder },
   teamInput: {
-    minHeight: 46,
+    minHeight: t.input.height,
     color: t.colors.inputText,
-    backgroundColor: t.colors.background,
+    backgroundColor: t.colors.input,
     borderRadius: t.radius.input,
     borderWidth: 1,
     borderColor: t.colors.inputBorder,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
     marginTop: 12,
   },
   teamButton: {
-    minHeight: 44,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: t.colors.button,
     borderRadius: t.radius.button,
+    ...t.shadows.button,
+    overflow: 'hidden',
     marginTop: 8,
     marginBottom: 8,
   },
-  teamButtonText: { color: t.colors.onButton, fontWeight: '700' },
+  teamButtonText: { ...t.typography.buttonPrimary, fontSize: 15, color: t.colors.onButton },
 }));

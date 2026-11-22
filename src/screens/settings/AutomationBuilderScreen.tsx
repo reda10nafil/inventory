@@ -19,6 +19,9 @@ import {
 } from '../../../contexts/AutomationsContext';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -160,12 +163,14 @@ export default function AutomationBuilderScreen() {
     // ── Render ────────────────────────────────────────────────
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
                     <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>{existing ? 'Modifica Automazione' : 'Nuova Automazione'}</Text>
                 <Pressable onPress={handleSave} style={styles.saveButton}>
+                    <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                     <Text style={styles.saveButtonText}>Salva</Text>
                 </Pressable>
             </View>
@@ -173,7 +178,7 @@ export default function AutomationBuilderScreen() {
             <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
                 {/* ── Name & Description ── */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>NOME</Text>
+                    <Text style={styles.fieldLabel}>Nome</Text>
                     <TextInput
                         style={styles.input}
                         value={name}
@@ -182,9 +187,9 @@ export default function AutomationBuilderScreen() {
                         placeholderTextColor={t.colors.placeholder}
                     />
 
-                    <Text style={[styles.sectionLabel, { marginTop: 16 }]}>DESCRIZIONE (opzionale)</Text>
+                    <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Descrizione (opzionale)</Text>
                     <TextInput
-                        style={[styles.input, { height: 60 }]}
+                        style={[styles.input, styles.inputArea]}
                         value={description}
                         onChangeText={setDescription}
                         placeholder="Cosa fa questa automazione?"
@@ -195,7 +200,7 @@ export default function AutomationBuilderScreen() {
 
                 {/* ── Icon & Color ── */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>ICONA & COLORE</Text>
+                    <Text style={styles.sectionLabel}>Icona & colore</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                         {ICON_OPTIONS.map(ic => (
                             <Pressable
@@ -220,7 +225,7 @@ export default function AutomationBuilderScreen() {
 
                 {/* ── Flow Map ── */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>FLUSSO DI LAVORO</Text>
+                    <Text style={styles.sectionLabel}>Flusso di lavoro</Text>
 
                     {steps.length === 0 ? (
                         <View style={styles.emptyFlow}>
@@ -270,7 +275,7 @@ export default function AutomationBuilderScreen() {
 
                 {/* ── Preview badge ── */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>ANTEPRIMA</Text>
+                    <Text style={styles.sectionLabel}>Anteprima</Text>
                     <View style={styles.previewCard}>
                         <View style={[styles.previewIcon, { backgroundColor: withAlpha(color, 0.125) }]}>
                             <AppIcon name={icon as any} size={32} color={color} />
@@ -394,8 +399,8 @@ export default function AutomationBuilderScreen() {
                         )}
 
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-                            <Pressable style={[styles.configButton, { backgroundColor: t.colors.buttonSecondary }]} onPress={() => { setShowConfigModal(false); setConfigStep(null); }}>
-                                <Text style={{ color: t.colors.textPrimary }}>Annulla</Text>
+                            <Pressable style={[styles.configButton, styles.configButtonSecondary]} onPress={() => { setShowConfigModal(false); setConfigStep(null); }}>
+                                <Text style={styles.configButtonSecondaryText}>Annulla</Text>
                             </Pressable>
                             <Pressable style={[styles.configButton, { backgroundColor: color, flex: 2 }]} onPress={handleSaveConfig}>
                                 <Text style={{ color: t.colors.onData, fontWeight: 'bold' }}>Aggiungi</Text>
@@ -416,23 +421,28 @@ const useStyles = makeStyles((t) => ({
         padding: 16, borderBottomWidth: 1, borderBottomColor: t.colors.border,
     },
     backButton: { padding: 4 },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: t.colors.textPrimary },
+    headerTitle: { fontSize: 18, fontWeight: t.title.weight, letterSpacing: t.title.tracking, color: t.colors.textPrimary },
     saveButton: {
         backgroundColor: t.colors.button, paddingHorizontal: 16, paddingVertical: 8,
-        borderRadius: t.radius.button,
+        borderRadius: t.radius.button, ...t.shadows.button, overflow: 'hidden',
     },
-    saveButtonText: { color: t.colors.onButton, fontWeight: 'bold', fontSize: 14 },
+    saveButtonText: { color: t.colors.onButton, fontWeight: '600', fontSize: 14 },
     section: { padding: t.spacing.screenPadding, borderBottomWidth: 1, borderBottomColor: t.colors.border },
-    sectionLabel: { fontSize: 12, fontWeight: '700', color: t.colors.textSecondary, marginBottom: 12, letterSpacing: 1 },
+    sectionLabel: {
+        ...t.typography.sectionHeader, lineHeight: 18, marginBottom: 12,
+        ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
+    },
+    fieldLabel: { fontSize: t.label.size, fontWeight: t.label.weight, color: t.label.color, lineHeight: 18, marginBottom: 6 },
     input: {
-        backgroundColor: t.colors.input, borderRadius: t.radius.input,
-        paddingHorizontal: 16, paddingVertical: 14, fontSize: 16,
+        minHeight: t.input.height, backgroundColor: t.colors.input, borderRadius: t.radius.input,
+        paddingHorizontal: 14, paddingVertical: 12, fontSize: 15,
         color: t.colors.inputText, borderWidth: 1, borderColor: t.colors.inputBorder,
     },
+    inputArea: { height: 60, borderRadius: t.radius.area, textAlignVertical: 'top' },
     iconChip: {
-        width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
-        marginRight: 10, borderWidth: 2, borderColor: 'transparent',
-        backgroundColor: t.colors.surface,
+        ...tileSurface(t),
+        width: 48, height: 48, borderRadius: t.radius.iconWrap, alignItems: 'center', justifyContent: 'center',
+        marginRight: 10,
     },
     colorChip: {
         width: 36, height: 36, borderRadius: 18, marginRight: 10, borderWidth: 3, borderColor: 'transparent',
@@ -443,63 +453,66 @@ const useStyles = makeStyles((t) => ({
     emptyFlowHint: { fontSize: 13, color: t.colors.textSecondary, marginTop: 4 },
     flowContainer: { marginBottom: 16 },
     flowNode: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface,
-        padding: 14, borderRadius: t.radius.medium, borderWidth: 1, borderColor: t.colors.border,
+        ...cardSurface(t),
+        flexDirection: 'row', alignItems: 'center', padding: 14,
     },
     flowNodeIcon: {
-        width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12,
+        width: 44, height: 44, borderRadius: t.radius.iconWrap, alignItems: 'center', justifyContent: 'center', marginRight: 12,
     },
     flowNodeContent: { flex: 1, marginRight: 8 },
-    flowNodeLabel: { fontSize: 15, fontWeight: '600', color: t.colors.textPrimary },
+    flowNodeLabel: { fontSize: 15, fontWeight: t.weights.strong, color: t.colors.textPrimary },
     flowNodeMeta: { fontSize: 12, color: t.colors.textSecondary, marginTop: 2 },
     flowConnector: { alignItems: 'center', paddingVertical: 4 },
     flowLine: { width: 2, height: 8, backgroundColor: t.colors.border },
     addStepButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        padding: 14, borderRadius: t.radius.medium, borderWidth: 2,
+        minHeight: 48, padding: 12, borderRadius: t.radius.inputSmall, borderWidth: 1,
         borderStyle: 'dashed',
     },
     addStepText: { fontSize: 15, fontWeight: '600', marginLeft: 8 },
     previewCard: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface,
-        padding: 16, borderRadius: t.radius.large, borderWidth: 1, borderColor: t.colors.border,
+        ...cardSurface(t),
+        flexDirection: 'row', alignItems: 'center', padding: 16,
     },
     previewIcon: {
-        width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 16,
+        width: 56, height: 56, borderRadius: t.radius.iconWrap, alignItems: 'center', justifyContent: 'center', marginRight: 16,
     },
-    previewName: { fontSize: 18, fontWeight: '700', color: t.colors.textPrimary },
+    previewName: { fontSize: 18, fontWeight: t.weights.strong, color: t.colors.textPrimary },
     previewSteps: { fontSize: 13, color: t.colors.textSecondary, marginTop: 4 },
     modalOverlay: {
         flex: 1, backgroundColor: t.colors.scrimStrong, justifyContent: 'flex-end',
     },
+    // Finestra dal basso: fondo opaco (sta sopra la schermata), angoli della card
     modalContent: {
-        backgroundColor: t.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        backgroundColor: t.colors.backgroundSecondary, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card,
+        borderWidth: 1, borderBottomWidth: 0, borderColor: t.colors.border,
         padding: 24, maxHeight: '80%',
     },
     modalTitle: {
-        fontSize: 20, fontWeight: 'bold', color: t.colors.textPrimary, marginBottom: 20, textAlign: 'center',
+        fontSize: 20, fontWeight: t.title.weight, letterSpacing: t.title.tracking, color: t.colors.textPrimary, marginBottom: 20, textAlign: 'center',
     },
     stepOption: {
-        flexDirection: 'row', alignItems: 'center', padding: 14,
-        borderRadius: t.radius.medium, marginBottom: 10,
-        backgroundColor: t.colors.background, borderWidth: 1, borderColor: t.colors.border,
+        ...tileSurface(t),
+        flexDirection: 'row', alignItems: 'center', padding: 14, marginBottom: 10,
     },
     stepOptionIcon: {
-        width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 14,
+        width: 44, height: 44, borderRadius: t.radius.iconWrap, alignItems: 'center', justifyContent: 'center', marginRight: 14,
     },
-    stepOptionTitle: { fontSize: 16, fontWeight: '600', color: t.colors.textPrimary },
+    stepOptionTitle: { fontSize: 16, fontWeight: t.weights.strong, color: t.colors.textPrimary },
     stepOptionDesc: { fontSize: 13, color: t.colors.textSecondary, marginTop: 2 },
-    configLabel: { fontSize: 14, fontWeight: '600', color: t.colors.textSecondary, marginBottom: 8 },
+    configLabel: { fontSize: t.label.size, fontWeight: t.label.weight, color: t.label.color, lineHeight: 18, marginBottom: 6 },
     toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
     toggleLabel: { fontSize: 15, color: t.colors.textPrimary, flex: 1 },
     locationOption: {
-        flexDirection: 'row', alignItems: 'center', padding: 12,
-        borderRadius: t.radius.medium, backgroundColor: t.colors.background,
-        borderWidth: 1, borderColor: t.colors.border, marginBottom: 8, gap: 10,
+        ...tileSurface(t),
+        flexDirection: 'row', alignItems: 'center', padding: 12, marginBottom: 8, gap: 10,
     },
     locationOptionText: { fontSize: 15, color: t.colors.textPrimary },
     configButton: {
-        flex: 1, padding: 14, borderRadius: t.radius.button, alignItems: 'center',
-        borderWidth: 1, borderColor: t.colors.border,
+        flex: 1, minHeight: 48, justifyContent: 'center', padding: 14, borderRadius: t.radius.button, alignItems: 'center',
     },
+    configButtonSecondary: {
+        backgroundColor: t.colors.buttonSecondary, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder,
+    },
+    configButtonSecondaryText: { color: t.colors.onButtonSecondary, fontWeight: '600' },
 }));

@@ -6,6 +6,9 @@ import QRCode from 'react-native-qrcode-svg';
 import { useInventory, Library } from '../../../contexts/InventoryContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
@@ -159,12 +162,13 @@ export default function ManageFoldersScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <Backdrop />
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Form */}
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>
-            {editingId ? 'MODIFICA CARTELLA' : 'CREA NUOVA CARTELLA'}
+            {editingId ? 'Modifica cartella' : 'Crea nuova cartella'}
           </Text>
 
           <Text style={styles.label}>Nome</Text>
@@ -190,7 +194,7 @@ export default function ManageFoldersScreen() {
                 <AppIcon
                   name={icon as any}
                   size={28}
-                  color={selectedIcon === icon ? t.colors.onAccent : t.colors.textSecondary}
+                  color={selectedIcon === icon ? t.colors.tileSelectedText : t.colors.textSecondary}
                 />
               </Pressable>
             ))}
@@ -199,7 +203,7 @@ export default function ManageFoldersScreen() {
           <Text style={styles.label}>Barcode / NFC (Opzionale)</Text>
           <View style={styles.barcodeRow}>
             <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }]}
+              style={[styles.input, { flex: 1, minWidth: 0, marginBottom: 0 }]}
               placeholder="Scansiona o Genera..."
               placeholderTextColor={t.colors.placeholder}
               value={barcode}
@@ -228,6 +232,7 @@ export default function ManageFoldersScreen() {
               </Pressable>
             )}
             <Pressable style={styles.saveButton} onPress={handleSave}>
+              <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
               {/* Note: if creating with barcode, we warn user or just ignore barcode for creation phase if API doesn't support it */}
               <Text style={styles.saveButtonText}>
                 {editingId ? 'Salva Modifiche' : 'Crea Cartella'}
@@ -244,7 +249,7 @@ export default function ManageFoldersScreen() {
         </View>
 
         {/* List */}
-        <Text style={styles.listTitle}>CARTELLE ESISTENTI ({libraries.length})</Text>
+        <Text style={styles.listTitle}>Cartelle esistenti ({libraries.length})</Text>
 
         {libraries.map((library) => (
           <Pressable key={library.id} style={styles.libraryItem} onPress={() => handleEdit(library)}>
@@ -315,27 +320,29 @@ const useStyles = makeStyles((t) => ({
     paddingBottom: 40,
   },
   formCard: {
-    backgroundColor: t.colors.surface,
+    ...cardSurface(t),
     padding: 16,
-    borderRadius: t.radius.large,
     marginBottom: 24,
   },
   formTitle: {
-    ...t.typography.cardTitle,
-    fontSize: 16,
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
     marginBottom: 16,
-    textTransform: 'uppercase',
-    color: t.colors.textSecondary,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   label: {
-    ...t.typography.caption,
-    marginBottom: 8,
-    color: t.colors.textSecondary,
+    fontSize: t.label.size,
+    fontWeight: t.label.weight,
+    color: t.label.color,
+    lineHeight: 18,
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: t.colors.backgroundSecondary,
+    minHeight: t.input.height,
+    backgroundColor: t.colors.input,
     borderRadius: t.radius.input,
-    padding: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
     color: t.colors.inputText,
     borderWidth: 1,
     borderColor: t.colors.inputBorder,
@@ -348,18 +355,16 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 16,
   },
   iconOption: {
+    ...tileSurface(t),
     width: 50,
     height: 50,
-    borderRadius: t.radius.medium,
-    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   iconOptionSelected: {
-    backgroundColor: t.colors.accent,
-    borderColor: t.colors.accent,
+    backgroundColor: t.colors.tileSelected,
+    borderColor: t.colors.tileSelectedBorder,
   },
   barcodeRow: {
     flexDirection: 'row',
@@ -368,17 +373,20 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 16,
   },
   iconButton: {
-    padding: 10,
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.medium,
+    width: t.input.height,
+    height: t.input.height,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: t.colors.buttonSecondary,
+    borderRadius: t.radius.input,
     borderWidth: 1,
-    borderColor: t.colors.border,
+    borderColor: t.colors.buttonSecondaryBorder,
   },
   qrPreview: {
     alignItems: 'center',
     padding: 16,
     backgroundColor: t.colors.qrPaper,
-    borderRadius: t.radius.medium,
+    borderRadius: t.radius.tile,
     marginBottom: 16,
     alignSelf: 'center',
   },
@@ -394,26 +402,37 @@ const useStyles = makeStyles((t) => ({
   },
   saveButton: {
     flex: 1,
+    minHeight: 48,
+    justifyContent: 'center',
     backgroundColor: t.colors.button,
-    padding: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: t.radius.button,
+    ...t.shadows.button,
+    overflow: 'hidden',
     alignItems: 'center',
   },
   saveButtonText: {
+    textAlign: 'center',
     ...t.typography.buttonPrimary,
+    color: t.colors.onButton,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: t.colors.backgroundSecondary,
-    padding: 14,
+    minHeight: 48,
+    justifyContent: 'center',
+    backgroundColor: t.colors.buttonSecondary,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: t.radius.button,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: t.colors.buttonSecondaryBorder,
   },
   cancelButtonText: {
-    color: t.colors.textPrimary,
-    fontWeight: '600',
+    textAlign: 'center',
+    ...t.typography.buttonSecondary,
+    color: t.colors.onButtonSecondary,
   },
   warningText: {
     fontSize: 12,
@@ -423,21 +442,22 @@ const useStyles = makeStyles((t) => ({
   },
   listTitle: {
     ...t.typography.sectionHeader,
-    marginBottom: 12,
+    lineHeight: 18,
+    marginBottom: 10,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   libraryItem: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.surface,
     padding: 16,
-    borderRadius: t.radius.card,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   libraryIcon: {
     width: 48,
     height: 48,
     borderRadius: t.radius.iconWrap,
-    backgroundColor: withAlpha(t.colors.accent, 0.082),
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -448,16 +468,17 @@ const useStyles = makeStyles((t) => ({
   libraryName: {
     ...t.typography.cardTitle,
     fontSize: 15,
+    fontWeight: t.weights.strong,
     marginBottom: 2,
   },
   libraryCount: {
     ...t.typography.caption,
-    fontSize: 11,
+    fontSize: 12,
   },
   libraryId: {
     ...t.typography.caption,
     fontSize: 10,
-    color: t.colors.textSecondary,
+    color: t.colors.textMuted,
     fontFamily: 'monospace',
   },
   itemActions: {
@@ -471,10 +492,9 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'center',
   },
   infoCard: {
+    ...cardSurface(t),
     flexDirection: 'row',
     gap: 12,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
     padding: 16,
     marginTop: 16,
     marginBottom: 16,
@@ -495,7 +515,7 @@ const useStyles = makeStyles((t) => ({
   qrCard: {
     backgroundColor: t.colors.qrPaper,
     padding: 32,
-    borderRadius: t.radius.large,
+    borderRadius: t.radius.card,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,

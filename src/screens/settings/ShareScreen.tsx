@@ -4,9 +4,10 @@ import { View, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { cardSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
-import { withAlpha } from '../../../utils/color';
 
 export default function ShareSettingsScreen() {
     const styles = useStyles();
@@ -16,6 +17,7 @@ export default function ShareSettingsScreen() {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
+            <Backdrop />
             {/* Header */}
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -41,7 +43,7 @@ export default function ShareSettingsScreen() {
                 </View>
 
                 {/* Preview Card - Cliente */}
-                <Text style={styles.sectionTitle}>MODALITÀ CLIENTE</Text>
+                <Text style={styles.sectionTitle}>Modalità cliente</Text>
                 <View style={styles.previewCard}>
                     <Text style={styles.previewTitle}>Informazioni condivise:</Text>
                     <View style={styles.previewItem}>
@@ -85,7 +87,7 @@ export default function ShareSettingsScreen() {
                 </View>
 
                 {/* Preview Card - Professionista */}
-                <Text style={styles.sectionTitle}>MODALITÀ PROFESSIONISTA</Text>
+                <Text style={styles.sectionTitle}>Modalità professionista</Text>
                 <View style={styles.previewCard}>
                     <Text style={styles.previewTitle}>Informazioni condivise:</Text>
                     <View style={styles.previewItem}>
@@ -146,10 +148,12 @@ const useStyles = makeStyles((t) => ({
     headerTitle: {
         ...t.typography.cardTitle,
         fontSize: 18,
+        fontWeight: t.title.weight,
+        letterSpacing: t.title.tracking,
     },
     infoCard: {
-        backgroundColor: withAlpha(t.colors.accent, 0.082),
-        borderRadius: t.radius.large,
+        backgroundColor: t.colors.accentSoft,
+        borderRadius: t.radius.card,
         padding: 16,
         marginTop: 16,
         marginBottom: 24,
@@ -165,18 +169,20 @@ const useStyles = makeStyles((t) => ({
     },
     sectionTitle: {
         ...t.typography.sectionHeader,
+        lineHeight: 18,
+        ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
         marginTop: 8,
-        marginBottom: 12,
+        marginBottom: 10,
     },
     previewCard: {
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.large,
+        ...cardSurface(t),
         padding: 16,
         marginBottom: 16,
     },
     previewTitle: {
         ...t.typography.cardTitle,
         fontSize: 15,
+        fontWeight: t.weights.strong,
         marginBottom: 12,
     },
     excludedTitle: {
@@ -198,12 +204,11 @@ const useStyles = makeStyles((t) => ({
     },
     divider: {
         height: 1,
-        backgroundColor: t.colors.border,
+        backgroundColor: t.colors.borderLight,
         marginVertical: 12,
     },
     noteCard: {
-        backgroundColor: t.colors.surface,
-        borderRadius: t.radius.large,
+        ...cardSurface(t),
         padding: 16,
         marginBottom: 16,
     },
