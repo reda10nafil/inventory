@@ -2,6 +2,16 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L6a e L6b: Inventario e Scheda capo sulla tela
+
+- Branch / SHA: `ui-ux/stili`, due commit (L6a, L6b) dopo la base comune di L6 (`Backdrop`, `GradientFill`, `Glass`, `surfaces`, `formatPrice`, `sectionLabel`, barra in basso nuova) e la correzione degli id dei bagliori.
+- L6a Inventario (`HomeScreen.tsx`, subagente): intestazione con `t.title`, ricerca tonda, pillole delle cartelle e dei filtri «Tutti 6» con sfumatura sull'attiva, **3 statistiche in una riga** (la terza d'avviso solo se ci sono avvisi), card con `cardSurface`, foto 160 con margine e raggio dello stile, «Venduto»/«Attenzione», **posizione con nome e pallino del suo colore** (D05), prezzi «4.200 €»; selezione multipla e finestra «Gestisci» su fondi opachi.
+- L6b Scheda (`DetailScreen.tsx`, subagente; HTML della stampa e testo da condividere invariati): titoli di sezione con l'iniziale maiuscola, riquadri con `tileSurface`, posizione col suo colore, prezzi in formato italiano, GS1 su card, pulsanti secondari sui ruoli, **barra fissa Indietro/Modifica con `Glass`** (modello per le altre barre fisse), finestra del QR opaca, visore su `cameraBackground`; pillole dei valori su `accentSoft` come nella tela (in Ishtar sui ruoli `chip` sparivano).
+- Correzione della base: sul web più `Backdrop` montati insieme avevano lo stesso id SVG e la Scheda puntava alla definizione di uno sfondo nascosto (niente bagliori); ora ogni sfondo ha id unici.
+- Verifiche: tsc 0, eslint 0 sui file; Inventario, Scheda e Scheda venduta nei 5 stili: nessun errore, nessun errore in console, carattere dello stile su ogni testo. Schermate guardate.
+- Da rivedere più avanti (note degli agenti): nessun ruolo per il testo sopra `error`; la ricerca confronta l'id della posizione, non il nome; pesi e numeri non in formato italiano («2.1 kg», «3900 → 4200»); nel visore la foto mostrata può non essere quella del contatore (da indagare, D-nuovo); «Posizione di consegna» mostra il valore salvato (id se scelto da Modifica).
+- Ancora da fare: L6c-f, controllo 31 × 5, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L5e: Minimal (i 5 stili ci sono tutti)
 
 - Branch / SHA: `ui-ux/stili`, commit di L5e dopo il commit di L5d.

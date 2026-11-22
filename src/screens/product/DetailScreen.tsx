@@ -17,9 +17,14 @@ import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { nfcService } from '../../../utils/nfcService';
 import Barcode from '../../../components/Barcode';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { Glass } from '../../../components/ui/Glass';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { formatPrice } from '../../../utils/price';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -37,6 +42,7 @@ export default function ProductDetailScreen() {
   if (!product) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
+        <Backdrop />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Prodotto non trovato</Text>
         </View>
@@ -48,6 +54,8 @@ export default function ProductDetailScreen() {
   const [isModalVisible, setModalVisible] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
   const heroWidth = Math.max(1, screenWidth);
+  // Riquadro a metà dei campi strutturati: due per riga con 10 px in mezzo (come la tela), anche se resta da solo
+  const halfTileWidth = (screenWidth - t.spacing.screenPadding * 2 - 10) / 2;
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
@@ -762,6 +770,7 @@ export default function ProductDetailScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <Backdrop />
       <ScrollView
         contentContainerStyle={{
           paddingBottom: insets.bottom + 80,
@@ -819,8 +828,8 @@ export default function ProductDetailScreen() {
         {/* Status Badge */}
         {product.status === 'sold' && (
           <View style={styles.soldBadge}>
-            <AppIcon name="sell" size={16} color="#FFF" />
-            <Text style={styles.soldText}>VENDUTO</Text>
+            <AppIcon name="sell" size={16} color={t.colors.soldBadgeText} />
+            <Text style={styles.soldText}>Venduto</Text>
           </View>
         )}
 
@@ -832,35 +841,42 @@ export default function ProductDetailScreen() {
               <Text style={styles.furType}>{furType?.label || product.furType}</Text>
             </View>
             <Pressable style={styles.shareButton} onPress={handleShare}>
-              <AppIcon name="share" size={24} color={t.colors.accentInk} />
+              <AppIcon name="share" size={20} color={t.colors.accentInk} />
             </Pressable>
           </View>
 
-          {/* Location Card */}
-          <View style={[styles.locationCard, { borderColor: location?.color || t.colors.border }]}>
-            <AppIcon name="location-on" size={24} color={location?.color || t.colors.accentInk} />
+          {/* Location Card: il colore della posizione è un dato */}
+          <View style={[styles.locationCard, location?.color ? { borderColor: location.color } : null]}>
+            <View
+              style={[
+                styles.locationIconWrap,
+                { backgroundColor: location?.color ? withAlpha(location.color, 0.16) : t.colors.accentSoft },
+              ]}
+            >
+              <AppIcon name="location-on" size={20} color={location?.color || t.colors.accentInk} />
+            </View>
             <View style={styles.locationContent}>
-              <Text style={styles.locationLabel}>POSIZIONE ATTUALE</Text>
+              <Text style={styles.locationLabel}>Posizione attuale</Text>
               <Text style={styles.locationValue}>{location?.label || product.location}</Text>
             </View>
           </View>
 
           {/* Prices */}
           {(product.purchasePrice || product.sellPrice) && (
-            <View style={styles.priceSection}>
-              <Text style={styles.sectionTitle}>PREZZI</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Prezzi</Text>
               <View style={styles.priceRow}>
                 {product.purchasePrice && (
                   <View style={styles.priceCard}>
                     <Text style={styles.priceLabel}>Acquisto</Text>
-                    <Text style={styles.priceValue}>€{product.purchasePrice.toLocaleString()}</Text>
+                    <Text style={styles.priceValue}>{formatPrice(product.purchasePrice)}</Text>
                   </View>
                 )}
                 {product.sellPrice && (
                   <View style={styles.priceCard}>
                     <Text style={styles.priceLabel}>Vendita</Text>
                     <Text style={[styles.priceValue, { color: t.colors.accentInk }]}>
-                      €{product.sellPrice.toLocaleString()}
+                      {formatPrice(product.sellPrice)}
                     </Text>
                   </View>
                 )}
@@ -870,26 +886,26 @@ export default function ProductDetailScreen() {
 
           {/* Measurements */}
           {(product.length || product.width || product.weight) && (
-            <View style={styles.measureSection}>
-              <Text style={styles.sectionTitle}>MISURE</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Misure</Text>
               <View style={styles.measureRow}>
                 {product.length && (
                   <View style={styles.measureCard}>
-                    <AppIcon name="straighten" size={20} color={t.colors.textSecondary} />
+                    <AppIcon name="straighten" size={22} color={t.colors.fieldIcon} />
                     <Text style={styles.measureLabel}>Lunghezza</Text>
                     <Text style={styles.measureValue}>{product.length} cm</Text>
                   </View>
                 )}
                 {product.width && (
                   <View style={styles.measureCard}>
-                    <AppIcon name="width-wide" size={20} color={t.colors.textSecondary} />
+                    <AppIcon name="width-wide" size={22} color={t.colors.fieldIcon} />
                     <Text style={styles.measureLabel}>Larghezza</Text>
                     <Text style={styles.measureValue}>{product.width} cm</Text>
                   </View>
                 )}
                 {product.weight && (
                   <View style={styles.measureCard}>
-                    <AppIcon name="fitness-center" size={20} color={t.colors.textSecondary} />
+                    <AppIcon name="fitness-center" size={22} color={t.colors.fieldIcon} />
                     <Text style={styles.measureLabel}>Peso</Text>
                     <Text style={styles.measureValue}>{product.weight} kg</Text>
                   </View>
@@ -900,16 +916,18 @@ export default function ProductDetailScreen() {
 
           {/* Technical Notes */}
           {product.technicalNotes && (
-            <View style={styles.notesSection}>
-              <Text style={styles.sectionTitle}>NOTE TECNICHE</Text>
-              <Text style={styles.notesText}>{product.technicalNotes}</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Note tecniche</Text>
+              <View style={styles.notesCard}>
+                <Text style={styles.notesText}>{product.technicalNotes}</Text>
+              </View>
             </View>
           )}
 
           {/* Custom Fields Display Redesign */}
           {product.customData && product.customData.length > 0 && (
-            <View style={styles.customFieldsSection}>
-              <Text style={styles.sectionTitle}>CAMPI STRUTTURATI</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Campi strutturati</Text>
 
               <View style={styles.customCardsContainer}>
                 {product.customData.map((dataItem, index) => {
@@ -920,9 +938,9 @@ export default function ProductDetailScreen() {
                   // Text Long -> Spanning full width like a Note
                   if (field.type === 'text_long') {
                     return (
-                      <View key={field.id || index} style={styles.customNotesCard}>
+                      <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'notes'} size={18} color={t.colors.textSecondary} />
+                          <AppIcon name={field.icon as any || 'notes'} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <Text style={styles.customNotesText}>{String(value)}</Text>
@@ -934,9 +952,9 @@ export default function ProductDetailScreen() {
                   if (field.type === 'multi_choice' || (Array.isArray(value) && field.type !== 'images' && field.type !== 'document')) {
                     const displayArray = Array.isArray(value) ? value : [value];
                     return (
-                      <View key={field.id || index} style={styles.customTagsCard}>
+                      <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'label'} size={18} color={t.colors.textSecondary} />
+                          <AppIcon name={field.icon as any || 'label'} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <View style={styles.customTagsRow}>
@@ -962,17 +980,17 @@ export default function ProductDetailScreen() {
                   if (field.type === 'document') {
                     const docs = Array.isArray(value) ? value : [value];
                     return (
-                      <View key={field.id || index} style={styles.customNotesCard}>
+                      <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'description'} size={18} color={t.colors.textSecondary} />
+                          <AppIcon name={field.icon as any || 'description'} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
-                        <View style={{ gap: 8, marginTop: 8 }}>
+                        <View style={styles.customDocumentList}>
                           {docs.map((docUri, i) => (
                             <Pressable key={i} style={styles.customDocumentItem} onPress={() => Sharing.shareAsync(docUri).catch(() => Alert.alert('Errore', 'Impossibile aprire il file'))}>
                               <AppIcon name="insert-drive-file" size={20} color={t.colors.accentInk} />
                               <Text style={styles.customDocumentText} numberOfLines={1}>{docUri.split('/').pop() || 'Documento Allegato'}</Text>
-                              <AppIcon name="open-in-new" size={20} color={t.colors.textSecondary} />
+                              <AppIcon name="open-in-new" size={18} color={t.colors.fieldIcon} />
                             </Pressable>
                           ))}
                         </View>
@@ -984,12 +1002,12 @@ export default function ProductDetailScreen() {
                   if (field.type === 'images') {
                     const imgs = Array.isArray(value) ? value : [value];
                     return (
-                      <View key={field.id || index} style={styles.customNotesCard}>
+                      <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'image'} size={18} color={t.colors.textSecondary} />
+                          <AppIcon name={field.icon as any || 'image'} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.customImagesRow}>
                           {imgs.map((imgUri, i) => (
                             <View key={i} style={styles.customNestedImageWrap}>
                               <Image source={{ uri: imgUri }} style={styles.customNestedImage} contentFit="cover" />
@@ -1005,9 +1023,9 @@ export default function ProductDetailScreen() {
                     const rawDate = new Date(value);
                     const displayDate = isNaN(rawDate.getTime()) ? value : rawDate.toLocaleDateString('it-IT');
                     return (
-                      <View key={field.id || index} style={styles.customMiniCard}>
+                      <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                         <View style={[styles.customIconWrap, { backgroundColor: t.colors.infoSoft }]}>
-                          <AppIcon name={field.icon as any || 'event'} size={20} color={t.colors.info} />
+                          <AppIcon name={field.icon as any || 'event'} size={19} color={t.colors.info} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1020,14 +1038,14 @@ export default function ProductDetailScreen() {
                   // Currency
                   if (field.type === 'currency') {
                     return (
-                      <View key={field.id || index} style={styles.customMiniCard}>
-                        <View style={[styles.customIconWrap, { backgroundColor: t.colors.iconWrap }]}>
-                          <AppIcon name={field.icon as any || 'attach-money'} size={20} color={t.colors.accentInk} />
+                      <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
+                        <View style={[styles.customIconWrap, { backgroundColor: t.colors.accentSoft }]}>
+                          <AppIcon name={field.icon as any || 'attach-money'} size={19} color={t.colors.accentInk} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
-                          <Text style={[styles.customFieldValue, { color: t.colors.accentInk, fontWeight: '700' }]}>
-                            €{Number(value).toLocaleString()}
+                          <Text style={[styles.customFieldValue, { color: t.colors.accentInk }]}>
+                            {formatPrice(Number(value))}
                           </Text>
                         </View>
                       </View>
@@ -1044,9 +1062,9 @@ export default function ProductDetailScreen() {
                   }
 
                   return (
-                    <View key={field.id || index} style={styles.customMiniCard}>
+                    <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                       <View style={styles.customIconWrap}>
-                        <AppIcon name={field.icon as any || 'info'} size={20} color={t.colors.textSecondary} />
+                        <AppIcon name={field.icon as any || 'info'} size={19} color={t.colors.fieldIcon} />
                       </View>
                       <View style={styles.customCardContent}>
                         <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1061,42 +1079,44 @@ export default function ProductDetailScreen() {
 
           {/* Timeline */}
           {timeline.length > 0 && (
-            <View style={styles.timelineSection}>
-              <Text style={styles.sectionTitle}>CRONOLOGIA DETTAGLIATA</Text>
-              {(showAllHistory ? timeline : timeline.slice(0, 4)).map((event, index) => {
-                let eventText = '';
-                if (event.type === 'created') eventText = 'Creato';
-                else if (event.type === 'moved') eventText = `Spostato: ${event.details.from} → ${event.details.to}`;
-                else if (event.type === 'sold') eventText = 'Venduto';
-                else if (event.type === 'modified') eventText = event.details.changes?.[0] || 'Modificato';
-                else if (event.type === 'scanned') eventText = 'Scansionato';
-                else if (event.type === 'photo_added') eventText = `${event.details.photoCount} foto aggiunte`;
-                else if (event.type === 'deleted') eventText = 'Spostato nel Cestino';
-                else if (event.type === 'restored') eventText = 'Ripristinato dal Cestino';
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Cronologia dettagliata</Text>
+              <View style={styles.timelineList}>
+                {(showAllHistory ? timeline : timeline.slice(0, 4)).map((event, index) => {
+                  let eventText = '';
+                  if (event.type === 'created') eventText = 'Creato';
+                  else if (event.type === 'moved') eventText = `Spostato: ${event.details.from} → ${event.details.to}`;
+                  else if (event.type === 'sold') eventText = 'Venduto';
+                  else if (event.type === 'modified') eventText = event.details.changes?.[0] || 'Modificato';
+                  else if (event.type === 'scanned') eventText = 'Scansionato';
+                  else if (event.type === 'photo_added') eventText = `${event.details.photoCount} foto aggiunte`;
+                  else if (event.type === 'deleted') eventText = 'Spostato nel Cestino';
+                  else if (event.type === 'restored') eventText = 'Ripristinato dal Cestino';
 
-                return (
-                  <View key={`${event.id || 'evt'}-${index}`} style={styles.timelineItem}>
-                    <View style={styles.timelineDot} />
-                    <View style={styles.timelineContent}>
-                      <Text style={styles.timelineType}>{eventText}</Text>
-                      {event.type === 'modified' && event.details.changes && event.details.changes.length > 1 && (
-                        <Text style={styles.timelineChanges}>
-                          {event.details.changes.slice(1).join(' • ')}
+                  return (
+                    <View key={`${event.id || 'evt'}-${index}`} style={styles.timelineItem}>
+                      <View style={styles.timelineDot} />
+                      <View style={styles.timelineContent}>
+                        <Text style={styles.timelineType}>{eventText}</Text>
+                        {event.type === 'modified' && event.details.changes && event.details.changes.length > 1 && (
+                          <Text style={styles.timelineChanges}>
+                            {event.details.changes.slice(1).join(' • ')}
+                          </Text>
+                        )}
+                        <Text style={styles.timelineDate}>
+                          {new Date(event.timestamp).toLocaleDateString('it-IT', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </Text>
-                      )}
-                      <Text style={styles.timelineDate}>
-                        {new Date(event.timestamp).toLocaleDateString('it-IT', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Text>
+                      </View>
                     </View>
-                  </View>
-                );
-              })}
+                  );
+                })}
+              </View>
 
               {timeline.length > 4 && (
                 <Pressable
@@ -1111,8 +1131,8 @@ export default function ProductDetailScreen() {
           )}
 
           {/* GS1 Digital Link Section */}
-          <View style={styles.qrSection}>
-            <Text style={styles.sectionTitle}>IDENTITÀ DIGITALE GS1</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Identità digitale GS1</Text>
 
             {product.gs1DigitalLink ? (
               <View style={styles.gs1Card}>
@@ -1135,12 +1155,12 @@ export default function ProductDetailScreen() {
                 
                 <View style={styles.gs1Actions}>
                   <Pressable style={styles.gs1ActionButton} onPress={handleCopyGS1Link}>
-                    <AppIcon name="content-copy" size={20} color={t.colors.accentInk} />
-                    <Text style={styles.gs1ActionText}>Copia Link</Text>
+                    <AppIcon name="content-copy" size={18} color={t.colors.onButtonSecondary} />
+                    <Text style={styles.gs1ActionText}>Copia link</Text>
                   </Pressable>
-                  <Pressable style={[styles.gs1ActionButton, { borderColor: t.colors.info }]} onPress={handleProgramNFC}>
-                    <AppIcon name="nfc" size={20} color={t.colors.info} />
-                    <Text style={[styles.gs1ActionText, { color: t.colors.info }]}>Programma Tag</Text>
+                  <Pressable style={styles.gs1ActionButton} onPress={handleProgramNFC}>
+                    <AppIcon name="nfc" size={18} color={t.colors.onButtonSecondary} />
+                    <Text style={styles.gs1ActionText}>Programma tag</Text>
                   </Pressable>
                 </View>
               </View>
@@ -1148,33 +1168,33 @@ export default function ProductDetailScreen() {
               <View style={styles.gs1Card}>
                  <Text style={styles.gs1MissingText}>Questo prodotto non ha un Digital Link GS1 generato. Modifica e salva il prodotto per generarlo.</Text>
                  <Pressable style={styles.qrButton} onPress={() => setShowQRModal(true)}>
-                    <AppIcon name="qr-code-2" size={24} color={t.colors.textPrimary} />
+                    <AppIcon name="qr-code-2" size={20} color={t.colors.onButtonSecondary} />
                     <Text style={styles.qrButtonText}>Mostra SKU QR (Legacy)</Text>
                   </Pressable>
               </View>
             )}
-            
-            {/* Azioni PDF (moved below GS1) */}
-            <View style={{ marginTop: 16 }}>
-               <Pressable style={styles.qrButton} onPress={handlePrintPDF}>
-                 <AppIcon name="picture-as-pdf" size={24} color={t.colors.accentInk} />
-                 <Text style={[styles.qrButtonText, { color: t.colors.accentInk }]}>Stampa Scheda PDF</Text>
-               </Pressable>
-            </View>
-
           </View>
+
+          {/* Azioni PDF (sotto GS1) */}
+          <Pressable style={[styles.qrButton, styles.pdfButton]} onPress={handlePrintPDF}>
+            <AppIcon name="picture-as-pdf" size={20} color={t.colors.onButtonSecondary} />
+            <Text style={[styles.qrButtonText, styles.pdfButtonText]}>Stampa scheda PDF</Text>
+          </Pressable>
         </View>
       </ScrollView>
 
       {/* Bottom Actions */}
-      <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 16 }]}>
+      <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 12 }]}>
+        <Glass />
         <Pressable style={styles.actionButtonSecondary} onPress={() => router.back()}>
+          <AppIcon name="arrow-back" size={20} color={t.colors.onButtonSecondary} />
           <Text style={styles.actionButtonTextSecondary}>Indietro</Text>
         </Pressable>
         <Pressable
           style={styles.actionButtonPrimary}
           onPress={() => router.push(`/product/edit/${product.id}`)}
         >
+          <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
           <AppIcon name="edit" size={20} color={t.colors.onButton} />
           <Text style={styles.actionButtonTextPrimary}>Modifica</Text>
         </Pressable>
@@ -1233,7 +1253,8 @@ export default function ProductDetailScreen() {
             <Text style={styles.qrInfoText}>{furType?.label || product.furType}</Text>
 
             <Pressable style={styles.printLabelButton} onPress={handlePrintLabel}>
-              <AppIcon name="print" size={20} color="#FFF" />
+              <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+              <AppIcon name="print" size={20} color={t.colors.onButton} />
               <Text style={styles.printLabelText}>Stampa Etichetta</Text>
             </Pressable>
           </View>
@@ -1293,6 +1314,8 @@ export default function ProductDetailScreen() {
   );
 }
 
+// Stili della Scheda (lavoro L6b, tavola «Scheda» della tela): riquadri con `tileSurface` e l'ombra delle card,
+// titoli di sezione dal tema, pulsanti sui ruoli principale e secondario, barra fissa con `Glass` (regola 9).
 const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
@@ -1305,24 +1328,25 @@ const useStyles = makeStyles((t) => ({
     height: 320,
     backgroundColor: t.colors.backgroundSecondary,
   },
+  // Contatore e pallini stanno sopra la foto: bianchi fissi su velo nero, uguali in tutti gli stili
   imageCounter: {
     position: 'absolute',
     top: 16,
     left: 16,
-    backgroundColor: t.colors.scrimStrong,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: t.radius.medium,
+    backgroundColor: withAlpha(t.colors.shadow, 0.55),
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: t.radius.full,
   },
   imageCounterText: {
-    ...t.typography.caption,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '600',
     color: t.colors.onData,
   },
   paginationDots: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 14,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -1330,14 +1354,14 @@ const useStyles = makeStyles((t) => ({
     gap: 6,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: withAlpha(t.colors.onData, 0.55),
   },
   dotActive: {
-    backgroundColor: t.colors.accent,
-    width: 24,
+    backgroundColor: t.colors.onData,
+    width: 18,
   },
   soldBadge: {
     position: 'absolute',
@@ -1347,156 +1371,182 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     gap: 6,
     backgroundColor: t.colors.soldBadge,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: t.radius.medium,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: t.radius.badge,
   },
   soldText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#FFF',
+    lineHeight: 16,
+    fontWeight: '600',
+    color: t.colors.soldBadgeText,
   },
   content: {
-    padding: t.spacing.screenPadding,
+    paddingHorizontal: t.spacing.screenPadding,
+    paddingTop: 20,
+    paddingBottom: 24,
+    gap: 24,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    gap: 12,
   },
   titleLeft: {
     flex: 1,
   },
   sku: {
-    ...t.typography.cardTitle,
-    fontSize: 24,
-    marginBottom: 4,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: t.weights.strong,
+    letterSpacing: t.title.tracking,
+    color: t.colors.textPrimary,
   },
   furType: {
-    ...t.typography.caption,
-    fontSize: 16,
+    marginTop: 2,
+    fontSize: 15,
+    lineHeight: 20,
+    color: t.colors.textSecondary,
   },
   shareButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: t.colors.buttonSecondary,
+    borderWidth: 1,
+    borderColor: t.colors.buttonSecondaryBorder,
+    borderRadius: t.radius.chip,
   },
+  // Il bordo e il quadratino dell'icona prendono il colore della posizione (dato), dato in linea
   locationCard: {
+    ...tileSurface(t),
+    ...t.shadows.card,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 2,
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  locationIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: t.radius.iconWrap,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   locationContent: {
-    marginLeft: 12,
     flex: 1,
   },
   locationLabel: {
-    ...t.typography.heroLabel,
-    marginBottom: 2,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
   },
   locationValue: {
-    ...t.typography.cardTitle,
-    fontSize: 18,
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: t.weights.strong,
+    color: t.colors.textPrimary,
+  },
+  section: {
+    gap: 10,
   },
   sectionTitle: {
     ...t.typography.sectionHeader,
-    marginBottom: 12,
-  },
-  priceSection: {
-    marginBottom: 24,
+    lineHeight: 18,
+    ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   priceRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   priceCard: {
+    ...tileSurface(t),
+    ...t.shadows.card,
     flex: 1,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    padding: 16,
+    padding: 14,
   },
   priceLabel: {
-    ...t.typography.caption,
     fontSize: 12,
-    marginBottom: 4,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
   },
   priceValue: {
-    ...t.typography.cardValue,
-    fontSize: 24,
-  },
-  measureSection: {
-    marginBottom: 24,
+    marginTop: 4,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: t.weights.price,
+    color: t.colors.textPrimary,
   },
   measureRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   measureCard: {
+    ...tileSurface(t),
+    ...t.shadows.card,
     flex: 1,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
     padding: 12,
     alignItems: 'center',
+    gap: 4,
   },
   measureLabel: {
-    ...t.typography.caption,
-    fontSize: 11,
-    marginTop: 6,
-    marginBottom: 2,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
   },
   measureValue: {
-    ...t.typography.cardTitle,
     fontSize: 16,
+    lineHeight: 22,
+    fontWeight: t.weights.strong,
+    color: t.colors.textPrimary,
   },
-  notesSection: {
-    marginBottom: 24,
+  notesCard: {
+    ...tileSurface(t),
+    ...t.shadows.card,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   notesText: {
-    ...t.typography.body,
     fontSize: 15,
     lineHeight: 22,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    padding: 16,
+    color: t.colors.textPrimary,
   },
-  timelineSection: {
-    marginBottom: 16,
+  timelineList: {
+    gap: 14,
+    paddingVertical: 4,
   },
   timelineItem: {
     flexDirection: 'row',
-    marginBottom: 16,
+    gap: 12,
   },
   timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: t.colors.accent,
-    marginTop: 4,
-    marginRight: 12,
+    marginTop: 7,
   },
   timelineContent: {
     flex: 1,
   },
   timelineType: {
-    ...t.typography.cardTitle,
     fontSize: 15,
-    marginBottom: 2,
+    lineHeight: 21,
+    fontWeight: '500',
+    color: t.colors.textPrimary,
   },
   timelineDate: {
-    ...t.typography.caption,
     fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
   },
   timelineChanges: {
-    ...t.typography.caption,
-    fontSize: 11,
-    marginTop: 2,
-    marginBottom: 2,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
   },
   showMoreButton: {
     flexDirection: 'row',
@@ -1504,76 +1554,82 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'center',
     paddingVertical: 8,
     gap: 4,
-    marginTop: 4,
   },
   showMoreText: {
-    ...t.typography.buttonSecondary,
     fontSize: 14,
+    fontWeight: '600',
     color: t.colors.accentInk,
   },
-  qrSection: {
-    marginTop: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
+  // Pulsanti secondari della Scheda (Mostra SKU QR, Stampa scheda PDF)
   qrButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: t.colors.buttonSecondary,
-    paddingVertical: 12,
+    height: 44,
     paddingHorizontal: 20,
+    backgroundColor: t.colors.buttonSecondary,
     borderRadius: t.radius.button,
     borderWidth: 1,
     borderColor: t.colors.buttonSecondaryBorder,
-    ...t.shadows.small,
   },
   qrButtonText: {
-    ...t.typography.buttonSecondary,
     fontSize: 14,
-    color: t.colors.textPrimary,
+    fontWeight: '600',
+    color: t.colors.onButtonSecondary,
   },
+  pdfButton: {
+    height: 48,
+  },
+  pdfButtonText: {
+    fontSize: 15,
+  },
+  // Barra fissa Indietro/Modifica (regola 9): vetro o velo pieno dello stile, filetto in alto
   bottomActions: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     paddingHorizontal: t.spacing.screenPadding,
-    paddingTop: 16,
-    backgroundColor: t.colors.background,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: t.colors.border,
   },
   actionButtonSecondary: {
     flex: 1,
-    paddingVertical: 14,
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: t.colors.buttonSecondary,
     borderRadius: t.radius.button,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: t.colors.buttonSecondaryBorder,
   },
   actionButtonTextSecondary: {
-    ...t.typography.buttonSecondary,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '600',
+    color: t.colors.onButtonSecondary,
   },
   actionButtonPrimary: {
-    flex: 2,
+    flex: 1,
+    height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
+    gap: 6,
     backgroundColor: t.colors.button,
     borderRadius: t.radius.button,
-    ...t.shadows.card,
+    ...t.shadows.button,
+    overflow: 'hidden',
   },
   actionButtonTextPrimary: {
-    ...t.typography.buttonPrimary,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '600',
+    color: t.colors.onButton,
   },
   errorContainer: {
     flex: 1,
@@ -1592,14 +1648,17 @@ const useStyles = makeStyles((t) => ({
     alignItems: 'center',
     padding: 20,
   },
+  // Finestra sopra la Scheda: fondo opaco (regola 7)
   qrModalContent: {
-    backgroundColor: t.colors.background,
-    borderRadius: 20,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.card,
+    borderWidth: 1,
+    borderColor: t.colors.border,
     padding: 24,
     width: '100%',
     maxWidth: 340,
     alignItems: 'center',
-    ...t.shadows.card,
+    ...t.shadows.cardElevated,
   },
   qrHeader: {
     width: '100%',
@@ -1609,31 +1668,33 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 24,
   },
   qrTitle: {
-    ...t.typography.cardTitle,
     fontSize: 20,
+    lineHeight: 26,
+    fontWeight: t.weights.strong,
+    color: t.colors.textPrimary,
   },
   qrContainer: {
     padding: 20,
     backgroundColor: t.colors.qrPaper,
-    borderRadius: 12,
+    borderRadius: t.radius.medium,
     marginBottom: 20,
-    ...t.shadows.small,
   },
   qrSkuText: {
-    ...t.typography.cardTitle,
     fontSize: 24,
+    lineHeight: 30,
+    fontWeight: t.weights.strong,
     color: t.colors.accentInk,
     marginBottom: 4,
   },
   qrInfoText: {
-    ...t.typography.caption,
     fontSize: 16,
     color: t.colors.textSecondary,
     marginBottom: 24,
   },
+  // Interruttore QR / Barcode: binario opaco, scelta su `accent`
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: t.colors.surface,
+    backgroundColor: t.colors.background,
     padding: 4,
     borderRadius: t.radius.medium,
     borderWidth: 1,
@@ -1651,12 +1712,12 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.accent,
   },
   toggleText: {
-    ...t.typography.caption,
+    fontSize: 13,
     fontWeight: '600',
     color: t.colors.textSecondary,
   },
   toggleTextActive: {
-    color: '#FFF',
+    color: t.colors.onAccent,
   },
   printLabelButton: {
     flexDirection: 'row',
@@ -1666,14 +1727,18 @@ const useStyles = makeStyles((t) => ({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: t.radius.button,
+    ...t.shadows.button,
+    overflow: 'hidden',
   },
   printLabelText: {
-    ...t.typography.buttonPrimary,
     fontSize: 16,
+    fontWeight: '600',
+    color: t.colors.onButton,
   },
-  modalContainer: { // For the Image Viewer Modal
+  // Visore delle foto a schermo intero: fondo nero fisso, testi e icone bianchi fissi
+  modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: t.colors.cameraBackground,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1690,127 +1755,117 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.scrim,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: t.radius.full,
   },
   modalCounterText: {
     color: t.colors.onData,
     fontSize: 14,
     fontWeight: '600',
   },
-  customFieldsSection: {
-    paddingHorizontal: t.spacing.screenPadding,
-    marginTop: 24,
-  },
   customCardsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
+  // Riquadro a metà (larghezza calcolata nel componente)
   customMiniCard: {
-    width: '48%',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
+    ...tileSurface(t),
+    ...t.shadows.card,
+    minHeight: 72,
     padding: 12,
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    gap: 10,
   },
   customIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: t.colors.backgroundSecondary,
+    width: 34,
+    height: 34,
+    borderRadius: t.radius.iconWrap,
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
   customCardContent: {
     flex: 1,
-  },
-  customFieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.borderLight,
+    minWidth: 0,
   },
   customFieldLabel: {
-    ...t.typography.caption,
     fontSize: 12,
+    lineHeight: 16,
     color: t.colors.textSecondary,
-    textTransform: 'uppercase',
   },
   customFieldValue: {
-    ...t.typography.body,
-    fontSize: 14,
-    color: t.colors.textPrimary,
     marginTop: 2,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: t.weights.strong,
+    color: t.colors.textPrimary,
   },
-  customNotesCard: {
+  // Riquadro intero (testo lungo, valori multipli, documenti, foto)
+  customWideCard: {
+    ...tileSurface(t),
+    ...t.shadows.card,
     width: '100%',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    padding: 14,
-    marginBottom: 8,
+    padding: 12,
   },
   customNotesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
   },
   customNotesText: {
-    ...t.typography.body,
-    fontSize: 14,
+    marginTop: 8,
+    fontSize: 15,
+    lineHeight: 22,
     color: t.colors.textPrimary,
-    lineHeight: 20,
-  },
-  customTagsCard: {
-    width: '100%',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    padding: 14,
-    marginBottom: 8,
   },
   customTagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
+    marginTop: 10,
   },
   customTag: {
-    backgroundColor: t.colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: t.colors.chipBorder,
+    backgroundColor: t.colors.accentSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: t.radius.chip,
   },
   customTagText: {
-    ...t.typography.caption,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
     color: t.colors.textPrimary,
+  },
+  customDocumentList: {
+    gap: 8,
+    marginTop: 10,
   },
   customDocumentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: t.colors.backgroundSecondary,
-    padding: 12,
-    borderRadius: t.radius.medium,
-    gap: 12,
+    gap: 10,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: t.colors.input,
+    borderRadius: t.radius.inputSmall,
     borderWidth: 1,
-    borderColor: t.colors.border,
+    borderColor: t.colors.inputBorder,
   },
   customDocumentText: {
-    ...t.typography.body,
+    flex: 1,
     fontSize: 14,
     color: t.colors.textPrimary,
-    flex: 1,
+  },
+  customImagesRow: {
+    marginTop: 10,
   },
   customNestedImageWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: t.radius.medium,
-    marginRight: 12,
+    width: 96,
+    height: 96,
+    borderRadius: t.radius.iconWrap,
+    marginRight: 8,
     overflow: 'hidden',
     backgroundColor: t.colors.backgroundSecondary,
   },
@@ -1818,17 +1873,16 @@ const useStyles = makeStyles((t) => ({
     width: '100%',
     height: '100%',
   },
+  // Identità GS1: card della tela; il codice QR resta su carta bianca e inchiostro nero
   gs1Card: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: t.colors.accent,
+    ...cardSurface(t),
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   gs1QrContainer: {
-    padding: 12,
+    padding: 10,
     backgroundColor: t.colors.qrPaper,
     borderRadius: t.radius.medium,
   },
@@ -1837,46 +1891,43 @@ const useStyles = makeStyles((t) => ({
     gap: 4,
   },
   gs1Label: {
-    ...t.typography.caption,
+    fontSize: 12,
+    lineHeight: 16,
     color: t.colors.textSecondary,
-    textTransform: 'uppercase',
   },
   gs1UrlText: {
-    ...t.typography.body,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     color: t.colors.textPrimary,
     textAlign: 'center',
     fontFamily: 'monospace',
   },
   gs1Actions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     width: '100%',
-    marginTop: 8,
   },
   gs1ActionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: t.radius.medium,
-    borderWidth: 1,
-    borderColor: t.colors.accent,
-    backgroundColor: withAlpha(t.colors.accent, 0.063),
     gap: 8,
+    height: 44,
+    backgroundColor: t.colors.buttonSecondary,
+    borderRadius: t.radius.button,
+    borderWidth: 1,
+    borderColor: t.colors.buttonSecondaryBorder,
   },
   gs1ActionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: t.colors.accentInk,
+    color: t.colors.onButtonSecondary,
   },
   gs1MissingText: {
-    ...t.typography.body,
     fontSize: 14,
+    lineHeight: 20,
     color: t.colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 8,
-  }
+  },
 }));
