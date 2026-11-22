@@ -2,13 +2,14 @@ import type { AppTheme, StyleId } from './types';
 import { oggi } from './oggi';
 import { attuale } from './attuale';
 import { babilonia } from './babilonia';
+import { ishtar } from './ishtar';
 import { ardesia } from './ardesia';
 
 export type { AppTheme, StyleId, ThemeId } from './types';
 export { oggi } from './oggi';
 
 /** Stili pronti, nell'ordine del selettore. Si aggiungono uno alla volta (lavoro L5). */
-export const THEMES: Partial<Record<StyleId, AppTheme>> = { attuale, babilonia, ardesia };
+export const THEMES: Partial<Record<StyleId, AppTheme>> = { attuale, babilonia, ishtar, ardesia };
 
 /** Stile per chi non ha ancora scelto (Attuale rifinito). */
 export const DEFAULT_STYLE: StyleId = 'attuale';

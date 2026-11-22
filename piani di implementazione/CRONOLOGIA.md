@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L5d: Ishtar Lab
+
+- Branch / SHA: `ui-ux/stili`, commit di L5d dopo il commit di L5c.
+- Fatto: `constants/themes/ishtar.ts` generato e registrato (terzo nel selettore, dopo Babilonia); primo stile chiaro: barra di stato scura. Pagina «non trovata» portata sui ruoli (icona `accentInk`, testo `textSecondary`, pulsante `button`/`onButton`/raggio del pulsante): il grigio `#CCCCCC` scritto a mano non si leggeva sul chiaro.
+- Verifiche: tsc 0, eslint 0, jest 61 verdi; 31 schermate in Ishtar senza errori, `FONT=Urbanist` pulito (campioni degli altri stili in Aspetto, voluti). Contrasti ≥ 5,0 tranne il bianco sui colori di dati delle posizioni (2,1). Guardate le 9 schermate, le 4 lunghe e le 13 in più: tutto leggibile; i bagliori della tela non ci sono ancora (L6f).
+- Ancora da fare: L5e, L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L5c: Ardesia e rame
 
 - Branch / SHA: `ui-ux/stili`, commit di L5c dopo il commit di L5b.
