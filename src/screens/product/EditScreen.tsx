@@ -11,6 +11,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { formatNumberInput, parseNumber } from '../../../utils/number';
+import { formatQty, isStocked, stockOf, totalStock } from '../../../utils/stock';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCategories } from '../../../contexts/CategoriesContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
@@ -57,6 +58,9 @@ function EditProductForm({ product }: { product: Product }) {
   const { updateProduct, libraries } = useInventory();
   const { locations } = useLocations();
   const { categories } = useCategories();
+  // Articolo a quantità (M03): posizione e giacenza non si modificano qui
+  const stocked = isStocked(product);
+  const placeLabel = (place: string) => locations.find((l) => l.id === place)?.label ?? place;
 
   const { customFields } = useCustomFields();
   const { layout } = useLayout();
@@ -171,7 +175,8 @@ function EditProductForm({ product }: { product: Product }) {
     updateProduct(id as string, {
       sku: formData.sku.trim(),
       furType: formData.furType,
-      location: formData.location,
+      // Articolo a quantità: la posizione cambia solo con i movimenti (M03; il contesto la ignora comunque)
+      ...(stocked ? {} : { location: formData.location }),
       images,
       purchasePrice: parseNumber(formData.purchasePrice),
       sellPrice: parseNumber(formData.sellPrice),
@@ -367,6 +372,23 @@ function EditProductForm({ product }: { product: Product }) {
           </View>
 
           {/* D09: pillole di Posizione e Cartella a capo, come in Aggiungi */}
+          {stocked ? (
+            // Articolo a quantità (M03): posizione e giacenza in sola lettura
+            <View style={styles.inputGroup}>
+              {renderLabel('Posizione e giacenza')}
+              <View style={[styles.area, styles.readonlyBox]}>
+                <Text style={styles.readonlyText}>
+                  {placeLabel(product.location)} (principale) · totale {formatQty(totalStock(product), product.unit)}
+                </Text>
+                {Object.entries(stockOf(product)).sort((a, b) => b[1] - a[1]).map(([place, qty]) => (
+                  <Text key={place} style={styles.readonlyText}>{placeLabel(place)}: {formatQty(qty, product.unit)}</Text>
+                ))}
+                <Text style={styles.readonlyNote}>
+                  Posizione e quantità cambiano solo con i movimenti (spostamento, vendita), non da qui.
+                </Text>
+              </View>
+            </View>
+          ) : (
           <View style={styles.inputGroup}>
             {renderLabel('Posizione')}
             <View style={styles.chipWrap}>
@@ -388,6 +410,7 @@ function EditProductForm({ product }: { product: Product }) {
               })}
             </View>
           </View>
+          )}
 
           <View style={styles.inputGroup}>
             {renderLabel('Cartella')}
@@ -864,6 +887,24 @@ const useStyles = makeStyles((t) => ({
   },
   inputGroup: {
     marginBottom: 16,
+  },
+  // Posizione e giacenza di un articolo a quantità: riquadro del modulo, solo testo (M03)
+  readonlyBox: {
+    minHeight: 0,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 4,
+  },
+  readonlyText: {
+    fontSize: 15,
+    lineHeight: 20,
+    color: t.colors.textPrimary,
+  },
+  readonlyNote: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
   },
   row: {
     flexDirection: 'row',

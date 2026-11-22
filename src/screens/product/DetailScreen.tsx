@@ -29,6 +29,7 @@ import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { formatNumber } from '../../../utils/number';
+import { describeStockEvent, formatQty, isOutOfStock, isStocked, stockOf, totalStock } from '../../../utils/stock';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -72,6 +73,11 @@ export default function ProductDetailScreen() {
 
   const location = locations.find((l) => l.id === product.location);
   const categoryName = labelOf(product.furType);
+  // Articolo a quantità (M03): giacenza per posizione, dalla più grande; il nome della posizione o, se non c'è più, l'id
+  const stocked = isStocked(product);
+  const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
+  const stockRows = Object.entries(stockOf(product)).sort((a, b) => b[1] - a[1]);
+  const stockEventText = (details: Parameters<typeof describeStockEvent>[0]) => describeStockEvent(details, placeLabel, product.unit);
 
   const generateClientText = () => {
     let text = `✨ ${categoryName} - ${product.sku}\n\n`;
@@ -106,6 +112,7 @@ export default function ProductDetailScreen() {
     text += `CATEGORIA: ${categoryName}\n`;
     text += `STATO: ${product.status === 'available' ? 'Disponibile' : 'Venduto'}\n`;
     text += `POSIZIONE: ${location?.label || product.location}\n`;
+    if (stocked) text += `GIACENZA: ${formatQty(totalStock(product), product.unit)}\n`;
     text += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     text += `📐 MISURE DETTAGLIATE:\n`;
@@ -148,6 +155,7 @@ export default function ProductDetailScreen() {
       else if (event.type === 'moved') eventText = `${event.details.from} → ${event.details.to}`;
       else if (event.type === 'sold') eventText = 'Venduto';
       else if (event.type === 'modified') eventText = 'Modificato';
+      else if (event.type === 'stock') eventText = stockEventText(event.details);
       text += `   • ${date}: ${eventText}\n`;
     });
 
@@ -358,6 +366,7 @@ export default function ProductDetailScreen() {
         else if (event.type === 'modified') eventText = event.details.changes?.[0] || 'Modificato';
         else if (event.type === 'scanned') eventText = 'Scansionato';
         else if (event.type === 'photo_added') eventText = `${event.details.photoCount} foto aggiunte`;
+        else if (event.type === 'stock') eventText = stockEventText(event.details);
 
         const date = new Date(event.timestamp).toLocaleDateString('it-IT', {
           day: '2-digit',
@@ -841,6 +850,12 @@ export default function ProductDetailScreen() {
             <Text style={styles.soldText}>Venduto</Text>
           </View>
         )}
+        {isOutOfStock(product) && (
+          <View style={styles.soldBadge}>
+            <AppIcon name="inventory" size={16} color={t.colors.soldBadgeText} />
+            <Text style={styles.soldText}>Esaurito</Text>
+          </View>
+        )}
 
         {/* Product Info */}
         <View style={styles.content}>
@@ -865,10 +880,31 @@ export default function ProductDetailScreen() {
               <AppIcon name="location-on" size={20} color={location?.color || t.colors.accentInk} />
             </View>
             <View style={styles.locationContent}>
-              <Text style={styles.locationLabel}>Posizione attuale</Text>
+              <Text style={styles.locationLabel}>{stocked ? 'Posizione principale' : 'Posizione attuale'}</Text>
               <Text style={styles.locationValue}>{location?.label || product.location}</Text>
             </View>
           </View>
+
+          {/* Giacenza (M03): totale e quantità per posizione */}
+          {stocked && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Giacenza</Text>
+              <View style={styles.stockCard}>
+                <View style={styles.stockRow}>
+                  <Text style={styles.stockTotalLabel}>Totale</Text>
+                  <Text style={styles.stockTotal}>{formatQty(totalStock(product), product.unit)}</Text>
+                </View>
+                {stockRows.length === 0 ? (
+                  <Text style={styles.stockPlace}>Esaurito: nessuna posizione con giacenza</Text>
+                ) : stockRows.map(([place, qty]) => (
+                  <View key={place} style={styles.stockRow}>
+                    <Text style={styles.stockPlace} numberOfLines={1}>{placeLabel(place)}</Text>
+                    <Text style={styles.stockQty}>{formatQty(qty, product.unit)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           {/* Prices */}
           {(product.purchasePrice || product.sellPrice) && (
@@ -1101,6 +1137,7 @@ export default function ProductDetailScreen() {
                   else if (event.type === 'photo_added') eventText = `${event.details.photoCount} foto aggiunte`;
                   else if (event.type === 'deleted') eventText = 'Spostato nel Cestino';
                   else if (event.type === 'restored') eventText = 'Ripristinato dal Cestino';
+                  else if (event.type === 'stock') eventText = stockEventText(event.details);
 
                   return (
                     <View key={`${event.id || 'evt'}-${index}`} style={styles.timelineItem}>
@@ -1476,6 +1513,43 @@ const useStyles = makeStyles((t) => ({
   priceRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  stockCard: {
+    ...tileSurface(t),
+    ...t.shadows.card,
+    padding: 14,
+    gap: 8,
+  },
+  stockRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  stockTotalLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
+  },
+  stockTotal: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: t.weights.price,
+    fontVariant: ['tabular-nums'],
+    color: t.colors.textPrimary,
+  },
+  stockPlace: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    color: t.colors.textSecondary,
+  },
+  stockQty: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: t.weights.strong,
+    fontVariant: ['tabular-nums'],
+    color: t.colors.textPrimary,
   },
   priceCard: {
     ...tileSurface(t),

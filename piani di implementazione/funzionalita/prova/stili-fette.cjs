@@ -30,6 +30,42 @@ const FETTE = {
       ['impostazioni', async (page) => { await page.goto(`${APP}/settings`); await page.waitForTimeout(1500); await page.getByText('Categorie', { exact: true }).first().scrollIntoViewIfNeeded(); }],
     ],
   },
+  // M03: articoli a quantità (card, esaurito, Scheda, Modifica in sola lettura, Magazzino in Aggiungi, Cronologia)
+  m03: {
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const tk = 'inventory:v1:local:timeline';
+      const list = JSON.parse(localStorage.getItem(pk));
+      const tl = JSON.parse(localStorage.getItem(tk) || '[]');
+      const at = '2026-11-22T08:00:00.000Z';
+      const ev = (p, details) => tl.unshift({ id: `m03-${p.id}-${tl.length}`, productId: p.id, type: 'stock', timestamp: at, details });
+      const vis = list.find((p) => p.sku === 'VIS-0098'); // Magazzino
+      Object.assign(vis, { unit: 'pz', stock: { magazzino: 7, vetrina: 3, stand_a: 2 } });
+      ev(vis, { movement: 'carico', qty: 12, to: 'magazzino', reason: 'iniziale', before: 0, after: 12 });
+      ev(vis, { movement: 'trasferimento', qty: 3, from: 'magazzino', to: 'vetrina', before: 12, after: 12 });
+      ev(vis, { movement: 'trasferimento', qty: 2, from: 'magazzino', to: 'stand_a', before: 12, after: 12 });
+      const puz = list.find((p) => p.sku === 'PUZ-0012'); // Stand C, esaurito
+      Object.assign(puz, { unit: 'kg', stock: { stand_c: 0 } });
+      ev(puz, { movement: 'carico', qty: 2.5, to: 'stand_c', reason: 'iniziale', before: 0, after: 2.5 });
+      ev(puz, { movement: 'scarico', qty: 2.5, from: 'stand_c', reason: 'vendita', finalPrice: 450, before: 2.5, after: 0 });
+      localStorage.setItem(pk, JSON.stringify(list));
+      localStorage.setItem(tk, JSON.stringify(tl));
+    },
+    schermate: [
+      ['card', async (page) => { await page.goto(APP); await page.waitForTimeout(1500); await page.getByText('VIS-0098', { exact: true }).first().scrollIntoViewIfNeeded(); }],
+      ['scheda', async (page) => { await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800); await page.getByText('Giacenza', { exact: true }).first().scrollIntoViewIfNeeded(); }],
+      ['cronologia-scheda', async (page) => { await page.getByText('Cronologia dettagliata', { exact: true }).first().scrollIntoViewIfNeeded(); }],
+      ['esaurito', async (page) => { await page.goto(`${APP}/product/cmp-6`); await page.waitForTimeout(1800); await page.getByText('Giacenza', { exact: true }).first().scrollIntoViewIfNeeded(); }],
+      ['modifica', async (page) => { await page.goto(`${APP}/product/edit/cmp-5`); await page.waitForTimeout(1800); await page.getByText('Posizione e giacenza', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
+      ['aggiungi', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByPlaceholder('Vuota = pezzo unico').fill('12,5');
+        await page.getByLabel('Unità kg').click(); await page.waitForTimeout(300);
+        await page.getByText('Unità', { exact: true }).first().scrollIntoViewIfNeeded();
+      }],
+      ['cronologia', async (page) => { await page.goto(`${APP}/timeline`); await page.waitForTimeout(1800); }],
+    ],
+  },
 };
 
 (async () => {

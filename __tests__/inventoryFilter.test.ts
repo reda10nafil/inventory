@@ -14,6 +14,11 @@ describe('matchesSearch (P14)', () => {
     expect(matchesSearch(p, 'vol-00', locations)).toBe(true);
     expect(matchesSearch({ ...p, furType: 'cincilla' }, 'Cincillà', locations, types)).toBe(true);
   });
+  it('trova un articolo a quantità in ogni posizione dove ha giacenza (M03)', () => {
+    const a = { ...p, location: 'vetrina', stock: { vetrina: 1, stand_a: 2 } };
+    expect(matchesSearch(a, 'Stand A', locations)).toBe(true);
+    expect(matchesSearch({ ...a, stock: { vetrina: 1, stand_a: 0 } }, 'Stand A', locations)).toBe(false);
+  });
   it('ricerca vuota: tutto', () => expect(matchesSearch(p, '  ', locations)).toBe(true));
 });
 

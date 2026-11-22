@@ -2,14 +2,16 @@
 // P14: la ricerca confrontava l'id della posizione («stand_a»), non il nome («Stand A»), e nei filtri
 // Cestino e Attenzione veniva ignorata. P15: la pillola Attenzione contava gli avvisi, non i prodotti.
 import type { Product } from '../types';
+import { positionsOf } from './stock';
 
 export type InventoryFilter = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
 type Named = { id: string; label: string };
 
-/** Il prodotto corrisponde alla ricerca: SKU, tipo (id o nome) o posizione (id o nome), maiuscole indifferenti. */
+/** Il prodotto corrisponde alla ricerca: SKU, tipo (id o nome) o posizione (id o nome), maiuscole indifferenti.
+ *  Per un articolo a quantità contano tutte le posizioni dove ha giacenza (M03). */
 export function matchesSearch(
-  product: Pick<Product, 'sku' | 'furType' | 'location'>,
+  product: Pick<Product, 'sku' | 'furType' | 'location' | 'stock'>,
   query: string,
   locations: readonly Named[],
   types: readonly Named[] = [],
@@ -17,7 +19,8 @@ export function matchesSearch(
   const q = query.trim().toLocaleLowerCase();
   if (!q) return true;
   const label = (list: readonly Named[], id: string) => list.find((x) => x.id === id)?.label ?? '';
-  return [product.sku, product.furType, label(types, product.furType), product.location, label(locations, product.location)]
+  const places = positionsOf(product).flatMap((id) => [id, label(locations, id)]);
+  return [product.sku, product.furType, label(types, product.furType), ...places]
     .some((text) => String(text || '').toLocaleLowerCase().includes(q));
 }
 

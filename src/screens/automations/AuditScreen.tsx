@@ -14,6 +14,7 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
+import { qtyAt } from '../../../utils/stock';
 
 type AuditStatus = 'missing' | 'found' | 'intruder';
 
@@ -71,9 +72,9 @@ export default function AuditScreen() {
     const startAudit = (loc: Location) => {
         setTargetLocation(loc);
 
-        // Load expected items
+        // Attesi: ciò che ha giacenza qui (pezzi unici disponibili; articoli a quantità con quantità > 0, M03)
         const expected = products
-            .filter(p => !p.deletedAt && p.status === 'available' && p.location === loc.id)
+            .filter(p => qtyAt(p, loc.id) > 0)
             .map(p => ({
                 id: p.id,
                 sku: p.sku,
@@ -138,7 +139,7 @@ export default function AuditScreen() {
                 // Known product but wrong location
                 Alert.alert(
                     '⚠️ Intruso Rilevato!',
-                    `Il prodotto ${product.sku} risulta in "${product.location}".\nLo hai trovato qui.`,
+                    `Il prodotto ${product.sku} risulta in "${locations.find(l => l.id === product.location)?.label ?? product.location}".\nLo hai trovato qui.`,
                     [
                         { text: 'Ignora', style: 'cancel' },
                         {

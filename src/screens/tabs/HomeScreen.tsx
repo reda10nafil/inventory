@@ -19,6 +19,7 @@ import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
+import { formatQty, isOutOfStock, isStocked, totalStock } from '../../../utils/stock';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
@@ -202,6 +203,12 @@ export default function HomeScreen() {
                 <Text style={styles.badgeText}>Venduto</Text>
               </View>
             )}
+            {/* Articolo a quantità a 0 (M03): resta disponibile, ma non c'è */}
+            {isOutOfStock(product) && (
+              <View style={[styles.badge, styles.badgeSold]}>
+                <Text style={styles.badgeText}>Esaurito</Text>
+              </View>
+            )}
             {hasAlert && product.status === 'available' && (
               <View style={[styles.badge, styles.badgeAlert]}>
                 <AppIcon name="warning" size={13} color={t.colors.alertBadgeText} />
@@ -226,6 +233,10 @@ export default function HomeScreen() {
               {location?.label || product.location}
             </Text>
           </View>
+
+          {isStocked(product) && (
+            <Text style={styles.qtyText} numberOfLines={1}>{formatQty(totalStock(product), product.unit)}</Text>
+          )}
 
           {!!product.sellPrice && (
             <Text style={styles.priceText}>{formatPrice(product.sellPrice)}</Text>
@@ -741,6 +752,13 @@ const useStyles = makeStyles((t) => ({
     fontSize: 13,
     lineHeight: 18,
     color: t.colors.textSecondary,
+  },
+  qtyText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+    color: t.colors.textPrimary,
   },
   priceText: {
     marginTop: 4,

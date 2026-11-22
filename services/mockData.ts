@@ -1,5 +1,6 @@
 // FurInventory Pro - Mock Data Service
 import { Product, TimelineEvent } from '../types';
+import { qtyAt } from '../utils/stock';
 
 export const mockProducts: Product[] = [
   {
@@ -457,7 +458,7 @@ export const isDormant = (product: Product): boolean => {
 
 // Helper function to check if product needs promotion suggestion
 export const needsPromotion = (product: Product): boolean => {
-  if (product.location !== 'magazzino') return false;
+  if (qtyAt(product, 'magazzino') <= 0) return false; // M03: anche un articolo a quantità con giacenza in magazzino
   const daysSinceCreation = Math.floor(
     (Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24)
   );

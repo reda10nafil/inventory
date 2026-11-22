@@ -6,8 +6,9 @@ import { isDormant, needsPromotion } from '../services/mockData';
 import { useAuth } from './AuthContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
-import { canMove, canSell, usage } from '../utils/productRules';
+import { usage } from '../utils/productRules';
 import { describeChanges } from '../utils/productChanges';
+import { editableUpdates, moveOf, saleOf, withInitialStock } from '../utils/inventoryOps';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
 export interface Library {
@@ -68,13 +69,15 @@ interface InventoryContextType {
   timeline: TimelineEvent[];
   alerts: Alert[];
   libraries: Library[];
-  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  /** Con `qty` il prodotto nasce articolo a quantità (carico iniziale nella sua posizione); false se la quantità non va. */
+  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>, options?: { qty?: number }) => boolean;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   restoreProduct: (id: string) => void;
   permanentlyDeleteProduct: (id: string) => void;
   moveProduct: (id: string, newLocation: string) => boolean;
-  sellProduct: (id: string, finalPrice?: number) => boolean;
+  /** Pezzo unico: «venduto». Articolo a quantità: scarico di `qty` (predefinita 1) con causale vendita. */
+  sellProduct: (id: string, finalPrice?: number, qty?: number) => boolean;
   scanProduct: (id: string) => void;
   dismissAlert: (alertId: string) => void;
   getProductById: (id: string) => Product | undefined;
@@ -106,6 +109,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [libraries, setLibraries] = useState<Library[]>(DEFAULT_LIBRARIES);
   const [deletedProductIds, setDeletedProductIds] = useState<string[]>([]);
+  // Copia dei prodotti aggiornata subito (M03): due operazioni nello stesso istante (un'automazione che sposta e
+  // poi vende) devono vedere l'una il risultato dell'altra. Si legge da qui, non da `products`; ogni scrittura
+  // cambia nello stato solo i campi del prodotto toccato (`patchProduct`), così non cancella le altre in coda.
+  const productsRef = useRef<Product[]>(products);
+  productsRef.current = products;
   const loadedOrganization = useRef<string | null>(null);
   const lastRemoteUpdate = useRef<string | null>(null);
   const uploadingMedia = useRef(new Set<string>());
@@ -381,31 +389,51 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return `LOG-${year}-${String(nextNumber).padStart(3, '0')}`;
   };
 
-  const addProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const sku = productData.sku || generateSKU();
+  /** Cambia solo i campi `patch` del prodotto `id`, nella copia subito e nello stato in coda. */
+  const patchProduct = (id: string, patch: Partial<Product>) => {
+    const apply = (list: Product[]) => list.map((p) => (p.id === id ? { ...p, ...patch } : p));
+    productsRef.current = apply(productsRef.current);
+    setProducts(apply);
+  };
 
-    const newProduct: Product = {
+  const addProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>, options?: { qty?: number }): boolean => {
+    const sku = productData.sku || generateSKU();
+    const now = new Date().toISOString();
+
+    let newProduct: Product = {
       ...productData,
       sku,
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
+    // Quantità scritta in Aggiungi: articolo a quantità, con il carico iniziale come evento (M03)
+    let stockEvents: Omit<TimelineEvent, 'id'>[] = [];
+    if (options?.qty != null) {
+      const r = withInitialStock(newProduct, options.qty, now);
+      if (!r.ok) return false;
+      newProduct = r.product;
+      stockEvents = r.events;
+    }
 
+    productsRef.current = [newProduct, ...productsRef.current];
     setProducts((prev) => [newProduct, ...prev]);
 
-    // Add timeline event
     addTimelineEvent({
       productId: newProduct.id,
       type: 'created',
-      timestamp: new Date().toISOString(),
+      timestamp: now,
       details: {},
     });
+    stockEvents.forEach(addTimelineEvent);
+    return true;
   };
 
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    const product = products.find((p) => p.id === id);
+  const updateProduct = (id: string, allUpdates: Partial<Product>) => {
+    const product = productsRef.current.find((p) => p.id === id);
     if (!product) return;
+    // Articolo a quantità: posizione e giacenza cambiano solo con i movimenti, non da Modifica (M03)
+    const updates = editableUpdates(product, allUpdates);
 
     // Tutto ciò che cambia davvero, compresi peso, misure, SKU, tipo, cartella e campi personalizzati (P13)
     const changes = describeChanges(product, updates);
@@ -422,13 +450,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       });
     }
 
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, ...updates, updatedAt: new Date().toISOString() }
-          : p
-      )
-    );
+    patchProduct(id, { ...updates, updatedAt: new Date().toISOString() });
 
     // Add timeline event with details
     if (changes.length > 0) {
@@ -442,13 +464,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteProduct = (id: string) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, deletedAt: new Date().toISOString() }
-          : p
-      )
-    );
+    patchProduct(id, { deletedAt: new Date().toISOString() });
 
     addTimelineEvent({
       productId: id,
@@ -459,13 +475,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const restoreProduct = (id: string) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, deletedAt: undefined }
-          : p
-      )
-    );
+    patchProduct(id, { deletedAt: undefined });
 
     addTimelineEvent({
       productId: id,
@@ -476,78 +486,34 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const permanentlyDeleteProduct = (id: string) => {
+    productsRef.current = productsRef.current.filter((p) => p.id !== id);
     setProducts((prev) => prev.filter((p) => p.id !== id));
     setDeletedProductIds((prev) => prev.includes(id) ? prev : [...prev, id]);
   };
 
-  // Restituisce false se non sposta: prodotto inesistente o nel cestino, oppure già in quella posizione
-  // (prima nasceva un evento «vetrina → vetrina»).
+  // Restituisce false se non sposta: prodotto inesistente o nel cestino, già in quella posizione, oppure
+  // articolo a quantità esaurito. Pezzo unico: evento «spostato»; articolo a quantità: trasferimento di tutta la
+  // giacenza della posizione principale, evento `stock` (M03, `utils/inventoryOps.ts`).
   const moveProduct = (id: string, newLocation: string): boolean => {
-    const product = products.find((p) => p.id === id);
-    if (!product || !canMove(product, newLocation)) return false;
-
-    const oldLocation = product.location;
-
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-            ...p,
-            location: newLocation,
-            updatedAt: new Date().toISOString(),
-            lastScannedAt: new Date().toISOString(),
-          }
-          : p
-      )
-    );
-
-    // Add timeline event
-    addTimelineEvent({
-      productId: id,
-      type: 'moved',
-      timestamp: new Date().toISOString(),
-      details: { from: oldLocation, to: newLocation },
-    });
+    const result = moveOf(productsRef.current.find((p) => p.id === id), newLocation, new Date().toISOString());
+    if (!result.ok) return false;
+    patchProduct(id, result.patch);
+    result.events.forEach(addTimelineEvent);
     return true;
   };
 
-  // Restituisce false se non vende: prodotto inesistente, nel cestino o già venduto (P05, P06).
-  const sellProduct = (id: string, finalPrice?: number): boolean => {
-    const product = products.find((p) => p.id === id);
-    if (!canSell(product)) return false;
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-            ...p,
-            status: 'sold',
-            soldAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            lastScannedAt: new Date().toISOString(),
-            ...(finalPrice && { sellPrice: finalPrice }),
-          }
-          : p
-      )
-    );
-
-    // Add timeline event
-    addTimelineEvent({
-      productId: id,
-      type: 'sold',
-      timestamp: new Date().toISOString(),
-      details: { finalPrice },
-    });
+  // Restituisce false se non vende: prodotto inesistente, nel cestino o già venduto (P05, P06), oppure articolo
+  // a quantità senza giacenza sufficiente. Articolo a quantità: scarico con causale vendita, resta disponibile.
+  const sellProduct = (id: string, finalPrice?: number, qty = 1): boolean => {
+    const result = saleOf(productsRef.current.find((p) => p.id === id), finalPrice, qty, new Date().toISOString());
+    if (!result.ok) return false;
+    patchProduct(id, result.patch);
+    result.events.forEach(addTimelineEvent);
     return true;
   };
 
   const scanProduct = (id: string) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, lastScannedAt: new Date().toISOString() }
-          : p
-      )
-    );
+    patchProduct(id, { lastScannedAt: new Date().toISOString() });
 
     // Add timeline event
     addTimelineEvent({
@@ -648,11 +614,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteLibrary = (id: string): boolean => {
     // Check if any products are assigned to this library
-    if (usage(products, { libraryId: id }).active > 0) {
+    if (usage(productsRef.current, { libraryId: id }).active > 0) {
       return false; // Cannot delete, has products
     }
     // I prodotti nel cestino perdono la cartella: ripristinati, non puntano a una cartella che non c'è più (P09)
-    setProducts((prev) => prev.map((p) => (p.libraryId === id ? { ...p, libraryId: undefined } : p)));
+    const clear = (list: Product[]) => list.map((p) => (p.libraryId === id ? { ...p, libraryId: undefined } : p));
+    productsRef.current = clear(productsRef.current);
+    setProducts(clear);
     setLibraries((prev) => prev.filter((l) => l.id !== id));
     return true;
   };

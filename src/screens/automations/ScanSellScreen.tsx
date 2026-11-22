@@ -14,6 +14,8 @@ import { formatPrice } from '../../../utils/price';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { formatNumberInput, parseNumber } from '../../../utils/number';
+import { isOutOfStock } from '../../../utils/stock';
+import { refusalText, saleOf } from '../../../utils/inventoryOps';
 
 export default function ScanSellScreen() {
     const styles = useStyles();
@@ -55,6 +57,10 @@ export default function ScanSellScreen() {
                 Alert.alert('Info', 'Questo prodotto è nel cestino: ripristinalo da Impostazioni › Cestino.');
                 return;
             }
+            if (isOutOfStock(product)) {
+                Alert.alert('Info', `${product.sku} è esaurito: non c'è giacenza da vendere.`);
+                return;
+            }
 
             // Open price confirmation modal
             setPendingProduct(product);
@@ -82,7 +88,8 @@ export default function ScanSellScreen() {
         if (!sellProduct(pendingProduct.id, finalPrice)) {
             setShowPriceModal(false);
             setPendingProduct(null);
-            Alert.alert('Non venduto', `${pendingProduct.sku} è nel cestino o risulta già venduto.`);
+            const refused = saleOf(pendingProduct, finalPrice, 1, '');
+            Alert.alert('Non venduto', refusalText(refused.ok ? 'not_allowed' : refused.reason, pendingProduct.sku));
             return;
         }
         // Senza prezzo scritto vale quello di listino (P25: lo schermo scriveva «0 €»)

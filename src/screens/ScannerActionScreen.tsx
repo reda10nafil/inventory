@@ -16,6 +16,7 @@ import { GradientFill } from '../../components/ui/GradientFill';
 import { cardSurface, tileSurface } from '../../components/ui/surfaces';
 import { parseNumber } from '../../utils/number';
 import { PhotoPlaceholder } from '../../components/ui/PhotoPlaceholder';
+import { moveOf, refusalText, saleOf } from '../../utils/inventoryOps';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
@@ -54,13 +55,15 @@ export default function ScannerActionScreen() {
       if (selectedAction === 'moved') {
         if (!selectedLocation) { Alert.alert('Errore', 'Seleziona una posizione'); return; }
         if (!moveProduct(product.id, selectedLocation)) {
-          Alert.alert('Non spostato', product.deletedAt ? `${product.sku} è nel cestino.` : `${product.sku} è già in quella posizione.`);
+          const refused = moveOf(product, selectedLocation, '');
+          Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
           return;
         }
         Alert.alert('Spostamento Registrato', `${product.sku} spostato.`, [{ text: 'OK', onPress: () => router.back() }]);
       } else if (selectedAction === 'sold') {
         if (!sellProduct(product.id, parseNumber(finalPrice))) {
-          Alert.alert('Non venduto', product.deletedAt ? `${product.sku} è nel cestino.` : `${product.sku} risulta già venduto.`);
+          const refused = saleOf(product, parseNumber(finalPrice), 1, '');
+          Alert.alert('Non venduto', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
           return;
         }
         Alert.alert('Vendita Registrata', `${product.sku} venduto.`, [{ text: 'OK', onPress: () => router.back() }]);

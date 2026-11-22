@@ -1,5 +1,6 @@
-// Giacenza e movimenti di magazzino (M02, ticket 01-03). Funzioni pure: le schermate e il contesto le chiamano,
-// i calcoli sullo stato si fanno dentro `setProducts(prev => …)`.
+// Giacenza e movimenti di magazzino (M02, ticket 01-03). Funzioni pure: le schermate e il contesto le chiamano.
+// Il contesto calcola i movimenti sulla copia più recente dei prodotti (`productsRef`, aggiornata subito) e
+// scrive nello stato solo i campi del movimento, così due chiamate nello stesso istante non si perdono (M03).
 //
 // Due tipi di prodotto, distinti solo da `stock`:
 // - pezzo unico (senza `stock`, tutti i prodotti di prima): giacenza 1 nella sua `location` se disponibile e
@@ -9,6 +10,7 @@
 // I conti si fanno in millesimi interi: 0,1 + 0,2 fa 0,3 e uno scarico di 0,3 non viene rifiutato.
 import type { MovementKind, MovementReason, Product, TimelineEvent } from '../types';
 import { formatNumber, parseNumber } from './number';
+import { formatPrice } from './price';
 
 export const UNITS = ['pz', 'kg', 'm', 'l', 'conf.'] as const;
 export const DEFAULT_UNIT = 'pz';
@@ -77,6 +79,11 @@ export const isOutOfStock = (product: StockProduct): boolean =>
 /** Il prodotto è in questa posizione: è la sua posizione principale o ci ha giacenza. Sostituisce `p.location === x`. */
 export function isAt(product: StockProduct, place: string): boolean {
   return product.location === place || (milliOf(product)[place] ?? 0) > 0;
+}
+
+/** Quantità in una posizione (0 se non c'è, se è venduto o nel cestino). Per «che cosa c'è qui» (Audit, capienza). */
+export function qtyAt(product: StockProduct, place: string): number {
+  return fromMilli(milliOf(product)[place] ?? 0);
 }
 
 /** Tutte le posizioni scritte sul prodotto, anche nel cestino o a 0: per non eliminare una posizione in uso. */
@@ -216,4 +223,30 @@ export function replayStock(events: readonly Pick<TimelineEvent, 'type' | 'detai
   const out: Stock = {};
   for (const [place, m] of Object.entries(milli)) if (m !== 0) out[place] = fromMilli(m);
   return out;
+}
+
+/**
+ * Testo di un evento `stock` per la Cronologia e la Scheda: «Giacenza iniziale: +12 pz in Magazzino»,
+ * «Vendita: −1 pz da Vetrina · 120 €», «Trasferimento: 2 kg Vetrina → Magazzino», «Rettifica: −1,5 kg in Vetrina».
+ * `placeLabel` dà il nome della posizione (se non c'è più resta l'id), `unit` è quella del prodotto.
+ */
+export function describeStockEvent(
+  details: TimelineEvent['details'],
+  placeLabel: (id: string) => string = (id) => id,
+  unit?: string,
+): string {
+  const kind = details.movement;
+  const title = (details.reason && details.reason !== 'altro' && kind !== 'trasferimento' && kind !== 'rettifica'
+    ? REASON_LABELS[details.reason]
+    : kind ? MOVEMENT_LABELS[kind] : 'Movimento');
+  const qty = formatQty(details.qty ?? 0, unit);
+  const from = details.from ? placeLabel(details.from) : '';
+  const to = details.to ? placeLabel(details.to) : '';
+  let body: string;
+  if (from && to) body = `${qty} ${from} → ${to}`;
+  else if (to) body = `+${qty} in ${to}`;
+  else if (from) body = kind === 'rettifica' ? `−${qty} in ${from}` : `−${qty} da ${from}`;
+  else body = qty;
+  const price = details.finalPrice != null ? ` · ${formatPrice(details.finalPrice)}` : '';
+  return `${title}: ${body}${price}`;
 }

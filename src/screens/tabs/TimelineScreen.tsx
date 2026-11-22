@@ -4,6 +4,8 @@ import { View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
+import { useLocations } from '../../../contexts/LocationsContext';
+import { describeStockEvent } from '../../../utils/stock';
 import { TimelineEvent } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
@@ -39,6 +41,8 @@ export default function TimelineScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { timeline, getProductById } = useInventory();
+  const { locations } = useLocations();
+  const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
@@ -52,6 +56,7 @@ export default function TimelineScreen() {
       case 'photo_added': return 'add-photo-alternate';
       case 'deleted': return 'delete';
       case 'restored': return 'restore-from-trash';
+      case 'stock': return 'inventory';
       default: return 'circle';
     }
   };
@@ -66,6 +71,7 @@ export default function TimelineScreen() {
       case 'photo_added': return '#F59E0B';
       case 'deleted': return t.colors.notification;
       case 'restored': return '#10B981';
+      case 'stock': return '#3B82F6';
       default: return t.colors.textSecondary;
     }
   };
@@ -96,6 +102,8 @@ export default function TimelineScreen() {
         return `${sku} - Spostato nel Cestino`;
       case 'restored':
         return `${sku} - Ripristinato dal Cestino`;
+      case 'stock':
+        return `${sku} - ${describeStockEvent(event.details, placeLabel, product?.unit)}`;
       default:
         return `${sku} - Evento`;
     }

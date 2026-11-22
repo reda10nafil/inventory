@@ -25,6 +25,7 @@ import { GradientFill } from '../../../components/ui/GradientFill';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { DEFAULT_UNIT, parseQty, UNITS } from '../../../utils/stock';
 
 export default function AddProductScreen() {
   const t = useTheme();
@@ -53,6 +54,10 @@ export default function AddProductScreen() {
     technicalNotes: '',
     libraryId: '',
   });
+
+  // Magazzino (M03): quantità facoltativa (vuota = pezzo unico) e unità. Fuori dal layout del modulo.
+  const [qtyText, setQtyText] = useState('');
+  const [unit, setUnit] = useState<string>(DEFAULT_UNIT);
 
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -186,6 +191,12 @@ export default function AddProductScreen() {
       return;
     }
 
+    // Quantità scritta ma non valida: si dice, non si crea un pezzo unico al suo posto (M03)
+    if (qtyText.trim() && parseQty(qtyText) === undefined) {
+      Alert.alert('Quantità non valida', 'Scrivi un numero maggiore o uguale a zero, per esempio 12 o 2,5. Vuota = pezzo unico.');
+      return;
+    }
+
     // D24: anche i campi personalizzati segnati come obbligatori
     const missing = missingRequiredFields(getVisibleFields(), customFields, customFieldValues);
     if (missing.length > 0) {
@@ -223,11 +234,13 @@ export default function AddProductScreen() {
         );
       }
 
-      addProduct({
+      const qty = qtyText.trim() ? parseQty(qtyText) : undefined;
+      const added = addProduct({
         sku: finalSKU,
         furType: formData.furType,
         location: formData.location,
         status: 'available',
+        ...(qty != null && { unit }),
         images, // senza foto resta vuoto: le schermate mostrano un riquadro (D18, prima un'immagine d'esempio da internet)
         purchasePrice: parseNumber(formData.purchasePrice),
         sellPrice: parseNumber(formData.sellPrice),
@@ -242,7 +255,12 @@ export default function AddProductScreen() {
             const field = customFields.find(f => f.id === fieldId);
             return field ? { value: customFieldValues[fieldId], fieldSnapshot: field } : null;
           }).filter(Boolean) as any,
-      });
+      }, qty != null ? { qty } : undefined);
+      if (!added) {
+        setIsSubmitting(false);
+        Alert.alert('Quantità non valida', 'Il prodotto non è stato aggiunto: controlla la quantità.');
+        return;
+      }
 
       // Small delay to prevent double tapping and allow UI update
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -268,6 +286,8 @@ export default function AddProductScreen() {
                 libraryId: '',
               });
               setImages([]);
+              setQtyText('');
+              setUnit(DEFAULT_UNIT);
               // D22: si svuotano anche i campi personalizzati, così il prodotto successivo non eredita i valori
               setCustomFieldValues({});
               setIsSubmitting(false);
@@ -982,6 +1002,51 @@ export default function AddProductScreen() {
             {visibleFields.map(renderDynamicField)}
           </View>
 
+          {/* Magazzino (M03): fuori dal layout, così c'è anche con un layout salvato prima */}
+          <View style={styles.stockBlock}>
+            <View style={[styles.section, styles.sectionItem]}>
+              <Text style={styles.sectionTitle}>Magazzino</Text>
+            </View>
+            <View>
+              <Text style={styles.label}>Quantità</Text>
+              <View style={styles.inputBox}>
+                <AppIcon name="inventory" size={18} color={t.colors.fieldIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  placeholder="Vuota = pezzo unico"
+                  placeholderTextColor={t.colors.placeholder}
+                  keyboardType="numeric"
+                  value={qtyText}
+                  onChangeText={setQtyText}
+                  accessibilityLabel="Quantità"
+                />
+                <Text style={styles.unit}>{unit}</Text>
+              </View>
+              <Text style={styles.stockHint}>
+                Con una quantità il prodotto diventa articolo a quantità: la giacenza parte da qui, nella posizione scelta.
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.label}>Unità</Text>
+              <View style={styles.chipWrap}>
+                {UNITS.map((u) => {
+                  const active = unit === u;
+                  return (
+                    <Pressable
+                      key={u}
+                      style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
+                      onPress={() => setUnit(u)}
+                      accessibilityLabel={`Unità ${u}`}
+                    >
+                      {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                      <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]}>{u}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+
           {/* Submit Button */}
           <Pressable
             style={[styles.primaryButton, styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
@@ -1079,6 +1144,16 @@ const useStyles = makeStyles((t) => ({
   sectionItem: {
     width: '100%',
     marginTop: 8,
+  },
+  stockBlock: {
+    marginTop: 16,
+    gap: 16,
+  },
+  stockHint: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
   },
   // A 1/3 la data (13 px) deve stare intera accanto al calendario: margini interni più stretti
   dateBoxSmall: {

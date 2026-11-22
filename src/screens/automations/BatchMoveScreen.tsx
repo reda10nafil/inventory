@@ -13,6 +13,8 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { qtyAt } from '../../../utils/stock';
+import { moveOf, refusalText } from '../../../utils/inventoryOps';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
@@ -64,7 +66,8 @@ export default function BatchMoveScreen() {
 
     const checkCapacityAndSetLocation = (loc: Location) => {
         // Calculate current occupancy
-        const currentItems = products.filter(p => p.location === loc.id).length;
+        // Prodotti che occupano davvero la posizione: pezzi unici disponibili, articoli a quantità con giacenza (M03)
+        const currentItems = products.filter(p => qtyAt(p, loc.id) > 0).length;
         const capacity = loc.capacity || 9999; // Default infinite if not set
 
         if (currentItems >= capacity) {
@@ -146,7 +149,8 @@ export default function BatchMoveScreen() {
 
             // Spostamento vero: in cronologia «spostato», non «modificato» (D15)
             if (!moveProduct(product.id, targetLocation.id)) {
-                setFeedbackMessage(`${product.sku} è nel cestino`);
+                const refused = moveOf(product, targetLocation.id, '');
+                setFeedbackMessage(refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
                 setTimeout(() => setFeedbackMessage(null), 1500);
                 return;
             }

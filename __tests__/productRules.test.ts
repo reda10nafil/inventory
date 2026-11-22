@@ -10,6 +10,15 @@ describe('usage (P08, P09)', () => {
     expect(usage(list, { location: 'vetrina' })).toEqual({ active: 1, trashed: 1 });
     expect(usage(list, { location: 'sartoria' })).toEqual({ active: 0, trashed: 0 });
   });
+  it('una posizione con giacenza è in uso, anche nel cestino (M03)', () => {
+    const stocked = [
+      { location: 'vetrina', stock: { vetrina: 0, sartoria: 2 }, deletedAt: 'x' },
+      { location: 'magazzino', stock: { magazzino: 1, stand_a: 0 } },
+    ];
+    expect(usage(stocked, { location: 'sartoria' })).toEqual({ active: 0, trashed: 1 });
+    expect(usage(stocked, { location: 'vetrina' })).toEqual({ active: 0, trashed: 1 }); // posizione principale
+    expect(usage(stocked, { location: 'stand_a' })).toEqual({ active: 0, trashed: 0 }); // a 0 e non principale
+  });
   it('conta i prodotti di una cartella', () => {
     expect(usage(list, { libraryId: 'pellicce' })).toEqual({ active: 1, trashed: 1 });
   });
