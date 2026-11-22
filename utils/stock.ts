@@ -67,6 +67,19 @@ export function stockOf(product: StockProduct): Stock {
   return out;
 }
 
+/**
+ * Giacenza salvata di un articolo a quantità anche se è nel cestino (torna col ripristino): per la Scheda e la
+ * card del Cestino, così nessuno lo elimina per sempre credendolo vuoto (M04). Per un pezzo unico come `stockOf`.
+ */
+export function storedStock(product: StockProduct): Stock {
+  return stockOf(isStocked(product) ? { ...product, deletedAt: undefined } : product);
+}
+
+/** Totale della giacenza salvata (anche nel cestino), per la card del Cestino e la Scheda. */
+export function storedTotal(product: StockProduct): number {
+  return round3(Object.values(storedStock(product)).reduce((a, b) => a + b, 0));
+}
+
 /** Giacenza totale (0 = esaurito per un articolo a quantità). */
 export function totalStock(product: StockProduct): number {
   return fromMilli(Object.values(milliOf(product)).reduce((a, b) => a + b, 0));

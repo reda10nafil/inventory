@@ -384,7 +384,7 @@ function EditProductForm({ product }: { product: Product }) {
                   <Text key={place} style={styles.readonlyText}>{placeLabel(place)}: {formatQty(qty, product.unit)}</Text>
                 ))}
                 <Text style={styles.readonlyNote}>
-                  Posizione e quantità cambiano solo con i movimenti (spostamento, vendita), non da qui.
+                  Posizione e quantità cambiano solo con i movimenti: usa «Movimenta» nella Scheda.
                 </Text>
               </View>
             </View>

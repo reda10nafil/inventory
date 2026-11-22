@@ -19,7 +19,7 @@ import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
-import { formatQty, isOutOfStock, isStocked, totalStock } from '../../../utils/stock';
+import { formatQty, isOutOfStock, isStocked, storedTotal } from '../../../utils/stock';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
@@ -235,7 +235,7 @@ export default function HomeScreen() {
           </View>
 
           {isStocked(product) && (
-            <Text style={styles.qtyText} numberOfLines={1}>{formatQty(totalStock(product), product.unit)}</Text>
+            <Text style={styles.qtyText} numberOfLines={1}>{formatQty(storedTotal(product), product.unit)}</Text>
           )}
 
           {!!product.sellPrice && (

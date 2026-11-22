@@ -15,6 +15,7 @@ import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
 import { qtyAt } from '../../../utils/stock';
+import { moveOf, refusalText } from '../../../utils/inventoryOps';
 
 type AuditStatus = 'missing' | 'found' | 'intruder';
 
@@ -152,7 +153,12 @@ export default function AuditScreen() {
                             text: 'Sposta Qui & Aggiungi',
                             onPress: () => {
                                 if (targetLocation) {
-                                    moveProduct(product.id, targetLocation.id); // «spostato» in cronologia (D15)
+                                    // «spostato» in cronologia (D15); un rifiuto (es. articolo esaurito) si dice (M04)
+                                    if (!moveProduct(product.id, targetLocation.id)) {
+                                        const refused = moveOf(product, targetLocation.id, '');
+                                        Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
+                                        return;
+                                    }
                                     addIntruder(product);
                                     Alert.alert('Spostato', 'Posizione aggiornata.');
                                 }

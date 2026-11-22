@@ -6,7 +6,7 @@
 //   della vendita sta nell'evento e `sellPrice` (prezzo di listino) non si sovrascrive.
 import type { Product } from '../types';
 import { canMove, canSell } from './productRules';
-import { applyMovement, DEFAULT_UNIT, isOutOfStock, isStocked, qtyAt, round3, type NewEvent } from './stock';
+import { applyMovement, DEFAULT_UNIT, isOutOfStock, isStocked, qtyAt, round3, type Movement, type MovementError, type NewEvent } from './stock';
 
 export type OpRefusal = 'missing' | 'trash' | 'same_place' | 'sold' | 'out_of_stock' | 'over_stock' | 'bad_qty' | 'not_allowed';
 export type OpResult = { ok: true; patch: Partial<Product>; events: NewEvent[] } | { ok: false; reason: OpRefusal };
@@ -77,6 +77,21 @@ export function withInitialStock(
   if (!r.ok) return { ok: false, reason: r.error === 'bad_qty' ? 'bad_qty' : 'not_allowed' };
   // Il carico iniziale non è una scansione: date del prodotto come per un pezzo unico appena creato
   return { ok: true, product: { ...r.product, updatedAt: product.updatedAt, lastScannedAt: product.lastScannedAt }, events: r.events };
+}
+
+/**
+ * Movimento scelto dall'utente nella Scheda (M04, ticket 02): carico, scarico, trasferimento o rettifica.
+ * Vale anche per un pezzo unico, che al primo movimento diventa articolo a quantità (carico «iniziale» di 1).
+ */
+export function movementOf(
+  product: Product | undefined,
+  movement: Movement,
+  now: string,
+): { ok: true; patch: Partial<Product>; events: NewEvent[] } | { ok: false; error: MovementError; available?: number } {
+  if (!product) return { ok: false, error: 'not_allowed' };
+  const r = applyMovement(product, movement, now);
+  if (!r.ok) return r;
+  return { ok: true, patch: stockPatch(r.product), events: r.events };
 }
 
 /** Modifica: per un articolo a quantità posizione e giacenza non si cambiano a mano (solo con i movimenti). */

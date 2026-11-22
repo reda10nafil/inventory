@@ -29,7 +29,8 @@ import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { formatNumber } from '../../../utils/number';
-import { describeStockEvent, formatQty, isOutOfStock, isStocked, stockOf, totalStock } from '../../../utils/stock';
+import { describeStockEvent, formatQty, isOutOfStock, isStocked, round3, storedStock, totalStock } from '../../../utils/stock';
+import { MovementSheet } from '../../../components/MovementSheet';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -54,6 +55,7 @@ export default function ProductDetailScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showMovement, setShowMovement] = useState(false);
   const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
 
   if (!product) {
@@ -76,7 +78,11 @@ export default function ProductDetailScreen() {
   // Articolo a quantità (M03): giacenza per posizione, dalla più grande; il nome della posizione o, se non c'è più, l'id
   const stocked = isStocked(product);
   const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
-  const stockRows = Object.entries(stockOf(product)).sort((a, b) => b[1] - a[1]);
+  // Nel cestino si mostra la giacenza salvata (torna col ripristino), così non sembra vuoto (M04)
+  const stockRows = Object.entries(storedStock(product)).sort((a, b) => b[1] - a[1]);
+  const stockTotal = round3(stockRows.reduce((sum, [, qty]) => sum + qty, 0));
+  // «Movimenta» (M04): prodotti disponibili e non nel cestino; un pezzo unico diventa articolo a quantità
+  const canMoveStock = product.status === 'available' && !product.deletedAt;
   const stockEventText = (details: Parameters<typeof describeStockEvent>[0]) => describeStockEvent(details, placeLabel, product.unit);
 
   const generateClientText = () => {
@@ -885,24 +891,42 @@ export default function ProductDetailScreen() {
             </View>
           </View>
 
-          {/* Giacenza (M03): totale e quantità per posizione */}
-          {stocked && (
+          {/* Giacenza (M03): totale e quantità per posizione; «Movimenta» per carico, scarico, trasferimento, rettifica (M04) */}
+          {(stocked || canMoveStock) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Giacenza</Text>
               <View style={styles.stockCard}>
-                <View style={styles.stockRow}>
-                  <Text style={styles.stockTotalLabel}>Totale</Text>
-                  <Text style={styles.stockTotal}>{formatQty(totalStock(product), product.unit)}</Text>
-                </View>
-                {stockRows.length === 0 ? (
-                  <Text style={styles.stockPlace}>Esaurito: nessuna posizione con giacenza</Text>
-                ) : stockRows.map(([place, qty]) => (
-                  <View key={place} style={styles.stockRow}>
-                    <Text style={styles.stockPlace} numberOfLines={1}>{placeLabel(place)}</Text>
-                    <Text style={styles.stockQty}>{formatQty(qty, product.unit)}</Text>
+                {stocked ? (
+                  <>
+                    <View style={styles.stockRow}>
+                      <Text style={styles.stockTotalLabel}>{product.deletedAt ? 'Totale salvato (nel cestino)' : 'Totale'}</Text>
+                      <Text style={styles.stockTotal}>{formatQty(stockTotal, product.unit)}</Text>
+                    </View>
+                    {stockRows.length === 0 ? (
+                      <Text style={styles.stockPlace}>Esaurito: nessuna posizione con giacenza</Text>
+                    ) : stockRows.map(([place, qty]) => (
+                      <View key={place} style={styles.stockRow}>
+                        <Text style={styles.stockPlace} numberOfLines={1}>{placeLabel(place)}</Text>
+                        <Text style={styles.stockQty}>{formatQty(qty, product.unit)}</Text>
+                      </View>
+                    ))}
+                  </>
+                ) : (
+                  <View style={styles.stockRow}>
+                    <Text style={styles.stockPlace}>Pezzo unico</Text>
+                    <Text style={styles.stockQty}>1 pz</Text>
                   </View>
-                ))}
+                )}
+                {canMoveStock && (
+                  <Pressable style={styles.moveStockButton} onPress={() => setShowMovement(true)} accessibilityLabel="Movimenta">
+                    <AppIcon name="swap-vert" size={18} color={t.colors.onButtonSecondary} />
+                    <Text style={styles.moveStockText}>Movimenta</Text>
+                  </Pressable>
+                )}
               </View>
+              {!stocked && canMoveStock && (
+                <Text style={styles.stockHint}>Con un carico o un altro movimento diventa un articolo a quantità.</Text>
+              )}
             </View>
           )}
 
@@ -1245,6 +1269,8 @@ export default function ProductDetailScreen() {
           <Text style={styles.actionButtonTextPrimary}>Modifica</Text>
         </Pressable>
       </View>
+      <MovementSheet product={product} visible={showMovement} onClose={() => setShowMovement(false)} />
+
       {/* QR Code Modal */}
       <Modal
         animationType="fade"
@@ -1542,6 +1568,29 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     fontSize: 15,
     lineHeight: 20,
+    color: t.colors.textSecondary,
+  },
+  moveStockButton: {
+    marginTop: 4,
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: t.colors.buttonSecondary,
+    borderRadius: t.radius.button,
+    borderWidth: 1,
+    borderColor: t.colors.buttonSecondaryBorder,
+  },
+  moveStockText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: t.colors.onButtonSecondary,
+  },
+  stockHint: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 16,
     color: t.colors.textSecondary,
   },
   stockQty: {

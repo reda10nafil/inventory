@@ -66,7 +66,32 @@ const FETTE = {
       ['cronologia', async (page) => { await page.goto(`${APP}/timeline`); await page.waitForTimeout(1800); }],
     ],
   },
+  m04: {
+    // Stesso stato di m03, più LIN-0021 articolo a quantità nel cestino
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      Object.assign(list.find((p) => p.sku === 'LIN-0021'), { unit: 'm', stock: { stand_b: 4.5 }, deletedAt: '2026-11-22T09:00:00.000Z' });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['scheda', async (page) => { await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800); await page.getByLabel('Movimenta', { exact: true }).first().scrollIntoViewIfNeeded(); }],
+      ['finestra', async (page) => { await page.getByLabel('Movimenta', { exact: true }).first().click(); await page.waitForTimeout(600); }],
+      ['trasferimento', async (page) => {
+        await page.getByLabel('Tipo Trasferimento', { exact: true }).click();
+        await page.getByLabel('Da Magazzino', { exact: true }).click();
+        await page.getByLabel('A Vetrina', { exact: true }).click();
+        await page.locator('input[placeholder="es. 2,5"]').fill('2');
+      }],
+      ['rettifica', async (page) => { await page.getByLabel('Tipo Rettifica', { exact: true }).click(); await page.getByLabel('Causale Conta', { exact: true }).click(); }],
+      ['cronologia-movimenti', async (page) => { await page.goto(`${APP}/timeline`); await page.waitForTimeout(1800); await page.getByText('Movimenti', { exact: true }).first().click(); }],
+      ['pezzo-unico', async (page) => { await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800); await page.getByLabel('Movimenta', { exact: true }).first().scrollIntoViewIfNeeded(); }],
+      ['cestino', async (page) => { await page.goto(APP); await page.waitForTimeout(1500); await page.getByText('Cestino').locator('visible=true').first().click(); await page.waitForTimeout(800); }],
+    ],
+  },
 };
+// m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
+FETTE.m04.prima = FETTE.m03.prepara;
 
 (async () => {
   const fetta = FETTE[process.env.FETTA];
@@ -87,6 +112,7 @@ const FETTE = {
       localStorage.setItem('inventory:v1:local:alerts', '[]');
       localStorage.setItem('inventory:v1:local:deleted_product_ids', '[]');
     }, stile);
+    if (fetta.prima) await page.evaluate(fetta.prima);
     await page.evaluate(fetta.prepara);
     await page.goto(APP); await page.getByText('VIS-0142', { exact: true }).first().waitFor();
     let n = 1;

@@ -1,6 +1,6 @@
 import type { Product, TimelineEvent } from '../types';
-import { editableUpdates, moveOf, refusalText, saleOf, withInitialStock, type OpResult } from '../utils/inventoryOps';
-import { describeStockEvent, qtyAt, replayStock, stockOf } from '../utils/stock';
+import { editableUpdates, moveOf, movementOf, refusalText, saleOf, withInitialStock, type OpResult } from '../utils/inventoryOps';
+import { describeStockEvent, qtyAt, replayStock, stockOf, storedStock } from '../utils/stock';
 
 const NOW = '2026-11-22T10:00:00.000Z';
 const base: Product = {
@@ -161,5 +161,51 @@ describe('testi', () => {
     expect(qtyAt(item(), 'vetrina')).toBe(1);
     expect(qtyAt(item({ status: 'sold' }), 'vetrina')).toBe(0);
     expect(qtyAt(stocked({ vetrina: 2 }, { deletedAt: NOW }), 'vetrina')).toBe(0);
+  });
+});
+
+describe('movementOf (M04, Movimenta dalla Scheda)', () => {
+  it('scrive solo i campi del movimento e gli eventi; carico, scarico, trasferimento e rettifica ridanno la giacenza', () => {
+    const events: Omit<TimelineEvent, 'id'>[] = [];
+    let p = stocked({ vetrina: 2 }, { sellPrice: 100, technicalNotes: 'nota' });
+    const step = (m: Parameters<typeof movementOf>[1]) => {
+      const r = movementOf(p, m, NOW);
+      if (!r.ok) throw new Error(r.error);
+      expect(Object.keys(r.patch).sort()).toEqual(['lastScannedAt', 'location', 'stock', 'unit', 'updatedAt']);
+      events.push(...r.events);
+      p = { ...p, ...r.patch };
+    };
+    events.push({ productId: 'p1', type: 'stock', timestamp: NOW, details: { movement: 'carico', qty: 2, to: 'vetrina', reason: 'iniziale' } });
+    step({ kind: 'carico', qty: 5, to: 'magazzino', reason: 'acquisto' });
+    step({ kind: 'scarico', qty: 0.5, from: 'vetrina', reason: 'danno', note: 'rotto' });
+    step({ kind: 'trasferimento', qty: 2, from: 'magazzino', to: 'vetrina' });
+    step({ kind: 'rettifica', at: 'magazzino', counted: 2.75, reason: 'conta' });
+    expect(p.stock).toEqual({ vetrina: 3.5, magazzino: 2.75 });
+    expect(replayStock(events)).toEqual(stockOf(p));
+    expect(p.technicalNotes).toBe('nota');
+  });
+  it('un pezzo unico al primo movimento diventa articolo a quantità con il carico iniziale', () => {
+    const r = movementOf(item(), { kind: 'carico', qty: 2, to: 'magazzino' }, NOW);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.patch.stock).toEqual({ vetrina: 1, magazzino: 2 });
+    expect(r.patch.unit).toBe('pz');
+    expect(r.events.map((e) => e.details.reason)).toEqual(['iniziale', undefined]);
+  });
+  it('rifiuti con il motivo di applyMovement; prodotto mancante non si movimenta', () => {
+    expect(movementOf(stocked({ vetrina: 1 }), { kind: 'scarico', qty: 2, from: 'vetrina' }, NOW)).toEqual({ ok: false, error: 'over_stock', available: 1 });
+    expect(movementOf(stocked({ vetrina: 1 }, { deletedAt: NOW }), { kind: 'carico', qty: 1, to: 'vetrina' }, NOW)).toEqual({ ok: false, error: 'not_allowed' });
+    expect(movementOf(undefined, { kind: 'carico', qty: 1, to: 'vetrina' }, NOW)).toEqual({ ok: false, error: 'not_allowed' });
+  });
+});
+
+describe('storedStock (M04, cestino)', () => {
+  it('un articolo a quantità nel cestino mostra la giacenza salvata, i conteggi restano a 0', () => {
+    const p = stocked({ vetrina: 3, magazzino: 0 }, { deletedAt: NOW });
+    expect(storedStock(p)).toEqual({ vetrina: 3 });
+    expect(stockOf(p)).toEqual({});
+  });
+  it('un pezzo unico nel cestino resta senza giacenza', () => {
+    expect(storedStock(item({ deletedAt: NOW }))).toEqual({});
+    expect(storedStock(item())).toEqual({ vetrina: 1 });
   });
 });

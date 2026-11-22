@@ -8,7 +8,8 @@ import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { usage } from '../utils/productRules';
 import { describeChanges } from '../utils/productChanges';
-import { editableUpdates, moveOf, saleOf, withInitialStock } from '../utils/inventoryOps';
+import { editableUpdates, moveOf, movementOf, saleOf, withInitialStock } from '../utils/inventoryOps';
+import type { Movement, MovementError } from '../utils/stock';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
 export interface Library {
@@ -78,6 +79,8 @@ interface InventoryContextType {
   moveProduct: (id: string, newLocation: string) => boolean;
   /** Pezzo unico: «venduto». Articolo a quantità: scarico di `qty` (predefinita 1) con causale vendita. */
   sellProduct: (id: string, finalPrice?: number, qty?: number) => boolean;
+  /** Movimento di magazzino dalla Scheda (M04): carico, scarico, trasferimento, rettifica; il motivo se rifiutato. */
+  moveStock: (id: string, movement: Movement) => { ok: true } | { ok: false; error: MovementError; available?: number };
   scanProduct: (id: string) => void;
   dismissAlert: (alertId: string) => void;
   getProductById: (id: string) => Product | undefined;
@@ -512,6 +515,15 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
+  // Movimento dalla Scheda (M04): calcolato sulla copia più recente, nello stato solo i campi del movimento.
+  const moveStock = (id: string, movement: Movement): { ok: true } | { ok: false; error: MovementError; available?: number } => {
+    const result = movementOf(productsRef.current.find((p) => p.id === id), movement, new Date().toISOString());
+    if (!result.ok) return result;
+    patchProduct(id, result.patch);
+    result.events.forEach(addTimelineEvent);
+    return { ok: true };
+  };
+
   const scanProduct = (id: string) => {
     patchProduct(id, { lastScannedAt: new Date().toISOString() });
 
@@ -637,6 +649,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         deleteProduct,
         moveProduct,
         sellProduct,
+        moveStock,
         scanProduct,
         dismissAlert,
         getProductById,

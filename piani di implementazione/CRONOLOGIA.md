@@ -2,6 +2,17 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, M04: «Movimenta» nella Scheda e filtro Movimenti (ticket 02)
+
+- Branch `funzioni/magazzino`.
+- Scheda: la sezione Giacenza c'è per gli articoli a quantità e per i pezzi unici disponibili («Pezzo unico · 1 pz»), con il pulsante **Movimenta** (solo prodotti disponibili e non nel cestino). Apre una finestra nuova (`components/MovementSheet.tsx`): tipo (Carico, Scarico, Trasferimento, Rettifica), posizioni con la quantità che c'è in ognuna, quantità («2,5») o quantità contata per la rettifica, causale facoltativa secondo il tipo, nota. I rifiuti di `applyMovement` diventano messaggi («In quella posizione ci sono solo 1 pz.», «Scegli la posizione.», «niente da rettificare»). Il primo movimento di un pezzo unico lo rende articolo a quantità con il carico «iniziale» di 1 (decisione M02).
+- Logica: `movementOf` in `utils/inventoryOps.ts` (test) e `moveStock(id, movimento)` nel contesto, che come `moveProduct` calcola sulla copia più recente (`productsRef`) e scrive nello stato solo i campi del movimento, più gli eventi `stock`.
+- Cronologia: filtro **Movimenti** (eventi `stock`). Modifica: la nota della sola lettura dice «usa Movimenta nella Scheda».
+- Lacune lasciate da M03, chiuse: (a) un articolo a quantità nel cestino mostra nella Scheda «Totale salvato (nel cestino)» con le quantità e nella card del Cestino la giacenza salvata, non più 0 (`storedStock`, `storedTotal` in `utils/stock.ts`, test); (b) Audit, «Sposta Qui & Aggiungi»: se lo spostamento viene rifiutato (es. articolo esaurito) lo dice («Non spostato · VIS-0098 è esaurito.») invece di annunciare «Spostato».
+- Prove sul web: `prova/m04-movimenta.cjs` (6 scenari, giacenza salvata = eventi rigiocati in ognuno): i 4 movimenti su VIS-0098 (5 pz in Magazzino → Magazzino 3, Vetrina 1, Stand A 2, nota e causali negli eventi, 5 righe nel filtro Movimenti e nessun altro evento), pezzo unico VIS-0142 + carico di 2 → `{vetrina: 1, magazzino: 2}` con carico iniziale e card «3 pz», Scheda del pezzo unico con Movimenta e del venduto senza, i 4 rifiuti con la giacenza invariata, il cestino (card «4 pz», «Totale salvato», niente Movimenta), l'Audit su un esaurito. Rilanciati `a3-audit`, `a1-cronologia`, `a1-scheda` (esiti come prima; condivisione e PDF sul web danno gli errori già noti dalla prova A1).
+- Nei 5 stili: `FETTA=m04` (Scheda, finestra, trasferimento, rettifica, filtro Movimenti, pezzo unico, card del Cestino) → `prova/stili-m04.jpg`, 0 errori in console.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 192 verdi, bundle Android 5,13 MB con 62 asset, 32 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, M03: articoli a quantità (ticket 01 e 03)
 
 - Branch `funzioni/magazzino`, un solo commit per la regola 7 del grafo: da qui un prodotto può avere `stock` e tutte le scritture e letture della posizione ne tengono conto. Parere del revisore chiesto prima di scrivere; seguite le sue indicazioni (copia dei prodotti aggiornata subito e scrittura dei soli campi toccati, `updateProduct` che ignora posizione e giacenza degli articoli a quantità, carico iniziale dentro `addProduct`, testi degli eventi `stock`, motivi dei rifiuti nelle schermate, Magazzino fuori dal layout).

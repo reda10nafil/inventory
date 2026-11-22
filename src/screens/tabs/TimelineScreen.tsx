@@ -16,7 +16,7 @@ import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
 
-type FilterType = 'all' | 'created' | 'moved' | 'modified' | 'sold' | 'photo_added';
+type FilterType = 'all' | 'created' | 'moved' | 'modified' | 'sold' | 'photo_added' | 'stock';
 type DateFilter = 'all' | 'today' | 'week' | 'month';
 
 const TYPE_FILTERS: [FilterType, string][] = [
@@ -26,6 +26,7 @@ const TYPE_FILTERS: [FilterType, string][] = [
   ['modified', 'Modificati'],
   ['sold', 'Venduti'],
   ['photo_added', 'Foto'],
+  ['stock', 'Movimenti'],
 ];
 
 const DATE_FILTERS: [DateFilter, string][] = [
