@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { cardSurface } from '../../../components/ui/surfaces';
 import { Text, fontStyle } from '../../../components/ui/Text';
 import { makeStyles, useStyleChoice, useTheme } from '../../../contexts/ThemeContext';
 import { DEFAULT_STYLE, THEMES } from '../../../constants/themes';
@@ -27,10 +29,9 @@ export default function AppearanceScreen() {
   }, []);
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ padding: t.spacing.screenPadding, paddingBottom: insets.bottom + 24 }}
-    >
+    <View style={styles.container}>
+    <Backdrop />
+    <ScrollView contentContainerStyle={{ padding: t.spacing.screenPadding, paddingBottom: insets.bottom + 24 }}>
       <Text style={styles.intro}>Lo stile cambia colori, caratteri e forme. Schermate e dati restano uguali. La scelta vale per questo dispositivo.</Text>
 
       {STYLES.map(([id, th]) => {
@@ -63,6 +64,7 @@ export default function AppearanceScreen() {
         );
       })}
     </ScrollView>
+    </View>
   );
 }
 
@@ -76,13 +78,10 @@ const useStyles = makeStyles((t) => ({
     marginBottom: 16,
   },
   row: {
+    ...cardSurface(t),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
     padding: 14,
     marginBottom: 10,
   },

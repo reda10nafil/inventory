@@ -115,8 +115,9 @@ def shadow(v):
 def glows(bg_img):
     res = []
     for m in re.finditer(r'radial-gradient\((\d+)px (\d+)px at ([\d.]+)% ([\d.]+)%,(rgba\([^)]*\)),transparent (\d+)%\)', bg_img):
-        res.append({'x': float(m.group(3)) / 100, 'y': float(m.group(4)) / 100, 'rx': int(m.group(1)) / 2,
-                    'ry': int(m.group(2)) / 2, 'color': norm(m.group(5)), 'stop': int(m.group(6)) / 100})
+        # in `radial-gradient(420px 380px at …)` le due misure sono i raggi dell'ellisse (non i diametri)
+        res.append({'x': float(m.group(3)) / 100, 'y': float(m.group(4)) / 100, 'rx': int(m.group(1)),
+                    'ry': int(m.group(2)), 'color': norm(m.group(5)), 'stop': int(m.group(6)) / 100})
     return res
 
 

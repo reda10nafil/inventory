@@ -2,7 +2,9 @@
 // Uso: node schermate.cjs <percorso di playwright> [stile] [cartella]   (app web e serve-seed.mjs su 8765 accesi)
 //   stile: attuale | babilonia | ishtar | ardesia | minimal (scritto in AsyncStorage prima di caricare; vuoto = predefinito)
 //   cartella: dove salvare (predefinito ../schermate-attuali); APP=http://localhost:8082 per un'altra porta
-//   EXTRA=1 aggiunge le schermate raggiungibili da indirizzo (posizioni, cartelle, GS1, hardware, cestino, condivisione, automazioni, azione rapida)
+//   EXTRA=1 aggiunge le schermate raggiungibili da indirizzo (posizioni, cartelle, GS1, hardware, cestino, condivisione, automazioni, azione rapida, aspetto)
+//   SOLO=inventario,venduto,10-  limita ai passi indicati (nomi: inventario scheda modifica aggiungi cronologia automazioni
+//   impostazioni campi layout venduto; per le schermate in più il nome del file); FONT=<famiglia> controlla il carattere
 const { chromium } = require(process.argv[2] || 'playwright');
 const path = require('path');
 
@@ -60,7 +62,12 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
   const vis = (text, exact = true) => page.getByText(text, { exact }).locator('visible=true').first();
   const home = async () => { await page.goto(APP); await vis('VIS-0142').waitFor(); await page.waitForTimeout(800); };
   const tab = async (name) => { await vis(name).click(); await page.waitForTimeout(1500); };
-  const step = async (label, fn) => { try { await fn(); } catch (e) { log('ERRORE', label, e.message.split('\n')[0]); } };
+  // SOLO=inventario,scheda,10-  fa solo i passi il cui nome (o file, per le schermate in più) comincia così
+  const SOLO = (process.env.SOLO || '').split(',').filter(Boolean);
+  const step = async (label, fn) => {
+    if (SOLO.length && !SOLO.some((s) => label.startsWith(s))) return;
+    try { await fn(); } catch (e) { log('ERRORE', label, e.message.split('\n')[0]); }
+  };
 
   await page.goto(APP);
   await page.waitForTimeout(4000);
