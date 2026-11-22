@@ -1,13 +1,15 @@
 // FurInventory Pro - Quick Tag Automation
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Vibration, ScrollView, Alert, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing, shadows } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { soundService } from '../../../services/SoundService';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 const COMMON_TAGS = [
     { label: 'Da Pulire', icon: 'cleaning-services', color: '#3B82F6' },
@@ -17,6 +19,8 @@ const COMMON_TAGS = [
 ];
 
 export default function QuickTagScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { products, getProductBySku, updateProduct } = useInventory();
@@ -91,7 +95,7 @@ export default function QuickTagScreen() {
         <SafeAreaView edges={['top']} style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                    <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Tagging Rapido</Text>
             </View>
@@ -99,7 +103,7 @@ export default function QuickTagScreen() {
             {step === 'select_tag' ? (
                 <ScrollView contentContainerStyle={styles.content}>
                     <View style={styles.centerHeader}>
-                        <MaterialIcons name="label" size={64} color={theme.info} style={{ marginBottom: 16 }} />
+                        <AppIcon name="label" size={64} color={t.colors.info} style={{ marginBottom: 16 }} />
                         <Text style={styles.stepTitle}>Scegli un Tag</Text>
                         <Text style={styles.stepDescription}>
                             Seleziona un'etichetta da applicare a tutti i prodotti che scannerizzerai.
@@ -114,7 +118,7 @@ export default function QuickTagScreen() {
                                 style={[styles.tagCard, { borderColor: tag.color }]}
                                 onPress={() => handleStartTagging(tag.label)}
                             >
-                                <MaterialIcons name={tag.icon as any} size={32} color={tag.color} />
+                                <AppIcon name={tag.icon as any} size={32} color={tag.color} />
                                 <Text style={[styles.tagLabel, { color: tag.color }]}>{tag.label}</Text>
                             </Pressable>
                         ))}
@@ -125,7 +129,7 @@ export default function QuickTagScreen() {
                         <TextInput
                             style={styles.customInput}
                             placeholder="Es. Collezione 2024"
-                            placeholderTextColor={theme.textSecondary}
+                            placeholderTextColor={t.colors.placeholder}
                             value={customTag}
                             onChangeText={setCustomTag}
                         />
@@ -134,7 +138,7 @@ export default function QuickTagScreen() {
                             onPress={() => handleStartTagging(customTag)}
                             disabled={!customTag}
                         >
-                            <MaterialIcons name="arrow-forward" size={24} color="#000" />
+                            <AppIcon name="arrow-forward" size={24} color={t.colors.onButton} />
                         </Pressable>
                     </View>
                 </ScrollView>
@@ -143,7 +147,7 @@ export default function QuickTagScreen() {
                     <View style={styles.statusCard}>
                         <Text style={styles.statusLabel}>MODALITÀ TAGGING ATTIVA</Text>
                         <View style={styles.activeTagBadge}>
-                            <MaterialIcons name="label" size={20} color="#FFF" />
+                            <AppIcon name="label" size={20} color={t.colors.onData} />
                             <Text style={styles.activeTagText}>{activeTag}</Text>
                         </View>
                         <Text style={styles.countText}>{taggedCount} prodotti taggati</Text>
@@ -151,7 +155,7 @@ export default function QuickTagScreen() {
 
                     {lastTaggedProduct && (
                         <View style={styles.lastActionCard}>
-                            <MaterialIcons name="check-circle" size={24} color={theme.success} />
+                            <AppIcon name="check-circle" size={24} color={t.colors.success} />
                             <Text style={styles.lastActionText}>
                                 Taggato: <Text style={{ fontWeight: 'bold' }}>{lastTaggedProduct}</Text>
                             </Text>
@@ -159,7 +163,7 @@ export default function QuickTagScreen() {
                     )}
 
                     <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                        <MaterialIcons name="qr-code-scanner" size={32} color="#FFF" />
+                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
                         <Text style={styles.scanButtonText}>Scansiona Prodotto</Text>
                     </Pressable>
 
@@ -179,10 +183,10 @@ export default function QuickTagScreen() {
                     />
                     {feedbackMessage && (
                         <View style={styles.feedbackOverlay}>
-                            <MaterialIcons
+                            <AppIcon
                                 name={feedbackMessage.includes('Non trovato') || feedbackMessage.includes('già') ? 'info-outline' : 'check-circle'}
                                 size={48}
-                                color="#FFF"
+                                color={t.colors.onData}
                             />
                             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
                         </View>
@@ -193,17 +197,17 @@ export default function QuickTagScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     backButton: {
         marginRight: 16,
@@ -211,7 +215,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
     },
     content: {
         padding: 20,
@@ -225,19 +229,19 @@ const styles = StyleSheet.create({
     stepTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
         marginBottom: 8,
     },
     stepDescription: {
         fontSize: 16,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         textAlign: 'center',
     },
     sectionLabel: {
         alignSelf: 'flex-start',
         fontSize: 12,
         fontWeight: '700',
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginBottom: 12,
         marginTop: 12,
     },
@@ -250,12 +254,12 @@ const styles = StyleSheet.create({
     },
     tagCard: {
         width: '48%',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.tile,
         padding: 20,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.tile,
         alignItems: 'center',
         borderWidth: 1,
-        ...shadows.card,
+        ...t.shadows.card,
     },
     tagLabel: {
         marginTop: 8,
@@ -270,70 +274,70 @@ const styles = StyleSheet.create({
     customInput: {
         flex: 1,
         height: 56,
-        backgroundColor: theme.surface,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.input,
+        borderRadius: t.radius.input,
         paddingHorizontal: 16,
         fontSize: 16,
-        color: theme.textPrimary,
+        color: t.colors.inputText,
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: t.colors.inputBorder,
     },
     goButton: {
         width: 56,
         height: 56,
-        backgroundColor: theme.primary,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.button,
+        borderRadius: t.radius.button,
         alignItems: 'center',
         justifyContent: 'center',
     },
     statusCard: {
         width: '100%',
-        backgroundColor: theme.surface,
-        borderRadius: borderRadius.large,
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.large,
         padding: 24,
         alignItems: 'center',
         marginBottom: 24,
         marginTop: 20,
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: t.colors.border,
     },
     statusLabel: {
         fontSize: 12,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginBottom: 16,
         letterSpacing: 1,
     },
     activeTagBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.info,
+        backgroundColor: t.colors.info,
         paddingVertical: 8,
         paddingHorizontal: 16,
-        borderRadius: borderRadius.full,
+        borderRadius: t.radius.full,
         gap: 8,
         marginBottom: 16,
     },
     activeTagText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontWeight: 'bold',
         fontSize: 18,
     },
     countText: {
         fontSize: 14,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.info,
+        backgroundColor: t.colors.info,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: borderRadius.full,
-        ...shadows.cardElevated,
+        borderRadius: t.radius.full,
+        ...t.shadows.cardElevated,
         marginBottom: 24,
     },
     scanButtonText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
@@ -341,22 +345,22 @@ const styles = StyleSheet.create({
     lastActionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ECFDF5',
+        backgroundColor: t.colors.successSurface,
         padding: 12,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.medium,
         marginBottom: 24,
         width: '100%',
     },
     lastActionText: {
         marginLeft: 8,
-        color: '#065F46',
+        color: t.colors.onSuccessSurface,
         flex: 1,
     },
     stopButton: {
         padding: 16,
     },
     stopButtonText: {
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         textDecorationLine: 'underline',
     },
     feedbackOverlay: {
@@ -364,17 +368,17 @@ const styles = StyleSheet.create({
         top: '50%',
         left: '20%',
         right: '20%',
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: withAlpha(t.colors.shadow, 0.8),
         padding: 20,
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
     feedbackText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 18,
         fontWeight: 'bold',
         marginTop: 8,
         textAlign: 'center',
     },
-});
+}));

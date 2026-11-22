@@ -7,15 +7,16 @@
  * - Persistenza: contexts/InventoryContext + db chat_messages futuro (ora memoria + AsyncStorage via Inventory)
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Pressable, FlatList, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../navigation/compat';
-import { theme, typography, spacing, borderRadius } from '../../constants/theme';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
 import { useInventory } from '../../contexts/InventoryContext';
 import * as meshSync from '../services/meshSync';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppIcon } from '../../components/ui/AppIcon';
+import { Text, TextInput } from '../../components/ui/Text';
+import { makeStyles, useTheme } from '../../contexts/ThemeContext';
 
 type ChatMsg = {
   id: string;
@@ -27,6 +28,8 @@ type ChatMsg = {
 };
 
 export default function ChatScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const { products, getProductBySku, moveProduct } = useInventory();
   const [messages, setMessages] = useState<ChatMsg[]>(() => [
@@ -66,9 +69,9 @@ export default function ChatScreen() {
   }, [messages]);
 
   const sendText = useCallback(() => {
-    const t = input.trim();
-    if (!t) return;
-    const payload = { text: t, skus: [], automationIds: [] };
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    const payload = { text: trimmed, skus: [], automationIds: [] };
     const msg: ChatMsg = { id: `${Date.now()}`, payload, createdAt: new Date().toISOString(), isOwn: true };
     setMessages((m) => [...m, msg]);
     meshSync.sendLightPayload(payload as any).catch(() => {});
@@ -128,11 +131,11 @@ export default function ChatScreen() {
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
+          <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Chat Operativa</Text>
         <Pressable onPress={() => Alert.alert('Mesh', 'Chat sincronizzata su LAN isolata. Payload ultraleggero SKU[].')} hitSlop={12}>
-          <MaterialIcons name="info-outline" size={22} color={theme.primary} />
+          <AppIcon name="info-outline" size={22} color={t.colors.accentInk} />
         </Pressable>
       </View>
 
@@ -152,16 +155,16 @@ export default function ChatScreen() {
               value={input}
               onChangeText={setInput}
               placeholder="Messaggio team..."
-              placeholderTextColor={theme.textMuted}
+              placeholderTextColor={t.colors.textMuted}
               style={styles.input}
               multiline
             />
           </View>
           <Pressable onPress={sendDemoCard} style={styles.cardBtn} hitSlop={8}>
-            <MaterialIcons name="inventory-2" size={20} color={theme.primary} />
+            <AppIcon name="inventory-2" size={20} color={t.colors.onButtonSecondary} />
           </Pressable>
           <Pressable onPress={sendText} style={styles.sendBtn} hitSlop={8}>
-            <MaterialIcons name="send" size={20} color="#000" />
+            <AppIcon name="send" size={20} color={t.colors.onButton} />
           </Pressable>
         </View>
         <Text style={styles.hint}>Card demo usa payload leggero {"{skus:[...]}"} → hydration locale WebP</Text>
@@ -170,24 +173,24 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background },
+const useStyles = makeStyles((t) => ({
+  container: { flex: 1, backgroundColor: t.colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.screenPadding, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: theme.borderLight, backgroundColor: theme.background,
+    paddingHorizontal: t.spacing.screenPadding, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: t.colors.borderLight, backgroundColor: t.colors.background,
   },
   backBtn: { padding: 6, borderRadius: 20 },
-  headerTitle: { ...typography.cardTitle, fontSize: 18 },
+  headerTitle: { ...t.typography.cardTitle, fontSize: 18 },
   listContent: { paddingVertical: 10, paddingBottom: 12 },
   composer: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
-    paddingHorizontal: spacing.screenPadding, paddingVertical: 10,
-    borderTopWidth: 1, borderTopColor: theme.borderLight, backgroundColor: theme.background,
+    paddingHorizontal: t.spacing.screenPadding, paddingVertical: 10,
+    borderTopWidth: 1, borderTopColor: t.colors.borderLight, backgroundColor: t.colors.background,
   },
-  inputWrap: { flex: 1, backgroundColor: theme.surface, borderRadius: borderRadius.medium, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
-  input: { color: theme.textPrimary, fontSize: 14, maxHeight: 90 },
-  cardBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' },
-  sendBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
-  hint: { color: theme.textMuted, fontSize: 10, textAlign: 'center', paddingBottom: 6 },
-});
+  inputWrap: { flex: 1, backgroundColor: t.colors.input, borderRadius: t.radius.input, borderWidth: 1, borderColor: t.colors.inputBorder, paddingHorizontal: 12, paddingVertical: 8 },
+  input: { color: t.colors.inputText, fontSize: 14, maxHeight: 90 },
+  cardBtn: { width: 44, height: 44, borderRadius: t.radius.button, backgroundColor: t.colors.buttonSecondary, borderWidth: 1, borderColor: t.colors.buttonSecondaryBorder, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 44, height: 44, borderRadius: t.radius.button, backgroundColor: t.colors.button, alignItems: 'center', justifyContent: 'center' },
+  hint: { color: t.colors.textMuted, fontSize: 10, textAlign: 'center', paddingBottom: 6 },
+}));

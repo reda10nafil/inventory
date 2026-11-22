@@ -1,14 +1,15 @@
 // FurInventory Pro - Stock Audit Automation
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Vibration, ScrollView, Alert, FlatList } from 'react-native';
+import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert, FlatList } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing, shadows } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { soundService } from '../../../services/SoundService';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
 type AuditStatus = 'missing' | 'found' | 'intruder';
 
@@ -20,6 +21,8 @@ interface AuditItem {
 }
 
 export default function AuditScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { products, getProductBySku, updateProduct } = useInventory();
@@ -175,26 +178,26 @@ export default function AuditScreen() {
 
     const renderAuditItem = ({ item }: { item: AuditItem }) => {
         let iconName = 'check-box-outline-blank';
-        let color = theme.textSecondary;
-        let bgColor = theme.surface;
+        let color = t.colors.textSecondary;
+        let bgColor = t.colors.surface;
 
         if (item.status === 'found') {
             iconName = 'check-box';
-            color = theme.success;
-            bgColor = '#ECFDF5';
+            color = t.colors.success;
+            bgColor = t.colors.successSurface;
         } else if (item.status === 'intruder') {
             iconName = 'warning';
-            color = theme.warning;
-            bgColor = '#FFFBEB';
+            color = t.colors.warning;
+            bgColor = t.colors.warningSurface;
         } else if (item.status === 'missing') {
             iconName = 'check-box-outline-blank';
-            color = theme.textMuted;
+            color = t.colors.textMuted;
         }
 
         return (
-            <View style={[styles.itemCard, { backgroundColor: bgColor, borderColor: item.status === 'intruder' ? theme.warning : 'transparent' }]}>
+            <View style={[styles.itemCard, { backgroundColor: bgColor, borderColor: item.status === 'intruder' ? t.colors.warning : 'transparent' }]}>
                 <View style={styles.itemInfo}>
-                    <Text style={[styles.itemSku, { color: item.status === 'missing' ? theme.textSecondary : theme.textPrimary }]}>
+                    <Text style={[styles.itemSku, { color: item.status === 'missing' ? t.colors.textSecondary : t.colors.textPrimary }]}>
                         {item.sku}
                     </Text>
                     <Text style={styles.itemType}>{item.furType}</Text>
@@ -202,7 +205,7 @@ export default function AuditScreen() {
                         <Text style={styles.intruderLabel}>INTRUSO</Text>
                     )}
                 </View>
-                <MaterialIcons name={iconName as any} size={24} color={color} />
+                <AppIcon name={iconName as any} size={24} color={color} />
             </View>
         );
     };
@@ -211,20 +214,20 @@ export default function AuditScreen() {
         <SafeAreaView edges={['top']} style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                    <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Audit Posizione</Text>
             </View>
 
             {step === 'scan_location' ? (
                 <View style={styles.centerContent}>
-                    <MaterialIcons name="fact-check" size={64} color={theme.warning} style={{ marginBottom: 16 }} />
+                    <AppIcon name="fact-check" size={64} color={t.colors.warning} style={{ marginBottom: 16 }} />
                     <Text style={styles.stepTitle}>Inizia Inventario</Text>
                     <Text style={styles.stepDescription}>
                         Scansiona una posizione per vedere la lista dei prodotti attesi e verificare le discrepanze.
                     </Text>
                     <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                        <MaterialIcons name="qr-code-scanner" size={32} color="#FFF" />
+                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
                         <Text style={styles.scanButtonText}>Scansiona Posizione</Text>
                     </Pressable>
 
@@ -258,13 +261,13 @@ export default function AuditScreen() {
 
                     <View style={styles.statsRow}>
                         <Text style={styles.statDetail}>
-                            Trovati: <Text style={{ color: theme.success, fontWeight: 'bold' }}>{stats.found}</Text>
+                            Trovati: <Text style={{ color: t.colors.success, fontWeight: 'bold' }}>{stats.found}</Text>
                         </Text>
                         <Text style={styles.statDetail}>
-                            Mancanti: <Text style={{ color: theme.error, fontWeight: 'bold' }}>{stats.missing}</Text>
+                            Mancanti: <Text style={{ color: t.colors.error, fontWeight: 'bold' }}>{stats.missing}</Text>
                         </Text>
                         <Text style={styles.statDetail}>
-                            Intrusi: <Text style={{ color: theme.warning, fontWeight: 'bold' }}>{stats.intruders}</Text>
+                            Intrusi: <Text style={{ color: t.colors.warning, fontWeight: 'bold' }}>{stats.intruders}</Text>
                         </Text>
                     </View>
 
@@ -277,7 +280,7 @@ export default function AuditScreen() {
 
                     <View style={styles.footer}>
                         <Pressable style={styles.scanFab} onPress={() => setShowScanner(true)}>
-                            <MaterialIcons name="qr-code-scanner" size={32} color="#FFF" />
+                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
                         </Pressable>
                     </View>
                 </View>
@@ -296,17 +299,17 @@ export default function AuditScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     backButton: {
         marginRight: 16,
@@ -314,7 +317,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
     },
     centerContent: {
         flex: 1,
@@ -325,27 +328,27 @@ const styles = StyleSheet.create({
     stepTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
         marginBottom: 8,
     },
     stepDescription: {
         fontSize: 16,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         textAlign: 'center',
         marginBottom: 32,
     },
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.warning,
+        backgroundColor: t.colors.warning,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: borderRadius.full,
-        ...shadows.card,
+        borderRadius: t.radius.full,
+        ...t.shadows.card,
         marginBottom: 32,
     },
     scanButtonText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
     divider: {
         fontSize: 12,
         fontWeight: '600',
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginBottom: 16,
         letterSpacing: 1,
     },
@@ -366,9 +369,9 @@ const styles = StyleSheet.create({
     locationChip: {
         paddingVertical: 8,
         paddingHorizontal: 16,
-        borderRadius: borderRadius.full,
+        borderRadius: t.radius.chip,
         borderWidth: 1,
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.chip,
     },
     locationChipText: {
         fontWeight: '600',
@@ -379,43 +382,43 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     locationLabel: {
         fontSize: 12,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         fontWeight: '600',
     },
     locationTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: theme.primary,
+        color: t.colors.accentInk,
     },
     progressContainer: {
         width: 60,
         height: 60,
         borderRadius: 30,
         borderWidth: 4,
-        borderColor: theme.success,
+        borderColor: t.colors.success,
         justifyContent: 'center',
         alignItems: 'center',
     },
     progressText: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
     },
     statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         padding: 12,
-        backgroundColor: theme.backgroundSecondary,
+        backgroundColor: t.colors.backgroundSecondary,
     },
     statDetail: {
         fontSize: 14,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     listContent: {
         padding: 16,
@@ -424,9 +427,9 @@ const styles = StyleSheet.create({
     itemCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         padding: 16,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.card,
         borderWidth: 1,
         borderColor: 'transparent',
     },
@@ -439,12 +442,12 @@ const styles = StyleSheet.create({
     },
     itemType: {
         fontSize: 14,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     intruderLabel: {
         fontSize: 10,
         fontWeight: '700',
-        color: theme.warning,
+        color: t.colors.warning,
         marginTop: 4,
     },
     footer: {
@@ -456,9 +459,9 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: theme.warning,
+        backgroundColor: t.colors.warning,
         justifyContent: 'center',
         alignItems: 'center',
-        ...shadows.cardElevated,
+        ...t.shadows.cardElevated,
     },
-});
+}));

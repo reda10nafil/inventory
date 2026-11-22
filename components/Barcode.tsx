@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, ViewStyle } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Code 128 Patterns (B set mostly used for alphanumeric)
 // Each pattern is 11 modules wide (except Stop which is 13)
@@ -46,10 +47,12 @@ export default function Barcode({
     value,
     width = 300,
     height = 100,
-    color = '#000000',
+    color,
     backgroundColor = 'transparent',
     style
 }: BarcodeProps) {
+    const t = useTheme();
+    const ink = color ?? t.colors.qrInk;
 
     const bars = useMemo(() => {
         // Default to Code 128B implementation (good for alphanumeric)
@@ -103,7 +106,7 @@ export default function Barcode({
                             y={0}
                             width={barWidth}
                             height={height}
-                            fill={color}
+                            fill={ink}
                         />
                     );
                 }
@@ -112,7 +115,7 @@ export default function Barcode({
         });
 
         return rects;
-    }, [value, width, height, color]);
+    }, [value, width, height, ink]);
 
     return (
         <View style={[{ width, height, backgroundColor }, style]}>

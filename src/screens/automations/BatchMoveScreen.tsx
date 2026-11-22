@@ -1,19 +1,23 @@
 // FurInventory Pro - Batch Move Automation
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Vibration, ScrollView, Alert, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
 import { soundService } from '../../../services/SoundService';
 // import { Audio } from 'expo-av'; // Removed for now to simplify dependencies
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 type Step = 'scan_location' | 'scan_products';
 
 export default function BatchMoveScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { products, updateProduct, getProductBySku } = useInventory();
@@ -170,7 +174,7 @@ export default function BatchMoveScreen() {
         <SafeAreaView edges={['top']} style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                    <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Spostamento Rapido</Text>
             </View>
@@ -179,14 +183,14 @@ export default function BatchMoveScreen() {
 
                 {step === 'scan_location' ? (
                     <View style={styles.stepContainer}>
-                        <MaterialIcons name="location-on" size={64} color={theme.primary} style={{ marginBottom: 16 }} />
+                        <AppIcon name="location-on" size={64} color={t.colors.accentInk} style={{ marginBottom: 16 }} />
                         <Text style={styles.stepTitle}>Fase 1: Scannerizza Posizione</Text>
                         <Text style={styles.stepDescription}>
                             Inquadra il QR della posizione o scaffale dove vuoi spostare la merce.
                         </Text>
 
                         <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                            <MaterialIcons name="qr-code-scanner" size={32} color="#FFF" />
+                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
                             <Text style={styles.scanButtonText}>Scansiona Posizione</Text>
                         </Pressable>
 
@@ -223,15 +227,15 @@ export default function BatchMoveScreen() {
 
                         {lastScannedProduct && (
                             <View style={styles.lastActionCard}>
-                                <MaterialIcons name="check-circle" size={24} color={theme.success} />
+                                <AppIcon name="check-circle" size={24} color={t.colors.success} />
                                 <Text style={styles.lastActionText}>
                                     Spostato: <Text style={{ fontWeight: 'bold' }}>{lastScannedProduct}</Text>
                                 </Text>
                             </View>
                         )}
 
-                        <Pressable style={[styles.scanButton, { backgroundColor: theme.info }]} onPress={() => setShowScanner(true)}>
-                            <MaterialIcons name="qr-code-scanner" size={32} color="#FFF" />
+                        <Pressable style={[styles.scanButton, { backgroundColor: t.colors.info }]} onPress={() => setShowScanner(true)}>
+                            <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
                             <Text style={styles.scanButtonText}>Scansiona Prodotto</Text>
                         </Pressable>
                     </View>
@@ -249,10 +253,10 @@ export default function BatchMoveScreen() {
                     />
                     {feedbackMessage && (
                         <View style={styles.feedbackOverlay}>
-                            <MaterialIcons
+                            <AppIcon
                                 name={feedbackMessage.includes('non trovato') ? 'error-outline' : 'check-circle'}
                                 size={48}
-                                color="#FFF"
+                                color={t.colors.onData}
                             />
                             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
                         </View>
@@ -263,23 +267,23 @@ export default function BatchMoveScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     backButton: {
         marginRight: 16,
     },
     headerTitle: {
-        ...typography.cardTitle, // Fallback
+        ...t.typography.cardTitle, // Fallback
         fontSize: 18,
     },
     content: {
@@ -292,40 +296,40 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     stepTitle: {
-        ...typography.cardTitle, // Fallback
+        ...t.typography.cardTitle, // Fallback
         fontSize: 24,
         marginBottom: 8,
         textAlign: 'center',
     },
     stepDescription: {
-        ...typography.body,
+        ...t.typography.body,
         textAlign: 'center',
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginBottom: 32,
     },
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.primary,
+        backgroundColor: t.colors.button,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: borderRadius.full, // Fixed
+        borderRadius: t.radius.full, // Fixed
         elevation: 4,
-        shadowColor: theme.primary,
+        shadowColor: t.colors.accent,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
         marginBottom: 24,
     },
     scanButtonText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
     },
     divider: {
-        ...typography.caption,
-        color: theme.textSecondary,
+        ...t.typography.caption,
+        color: t.colors.textSecondary,
         marginBottom: 16,
     },
     locationsGrid: {
@@ -337,9 +341,9 @@ const styles = StyleSheet.create({
     locationChip: {
         paddingVertical: 8,
         paddingHorizontal: 16,
-        borderRadius: borderRadius.full, // Fixed
+        borderRadius: t.radius.chip, // Fixed
         borderWidth: 1,
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.chip,
     },
     locationChipText: {
         fontWeight: '600',
@@ -347,30 +351,30 @@ const styles = StyleSheet.create({
     },
     targetCard: {
         width: '100%',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         padding: 16,
-        borderRadius: borderRadius.large, // Fixed
+        borderRadius: t.radius.large, // Fixed
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: t.colors.border,
         marginBottom: 24,
     },
     targetLabel: {
-        ...typography.caption,
-        color: theme.textSecondary,
+        ...t.typography.caption,
+        color: t.colors.textSecondary,
         marginBottom: 4,
     },
     targetValue: {
-        ...typography.cardValue, // Fallback
+        ...t.typography.cardValue, // Fallback
         fontSize: 32,
-        color: theme.primary,
+        color: t.colors.accentInk,
         marginBottom: 8,
     },
     changeTargetButton: {
         padding: 4,
     },
     changeTargetText: {
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         textDecorationLine: 'underline',
     },
     statsContainer: {
@@ -379,36 +383,36 @@ const styles = StyleSheet.create({
     },
     statBox: {
         alignItems: 'center',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         padding: 20,
-        borderRadius: borderRadius.full, // Fixed
+        borderRadius: t.radius.full, // Fixed
         width: 120,
         height: 120,
         justifyContent: 'center',
         borderWidth: 4,
-        borderColor: theme.success,
+        borderColor: t.colors.success,
     },
     statValue: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
     },
     statLabel: {
         fontSize: 14,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     lastActionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ECFDF5',
+        backgroundColor: t.colors.successSurface,
         padding: 12,
-        borderRadius: borderRadius.medium, // Fixed
+        borderRadius: t.radius.medium, // Fixed
         marginBottom: 24,
         width: '100%',
     },
     lastActionText: {
         marginLeft: 8,
-        color: '#065F46',
+        color: t.colors.onSuccessSurface,
         flex: 1,
     },
     feedbackOverlay: {
@@ -416,17 +420,17 @@ const styles = StyleSheet.create({
         top: '50%',
         left: '20%',
         right: '20%',
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: withAlpha(t.colors.shadow, 0.8),
         padding: 20,
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
     feedbackText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 18,
         fontWeight: 'bold',
         marginTop: 8,
         textAlign: 'center',
     }
-});
+}));

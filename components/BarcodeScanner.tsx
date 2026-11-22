@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, Button, Dimensions } from 'react-native';
+import { StyleSheet, View, Pressable, Button, Dimensions } from 'react-native';
 import { CameraView, Camera } from '../src/lib/camera';
-import { MaterialIcons } from '@expo/vector-icons';
-import { theme, borderRadius } from '../constants/theme';
+import { AppIcon } from './ui/AppIcon';
+import { Text } from './ui/Text';
+import { makeStyles } from '../contexts/ThemeContext';
+import { withAlpha } from '../utils/color';
 
 interface BarcodeScannerProps {
     onScan: (result: { type: string; data: string }) => void;
@@ -11,6 +13,7 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: BarcodeScannerProps) {
+    const styles = useStyles();
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [scanned, setScanned] = useState(false);
 
@@ -45,7 +48,7 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
                 <Text style={styles.text}>Nessun accesso alla fotocamera</Text>
                 <Button title={'Consenti Fotocamera'} onPress={() => Camera.requestCameraPermissionsAsync()} />
                 <Pressable style={styles.closeButton} onPress={onClose}>
-                    <MaterialIcons name="close" size={32} color="#FFF" />
+                    <AppIcon name="close" size={32} color="#FFF" />
                 </Pressable>
             </View>
         );
@@ -81,7 +84,7 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
             <View style={styles.controls}>
                 <Text style={styles.instructions}>Inquadra il codice</Text>
                 <Pressable style={styles.closeRoundButton} onPress={onClose}>
-                    <MaterialIcons name="close" size={32} color="#FFF" />
+                    <AppIcon name="close" size={32} color="#FFF" />
                 </Pressable>
             </View>
         </View>
@@ -89,12 +92,11 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
 }
 
 const { width } = Dimensions.get('window');
-const overlayColor = 'rgba(0,0,0,0.6)';
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: '#000',
+        backgroundColor: t.colors.cameraBackground,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -112,7 +114,7 @@ const styles = StyleSheet.create({
     },
     unfocusedContainer: {
         flex: 1,
-        backgroundColor: overlayColor,
+        backgroundColor: withAlpha(t.colors.shadow, 0.6),
     },
     middleContainer: {
         flexDirection: 'row',
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         marginBottom: 20,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: t.colors.scrimStrong,
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 8,
@@ -146,14 +148,14 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: theme.error,
+        backgroundColor: t.colors.error,
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
     },
     // Corner markers
-    cornerTL: { position: 'absolute', top: 0, left: 0, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: theme.primary },
-    cornerTR: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: theme.primary },
-    cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: theme.primary },
-    cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: theme.primary },
-});
+    cornerTL: { position: 'absolute', top: 0, left: 0, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: t.colors.accent },
+    cornerTR: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: t.colors.accent },
+    cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: t.colors.accent },
+    cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: t.colors.accent },
+}));

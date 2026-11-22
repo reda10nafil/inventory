@@ -12,9 +12,10 @@
  */
 
 import React, { memo, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { theme } from '../../../constants/theme';
+import { View } from 'react-native';
 import HydratedProductCard, { HydratedPayload } from './HydratedProductCard';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles } from '../../../contexts/ThemeContext';
 
 // ---------------------------------------------------------------------------
 // Types — compat con ChatMessage model + InventoryContext chat
@@ -108,18 +109,22 @@ function formatTime(value?: string | Date | number): string {
 // ---------------------------------------------------------------------------
 // Sub: Text bubble Luxury Dark
 // ---------------------------------------------------------------------------
-const TextBubble: React.FC<{ text: string; isOwn?: boolean; timestamp?: string }> = memo(({ text, isOwn, timestamp }) => (
-  <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
-    <Text style={[styles.bubbleText, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}>{text}</Text>
-    {timestamp ? <Text style={[styles.bubbleTime, isOwn ? styles.bubbleTimeOwn : styles.bubbleTimeOther]}>{timestamp}</Text> : null}
-  </View>
-));
+const TextBubble: React.FC<{ text: string; isOwn?: boolean; timestamp?: string }> = memo(({ text, isOwn, timestamp }) => {
+  const styles = useStyles();
+  return (
+    <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
+      <Text style={[styles.bubbleText, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}>{text}</Text>
+      {timestamp ? <Text style={[styles.bubbleTime, isOwn ? styles.bubbleTimeOwn : styles.bubbleTimeOther]}>{timestamp}</Text> : null}
+    </View>
+  );
+});
 TextBubble.displayName = 'TextBubble';
 
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 const ChatMessageItem: React.FC<ChatMessageItemProps> = memo(({ message, payload: payloadProp, text: textProp, isOwn: isOwnProp, onProductAction, onApproveAutomation }) => {
+  const styles = useStyles();
   const isOwn = isOwnProp ?? message?.isOwn ?? false;
 
   const rawPayload: ChatMessagePayload = useMemo(() => {
@@ -178,7 +183,7 @@ export default ChatMessageItem;
 // ---------------------------------------------------------------------------
 // Styles — Luxury Dark #0A0A0A/#D4AF37
 // ---------------------------------------------------------------------------
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     marginVertical: 4,
     marginHorizontal: 12,
@@ -208,13 +213,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   captionOwn: {
-    backgroundColor: theme.primary, // #D4AF37
-    borderColor: theme.primary,
+    backgroundColor: t.colors.accent, // #D4AF37
+    borderColor: t.colors.accent,
     alignSelf: 'flex-end',
   },
   captionOther: {
-    backgroundColor: theme.surface, // #1F1F1F
-    borderColor: theme.border,
+    backgroundColor: t.colors.surface, // #1F1F1F
+    borderColor: t.colors.border,
     alignSelf: 'flex-start',
   },
   captionText: {
@@ -231,20 +236,20 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     borderWidth: 1,
     // luxury shadow
-    shadowColor: '#000',
+    shadowColor: t.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.24,
     shadowRadius: 8,
     elevation: 3,
   },
   bubbleOwn: {
-    backgroundColor: theme.primary, // gold — messaggio proprio
-    borderColor: theme.primary,
+    backgroundColor: t.colors.accent, // gold — messaggio proprio
+    borderColor: t.colors.accent,
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: theme.surface, // #1F1F1F
-    borderColor: theme.border,
+    backgroundColor: t.colors.surface, // #1F1F1F
+    borderColor: t.colors.border,
     borderBottomLeftRadius: 4,
   },
   bubbleText: {
@@ -256,7 +261,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   bubbleTextOther: {
-    color: theme.textPrimary, // #FFFFFF
+    color: t.colors.textPrimary, // #FFFFFF
   },
   bubbleTime: {
     fontSize: 10,
@@ -268,7 +273,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   bubbleTimeOther: {
-    color: theme.textMuted,
+    color: t.colors.textMuted,
     alignSelf: 'flex-end',
   },
 
@@ -277,7 +282,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     marginTop: 6,
-    color: theme.textMuted,
+    color: t.colors.textMuted,
   },
   timeOwn: {
     alignSelf: 'flex-end',
@@ -285,4 +290,4 @@ const styles = StyleSheet.create({
   timeOther: {
     alignSelf: 'flex-start',
   },
-});
+}));

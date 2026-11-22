@@ -1,21 +1,25 @@
 // FurInventory Pro - Scanner Screen
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Pressable, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../navigation/compat';
 import * as ImagePicker from '../lib/imagePicker';
 import * as ImageManipulator from '../lib/imageManipulator';
 import * as FileSystem from '../lib/fileSystem';
 import { decodeBarcodeImage } from '../../utils/barcodeDecoder';
-import { theme, typography, borderRadius } from '../../constants/theme';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations } from '../../contexts/LocationsContext';
 import { soundService } from '../../services/SoundService';
 import { useAutomations } from '../../contexts/AutomationsContext';
+import { AppIcon } from '../../components/ui/AppIcon';
+import { Text, TextInput } from '../../components/ui/Text';
+import { makeStyles, useTheme } from '../../contexts/ThemeContext';
+import { withAlpha } from '../../utils/color';
 
 export default function ScannerScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const { products, scanProduct, libraries } = useInventory();
   const { locations } = useLocations();
@@ -257,10 +261,10 @@ export default function ScannerScreen() {
           style={styles.flashButton}
           onPress={() => setFlashOn(!flashOn)}
         >
-          <MaterialIcons
+          <AppIcon
             name={flashOn ? 'flash-on' : 'flash-off'}
             size={24}
-            color={theme.primary}
+            color={t.colors.accentInk}
           />
         </Pressable>
       </View>
@@ -286,7 +290,7 @@ export default function ScannerScreen() {
       </View>
 
       <View style={styles.instructionsContainer}>
-        <MaterialIcons name="center-focus-strong" size={48} color={theme.primary} />
+        <AppIcon name="center-focus-strong" size={48} color={t.colors.accentInk} />
         <Text style={styles.instructionsTitle}>
           Inquadra il codice QR o barcode
         </Text>
@@ -302,7 +306,7 @@ export default function ScannerScreen() {
           style={styles.actionButton}
           onPress={pickQRImage}
         >
-          <MaterialIcons name="photo-library" size={20} color={theme.primary} />
+          <AppIcon name="photo-library" size={20} color={t.colors.onButtonSecondary} />
           <Text style={styles.actionButtonText}>Importa da Galleria</Text>
         </Pressable>
 
@@ -310,7 +314,7 @@ export default function ScannerScreen() {
           style={styles.actionButton}
           onPress={() => setShowManualInput(true)}
         >
-          <MaterialIcons name="keyboard" size={20} color={theme.primary} />
+          <AppIcon name="keyboard" size={20} color={t.colors.onButtonSecondary} />
           <Text style={styles.actionButtonText}>Inserisci Manualmente</Text>
         </Pressable>
       </View>
@@ -323,7 +327,7 @@ export default function ScannerScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { alignItems: 'center' }]}>
-            <ActivityIndicator size="large" color={theme.primary} style={{ marginBottom: 16 }} />
+            <ActivityIndicator size="large" color={t.colors.accentInk} style={{ marginBottom: 16 }} />
             <Text style={styles.modalTitle}>Analisi Immagine</Text>
             <Text style={styles.modalSubtitle}>
               Sto analizzando il QR/Barcode...
@@ -354,7 +358,7 @@ export default function ScannerScreen() {
               value={manualCode}
               onChangeText={setManualCode}
               placeholder="Es: SKU-001, 1234567890123"
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor={t.colors.placeholder}
               autoFocus
               autoCapitalize="characters"
               returnKeyType="search"
@@ -376,7 +380,7 @@ export default function ScannerScreen() {
                 style={[styles.modalButton, styles.modalButtonSearch]}
                 onPress={handleManualSearch}
               >
-                <MaterialIcons name="search" size={20} color="#fff" />
+                <AppIcon name="search" size={20} color="#fff" />
                 <Text style={styles.modalButtonTextSearch}>Cerca</Text>
               </Pressable>
             </View>
@@ -387,10 +391,10 @@ export default function ScannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -400,7 +404,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 20,
   },
   flashButton: {
@@ -412,9 +416,9 @@ const styles = StyleSheet.create({
   cameraContainer: {
     flex: 1,
     margin: 16,
-    borderRadius: borderRadius.large,
+    borderRadius: t.radius.large,
     overflow: 'hidden',
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
   },
   camera: {
     flex: 1,
@@ -428,7 +432,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: theme.primary,
+    borderColor: t.colors.accent,
   },
   cornerTopLeft: {
     top: '25%',
@@ -460,14 +464,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   instructionsTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 18,
     marginTop: 12,
     marginBottom: 8,
     textAlign: 'center',
   },
   instructionsText: {
-    ...typography.caption,
+    ...t.typography.caption,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -484,15 +488,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.buttonSecondary,
+    borderRadius: t.radius.button,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.buttonSecondaryBorder,
   },
   actionButtonText: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 14,
-    color: theme.primary,
+    color: t.colors.onButtonSecondary,
   },
   permissionContainer: {
     flex: 1,
@@ -501,64 +505,64 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   permissionTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 24,
     marginTop: 24,
     marginBottom: 12,
   },
   permissionText: {
-    ...typography.caption,
+    ...t.typography.caption,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,
   },
   permissionButton: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.button,
     paddingHorizontal: 32,
     paddingVertical: 14,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.button,
   },
   permissionButtonText: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
     fontSize: 16,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: withAlpha(t.colors.shadow, 0.75),
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 24,
     width: '100%',
     maxWidth: 400,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
   },
   modalTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 20,
     marginBottom: 8,
     textAlign: 'center',
   },
   modalSubtitle: {
-    ...typography.caption,
+    ...t.typography.caption,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
   },
   modalInput: {
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
     borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: borderRadius.medium,
+    borderColor: t.colors.inputBorder,
+    borderRadius: t.radius.input,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: theme.textPrimary,
+    color: t.colors.inputText,
     marginBottom: 20,
   },
   modalButtons: {
@@ -572,23 +576,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 14,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.button,
   },
   modalButtonCancel: {
-    backgroundColor: theme.background,
+    backgroundColor: t.colors.background,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.border,
   },
   modalButtonSearch: {
-    backgroundColor: theme.primary,
+    backgroundColor: t.colors.button,
   },
   modalButtonTextCancel: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 15,
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
   },
   modalButtonTextSearch: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
     fontSize: 15,
   },
-});
+}));

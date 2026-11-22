@@ -1,16 +1,24 @@
 // FurInventory Pro - Automation Flow View (Mappa Concettuale)
 import React, { useRef } from 'react';
 import {
-    View, Text, StyleSheet, Pressable, ScrollView, Share, Alert,
+  View,
+  Pressable,
+  ScrollView,
+  Share,
+  Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
-import { theme, borderRadius, spacing } from '../../../constants/theme';
 import { useAutomations, STEP_TYPE_META } from '../../../contexts/AutomationsContext';
 import QRCode from 'react-native-qrcode-svg';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { withAlpha } from '../../../utils/color';
 
 export default function AutomationFlowScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { id } = useLocalSearchParams();
@@ -21,10 +29,10 @@ export default function AutomationFlowScreen() {
     if (!automation) {
         return (
             <SafeAreaView edges={['top']} style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <MaterialIcons name="error-outline" size={64} color={theme.textSecondary} />
-                <Text style={{ color: theme.textSecondary, marginTop: 16, fontSize: 16 }}>Automazione non trovata</Text>
+                <AppIcon name="error-outline" size={64} color={t.colors.textSecondary} />
+                <Text style={{ color: t.colors.textSecondary, marginTop: 16, fontSize: 16 }}>Automazione non trovata</Text>
                 <Pressable onPress={() => router.back()} style={{ marginTop: 24, padding: 12 }}>
-                    <Text style={{ color: theme.primary, fontSize: 16 }}>Torna Indietro</Text>
+                    <Text style={{ color: t.colors.accentInk, fontSize: 16 }}>Torna Indietro</Text>
                 </Pressable>
             </SafeAreaView>
         );
@@ -56,24 +64,24 @@ export default function AutomationFlowScreen() {
         <SafeAreaView edges={['top']} style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="arrow-back" size={24} color={theme.textPrimary} />
+                    <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle} numberOfLines={1}>{automation.name}</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                     <Pressable onPress={() => router.push({ pathname: '/settings/automation-builder', params: { editId: automation.id } } as any)}>
-                        <MaterialIcons name="edit" size={22} color={theme.textSecondary} />
+                        <AppIcon name="edit" size={22} color={t.colors.textSecondary} />
                     </Pressable>
                     <Pressable onPress={handleDelete}>
-                        <MaterialIcons name="delete" size={22} color="#EF4444" />
+                        <AppIcon name="delete" size={22} color={t.colors.error} />
                     </Pressable>
                 </View>
             </View>
 
-            <ScrollView contentContainerStyle={{ padding: spacing.screenPadding, paddingBottom: insets.bottom + 100 }}>
+            <ScrollView contentContainerStyle={{ padding: t.spacing.screenPadding, paddingBottom: insets.bottom + 100 }}>
                 {/* Automation info */}
                 <View style={styles.infoCard}>
-                    <View style={[styles.infoIcon, { backgroundColor: `${automation.color}20` }]}>
-                        <MaterialIcons name={automation.icon as any} size={36} color={automation.color} />
+                    <View style={[styles.infoIcon, { backgroundColor: withAlpha(automation.color, 0.125) }]}>
+                        <AppIcon name={automation.icon as any} size={36} color={automation.color} />
                     </View>
                     <Text style={styles.infoName}>{automation.name}</Text>
                     {automation.description ? <Text style={styles.infoDesc}>{automation.description}</Text> : null}
@@ -102,7 +110,7 @@ export default function AutomationFlowScreen() {
                 <View style={styles.flowMap}>
                     {/* START node */}
                     <View style={styles.flowStartEnd}>
-                        <MaterialIcons name="play-circle-filled" size={28} color="#10B981" />
+                        <AppIcon name="play-circle-filled" size={28} color={t.colors.success} />
                         <Text style={styles.flowStartEndText}>INIZIO</Text>
                     </View>
                     <View style={styles.connectorLine} />
@@ -117,7 +125,7 @@ export default function AutomationFlowScreen() {
                                         <View style={[styles.stepBadge, { backgroundColor: meta.color }]}>
                                             <Text style={styles.stepBadgeText}>{index + 1}</Text>
                                         </View>
-                                        <MaterialIcons name={meta.icon as any} size={20} color={meta.color} />
+                                        <AppIcon name={meta.icon as any} size={20} color={meta.color} />
                                         <Text style={styles.flowCardType}>{meta.label}</Text>
                                     </View>
                                     <Text style={styles.flowCardLabel}>{step.label}</Text>
@@ -126,7 +134,7 @@ export default function AutomationFlowScreen() {
                                 {index < automation.steps.length - 1 && (
                                     <View style={styles.connectorArrow}>
                                         <View style={styles.connectorLine} />
-                                        <MaterialIcons name="arrow-downward" size={20} color={theme.textSecondary} />
+                                        <AppIcon name="arrow-downward" size={20} color={t.colors.textSecondary} />
                                         <View style={styles.connectorLine} />
                                     </View>
                                 )}
@@ -137,7 +145,7 @@ export default function AutomationFlowScreen() {
                     <View style={styles.connectorLine} />
                     {/* END node */}
                     <View style={styles.flowStartEnd}>
-                        <MaterialIcons name="stop-circle" size={28} color="#EF4444" />
+                        <AppIcon name="stop-circle" size={28} color={t.colors.error} />
                         <Text style={styles.flowStartEndText}>FINE</Text>
                     </View>
                 </View>
@@ -146,12 +154,12 @@ export default function AutomationFlowScreen() {
                 <Text style={styles.sectionLabel}>QR CODE DELL'AUTOMAZIONE</Text>
                 <View style={styles.qrContainer}>
                     <View style={styles.qrWrapper}>
-                        <QRCode value={automation.qrValue} size={180} backgroundColor="#FFF" color="#000" />
+                        <QRCode value={automation.qrValue} size={180} backgroundColor={t.colors.qrPaper} color={t.colors.qrInk} />
                     </View>
                     <Text style={styles.qrValue}>{automation.qrValue}</Text>
                     <Text style={styles.qrHint}>Stampa o salva questo QR. Scansionalo per avviare l'automazione.</Text>
                     <Pressable onPress={handleShare} style={styles.shareButton}>
-                        <MaterialIcons name="share" size={20} color="#FFF" />
+                        <AppIcon name="share" size={20} color={t.colors.onData} />
                         <Text style={styles.shareButtonText}>Condividi</Text>
                     </Pressable>
                 </View>
@@ -160,7 +168,7 @@ export default function AutomationFlowScreen() {
             {/* ── Floating Run Button ── */}
             <View style={[styles.floatingBar, { paddingBottom: insets.bottom + 16 }]}>
                 <Pressable style={[styles.runButton, { backgroundColor: automation.color }]} onPress={handleRun}>
-                    <MaterialIcons name="play-arrow" size={28} color="#FFF" />
+                    <AppIcon name="play-arrow" size={28} color={t.colors.onData} />
                     <Text style={styles.runButtonText}>Avvia Automazione</Text>
                 </Pressable>
             </View>
@@ -168,62 +176,62 @@ export default function AutomationFlowScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.background },
+const useStyles = makeStyles((t) => ({
+    container: { flex: 1, backgroundColor: t.colors.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: 16, borderBottomWidth: 1, borderBottomColor: theme.border,
+        padding: 16, borderBottomWidth: 1, borderBottomColor: t.colors.border,
     },
     backButton: { marginRight: 12 },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: theme.textPrimary, flex: 1 },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: t.colors.textPrimary, flex: 1 },
     infoCard: {
-        backgroundColor: theme.surface, borderRadius: borderRadius.large,
+        backgroundColor: t.colors.surface, borderRadius: t.radius.large,
         padding: 24, alignItems: 'center', marginBottom: 24,
-        borderWidth: 1, borderColor: theme.border,
+        borderWidth: 1, borderColor: t.colors.border,
     },
     infoIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-    infoName: { fontSize: 22, fontWeight: 'bold', color: theme.textPrimary, marginBottom: 4 },
-    infoDesc: { fontSize: 14, color: theme.textSecondary, textAlign: 'center', marginBottom: 16 },
+    infoName: { fontSize: 22, fontWeight: 'bold', color: t.colors.textPrimary, marginBottom: 4 },
+    infoDesc: { fontSize: 14, color: t.colors.textSecondary, textAlign: 'center', marginBottom: 16 },
     infoStats: { flexDirection: 'row', gap: 24, marginTop: 12 },
     stat: { alignItems: 'center' },
-    statValue: { fontSize: 18, fontWeight: 'bold', color: theme.textPrimary },
-    statLabel: { fontSize: 11, color: theme.textSecondary, marginTop: 2, textTransform: 'uppercase' },
-    sectionLabel: { fontSize: 12, fontWeight: '700', color: theme.textSecondary, marginBottom: 12, letterSpacing: 1 },
+    statValue: { fontSize: 18, fontWeight: 'bold', color: t.colors.textPrimary },
+    statLabel: { fontSize: 11, color: t.colors.textSecondary, marginTop: 2, textTransform: 'uppercase' },
+    sectionLabel: { fontSize: 12, fontWeight: '700', color: t.colors.textSecondary, marginBottom: 12, letterSpacing: 1 },
     flowMap: { alignItems: 'center', marginBottom: 32 },
     flowStartEnd: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    flowStartEndText: { fontSize: 12, fontWeight: '700', color: theme.textSecondary, letterSpacing: 1 },
-    connectorLine: { width: 2, height: 16, backgroundColor: theme.border },
+    flowStartEndText: { fontSize: 12, fontWeight: '700', color: t.colors.textSecondary, letterSpacing: 1 },
+    connectorLine: { width: 2, height: 16, backgroundColor: t.colors.border },
     connectorArrow: { alignItems: 'center', paddingVertical: 2 },
     flowCard: {
-        width: '100%', backgroundColor: theme.surface, borderRadius: borderRadius.medium,
-        padding: 16, borderWidth: 1, borderColor: theme.border,
+        width: '100%', backgroundColor: t.colors.surface, borderRadius: t.radius.card,
+        padding: 16, borderWidth: 1, borderColor: t.colors.border,
     },
     flowCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
     stepBadge: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    stepBadgeText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
-    flowCardType: { fontSize: 12, color: theme.textSecondary, fontWeight: '600' },
-    flowCardLabel: { fontSize: 16, fontWeight: '600', color: theme.textPrimary },
-    flowCardLoop: { fontSize: 12, color: '#F59E0B', marginTop: 6 },
+    stepBadgeText: { color: t.colors.onData, fontSize: 12, fontWeight: 'bold' },
+    flowCardType: { fontSize: 12, color: t.colors.textSecondary, fontWeight: '600' },
+    flowCardLabel: { fontSize: 16, fontWeight: '600', color: t.colors.textPrimary },
+    flowCardLoop: { fontSize: 12, color: t.colors.warning, marginTop: 6 },
     qrContainer: {
-        backgroundColor: theme.surface, borderRadius: borderRadius.large,
-        padding: 24, alignItems: 'center', borderWidth: 1, borderColor: theme.border,
+        backgroundColor: t.colors.surface, borderRadius: t.radius.large,
+        padding: 24, alignItems: 'center', borderWidth: 1, borderColor: t.colors.border,
     },
-    qrWrapper: { backgroundColor: '#FFF', padding: 16, borderRadius: 12, marginBottom: 16 },
-    qrValue: { fontSize: 13, color: theme.textSecondary, fontFamily: 'monospace', marginBottom: 8 },
-    qrHint: { fontSize: 13, color: theme.textSecondary, textAlign: 'center', marginBottom: 16 },
+    qrWrapper: { backgroundColor: t.colors.qrPaper, padding: 16, borderRadius: 12, marginBottom: 16 },
+    qrValue: { fontSize: 13, color: t.colors.textSecondary, fontFamily: 'monospace', marginBottom: 8 },
+    qrHint: { fontSize: 13, color: t.colors.textSecondary, textAlign: 'center', marginBottom: 16 },
     shareButton: {
-        flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: theme.info,
-        paddingVertical: 10, paddingHorizontal: 20, borderRadius: borderRadius.full,
+        flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.colors.info,
+        paddingVertical: 10, paddingHorizontal: 20, borderRadius: t.radius.full,
     },
-    shareButtonText: { color: '#FFF', fontWeight: '600' },
+    shareButtonText: { color: t.colors.onData, fontWeight: '600' },
     floatingBar: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        paddingHorizontal: spacing.screenPadding, paddingTop: 12,
-        backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border,
+        paddingHorizontal: t.spacing.screenPadding, paddingTop: 12,
+        backgroundColor: t.colors.background, borderTopWidth: 1, borderTopColor: t.colors.border,
     },
     runButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 16, borderRadius: borderRadius.full, gap: 8,
+        paddingVertical: 16, borderRadius: t.radius.full, gap: 8,
     },
-    runButtonText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
-});
+    runButtonText: { color: t.colors.onData, fontSize: 18, fontWeight: 'bold' },
+}));

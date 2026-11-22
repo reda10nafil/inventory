@@ -1,17 +1,21 @@
 // FurInventory Pro - Scanner Quick Actions Modal
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from '../navigation/compat';
 import { Image } from '../lib/ExpoImage';
-import { theme, typography, shadows, borderRadius, spacing } from '../../constants/theme';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations } from '../../contexts/LocationsContext';
+import { AppIcon } from '../../components/ui/AppIcon';
+import { Text, TextInput } from '../../components/ui/Text';
+import { makeStyles, useTheme } from '../../contexts/ThemeContext';
+import { withAlpha } from '../../utils/color';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
 export default function ScannerActionScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { type = 'product', id } = useLocalSearchParams();
@@ -75,7 +79,7 @@ export default function ScannerActionScreen() {
       <SafeAreaView edges={['top']} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={[styles.headerCard, { borderLeftColor: location.color, borderLeftWidth: 6 }]}>
-            <MaterialIcons name="location-on" size={40} color={location.color} />
+            <AppIcon name="location-on" size={40} color={location.color} />
             <View style={{ marginLeft: 16 }}>
               <Text style={styles.headerTitle}>POSIZIONE</Text>
               <Text style={styles.headerSubtitle}>{location.label}</Text>
@@ -86,25 +90,25 @@ export default function ScannerActionScreen() {
           <Text style={styles.sectionTitle}>AZIONI DISPONIBILI</Text>
 
           <Pressable style={styles.actionButton} onPress={() => router.push('/automations/batch-move')}>
-            <View style={[styles.actionIcon, { backgroundColor: theme.primary }]}>
-              <MaterialIcons name="move-to-inbox" size={24} color="#FFF" />
+            <View style={[styles.actionIcon, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="move-to-inbox" size={24} color="#FFF" />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>SPOSTAMENTO DI MASSA</Text>
               <Text style={styles.actionDescription}>Sposta prodotti QUI o da QUI</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+            <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
           </Pressable>
 
           <Pressable style={styles.actionButton} onPress={() => router.push('/automations/audit')}>
-            <View style={[styles.actionIcon, { backgroundColor: theme.warning }]}>
-              <MaterialIcons name="fact-check" size={24} color="#FFF" />
+            <View style={[styles.actionIcon, { backgroundColor: t.colors.warning }]}>
+              <AppIcon name="fact-check" size={24} color="#FFF" />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>INVENTARIO / AUDIT</Text>
               <Text style={styles.actionDescription}>Verifica contenuto posizione</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+            <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
           </Pressable>
 
           <Pressable style={styles.closeButton} onPress={() => router.back()}>
@@ -119,8 +123,8 @@ export default function ScannerActionScreen() {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={[styles.headerCard, { borderLeftColor: theme.primary, borderLeftWidth: 6 }]}>
-            <MaterialIcons name={library.icon as any || 'folder'} size={40} color={theme.primary} />
+          <View style={[styles.headerCard, { borderLeftColor: t.colors.accent, borderLeftWidth: 6 }]}>
+            <AppIcon name={library.icon as any || 'folder'} size={40} color={t.colors.accentInk} />
             <View style={{ marginLeft: 16 }}>
               <Text style={styles.headerTitle}>CARTELLA</Text>
               <Text style={styles.headerSubtitle}>{library.name}</Text>
@@ -130,14 +134,14 @@ export default function ScannerActionScreen() {
           <Text style={styles.sectionTitle}>AZIONI</Text>
 
           <Pressable style={styles.actionButton} onPress={() => router.push(`/(tabs)/?library=${library.id}` as any)}>
-            <View style={[styles.actionIcon, { backgroundColor: theme.primary }]}>
-              <MaterialIcons name="list" size={24} color="#FFF" />
+            <View style={[styles.actionIcon, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="list" size={24} color="#FFF" />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>VEDI PRODOTTI</Text>
               <Text style={styles.actionDescription}>Vai all'inventario filtrato</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.textSecondary} />
+            <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
           </Pressable>
 
           <Pressable style={styles.closeButton} onPress={() => router.back()}>
@@ -170,7 +174,7 @@ export default function ScannerActionScreen() {
                 {product.furType.charAt(0).toUpperCase() + product.furType.slice(1)}
               </Text>
               <View style={styles.locationBadge}>
-                <MaterialIcons name="location-on" size={14} color={theme.primary} />
+                <AppIcon name="location-on" size={14} color={t.colors.accentInk} />
                 <Text style={styles.locationText}>
                   {product.location.replace('_', ' ').toUpperCase()}
                 </Text>
@@ -189,7 +193,7 @@ export default function ScannerActionScreen() {
             onPress={() => setSelectedAction('moved')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#3B82F6' }]}>
-              <MaterialIcons name="swap-horiz" size={24} color="#FFF" />
+              <AppIcon name="swap-horiz" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>SPOSTATO</Text>
@@ -197,10 +201,10 @@ export default function ScannerActionScreen() {
                 Registra cambio di posizione
               </Text>
             </View>
-            <MaterialIcons
+            <AppIcon
               name={selectedAction === 'moved' ? 'radio-button-checked' : 'radio-button-unchecked'}
               size={24}
-              color={selectedAction === 'moved' ? theme.primary : theme.textSecondary}
+              color={selectedAction === 'moved' ? t.colors.checkOn : t.colors.textSecondary}
             />
           </Pressable>
 
@@ -240,7 +244,7 @@ export default function ScannerActionScreen() {
             onPress={() => setSelectedAction('sold')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#10B981' }]}>
-              <MaterialIcons name="sell" size={24} color="#FFF" />
+              <AppIcon name="sell" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>VENDUTO</Text>
@@ -248,10 +252,10 @@ export default function ScannerActionScreen() {
                 Segna come venduto e archivia
               </Text>
             </View>
-            <MaterialIcons
+            <AppIcon
               name={selectedAction === 'sold' ? 'radio-button-checked' : 'radio-button-unchecked'}
               size={24}
-              color={selectedAction === 'sold' ? theme.primary : theme.textSecondary}
+              color={selectedAction === 'sold' ? t.colors.checkOn : t.colors.textSecondary}
             />
           </Pressable>
 
@@ -261,7 +265,7 @@ export default function ScannerActionScreen() {
               <TextInput
                 style={styles.priceInput}
                 placeholder={`€${product.sellPrice || 0}`}
-                placeholderTextColor={theme.textSecondary}
+                placeholderTextColor={t.colors.placeholder}
                 keyboardType="numeric"
                 value={finalPrice}
                 onChangeText={setFinalPrice}
@@ -276,8 +280,8 @@ export default function ScannerActionScreen() {
             ]}
             onPress={() => setSelectedAction('details')}
           >
-            <View style={[styles.actionIcon, { backgroundColor: theme.primary }]}>
-              <MaterialIcons name="edit" size={24} color="#000" />
+            <View style={[styles.actionIcon, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="edit" size={24} color={t.colors.onAccent} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>DETTAGLI/MODIFICA</Text>
@@ -285,10 +289,10 @@ export default function ScannerActionScreen() {
                 Visualizza e modifica tutti i campi
               </Text>
             </View>
-            <MaterialIcons
+            <AppIcon
               name={selectedAction === 'details' ? 'radio-button-checked' : 'radio-button-unchecked'}
               size={24}
-              color={selectedAction === 'details' ? theme.primary : theme.textSecondary}
+              color={selectedAction === 'details' ? t.colors.checkOn : t.colors.textSecondary}
             />
           </Pressable>
 
@@ -318,10 +322,12 @@ export default function ScannerActionScreen() {
 }
 
 function NotFoundScreen({ message, router }: { message: string, router: any }) {
+  const t = useTheme();
+  const styles = useStyles();
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.errorContainer}>
-        <MaterialIcons name="error-outline" size={64} color={theme.error} />
+        <AppIcon name="error-outline" size={64} color={t.colors.error} />
         <Text style={styles.errorText}>{message}</Text>
         <Pressable style={styles.closeButton} onPress={() => router.back()}>
           <Text style={styles.closeButtonText}>Chiudi</Text>
@@ -331,10 +337,10 @@ function NotFoundScreen({ message, router }: { message: string, router: any }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: theme.backgroundSecondary,
+    backgroundColor: t.colors.backgroundSecondary,
   },
   scrollContent: {
     padding: 16,
@@ -342,41 +348,41 @@ const styles = StyleSheet.create({
   headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.surface,
     padding: 24,
-    borderRadius: borderRadius.large,
+    borderRadius: t.radius.large,
     marginBottom: 32,
-    ...shadows.card,
+    ...t.shadows.card,
   },
   headerTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
     letterSpacing: 1,
   },
   headerSubtitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: theme.textPrimary,
+    color: t.colors.textPrimary,
     marginVertical: 4,
   },
   headerMeta: {
     fontSize: 14,
-    color: theme.textSecondary,
+    color: t.colors.textSecondary,
   },
   productPreview: {
     flexDirection: 'row',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.large,
+    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.large,
     padding: 12,
     marginBottom: 24,
-    ...shadows.card,
+    ...t.shadows.card,
   },
   productImage: {
     width: 100,
     height: 100,
-    borderRadius: borderRadius.medium,
-    backgroundColor: theme.backgroundSecondary,
+    borderRadius: t.radius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
   },
   productDetails: {
     flex: 1,
@@ -384,12 +390,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   productSku: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 18,
     marginBottom: 4,
   },
   productType: {
-    ...typography.caption,
+    ...t.typography.caption,
     marginBottom: 8,
   },
   locationBadge: {
@@ -398,31 +404,31 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationText: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 12,
-    color: theme.primary,
+    color: t.colors.accentInk,
   },
   sectionTitle: {
-    ...typography.sectionHeader,
+    ...t.typography.sectionHeader,
     marginBottom: 12,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.tile,
+    borderRadius: t.radius.tile,
     padding: 16,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   actionButtonActive: {
-    borderColor: theme.primary,
+    borderColor: t.colors.tileSelectedBorder,
   },
   actionIcon: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -431,22 +437,22 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   actionTitle: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 16,
     marginBottom: 2,
   },
   actionDescription: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
   },
   optionsContainer: {
-    backgroundColor: theme.backgroundSecondary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.medium,
     padding: 16,
     marginBottom: 12,
   },
   optionsLabel: {
-    ...typography.caption,
+    ...t.typography.caption,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 12,
@@ -454,16 +460,16 @@ const styles = StyleSheet.create({
   optionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.tile,
+    borderRadius: t.radius.tile,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.tileBorder,
   },
   optionChipActive: {
-    backgroundColor: `${theme.primary}15`,
-    borderColor: theme.primary,
+    backgroundColor: withAlpha(t.colors.accent, 0.082),
+    borderColor: t.colors.tileSelectedBorder,
   },
   optionDot: {
     width: 12,
@@ -472,35 +478,35 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   optionText: {
-    ...typography.body,
+    ...t.typography.body,
     fontSize: 15,
   },
   optionTextActive: {
-    color: theme.primary,
+    color: t.colors.tileSelectedText,
     fontWeight: '600',
   },
   priceInput: {
-    backgroundColor: theme.surface,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.input,
+    borderRadius: t.radius.input,
     padding: 14,
     fontSize: 16,
-    color: theme.textPrimary,
+    color: t.colors.inputText,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: t.colors.inputBorder,
   },
   executeButton: {
-    backgroundColor: theme.primary,
-    borderRadius: borderRadius.medium,
+    backgroundColor: t.colors.button,
+    borderRadius: t.radius.button,
     padding: 16,
     alignItems: 'center',
     marginTop: 12,
-    ...shadows.card,
+    ...t.shadows.card,
   },
   executeButtonDisabled: {
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.surface,
   },
   executeButtonText: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
     fontSize: 16,
   },
   errorContainer: {
@@ -510,21 +516,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   errorText: {
-    ...typography.cardTitle,
+    ...t.typography.cardTitle,
     fontSize: 20,
     marginTop: 16,
     marginBottom: 24,
   },
   closeButton: {
-    backgroundColor: theme.surface,
+    backgroundColor: t.colors.buttonSecondary,
     paddingHorizontal: 32,
     paddingVertical: 14,
-    borderRadius: borderRadius.medium,
+    borderRadius: t.radius.button,
     alignItems: 'center', // Fix alignment
   },
   closeButtonText: {
-    ...typography.buttonPrimary,
+    ...t.typography.buttonPrimary,
     fontSize: 16,
-    color: theme.primary,
+    color: t.colors.onButtonSecondary,
   },
-});
+}));

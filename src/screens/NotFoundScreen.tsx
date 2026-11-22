@@ -3,23 +3,27 @@
  */
 
 // Powered by OnSpace.AI
-import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from '../lib/LinearGradient';
 import { useRouter } from '../navigation/compat';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppIcon } from '../../components/ui/AppIcon';
+import { Text } from '../../components/ui/Text';
+import { makeStyles, useTheme } from '../../contexts/ThemeContext';
 
 export default function NotFoundScreen() {
+  const t = useTheme();
+  const styles = useStyles();
   const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#0a0a0a', '#1a1a1a']}
+        colors={[t.colors.background, t.colors.backgroundSecondary]}
         style={StyleSheet.absoluteFillObject}
       />
       
       <View style={styles.content}>
-        <MaterialIcons name="photo-camera" size={80} color="#FFD700" />
+        <AppIcon name="photo-camera" size={80} color="#FFD700" />
         <Text style={styles.title}>Page Not Found</Text>
         <Text style={styles.message}>
           The moment you're looking for seems to have been lost in the shadows.
@@ -36,10 +40,10 @@ export default function NotFoundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: t.colors.background,
   },
   content: {
     flex: 1,
@@ -50,7 +54,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: t.colors.textPrimary,
     marginTop: 20,
     marginBottom: 10,
   },
@@ -72,4 +76,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-});
+}));

@@ -1,15 +1,18 @@
 // FurInventory Pro - Scan to Sell Automation
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Vibration, ScrollView, Alert, TextInput, Modal } from 'react-native';
+import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from '../../navigation/compat';
-import { theme, typography, borderRadius, spacing } from '../../../constants/theme';
 import { useInventory } from '../../../contexts/InventoryContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { soundService } from '../../../services/SoundService';
+import { AppIcon } from '../../../components/ui/AppIcon';
+import { Text, TextInput } from '../../../components/ui/Text';
+import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
 export default function ScanSellScreen() {
+    const styles = useStyles();
+    const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { products, sellProduct, getProductBySku } = useInventory();
@@ -87,7 +90,7 @@ export default function ScanSellScreen() {
         <SafeAreaView edges={['top']} style={styles.container}>
             <View style={styles.header}>
                 <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <MaterialIcons name="close" size={24} color={theme.textPrimary} />
+                    <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Vendita Flash</Text>
             </View>
@@ -99,8 +102,8 @@ export default function ScanSellScreen() {
                         <Text style={styles.statValue}>{scannedCount}</Text>
                         <Text style={styles.statLabel}>Capi Venduti</Text>
                     </View>
-                    <View style={[styles.statBox, { borderColor: theme.primary }]}>
-                        <Text style={[styles.statValue, { color: theme.primary }]}>
+                    <View style={[styles.statBox, { borderColor: t.colors.accent }]}>
+                        <Text style={[styles.statValue, { color: t.colors.statNumber }]}>
                             €{totalRevenue.toLocaleString()}
                         </Text>
                         <Text style={styles.statLabel}>Totale</Text>
@@ -109,7 +112,7 @@ export default function ScanSellScreen() {
 
                 {lastSoldProduct && (
                     <View style={styles.lastActionCard}>
-                        <MaterialIcons name="check-circle" size={24} color={theme.success} />
+                        <AppIcon name="check-circle" size={24} color={t.colors.success} />
                         <Text style={styles.lastActionText}>
                             Venduto: <Text style={{ fontWeight: 'bold' }}>{lastSoldProduct}</Text>
                         </Text>
@@ -117,13 +120,13 @@ export default function ScanSellScreen() {
                 )}
 
                 <View style={styles.actionContainer}>
-                    <MaterialIcons name="shopping-cart-checkout" size={64} color={theme.success} style={{ marginBottom: 16 }} />
+                    <AppIcon name="shopping-cart-checkout" size={64} color={t.colors.success} style={{ marginBottom: 16 }} />
                     <Text style={styles.instructions}>
                         Scansiona i prodotti in uscita per segnarli come VENDUTI e registrare il prezzo finale.
                     </Text>
 
                     <Pressable style={styles.scanButton} onPress={() => setShowScanner(true)}>
-                        <MaterialIcons name="qr-code-scanner" size={32} color="#FFF" />
+                        <AppIcon name="qr-code-scanner" size={32} color={t.colors.onData} />
                         <Text style={styles.scanButtonText}>Scansiona Prodotto</Text>
                     </Pressable>
                 </View>
@@ -155,7 +158,7 @@ export default function ScanSellScreen() {
                             value={priceInput}
                             onChangeText={setPriceInput}
                             placeholder="0.00"
-                            placeholderTextColor={theme.textSecondary}
+                            placeholderTextColor={t.colors.placeholder}
                             autoFocus
                         />
 
@@ -179,23 +182,23 @@ export default function ScanSellScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
     container: {
         flex: 1,
-        backgroundColor: theme.background,
+        backgroundColor: t.colors.background,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: theme.border,
+        borderBottomColor: t.colors.border,
     },
     backButton: {
         marginRight: 16,
     },
     headerTitle: {
-        ...typography.cardTitle, // Fallback
+        ...t.typography.cardTitle, // Fallback
         fontSize: 18,
     },
     content: {
@@ -210,36 +213,36 @@ const styles = StyleSheet.create({
     },
     statBox: {
         alignItems: 'center',
-        backgroundColor: theme.surface,
+        backgroundColor: t.colors.surface,
         padding: 16,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.tile,
         minWidth: 140,
         borderWidth: 1,
-        borderColor: theme.success,
+        borderColor: t.colors.success,
     },
     statValue: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: theme.success,
+        color: t.colors.success,
         marginBottom: 4,
     },
     statLabel: {
         fontSize: 12,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         textTransform: 'uppercase',
     },
     lastActionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ECFDF5',
+        backgroundColor: t.colors.successSurface,
         padding: 12,
-        borderRadius: borderRadius.medium,
+        borderRadius: t.radius.medium,
         marginBottom: 24,
         width: '100%',
     },
     lastActionText: {
         marginLeft: 8,
-        color: '#065F46',
+        color: t.colors.onSuccessSurface,
         flex: 1,
     },
     actionContainer: {
@@ -247,47 +250,47 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     instructions: {
-        ...typography.body,
+        ...t.typography.body,
         textAlign: 'center',
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         marginBottom: 32,
         maxWidth: '80%',
     },
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.success,
+        backgroundColor: t.colors.success,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: borderRadius.full,
+        borderRadius: t.radius.full,
         elevation: 4,
-        shadowColor: theme.success,
+        shadowColor: t.colors.success,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
     },
     scanButtonText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 12,
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: t.colors.scrimStrong,
         justifyContent: 'center',
         padding: 20,
     },
     modalContent: {
-        backgroundColor: theme.surface,
-        borderRadius: borderRadius.large,
+        backgroundColor: t.colors.surface,
+        borderRadius: t.radius.large,
         padding: 24,
         alignItems: 'center',
     },
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: theme.textPrimary,
+        color: t.colors.textPrimary,
         marginBottom: 20,
     },
     productInfo: {
@@ -297,41 +300,41 @@ const styles = StyleSheet.create({
     productSku: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: theme.primary,
+        color: t.colors.accentInk,
     },
     productType: {
         fontSize: 16,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
     },
     inputLabel: {
         fontSize: 14,
-        color: theme.textSecondary,
+        color: t.colors.textSecondary,
         alignSelf: 'flex-start',
         marginBottom: 8,
         marginLeft: 4,
     },
     priceInput: {
         width: '100%',
-        backgroundColor: theme.backgroundSecondary,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.backgroundSecondary,
+        borderRadius: t.radius.input,
         padding: 16,
         fontSize: 24,
-        color: theme.textPrimary,
+        color: t.colors.inputText,
         textAlign: 'center',
         marginBottom: 24,
         borderWidth: 1,
-        borderColor: theme.border,
+        borderColor: t.colors.inputBorder,
     },
     confirmButton: {
         width: '100%',
-        backgroundColor: theme.success,
-        borderRadius: borderRadius.medium,
+        backgroundColor: t.colors.success,
+        borderRadius: t.radius.button,
         padding: 16,
         alignItems: 'center',
     },
     confirmButtonText: {
-        color: '#FFF',
+        color: t.colors.onData,
         fontSize: 16,
         fontWeight: 'bold',
     },
-});
+}));
