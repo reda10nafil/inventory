@@ -2,6 +2,13 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L5b: Babilonia Vetro
+
+- Branch / SHA: `ui-ux/stili`, commit di L5b dopo il commit di L3.
+- Fatto: `constants/themes/babilonia.ts` generato e registrato (secondo nel selettore). Nuovo `campionario/cambio-stile.cjs`: sceglie uno stile da Aspetto e controlla scelta salvata, stile applicato subito restando sulla schermata, testo scritto in Aggiungi non perso, stile e prodotti presenti dopo il riavvio.
+- Verifiche: tsc 0, eslint 0, jest 57 verdi; `cambio-stile.cjs` attuale → babilonia: 6 prove su 6 riuscite (chiude anche la prova di L3); 31 schermate in Babilonia senza errori, `FONT=Outfit` pulito (l'unico testo in Inter è il campione di Attuale nella schermata Aspetto, voluto). Contrasti ≥ 5,3 tranne bianco su accento `#0A84FF` 3,65 (solo icone e testo grande, come da tela) e bianco sui colori di dati delle posizioni (2,1). Le 9 schermate del campionario si leggono; bagliori, vetro e barra sospesa non ci sono ancora (L6f).
+- Ancora da fare: L5c-e, L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L3: Impostazioni › Aspetto
 
 - Branch / SHA: `ui-ux/stili`, commit di L3 dopo il commit di L5a.
