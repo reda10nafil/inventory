@@ -12,14 +12,16 @@ import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { FUR_TYPES } from '../../../constants/config';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { useCustomFields, FIELD_TYPE_INFO, CustomField } from '../../../contexts/CustomFieldsContext';
-import { useLayout, LayoutField } from '../../../contexts/LayoutContext';
+import { useCustomFields, CustomField } from '../../../contexts/CustomFieldsContext';
+import { useLayout, LayoutField, sectionLabel } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
-import { generateGS1DigitalLink, validateGTIN } from '../../../utils/gs1';
+import { generateGS1DigitalLink } from '../../../utils/gs1';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
 import { Text, TextInput } from '../../../components/ui/Text';
+import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
-import { withAlpha } from '../../../utils/color';
 
 export default function AddProductScreen() {
   const t = useTheme();
@@ -29,7 +31,7 @@ export default function AddProductScreen() {
   const { addProduct, products, libraries } = useInventory();
   const { locations } = useLocations();
   const { customFields } = useCustomFields();
-  const { layout, getVisibleFields, loading: layoutLoading } = useLayout();
+  const { layout, getVisibleFields } = useLayout();
   const { gs1Config } = useGS1Config();
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
@@ -52,6 +54,8 @@ export default function AddProductScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { width: screenWidth } = useWindowDimensions();
   const imageWidth = Math.max(1, screenWidth - insets.left - insets.right - t.spacing.screenPadding * 2);
+  // Riquadri delle scelte: tre per riga, 10 px tra l'uno e l'altro (le scelte a riquadri sono sempre a larghezza intera)
+  const tileWidth = Math.floor((imageWidth - 20) / 3);
 
   // Auto-generate SKU if empty — logistica universale
   const generateSKU = (): string => {
@@ -163,23 +167,6 @@ export default function AddProductScreen() {
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const pickDocument = async (fieldId: string) => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets) {
-        const file = result.assets[0];
-        setCustomFieldValues(prev => ({ ...prev, [fieldId]: file.name })); // Store name or URI based on preference
-      }
-    } catch (error) {
-      console.error('Error picking document:', error);
-      Alert.alert('Errore', 'Impossibile selezionare il documento');
-    }
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -299,15 +286,16 @@ export default function AddProductScreen() {
   // Render a dynamic field based on LayoutContext configuration
   const renderDynamicField = (field: LayoutField) => {
     const sizeStyle = getSizeStyle(field.size);
+    // Campo a 1/3 (circa 106 px a 375): raggio piccolo, unità a destra, icone tolte dove manca spazio.
+    // I segnaposto lunghi solo a larghezza intera, altrimenti finirebbero tagliati.
+    const small = field.size === 'small';
+    const full = field.size === 'full';
 
     // Section Header
     if (field.type === 'section') {
       return (
-        <View key={field.id} style={{ width: '100%', marginTop: 24, marginBottom: 8 }}>
-          <Text style={{ ...t.typography.overline, color: t.colors.textSecondary, letterSpacing: 1 }}>
-            {field.label?.toUpperCase() || 'SEZIONE'}
-          </Text>
-          <View style={{ height: 1, backgroundColor: t.colors.border, marginTop: 4, opacity: 0.5 }} />
+        <View key={field.id} style={[styles.section, styles.sectionItem]}>
+          <Text style={styles.sectionTitle}>{sectionLabel(field.label) || 'Sezione'}</Text>
         </View>
       );
     }
@@ -326,42 +314,103 @@ export default function AddProductScreen() {
       return cf?.icon || 'tune';
     };
 
-    // Helper to render label only (icon is now inside the field)
+    // Etichetta sopra il controllo, al massimo due righe
     const renderLabel = (labelOverride?: string, required?: boolean) => {
       const label = labelOverride || getFieldLabel(field.id);
       return (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-          <Text style={{ ...t.typography.caption, fontSize: 13, fontWeight: '600', color: t.colors.textPrimary }}>
-            {label}{required && <Text style={{ color: t.colors.error }}> *</Text>}
-          </Text>
-        </View>
+        <Text style={styles.label} numberOfLines={2}>
+          {label}{required && <Text style={styles.required}> *</Text>}
+        </Text>
       );
     };
 
-    // Helper to render input with icon inside
+    // Campo a una riga con l'icona dentro a sinistra e l'unità a destra, spinto in basso nella riga
     const renderInputWithIcon = (inputProps: {
+      icon?: string;
       placeholder: string;
       value: string;
       onChangeText: (v: string) => void;
       keyboardType?: 'default' | 'numeric';
-      multiline?: boolean;
-      numberOfLines?: number;
+      unit?: string;
     }) => {
-      const icon = getFieldIcon(field.id);
+      const icon = inputProps.icon ?? getFieldIcon(field.id);
       return (
-        <View style={[styles.inputWithIcon, inputProps.multiline && { alignItems: 'flex-start', paddingTop: 14 }]}>
-          <AppIcon name={icon as any} size={20} color={t.colors.fieldIcon} style={styles.inputIcon} />
+        <View style={[styles.inputBox, small && styles.inputBoxSmall, styles.bottom]}>
+          <AppIcon name={icon} size={small ? 17 : 18} color={t.colors.fieldIcon} />
           <TextInput
-            style={[styles.inputInner, inputProps.multiline && styles.textAreaInner]}
+            style={styles.inputText}
             placeholder={inputProps.placeholder}
             placeholderTextColor={t.colors.placeholder}
             keyboardType={inputProps.keyboardType || 'default'}
-            multiline={inputProps.multiline}
-            numberOfLines={inputProps.numberOfLines}
-            textAlignVertical={inputProps.multiline ? 'top' : 'center'}
             value={inputProps.value}
             onChangeText={inputProps.onChangeText}
           />
+          {inputProps.unit ? <Text style={[styles.unit, small && styles.unitSmall]}>{inputProps.unit}</Text> : null}
+        </View>
+      );
+    };
+
+    // Testo lungo (a 1/3 senza icona, per lasciare spazio al testo)
+    const renderTextArea = (areaProps: {
+      icon: string;
+      placeholder: string;
+      value: string;
+      onChangeText: (v: string) => void;
+      numberOfLines: number;
+    }) => (
+      <View style={[styles.area, styles.bottom]}>
+        {!small && <AppIcon name={areaProps.icon} size={18} color={t.colors.fieldIcon} style={styles.areaIcon} />}
+        <TextInput
+          style={styles.areaText}
+          placeholder={areaProps.placeholder}
+          placeholderTextColor={t.colors.placeholder}
+          multiline
+          numberOfLines={areaProps.numberOfLines}
+          textAlignVertical="top"
+          value={areaProps.value}
+          onChangeText={areaProps.onChangeText}
+        />
+      </View>
+    );
+
+    // Campo con pulsante quadrato accanto (SKU, codice a barre). A 1/3 non c'è posto per il riquadro a parte:
+    // il pulsante diventa un'icona dentro il campo, a destra, e l'icona del campo si toglie.
+    const renderInputWithButton = (props: {
+      icon: string;
+      placeholder: string;
+      value: string;
+      onChangeText: (v: string) => void;
+      buttonIcon: string;
+      onButtonPress: () => void;
+    }) => {
+      const input = (
+        <TextInput
+          style={styles.inputText}
+          placeholder={props.placeholder}
+          placeholderTextColor={t.colors.placeholder}
+          value={props.value}
+          onChangeText={props.onChangeText}
+        />
+      );
+      if (small) {
+        return (
+          <View style={[styles.inputBox, styles.inputBoxSmall, styles.bottom]}>
+            {input}
+            <Pressable onPress={props.onButtonPress} hitSlop={10}>
+              <AppIcon name={props.buttonIcon} size={20} color={t.colors.accentInk} />
+            </Pressable>
+          </View>
+        );
+      }
+      return (
+        <View style={[styles.inputRow, styles.bottom]}>
+          <View style={[styles.inputBox, styles.inputFill]}>
+            <AppIcon name={props.icon} size={18} color={t.colors.fieldIcon} />
+            {input}
+          </View>
+          <Pressable style={styles.sideButton} onPress={props.onButtonPress}>
+            <AppIcon name={props.buttonIcon} size={22} color={t.colors.accentInk} />
+          </Pressable>
         </View>
       );
     };
@@ -370,8 +419,6 @@ export default function AddProductScreen() {
     if (field.type === 'custom') {
       const customField = customFields.find(cf => cf.id === field.id);
       if (!customField) return null;
-
-
 
       const getDynamicOptionsList = (cf: CustomField) => {
         if (cf.linkTo === 'locations') return locations.map(l => ({ id: l.id, label: l.label }));
@@ -382,81 +429,6 @@ export default function AddProductScreen() {
           ? cf.dataset.map((val: string, i: number) => ({ id: `ds_${i}`, label: String(val) }))
           : cf.options || [];
       };
-
-      // === Modals and Pickers ===
-      if (customField.uiType === 'picker' || customField.uiType === 'modal_list') {
-        const optionsList = getDynamicOptionsList(customField);
-
-        const isMulti = customField.type === 'multi_choice';
-        const val = customFieldValues[field.id];
-        const displayValue = isMulti
-          ? (val?.length ? `${val.length} selezionati` : 'Seleziona...')
-          : (val || 'Seleziona...');
-
-        return (
-          <View key={field.id} style={[styles.dynamicField, sizeStyle]}>
-            {renderLabel(customField.name, customField.required)}
-            <Pressable
-              style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-              onPress={() => setSelectModalConfig({ fieldId: field.id, name: customField.name, options: optionsList, isMulti })}
-            >
-              <Text style={{ color: val && (!isMulti || val.length > 0) ? t.colors.inputText : t.colors.placeholder, fontSize: 16 }}>
-                {displayValue}
-              </Text>
-              <AppIcon name="keyboard-arrow-down" size={24} color={t.colors.fieldIcon} />
-            </Pressable>
-          </View>
-        );
-      }
-
-      // === Grids and Segmented ===
-      if (customField.uiType === 'grid' || customField.uiType === 'segmented' || customField.type === 'single_choice' || customField.type === 'multi_choice') {
-        const optionsList = getDynamicOptionsList(customField);
-
-        return (
-          <View key={field.id} style={[styles.dynamicField, { width: '100%' }]}>
-            {renderLabel(customField.name, customField.required)}
-            <View style={styles.quickSettingsGrid}>
-              {optionsList.map((option: any) => {
-                const isSingle = customField.uiType === 'grid' || customField.uiType === 'segmented' || customField.type === 'single_choice';
-                const isSelected = isSingle
-                  ? customFieldValues[field.id] === option.label || customFieldValues[field.id] === option.id
-                  : (customFieldValues[field.id] || []).includes(option.label) || (customFieldValues[field.id] || []).includes(option.id);
-
-                return (
-                  <Pressable
-                    key={option.id}
-                    style={[styles.quickSettingsTile, isSelected && styles.quickSettingsTileActive]}
-                    onPress={() => {
-                      const valToSave = option.label || option.id; // prefer label from dataset
-                      if (isSingle) {
-                        setCustomFieldValues(prev => ({ ...prev, [field.id]: isSelected ? null : valToSave }));
-                      } else {
-                        const current = customFieldValues[field.id] || [];
-                        const updated = isSelected
-                          ? current.filter((v: string) => v !== valToSave && v !== option.id)
-                          : [...current, valToSave];
-                        setCustomFieldValues(prev => ({ ...prev, [field.id]: updated }));
-                      }
-                    }}
-                  >
-                    <View style={[styles.quickSettingsIconContainer, isSelected && styles.quickSettingsIconContainerActive]}>
-                      <AppIcon
-                        name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
-                        size={28}
-                        color={isSelected ? t.colors.onAccent : t.colors.textSecondary}
-                      />
-                    </View>
-                    <Text style={[styles.quickSettingsTileText, isSelected && styles.quickSettingsTileTextActive]} numberOfLines={2}>
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        );
-      }
 
       // Get field icon precedence:
       // 1. Layout configuration (user override in Layout Builder)
@@ -480,19 +452,83 @@ export default function AddProductScreen() {
         }
       };
 
+      // === Modals and Pickers ===
+      if (customField.uiType === 'picker' || customField.uiType === 'modal_list') {
+        const optionsList = getDynamicOptionsList(customField);
+
+        const isMulti = customField.type === 'multi_choice';
+        const val = customFieldValues[field.id];
+        const count = choiceList(val).length;
+        const hasValue = isMulti ? count > 0 : !!val;
+        // A 1/3 testo in 13 px e diciture corte; un valore lungo finisce con «…»
+        const displayValue = isMulti
+          ? (count ? `${count} ${small ? 'scelti' : 'selezionati'}` : (small ? 'Scegli' : 'Seleziona...'))
+          : (val || (small ? 'Scegli' : 'Seleziona...'));
+
+        return (
+          <View key={field.id} style={sizeStyle}>
+            {renderLabel(customField.name, customField.required)}
+            <Pressable
+              style={[styles.inputBox, small && styles.inputBoxSmall, styles.bottom]}
+              onPress={() => setSelectModalConfig({ fieldId: field.id, name: customField.name, options: optionsList, isMulti })}
+            >
+              {!small && <AppIcon name={getCustomFieldIcon()} size={18} color={t.colors.fieldIcon} />}
+              <Text style={[styles.valueText, small && styles.valueTextSmall, !hasValue && styles.valuePlaceholder]} numberOfLines={1}>
+                {displayValue}
+              </Text>
+              <AppIcon name="keyboard-arrow-down" size={20} color={t.colors.textMuted} />
+            </Pressable>
+          </View>
+        );
+      }
+
+      // === Grids and Segmented ===
+      if (customField.uiType === 'grid' || customField.uiType === 'segmented' || customField.type === 'single_choice' || customField.type === 'multi_choice') {
+        const optionsList = getDynamicOptionsList(customField);
+        // D01: la scelta multipla a riquadri resta multipla (quadratini di spunta), la singola ha i cerchi
+        const isMulti = customField.type === 'multi_choice';
+
+        return (
+          <View key={field.id} style={{ width: '100%' }}>
+            {renderLabel(customField.name, customField.required)}
+            <View style={styles.tileGrid}>
+              {optionsList.map((option: any) => {
+                const isSelected = isChoiceSelected(customFieldValues[field.id], option, isMulti);
+                const icon = isMulti
+                  ? (isSelected ? 'check-box' : 'check-box-outline-blank')
+                  : (isSelected ? 'check-circle' : 'radio-button-unchecked');
+
+                return (
+                  <Pressable
+                    key={option.id}
+                    style={[styles.tile, { width: tileWidth }, isSelected && styles.tileSelected]}
+                    onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: toggleChoice(prev[field.id], option, isMulti) }))}
+                  >
+                    <AppIcon name={icon} size={22} color={isSelected ? t.colors.checkOn : t.colors.checkRing} />
+                    <Text style={[styles.tileText, isSelected && styles.tileTextSelected]} numberOfLines={2}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        );
+      }
+
       if (customField.uiType === 'stepper') {
         const stepMap = customField.dataset || { min: 0, max: 100, step: 1 };
         const val = parseFloat(customFieldValues[field.id]) || stepMap.min;
         return (
-          <View key={field.id} style={[styles.dynamicField, sizeStyle]}>
+          <View key={field.id} style={sizeStyle}>
             {renderLabel(customField.name, customField.required)}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.input, borderRadius: t.radius.input, overflow: 'hidden', borderWidth: 1, borderColor: t.colors.inputBorder }}>
-              <Pressable style={{ padding: 16, backgroundColor: withAlpha(t.colors.accent, 0.063) }} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.max(stepMap.min, val - stepMap.step) }))}>
-                <AppIcon name="remove" size={24} color={val <= stepMap.min ? t.colors.textMuted : t.colors.accentInk} />
+            <View style={[styles.stepper, small && styles.stepperSmall, styles.bottom]}>
+              <Pressable style={styles.stepperButton} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.max(stepMap.min, val - stepMap.step) }))}>
+                <AppIcon name="remove" size={20} color={val <= stepMap.min ? t.colors.textMuted : t.colors.textSecondary} />
               </Pressable>
-              <Text style={{ flex: 1, textAlign: 'center', ...t.typography.cardTitle }}>{val}</Text>
-              <Pressable style={{ padding: 16, backgroundColor: withAlpha(t.colors.accent, 0.063) }} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.min(stepMap.max, val + stepMap.step) }))}>
-                <AppIcon name="add" size={24} color={val >= stepMap.max ? t.colors.textMuted : t.colors.accentInk} />
+              <Text style={styles.stepperValue}>{val}</Text>
+              <Pressable style={[styles.stepperButton, styles.stepperPlus]} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.min(stepMap.max, val + stepMap.step) }))}>
+                <AppIcon name="add" size={20} color={val >= stepMap.max ? t.colors.textMuted : t.colors.accentInk} />
               </Pressable>
             </View>
           </View>
@@ -503,27 +539,27 @@ export default function AddProductScreen() {
       if (customField.type === 'images') {
         const customImages = customFieldValues[field.id] || [];
         return (
-          <View key={field.id} style={[styles.dynamicField, { width: '100%' }]}>
+          <View key={field.id} style={{ width: '100%' }}>
             {renderLabel(customField.name, customField.required)}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
               {customImages.map((uri: string, index: number) => (
-                <View key={index} style={{ marginRight: 8, position: 'relative' }}>
-                  <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 12 }} contentFit="cover" />
+                <View key={index}>
+                  <Image source={{ uri }} style={styles.smallPhoto} contentFit="cover" />
                   <Pressable
-                    style={{ position: 'absolute', top: 4, right: 4, backgroundColor: t.colors.scrim, borderRadius: 12, padding: 4 }}
+                    style={styles.smallPhotoRemove}
                     onPress={() => {
                       const newImages = [...customImages];
                       newImages.splice(index, 1);
                       setCustomFieldValues(prev => ({ ...prev, [field.id]: newImages }));
                     }}
                   >
-                    <AppIcon name="close" size={16} color="#FFF" />
+                    <AppIcon name="close" size={16} color={t.colors.onData} />
                   </Pressable>
                 </View>
               ))}
               {customImages.length < 10 && (
                 <Pressable
-                  style={[styles.addImageButton, { width: 80, height: 80, borderWidth: 1, borderColor: t.colors.dash, borderRadius: 12, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' }]}
+                  style={styles.smallPhotoAdd}
                   onPress={async () => {
                     const result = await ImagePicker.launchImageLibraryAsync({
                       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -536,7 +572,7 @@ export default function AddProductScreen() {
                     }
                   }}
                 >
-                  <AppIcon name="add-a-photo" size={24} color={t.colors.accentInk} />
+                  <AppIcon name="add-photo-alternate" size={26} color={t.colors.accentInk} />
                 </Pressable>
               )}
             </ScrollView>
@@ -548,16 +584,16 @@ export default function AddProductScreen() {
       if (customField.type === 'date') {
         const val = customFieldValues[field.id];
         return (
-          <View key={field.id} style={[styles.dynamicField, sizeStyle]}>
+          <View key={field.id} style={sizeStyle}>
             {renderLabel(customField.name, customField.required)}
             <Pressable
-              style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              style={[styles.inputBox, small && styles.inputBoxSmall, small && styles.dateBoxSmall, styles.bottom]}
               onPress={() => setShowDatePickerMap(prev => ({ ...prev, [field.id]: true }))}
             >
-              <Text style={{ color: val ? t.colors.inputText : t.colors.placeholder, fontSize: 16 }}>
-                {val ? new Date(val).toLocaleDateString('it-IT') : `Seleziona Data`}
+              <Text style={[styles.valueText, small && styles.valueTextSmall, !val && styles.valuePlaceholder]} numberOfLines={1}>
+                {val ? new Date(val).toLocaleDateString('it-IT') : (small ? 'Data' : 'Seleziona Data')}
               </Text>
-              <AppIcon name="calendar-today" size={24} color={t.colors.fieldIcon} />
+              <AppIcon name="calendar-today" size={small ? 15 : 18} color={t.colors.info} />
             </Pressable>
             {showDatePickerMap[field.id] && (
               <DateTimePicker
@@ -578,24 +614,24 @@ export default function AddProductScreen() {
       if (customField.type === 'document') {
         const docs = customFieldValues[field.id] || [];
         return (
-          <View key={field.id} style={[styles.dynamicField, { width: '100%' }]}>
+          <View key={field.id} style={{ width: '100%' }}>
             {renderLabel(customField.name, customField.required)}
-            <View style={{ gap: 8 }}>
+            <View style={styles.docList}>
               {docs.map((docUri: string, index: number) => (
-                <Pressable key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: t.colors.border }} onPress={() => Sharing.shareAsync(docUri).catch(console.error)}>
-                  <AppIcon name="insert-drive-file" size={24} color={t.colors.accentInk} />
-                  <Text style={{ flex: 1, marginLeft: 12, fontSize: 14, color: t.colors.textPrimary }} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
-                  <Pressable onPress={() => {
+                <Pressable key={index} style={styles.docRow} onPress={() => Sharing.shareAsync(docUri).catch(console.error)}>
+                  <AppIcon name="insert-drive-file" size={20} color={t.colors.accentInk} />
+                  <Text style={styles.docName} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
+                  <Pressable style={styles.docRemove} onPress={() => {
                     const newDocs = [...docs];
                     newDocs.splice(index, 1);
                     setCustomFieldValues(prev => ({ ...prev, [field.id]: newDocs }));
                   }}>
-                    <AppIcon name="delete" size={24} color={t.colors.error} />
+                    <AppIcon name="delete" size={20} color={t.colors.error} />
                   </Pressable>
                 </Pressable>
               ))}
               <Pressable
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: t.colors.accent, backgroundColor: withAlpha(t.colors.accent, 0.063), marginTop: 4 }}
+                style={styles.docAdd}
                 onPress={async () => {
                   try {
                     const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
@@ -606,7 +642,7 @@ export default function AddProductScreen() {
                 }}
               >
                 <AppIcon name="upload-file" size={20} color={t.colors.accentInk} />
-                <Text style={{ marginLeft: 8, color: t.colors.accentInk, fontWeight: 'bold' }}>Allega Documento</Text>
+                <Text style={styles.docAddText}>Allega Documento</Text>
               </Pressable>
             </View>
           </View>
@@ -616,47 +652,49 @@ export default function AddProductScreen() {
       // === Short Text w/ Barcode Scanner ===
       if (customField.type === 'text_short' && customField.isBarcode) {
         return (
-          <View key={field.id} style={[styles.dynamicField, sizeStyle]}>
+          <View key={field.id} style={sizeStyle}>
             {renderLabel(customField.name, customField.required)}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={[styles.inputWithIcon, { flex: 1 }]}>
-                <AppIcon name={getCustomFieldIcon() as any} size={20} color={t.colors.fieldIcon} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputInner}
-                  placeholder={`Scan or enter ${customField.name.toLowerCase()}`}
-                  placeholderTextColor={t.colors.placeholder}
-                  value={customFieldValues[field.id]?.toString() || ''}
-                  onChangeText={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
-                />
-              </View>
-              <Pressable
-                style={styles.qrButton}
-                onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: `SCAN-${Math.floor(Math.random() * 10000)}` }))} // Simulated scanner
-              >
-                <AppIcon name="qr-code-scanner" size={24} color={t.colors.accentInk} />
-              </Pressable>
-            </View>
+            {renderInputWithButton({
+              icon: getCustomFieldIcon(),
+              placeholder: full ? 'Scansiona o scrivi il codice' : 'Codice',
+              value: customFieldValues[field.id]?.toString() || '',
+              onChangeText: (value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value })),
+              buttonIcon: 'qr-code-scanner',
+              onButtonPress: () => setCustomFieldValues(prev => ({ ...prev, [field.id]: `SCAN-${Math.floor(Math.random() * 10000)}` })), // Simulated scanner
+            })}
+          </View>
+        );
+      }
+
+      const isNumeric = customField.type === 'number' || customField.type === 'currency';
+      const textPlaceholder = full ? `Inserisci ${customField.name.toLowerCase()}` : 'Scrivi';
+
+      if (customField.type === 'text_long') {
+        return (
+          <View key={field.id} style={sizeStyle}>
+            {renderLabel(customField.name, customField.required)}
+            {renderTextArea({
+              icon: getCustomFieldIcon(),
+              placeholder: textPlaceholder,
+              value: customFieldValues[field.id]?.toString() || '',
+              onChangeText: (value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value })),
+              numberOfLines: 3,
+            })}
           </View>
         );
       }
 
       return (
-        <View key={field.id} style={[styles.dynamicField, sizeStyle]}>
+        <View key={field.id} style={sizeStyle}>
           {renderLabel(customField.name, customField.required)}
-          <View style={[styles.inputWithIcon, customField.type === 'text_long' && { alignItems: 'flex-start', paddingTop: 14 }]}>
-            <AppIcon name={getCustomFieldIcon() as any} size={20} color={t.colors.fieldIcon} style={styles.inputIcon} />
-            <TextInput
-              style={[styles.inputInner, customField.type === 'text_long' && styles.textAreaInner]}
-              placeholder={`Inserisci ${customField.name.toLowerCase()}`}
-              placeholderTextColor={t.colors.placeholder}
-              keyboardType={customField.type === 'number' || customField.type === 'currency' ? 'numeric' : 'default'}
-              multiline={customField.type === 'text_long'}
-              numberOfLines={customField.type === 'text_long' ? 3 : 1}
-              textAlignVertical={customField.type === 'text_long' ? 'top' : 'center'}
-              value={customFieldValues[field.id]?.toString() || ''}
-              onChangeText={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
-            />
-          </View>
+          {renderInputWithIcon({
+            icon: getCustomFieldIcon(),
+            placeholder: isNumeric ? '0' : textPlaceholder,
+            value: customFieldValues[field.id]?.toString() || '',
+            onChangeText: (value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value })),
+            keyboardType: isNumeric ? 'numeric' : 'default',
+            unit: customField.unit || (customField.type === 'currency' ? '€' : undefined),
+          })}
         </View>
       );
     }
@@ -665,10 +703,12 @@ export default function AddProductScreen() {
     switch (field.id) {
       case 'images':
         return (
-          <View key="images" style={[styles.dynamicField, { width: '100%' }]}>
-            <Text style={styles.sectionTitle}>FOTO PRODOTTO ({images.length}/10)</Text>
+          <View key="images" style={{ width: '100%' }}>
+            <Text style={styles.label}>
+              Foto prodotto <Text style={styles.labelMuted}>{images.length}/10</Text>
+            </Text>
             {images.length > 0 && (
-              <View style={styles.mainImageContainer}>
+              <View style={styles.mainImageBox}>
                 <ScrollView
                   horizontal
                   pagingEnabled
@@ -680,33 +720,33 @@ export default function AddProductScreen() {
                   scrollEventThrottle={16}
                 >
                   {images.map((uri, index) => (
-                    <View key={index} style={styles.mainImageWrapper}>
+                    <View key={index}>
                       <Image source={{ uri }} style={[styles.mainImage, { width: imageWidth }]} contentFit="cover" />
-                      <Pressable style={styles.removeMainImageButton} onPress={() => removeImage(index)}>
-                        <AppIcon name="delete" size={20} color="#FFF" />
+                      <Pressable style={styles.removeMainImage} onPress={() => removeImage(index)}>
+                        <AppIcon name="delete" size={20} color={t.colors.onData} />
                       </Pressable>
                     </View>
                   ))}
                 </ScrollView>
                 {images.length > 1 && (
-                  <View style={styles.dotsContainer}>
+                  <View style={styles.dots}>
                     {images.map((_, index) => (
-                      <View key={index} style={[styles.dotIndicator, index === currentImageIndex && styles.dotIndicatorActive]} />
+                      <View key={index} style={[styles.dot, index === currentImageIndex && styles.dotActive]} />
                     ))}
                   </View>
                 )}
               </View>
             )}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
               {images.map((uri, index) => (
-                <Pressable key={index} style={styles.imageContainer} onPress={() => setCurrentImageIndex(index)}>
-                  <Image source={{ uri }} style={[styles.imageThumb, index === currentImageIndex && styles.imageThumbActive]} contentFit="cover" />
+                <Pressable key={index} onPress={() => setCurrentImageIndex(index)}>
+                  <Image source={{ uri }} style={[styles.thumb, index === currentImageIndex && styles.thumbActive]} contentFit="cover" />
                 </Pressable>
               ))}
               {images.length < 10 && (
-                <Pressable style={styles.addImageButton} onPress={showImageSourcePicker}>
-                  <AppIcon name="add-a-photo" size={32} color={t.colors.accentInk} />
-                  <Text style={styles.addImageText}>Importa</Text>
+                <Pressable style={styles.photoAdd} onPress={showImageSourcePicker}>
+                  <AppIcon name="add-a-photo" size={26} color={t.colors.accentInk} />
+                  <Text style={styles.photoAddText}>Importa</Text>
                 </Pressable>
               )}
             </ScrollView>
@@ -715,171 +755,177 @@ export default function AddProductScreen() {
 
       case 'sku':
         return (
-          <View key="sku" style={[styles.dynamicField, sizeStyle]}>
+          <View key="sku" style={sizeStyle}>
             {renderLabel()}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder={`Auto: ${generateSKU()}`}
-                placeholderTextColor={t.colors.placeholder}
-                value={formData.sku}
-                onChangeText={(value) => updateField('sku', value)}
-              />
-              <Pressable
-                style={styles.qrButton}
-                onPress={() => updateField('sku', generateSKU())}
-              >
-                <AppIcon name="qr-code-2" size={24} color={t.colors.accentInk} />
-              </Pressable>
-            </View>
+            {renderInputWithButton({
+              icon: getFieldIcon('sku'),
+              placeholder: full ? `Auto: ${generateSKU()}` : 'Auto',
+              value: formData.sku,
+              onChangeText: (value) => updateField('sku', value),
+              buttonIcon: 'qr-code-2',
+              onButtonPress: () => updateField('sku', generateSKU()),
+            })}
             {!formData.sku && (
-              <Text style={styles.helperText}>
-                💡 Generato automaticamente se vuoto
-              </Text>
+              <View style={styles.helper}>
+                <AppIcon name="lightbulb-outline" size={15} color={t.colors.textMuted} />
+                <Text style={styles.helperText}>Generato automaticamente se vuoto</Text>
+              </View>
             )}
           </View>
         );
 
       case 'furType':
         return (
-          <View key="furType" style={[styles.dynamicField, { width: '100%' }]}>
+          <View key="furType" style={{ width: '100%' }}>
             {renderLabel(undefined, true)}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.chipContainer}>
-                {FUR_TYPES.map((type) => (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              {FUR_TYPES.map((type) => {
+                const active = formData.furType === type.id;
+                return (
                   <Pressable
                     key={type.id}
-                    style={[styles.chip, formData.furType === type.id && styles.chipActive]}
+                    style={[styles.chip, active && styles.chipActive]}
                     onPress={() => updateField('furType', type.id)}
                   >
-                    <Text style={[styles.chipText, formData.furType === type.id && styles.chipTextActive]}>{type.label}</Text>
+                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{type.label}</Text>
                   </Pressable>
-                ))}
-              </View>
+                );
+              })}
             </ScrollView>
           </View>
         );
 
+      // D09: le pillole di Posizione e Cartella vanno a capo invece di scorrere fuori dal campo
       case 'location':
         return (
-          <View key="location" style={[styles.dynamicField, sizeStyle]}>
+          <View key="location" style={sizeStyle}>
             {renderLabel(undefined, true)}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.chipContainer}>
-                {locationOptions.map((loc) => (
+            <View style={styles.chipWrap}>
+              {locationOptions.map((loc) => {
+                const active = formData.location === loc.id;
+                return (
                   <Pressable
                     key={loc.id}
-                    style={[styles.chip, formData.location === loc.id && styles.chipActive]}
+                    style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
                     onPress={() => updateField('location', loc.id)}
                   >
-                    <View style={[styles.chipDot, { backgroundColor: loc.color }]} />
-                    <Text style={[styles.chipText, formData.location === loc.id && styles.chipTextActive]}>{loc.label}</Text>
+                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                    <View style={[styles.chipDot, active && styles.chipDotActive, { backgroundColor: loc.color }]} />
+                    <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>{loc.label}</Text>
                   </Pressable>
-                ))}
-              </View>
-            </ScrollView>
+                );
+              })}
+            </View>
           </View>
         );
 
       case 'folder':
         return (
-          <View key="folder" style={[styles.dynamicField, sizeStyle]}>
+          <View key="folder" style={sizeStyle}>
             {renderLabel()}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.chipContainer}>
-                {libraries.length === 0 ? (
-                  <Text style={{ ...t.typography.caption, color: t.colors.textSecondary, fontStyle: 'italic' }}>Nessuna cartella</Text>
-                ) : (
-                  libraries.map((lib) => (
+            <View style={styles.chipWrap}>
+              {libraries.length === 0 ? (
+                <Text style={styles.chipEmpty}>Nessuna cartella</Text>
+              ) : (
+                libraries.map((lib) => {
+                  const active = formData.libraryId === lib.id;
+                  return (
                     <Pressable
                       key={lib.id}
-                      style={[styles.chip, formData.libraryId === lib.id && styles.chipActive]}
-                      onPress={() => updateField('libraryId', formData.libraryId === lib.id ? '' : lib.id)}
+                      style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
+                      onPress={() => updateField('libraryId', active ? '' : lib.id)}
                     >
-                      <AppIcon name={lib.icon as any} size={16} color={formData.libraryId === lib.id ? t.colors.chipActiveText : t.colors.chipText} />
-                      <Text style={[styles.chipText, formData.libraryId === lib.id && styles.chipTextActive]}>{lib.name}</Text>
+                      {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                      <AppIcon name={lib.icon} size={16} color={active ? t.colors.chipActiveText : t.colors.textMuted} />
+                      <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>{lib.name}</Text>
                     </Pressable>
-                  ))
-                )}
-              </View>
-            </ScrollView>
+                  );
+                })
+              )}
+            </View>
           </View>
         );
 
       case 'purchasePrice':
         return (
-          <View key="purchasePrice" style={[styles.dynamicField, sizeStyle]}>
+          <View key="purchasePrice" style={sizeStyle}>
             {renderLabel()}
             {renderInputWithIcon({
-              placeholder: '€ 2500',
+              placeholder: '2500',
               value: formData.purchasePrice,
               onChangeText: (value) => updateField('purchasePrice', value),
               keyboardType: 'numeric',
+              unit: '€',
             })}
           </View>
         );
 
       case 'sellPrice':
         return (
-          <View key="sellPrice" style={[styles.dynamicField, sizeStyle]}>
+          <View key="sellPrice" style={sizeStyle}>
             {renderLabel()}
             {renderInputWithIcon({
-              placeholder: '€ 4200',
+              placeholder: '4200',
               value: formData.sellPrice,
               onChangeText: (value) => updateField('sellPrice', value),
               keyboardType: 'numeric',
+              unit: '€',
             })}
           </View>
         );
 
       case 'length':
         return (
-          <View key="length" style={[styles.dynamicField, sizeStyle]}>
+          <View key="length" style={sizeStyle}>
             {renderLabel()}
             {renderInputWithIcon({
-              placeholder: '85 cm',
+              placeholder: '85',
               value: formData.length,
               onChangeText: (value) => updateField('length', value),
               keyboardType: 'numeric',
+              unit: 'cm',
             })}
           </View>
         );
 
       case 'width':
         return (
-          <View key="width" style={[styles.dynamicField, sizeStyle]}>
+          <View key="width" style={sizeStyle}>
             {renderLabel()}
             {renderInputWithIcon({
-              placeholder: '120 cm',
+              placeholder: '120',
               value: formData.width,
               onChangeText: (value) => updateField('width', value),
               keyboardType: 'numeric',
+              unit: 'cm',
             })}
           </View>
         );
 
       case 'weight':
         return (
-          <View key="weight" style={[styles.dynamicField, sizeStyle]}>
+          <View key="weight" style={sizeStyle}>
             {renderLabel()}
             {renderInputWithIcon({
-              placeholder: '1.2 kg',
+              placeholder: '1.2',
               value: formData.weight,
               onChangeText: (value) => updateField('weight', value),
               keyboardType: 'numeric',
+              unit: 'kg',
             })}
           </View>
         );
 
       case 'technicalNotes':
         return (
-          <View key="technicalNotes" style={[styles.dynamicField, { width: '100%' }]}>
+          <View key="technicalNotes" style={{ width: '100%' }}>
             {renderLabel()}
-            {renderInputWithIcon({
+            {renderTextArea({
+              icon: getFieldIcon('technicalNotes'),
               placeholder: 'Inserisci dettagli tecnici...',
               value: formData.technicalNotes,
               onChangeText: (value) => updateField('technicalNotes', value),
-              multiline: true,
               numberOfLines: 4,
             })}
           </View>
@@ -895,6 +941,7 @@ export default function AddProductScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
+      <Backdrop />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -903,15 +950,15 @@ export default function AddProductScreen() {
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: t.spacing.screenPadding,
-            paddingBottom: insets.bottom + 16,
+            paddingBottom: insets.bottom + 24,
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Aggiungi Prodotto</Text>
-            <AppIcon name="add-photo-alternate" size={32} color={t.colors.accentInk} />
+            <Text style={styles.headerTitle}>Aggiungi prodotto</Text>
+            <AppIcon name="add-photo-alternate" size={26} color={t.colors.accentInk} />
           </View>
 
           {/* Dynamic Form Fields - Rendered based on Layout Configuration */}
@@ -921,18 +968,19 @@ export default function AddProductScreen() {
 
           {/* Submit Button */}
           <Pressable
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            style={[styles.primaryButton, styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
-            <AppIcon name="check-circle" size={24} color={isSubmitting ? t.colors.textSecondary : t.colors.onButton} />
-            <Text style={styles.submitButtonText}>
+            {!isSubmitting && <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />}
+            <AppIcon name="check-circle" size={20} color={isSubmitting ? t.colors.textSecondary : t.colors.onButton} />
+            <Text style={styles.primaryButtonText}>
               {isSubmitting ? 'Salvataggio...' : "Aggiungi all'Inventario"}
             </Text>
           </Pressable>
 
           <Text style={styles.footNote}>
-            * Campi obbligatori: Tipo di Pelle, Posizione (SKU auto-generato se vuoto)
+            <Text style={styles.required}>*</Text> Campi obbligatori: Tipo di Pelle, Posizione (SKU auto-generato se vuoto)
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -940,46 +988,28 @@ export default function AddProductScreen() {
       {/* Select Modal */}
       {selectModalConfig && (
         <Modal visible={true} transparent={true} animationType="slide" onRequestClose={() => setSelectModalConfig(null)}>
-          <View style={{ flex: 1, backgroundColor: t.colors.scrim, justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: t.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ ...t.typography.h3 }}>{selectModalConfig.name}</Text>
+          <View style={styles.sheetScrim}>
+            <View style={styles.sheet}>
+              <View style={styles.sheetHeader}>
+                <Text style={styles.sheetTitle}>{selectModalConfig.name}</Text>
                 <Pressable onPress={() => setSelectModalConfig(null)}>
                   <AppIcon name="close" size={24} color={t.colors.textPrimary} />
                 </Pressable>
               </View>
               <ScrollView showsVerticalScrollIndicator={false}>
                 {selectModalConfig.options.map(opt => {
-                  const valToSave = opt.label || opt.id;
-                  const isSelected = selectModalConfig.isMulti
-                    ? (customFieldValues[selectModalConfig.fieldId] || []).includes(valToSave)
-                    : customFieldValues[selectModalConfig.fieldId] === valToSave;
+                  const isSelected = isChoiceSelected(customFieldValues[selectModalConfig.fieldId], opt, selectModalConfig.isMulti);
 
                   return (
                     <Pressable
                       key={opt.id}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        paddingVertical: 16,
-                        borderBottomWidth: 1,
-                        borderBottomColor: t.colors.border
-                      }}
+                      style={styles.sheetRow}
                       onPress={() => {
-                        if (selectModalConfig.isMulti) {
-                          const current = customFieldValues[selectModalConfig.fieldId] || [];
-                          const updated = isSelected
-                            ? current.filter((v: string) => v !== valToSave)
-                            : [...current, valToSave];
-                          setCustomFieldValues(prev => ({ ...prev, [selectModalConfig.fieldId]: updated }));
-                        } else {
-                          setCustomFieldValues(prev => ({ ...prev, [selectModalConfig.fieldId]: isSelected ? null : valToSave }));
-                          setSelectModalConfig(null);
-                        }
+                        setCustomFieldValues(prev => ({ ...prev, [selectModalConfig.fieldId]: toggleChoice(prev[selectModalConfig.fieldId], opt, selectModalConfig.isMulti) }));
+                        if (!selectModalConfig.isMulti) setSelectModalConfig(null);
                       }}
                     >
-                      <Text style={{ fontSize: 16, color: isSelected ? t.colors.accentInk : t.colors.textPrimary, fontWeight: isSelected ? '600' : '400' }}>
+                      <Text style={[styles.sheetRowText, isSelected && styles.sheetRowTextSelected]}>
                         {opt.label}
                       </Text>
                       {isSelected && <AppIcon name="check" size={24} color={t.colors.accentInk} />}
@@ -988,11 +1018,9 @@ export default function AddProductScreen() {
                 })}
               </ScrollView>
               {selectModalConfig.isMulti && (
-                <Pressable
-                  style={{ backgroundColor: t.colors.button, padding: 16, borderRadius: t.radius.button, alignItems: 'center', marginTop: 16 }}
-                  onPress={() => setSelectModalConfig(null)}
-                >
-                  <Text style={{ color: t.colors.onButton, fontWeight: 'bold', fontSize: 16 }}>Conferma Selezione</Text>
+                <Pressable style={[styles.primaryButton, styles.sheetConfirm]} onPress={() => setSelectModalConfig(null)}>
+                  <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                  <Text style={styles.primaryButtonText}>Conferma Selezione</Text>
                 </Pressable>
               )}
             </View>
@@ -1002,7 +1030,9 @@ export default function AddProductScreen() {
     </SafeAreaView>
   );
 }
+
 const useStyles = makeStyles((t) => ({
+  ...formStyles(t),
   container: {
     flex: 1,
     backgroundColor: t.colors.background,
@@ -1010,378 +1040,38 @@ const useStyles = makeStyles((t) => ({
   keyboardView: {
     flex: 1,
   },
-  dynamicField: {
-    // marginBottom removed, handled by gap
-  },
+  // Campi del layout in righe che vanno a capo: 12 px tra le colonne, 16 tra le righe
   dynamicFieldsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    rowGap: 16,
     columnGap: 12,
+    rowGap: 16,
+    paddingTop: 4,
     marginBottom: 24,
   },
-  qrButton: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    borderWidth: 1,
-    borderColor: t.colors.border,
+  // Titolo di sezione: 24 px sopra (16 della riga + 8)
+  sectionItem: {
+    width: '100%',
+    marginTop: 8,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  headerTitle: {
-    ...t.typography.cardTitle,
-    fontSize: 24,
-  },
-  sectionTitle: {
-    ...t.typography.sectionHeader,
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    ...t.typography.caption,
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: t.colors.input,
-    borderRadius: t.radius.input,
-    padding: 14,
-    fontSize: 16,
-    color: t.colors.inputText,
-    borderWidth: 1,
-    borderColor: t.colors.inputBorder,
-  },
-  textArea: {
-    height: 100,
-    paddingTop: 14,
-  },
-  // Input with icon inside
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: t.colors.input,
-    borderRadius: t.radius.input,
-    borderWidth: 1,
-    borderColor: t.colors.inputBorder,
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  inputInner: {
-    flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: t.colors.inputText,
-  },
-  textAreaInner: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: t.colors.chip,
-    borderRadius: t.radius.chip,
-    borderWidth: 1,
-    borderColor: t.colors.chipBorder,
-    gap: 6,
-  },
-  chipActive: {
-    backgroundColor: t.colors.chipActive,
-    borderColor: t.colors.chipActiveBorder,
-  },
-  chipDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  chipText: {
-    ...t.typography.caption,
-    fontSize: 14,
-    fontWeight: '600',
-    color: t.colors.chipText,
-  },
-  chipTextActive: {
-    color: t.colors.chipActiveText,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfWidth: {
-    flex: 1,
-  },
-  thirdWidth: {
-    flex: 1,
+  // A 1/3 la data (13 px) deve stare intera accanto al calendario: margini interni più stretti
+  dateBoxSmall: {
+    paddingLeft: 8,
+    paddingRight: 6,
+    gap: 2,
   },
   submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: t.colors.button,
-    borderRadius: t.radius.button,
-    padding: 16,
-    marginTop: 24,
-  },
-  submitButtonText: {
-    ...t.typography.buttonPrimary,
-    fontSize: 16,
-    color: t.colors.onButton,
+    height: 54,
   },
   submitButtonDisabled: {
     backgroundColor: t.colors.border,
     opacity: 0.7,
   },
-  skuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  generateButton: {
-    height: 50,
-    width: 50,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
   footNote: {
-    ...t.typography.caption,
     fontSize: 12,
-    textAlign: 'center',
-    marginTop: 16,
-    fontStyle: 'italic',
-  },
-  mainImageContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  mainImageWrapper: {
-    position: 'relative',
-  },
-  mainImage: {
-    height: 280,
-    borderRadius: t.radius.large,
-    backgroundColor: t.colors.surface,
-  },
-  removeMainImageButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: t.colors.scrimStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imageIndicator: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: t.colors.scrimStrong,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: t.radius.medium,
-  },
-  imageIndicatorText: {
-    ...t.typography.caption,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  dotsContainer: {
-    position: 'absolute',
-    bottom: 12,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  dotIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  dotIndicatorActive: {
-    backgroundColor: t.colors.accent,
-    width: 24,
-  },
-  imagesScroll: {
-    marginBottom: 16,
-  },
-  imageContainer: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  imageThumb: {
-    width: 80,
-    height: 80,
-    borderRadius: t.radius.medium,
-    backgroundColor: t.colors.surface,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  imageThumbActive: {
-    borderColor: t.colors.accent,
-  },
-  helperText: {
-    ...t.typography.caption,
-    fontSize: 12,
-    marginTop: -8,
-    color: t.colors.accentInk,
-  },
-  addImageButton: {
-    width: 80,
-    height: 80,
-    borderRadius: t.radius.medium,
-    backgroundColor: t.colors.surface,
-    borderWidth: 2,
-    borderColor: t.colors.dash,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  addImageText: {
-    ...t.typography.caption,
-    fontSize: 11,
-    marginTop: 4,
-    color: t.colors.accentInk,
-  },
-  // Quick Settings Style - Custom Fields
-  quickSettingsContainer: {
-    marginBottom: 16,
-  },
-  quickSettingsGroup: {
-    marginBottom: 20,
-  },
-  quickSettingsLabel: {
-    ...t.typography.sectionHeader,
-    fontSize: 13,
-    marginBottom: 12,
-    color: t.colors.textSecondary,
-  },
-  quickSettingsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  quickSettingsTile: {
-    width: '30%',
-    minWidth: 100,
-    aspectRatio: 1,
-    backgroundColor: t.colors.tile,
-    borderRadius: t.radius.large,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  quickSettingsTileActive: {
-    backgroundColor: withAlpha(t.colors.accent, 0.145),
-    borderColor: t.colors.tileSelectedBorder,
-    shadowColor: t.colors.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  quickSettingsIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: t.colors.backgroundSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickSettingsIconContainerActive: {
-    backgroundColor: t.colors.checkOn,
-  },
-  quickSettingsTileText: {
-    ...t.typography.caption,
-    fontSize: 12,
-    fontWeight: '600',
+    lineHeight: 17,
     color: t.colors.textSecondary,
     textAlign: 'center',
-  },
-  quickSettingsTileTextActive: {
-    color: t.colors.tileSelectedText,
-  },
-  quickSettingsInputCard: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.medium,
-    padding: 16,
-    marginBottom: 12,
-  },
-  quickSettingsInputHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
-  },
-  quickSettingsInputIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: t.radius.iconWrap,
-    backgroundColor: t.colors.iconWrap,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickSettingsInputLabel: {
-    ...t.typography.cardTitle,
-    fontSize: 14,
-    flex: 1,
-  },
-  unitBadge: {
-    backgroundColor: t.colors.accent,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  unitBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: t.colors.onAccent,
-  },
-  quickSettingsInput: {
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.medium,
-    padding: 14,
-    fontSize: 16,
-    color: t.colors.inputText,
-    borderWidth: 1,
-    borderColor: t.colors.inputBorder,
-  },
-  quickSettingsTextArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
+    marginTop: 10,
   },
 }));
