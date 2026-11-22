@@ -1,6 +1,6 @@
 # Grafo dei lavori — gestionale di magazzino (fase B)
 
-Esegue le decisioni di `map.md` (ticket in `issues/`). Una fetta per task, dalla più piccola; si parte solo quando le fette da cui dipende sono chiuse. Prima delle fette M vengono i difetti (`prova-funzioni.md`), in particolare D15 (Audit e Spostamento rapido con `moveProduct`) e D03 (Modifica), perché toccano gli stessi punti.
+Esegue le decisioni di `map.md` (ticket in `issues/`). Una fetta per task, dalla più piccola; si parte solo quando le fette da cui dipende sono chiuse. I difetti della prova (`prova-funzioni.md`, C01-C14) sono chiusi, compresi D15 (Audit e Spostamento rapido con `moveProduct`, C04) e D03 (Modifica, C08), da cui dipende M03.
 
 **Regola dell'utente**: «il modo più giusto e corretto e semplificato».
 
