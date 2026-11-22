@@ -112,7 +112,8 @@ export interface CustomField {
 export interface Alert {
   id: string;
   productId: string;
-  type: 'dormant' | 'promotion_suggestion';
+  /** `low_stock`: articolo a quantità sotto la scorta minima (M06, ticket 05). */
+  type: 'dormant' | 'promotion_suggestion' | 'low_stock';
   message: string;
   createdAt: string;
   updatedAt?: string;

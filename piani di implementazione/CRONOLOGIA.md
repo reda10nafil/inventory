@@ -2,6 +2,17 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, M06: scorta minima e avviso di riordino (ticket 05)
+
+- Branch `funzioni/magazzino`.
+- Avviso nuovo `low_stock` («AST-0033: 4 pz, scorta minima 5 pz») generato con gli altri: entra nel conteggio «Richiedono attenzione», nel filtro «Attenzione» e nel badge della card. Logica pura in `utils/alerts.ts` (test): `lowStockAlert` (usa `isLowStock` di M08: articolo a quantità, non nel cestino, strettamente sotto la scorta), `mergeAlerts` (gli avvisi scartati restano scartati; quello di scorta si dimentica quando il prodotto torna sopra, così riappare la volta dopo), `parseMinStock` (vuota o 0 = nessuna scorta).
+- Aggiungi: nella sezione Magazzino il campo «Scorta minima» compare quando c'è una quantità; non valida = avviso e niente salvataggio. Modifica: per gli articoli a quantità «Scorta minima (unità)» sotto la giacenza in sola lettura; la Cronologia scrive «Scorta minima: 20 → 5» (`describeChanges`). Scheda: riga «Scorta minima» o «Sotto la scorta minima» (colore di avviso del tema) nella sezione Giacenza.
+- Prova sul web `prova/m06-scorta.cjs` (4 scenari, tutti come atteso): Aggiungi 3 pz con scorta 5 (campo assente prima della quantità, avviso salvato, prodotto nel filtro Attenzione, riga nella Scheda); scorta «-2» rifiutata e campo nascosto senza quantità (pezzo unico senza scorta); Modifica di AST-0033 (12 pz) con scorta 20 → avviso e filtro, poi 5 → avviso via e fuori dal filtro, due righe in Cronologia; scarico sotto la scorta → avviso, scartato resta scartato e fuori dal filtro, un carico sopra lo toglie, un nuovo scarico lo riporta non scartato. Prima versione della prova: il clic su «Attenzione» prendeva il badge della card e VIS-0098 ha già due avvisi nel campionario; corretta (filtro col conteggio, AST-0033).
+- Regressione: `a1-inventario`, `a1-modifica`, `a2-aggiungi`, `a1-scheda` uguali agli esiti dopo M03 (diversi solo orari e id dei file).
+- Nei 5 stili: `FETTA=m06` (Aggiungi, Modifica, Scheda sotto scorta, filtro Attenzione) → `prova/stili-m06.jpg`, 0 errori in console.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 210 verdi, bundle Android 5,14 MB con 62 asset, 32 schermate senza errori in console.
+- Decisioni prese al posto dell'utente: 4 righe M06 in `DECISIONI_DA_RIVEDERE.md`.
+
 ## 22 novembre 2026 — Fase B, M08: CSV con giacenza, report giacenze e movimenti (ticket 09)
 
 - Branch `funzioni/magazzino`. Parere del revisore chiesto prima di scrivere (forma delle colonne): seguite le sue indicazioni (id nel CSV dei prodotti e nomi nei report, giacenza non valida = riga saltata, scrittura con `applyMovement`, conteggio degli importati dal risultato di `addProduct`).

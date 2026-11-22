@@ -31,6 +31,7 @@ export function describeChanges(before: Product, updates: Partial<Product>): str
   if (changed('width')) out.push(`Larghezza: ${num(before.width)} → ${num(updates.width)}`);
   if (changed('weight')) out.push(`Peso: ${num(before.weight)} → ${num(updates.weight)}`);
   if (changed('productionDate')) out.push(`Data produzione: ${show(before.productionDate)} → ${show(updates.productionDate)}`);
+  if (changed('minStock')) out.push(`Scorta minima: ${num(before.minStock)} → ${num(updates.minStock)}`);
   if (changed('technicalNotes')) out.push('Note aggiornate');
   if (updates.images && updates.images.length < (before.images || []).length) {
     out.push(`${before.images.length - updates.images.length} foto tolte`);

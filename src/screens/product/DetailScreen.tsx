@@ -29,7 +29,7 @@ import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { formatNumber } from '../../../utils/number';
-import { describeStockEvent, formatQty, isOutOfStock, isStocked, round3, storedStock, totalStock } from '../../../utils/stock';
+import { describeStockEvent, formatQty, isLowStock, isOutOfStock, isStocked, round3, storedStock, totalStock } from '../../../utils/stock';
 import { MovementSheet } from '../../../components/MovementSheet';
 
 export default function ProductDetailScreen() {
@@ -81,6 +81,8 @@ export default function ProductDetailScreen() {
   // Nel cestino si mostra la giacenza salvata (torna col ripristino), così non sembra vuoto (M04)
   const stockRows = Object.entries(storedStock(product)).sort((a, b) => b[1] - a[1]);
   const stockTotal = round3(stockRows.reduce((sum, [, qty]) => sum + qty, 0));
+  // Sotto la scorta minima (M06): stessa regola dell'avviso «Attenzione»
+  const lowStock = isLowStock(product);
   // «Movimenta» (M04): prodotti disponibili e non nel cestino; un pezzo unico diventa articolo a quantità
   const canMoveStock = product.status === 'available' && !product.deletedAt;
   const stockEventText = (details: Parameters<typeof describeStockEvent>[0]) => describeStockEvent(details, placeLabel, product.unit);
@@ -910,6 +912,15 @@ export default function ProductDetailScreen() {
                         <Text style={styles.stockQty}>{formatQty(qty, product.unit)}</Text>
                       </View>
                     ))}
+                    {/* Scorta minima (M06): sotto, il prodotto ha l'avviso «Attenzione» */}
+                    {product.minStock != null && product.minStock > 0 && (
+                      <View style={[styles.stockRow, styles.minStockRow]}>
+                        <Text style={[styles.stockPlace, lowStock && styles.lowStockText]} numberOfLines={1}>
+                          {lowStock ? 'Sotto la scorta minima' : 'Scorta minima'}
+                        </Text>
+                        <Text style={[styles.stockQty, lowStock && styles.lowStockText]}>{formatQty(product.minStock, product.unit)}</Text>
+                      </View>
+                    )}
                   </>
                 ) : (
                   <View style={styles.stockRow}>
@@ -1586,6 +1597,15 @@ const useStyles = makeStyles((t) => ({
     fontSize: 15,
     fontWeight: '600',
     color: t.colors.onButtonSecondary,
+  },
+  minStockRow: {
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: t.colors.borderLight,
+  },
+  lowStockText: {
+    color: t.colors.warningText,
+    fontWeight: t.weights.strong,
   },
   stockHint: {
     marginTop: 6,

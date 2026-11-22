@@ -9,6 +9,7 @@ import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/
 import { usage } from '../utils/productRules';
 import { describeChanges } from '../utils/productChanges';
 import { editableUpdates, moveOf, movementOf, saleOf, withInitialStock, withStartingStock } from '../utils/inventoryOps';
+import { lowStockAlert, mergeAlerts } from '../utils/alerts';
 import type { Movement, MovementError } from '../utils/stock';
 
 /** Library/Folder structure - ID uses slug format for Google Sheets compatibility */
@@ -360,17 +361,15 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
             dismissed: false,
           });
         }
+
+        // Articolo a quantità sotto la scorta minima (M06)
+        const low = lowStockAlert(product, new Date().toISOString());
+        if (low) newAlerts.push(low);
       }
     });
 
-    // Merge with existing non-dismissed alerts
-    const dismissedAlerts = new Map(alerts.filter((a) => a.dismissed).map((a) => [a.id, a]));
-    const mergedAlerts = [
-      ...newAlerts.filter((alert) => !dismissedAlerts.has(alert.id)),
-      ...Array.from(dismissedAlerts.values()),
-    ];
-
-    setAlerts(mergedAlerts);
+    // Quelli scartati restano scartati (quello di scorta finché il prodotto non torna sopra la scorta minima)
+    setAlerts(mergeAlerts(newAlerts, alerts));
   };
 
   const generateSKU = (): string => {

@@ -11,7 +11,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { formatNumberInput, parseNumber } from '../../../utils/number';
-import { formatQty, isStocked, stockOf, totalStock } from '../../../utils/stock';
+import { DEFAULT_UNIT, formatQty, isStocked, stockOf, totalStock } from '../../../utils/stock';
+import { parseMinStock } from '../../../utils/alerts';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useCategories } from '../../../contexts/CategoriesContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
@@ -88,6 +89,7 @@ function EditProductForm({ product }: { product: Product }) {
     weight: formatNumberInput(product?.weight),
     technicalNotes: product?.technicalNotes || '',
     libraryId: product?.libraryId || '',
+    minStock: formatNumberInput(product?.minStock),
   });
 
   const [images, setImages] = useState<string[]>(product?.images || []);
@@ -151,6 +153,13 @@ function EditProductForm({ product }: { product: Product }) {
       return;
     }
 
+    // Scorta minima (M06): solo per gli articoli a quantità; scritta ma non valida → si dice
+    const minStock = stocked ? parseMinStock(formData.minStock) : undefined;
+    if (minStock === null) {
+      Alert.alert('Scorta minima non valida', 'Scrivi un numero maggiore o uguale a zero, per esempio 5 o 2,5. Vuota = nessun avviso.');
+      return;
+    }
+
     // Foto facoltativa come in Aggiungi: un prodotto senza foto si deve poter modificare (D18)
     if (images.length === 0 && withoutPhoto !== true) {
       Alert.alert('Attenzione', 'Il prodotto non ha foto', [
@@ -176,7 +185,7 @@ function EditProductForm({ product }: { product: Product }) {
       sku: formData.sku.trim(),
       furType: formData.furType,
       // Articolo a quantità: la posizione cambia solo con i movimenti (M03; il contesto la ignora comunque)
-      ...(stocked ? {} : { location: formData.location }),
+      ...(stocked ? { minStock } : { location: formData.location }),
       images,
       purchasePrice: parseNumber(formData.purchasePrice),
       sellPrice: parseNumber(formData.sellPrice),
@@ -386,6 +395,10 @@ function EditProductForm({ product }: { product: Product }) {
                 <Text style={styles.readonlyNote}>
                   Posizione e quantità cambiano solo con i movimenti: usa «Movimenta» nella Scheda.
                 </Text>
+              </View>
+              <View style={styles.minStockGroup}>
+                {renderLabel(`Scorta minima (${product.unit || DEFAULT_UNIT})`)}
+                {renderInput({ placeholder: 'Vuota = nessun avviso', value: formData.minStock, onChangeText: (v) => updateField('minStock', v), numeric: true })}
               </View>
             </View>
           ) : (
@@ -905,6 +918,9 @@ const useStyles = makeStyles((t) => ({
     fontSize: 12,
     lineHeight: 16,
     color: t.colors.textSecondary,
+  },
+  minStockGroup: {
+    marginTop: 16,
   },
   row: {
     flexDirection: 'row',

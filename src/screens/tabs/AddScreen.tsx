@@ -26,6 +26,7 @@ import { Text, TextInput } from '../../../components/ui/Text';
 import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { DEFAULT_UNIT, parseQty, UNITS } from '../../../utils/stock';
+import { parseMinStock } from '../../../utils/alerts';
 
 export default function AddProductScreen() {
   const t = useTheme();
@@ -58,6 +59,8 @@ export default function AddProductScreen() {
   // Magazzino (M03): quantità facoltativa (vuota = pezzo unico) e unità. Fuori dal layout del modulo.
   const [qtyText, setQtyText] = useState('');
   const [unit, setUnit] = useState<string>(DEFAULT_UNIT);
+  // Scorta minima (M06): solo per gli articoli a quantità, compare quando c'è una quantità
+  const [minText, setMinText] = useState('');
 
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -196,6 +199,10 @@ export default function AddProductScreen() {
       Alert.alert('Quantità non valida', 'Scrivi un numero maggiore o uguale a zero, per esempio 12 o 2,5. Vuota = pezzo unico.');
       return;
     }
+    if (qtyText.trim() && parseMinStock(minText) === null) {
+      Alert.alert('Scorta minima non valida', 'Scrivi un numero maggiore o uguale a zero, per esempio 5 o 2,5. Vuota = nessun avviso.');
+      return;
+    }
 
     // D24: anche i campi personalizzati segnati come obbligatori
     const missing = missingRequiredFields(getVisibleFields(), customFields, customFieldValues);
@@ -235,12 +242,14 @@ export default function AddProductScreen() {
       }
 
       const qty = qtyText.trim() ? parseQty(qtyText) : undefined;
+      const minStock = qty != null ? parseMinStock(minText) : undefined;
       const added = addProduct({
         sku: finalSKU,
         furType: formData.furType,
         location: formData.location,
         status: 'available',
         ...(qty != null && { unit }),
+        ...(minStock != null && { minStock }),
         images, // senza foto resta vuoto: le schermate mostrano un riquadro (D18, prima un'immagine d'esempio da internet)
         purchasePrice: parseNumber(formData.purchasePrice),
         sellPrice: parseNumber(formData.sellPrice),
@@ -288,6 +297,7 @@ export default function AddProductScreen() {
               setImages([]);
               setQtyText('');
               setUnit(DEFAULT_UNIT);
+              setMinText('');
               // D22: si svuotano anche i campi personalizzati, così il prodotto successivo non eredita i valori
               setCustomFieldValues({});
               setIsSubmitting(false);
@@ -1045,6 +1055,27 @@ export default function AddProductScreen() {
                 })}
               </View>
             </View>
+            {qtyText.trim() ? (
+              <View>
+                <Text style={styles.label}>Scorta minima</Text>
+                <View style={styles.inputBox}>
+                  <AppIcon name="warning" size={18} color={t.colors.fieldIcon} />
+                  <TextInput
+                    style={styles.inputText}
+                    placeholder="Vuota = nessun avviso"
+                    placeholderTextColor={t.colors.placeholder}
+                    keyboardType="numeric"
+                    value={minText}
+                    onChangeText={setMinText}
+                    accessibilityLabel="Scorta minima"
+                  />
+                  <Text style={styles.unit}>{unit}</Text>
+                </View>
+                <Text style={styles.stockHint}>
+                  Sotto questa quantità il prodotto finisce tra quelli che richiedono attenzione.
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Submit Button */}

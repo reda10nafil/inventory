@@ -89,6 +89,35 @@ const FETTE = {
       ['cestino', async (page) => { await page.goto(APP); await page.waitForTimeout(1500); await page.getByText('Cestino').locator('visible=true').first().click(); await page.waitForTimeout(800); }],
     ],
   },
+  // M06: scorta minima in Aggiungi e Modifica, Scheda sotto scorta, filtro Attenzione (AST-0033 = cmp-4)
+  m06: {
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      Object.assign(list.find((p) => p.sku === 'AST-0033'), { unit: 'pz', stock: { sartoria: 2 }, minStock: 5 });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['aggiungi', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByPlaceholder('Vuota = pezzo unico').fill('3');
+        await page.getByPlaceholder('Vuota = nessun avviso').fill('5');
+        await page.getByPlaceholder('Vuota = nessun avviso').evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['modifica', async (page) => {
+        await page.goto(`${APP}/product/edit/cmp-4`); await page.waitForTimeout(1800);
+        await page.getByPlaceholder('Vuota = nessun avviso').evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['scheda', async (page) => {
+        await page.goto(`${APP}/product/cmp-4`); await page.waitForTimeout(1800);
+        await page.getByText('Sotto la scorta minima', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['attenzione', async (page) => {
+        await page.goto(APP); await page.waitForTimeout(1500);
+        await page.getByText(/^Attenzione \d+$/).first().click(); await page.waitForTimeout(800);
+      }],
+    ],
+  },
   // M08: le tre voci di export e l'import in Impostazioni › Dati e backup
   m08: {
     prepara: () => {},
