@@ -6,11 +6,16 @@ import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
+import { useLocations } from '../../../contexts/LocationsContext';
 import { isDormant, needsPromotion } from '../../../services/mockData';
 import { AppIcon } from '../../../components/ui/AppIcon';
+import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
+import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { formatPrice } from '../../../utils/price';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
@@ -22,6 +27,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); // Read params
   const { products, alerts, filterProducts, deleteProduct, updateProduct, libraries } = useInventory();
+  const { locations } = useLocations();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
@@ -172,6 +178,8 @@ export default function HomeScreen() {
 
     const isSelected = selectedIds.includes(product.id);
     const isSelectionMode = selectedIds.length > 0;
+    // Posizione con il suo nome e il suo colore (dati dell'utente); se non c'è più resta l'id, come nella Scheda.
+    const location = locations.find((l) => l.id === product.location);
 
     return (
       <Pressable
@@ -180,36 +188,36 @@ export default function HomeScreen() {
         onLongPress={() => handleLongPress(product)}
         delayLongPress={300}
       >
-        <Image
-          source={{ uri: product.images[0] }}
-          style={styles.productImage}
-          contentFit="cover"
-        />
+        <View style={styles.photo}>
+          <Image
+            source={{ uri: product.images[0] }}
+            style={styles.productImage}
+            contentFit="cover"
+          />
 
-        {/* Selection Overlay */}
-        {isSelectionMode && (
-          <View style={styles.selectionOverlay}>
-            <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-              {isSelected && <AppIcon name="check" size={14} color={t.colors.onAccent} />}
+          {/* Selection Overlay */}
+          {isSelectionMode && (
+            <View style={styles.selectionOverlay}>
+              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                {isSelected && <AppIcon name="check" size={14} color={t.colors.onAccent} />}
+              </View>
             </View>
+          )}
+
+          {/* Status Badges */}
+          <View style={styles.badgeContainer}>
+            {product.status === 'sold' && (
+              <View style={[styles.badge, styles.badgeSold]}>
+                <Text style={styles.badgeText}>Venduto</Text>
+              </View>
+            )}
+            {hasAlert && product.status === 'available' && (
+              <View style={[styles.badge, styles.badgeAlert]}>
+                <AppIcon name="warning" size={13} color={t.colors.alertBadgeText} />
+                <Text style={[styles.badgeText, styles.badgeTextAlert]}>Attenzione</Text>
+              </View>
+            )}
           </View>
-        )}
-
-
-
-        {/* Status Badges */}
-        <View style={styles.badgeContainer}>
-          {product.status === 'sold' && (
-            <View style={[styles.badge, styles.badgeSold]}>
-              <Text style={styles.badgeText}>VENDUTO</Text>
-            </View>
-          )}
-          {hasAlert && product.status === 'available' && (
-            <View style={[styles.badge, styles.badgeAlert]}>
-              <AppIcon name="warning" size={12} color={t.colors.alertBadgeText} />
-              <Text style={[styles.badgeText, styles.badgeTextAlert]}>ALERT</Text>
-            </View>
-          )}
         </View>
 
         {/* Product Info */}
@@ -222,14 +230,14 @@ export default function HomeScreen() {
           </Text>
 
           <View style={styles.locationRow}>
-            <AppIcon name="location-on" size={14} color={t.colors.textSecondary} />
+            <View style={[styles.locationDot, { backgroundColor: location?.color || t.colors.textMuted }]} />
             <Text style={styles.locationText} numberOfLines={1}>
-              {product.location.replace('_', ' ').toUpperCase()}
+              {location?.label || product.location}
             </Text>
           </View>
 
-          {product.sellPrice && (
-            <Text style={styles.priceText}>€{product.sellPrice.toLocaleString()}</Text>
+          {!!product.sellPrice && (
+            <Text style={styles.priceText}>{formatPrice(product.sellPrice)}</Text>
           )}
         </View>
       </Pressable>
@@ -238,6 +246,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
+      <Backdrop />
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -264,7 +273,7 @@ export default function HomeScreen() {
                   if (isSearchVisible) setSearchQuery('');
                 }}
               >
-                <AppIcon name={isSearchVisible ? "close" : "search"} size={24} color={t.colors.accentInk} />
+                <AppIcon name={isSearchVisible ? "close" : "search"} size={22} color={t.colors.textPrimary} />
               </Pressable>
             </>
           )}
@@ -306,10 +315,11 @@ export default function HomeScreen() {
           ]}
           onPress={() => setActiveLibraryId(null)}
         >
+          {activeLibraryId === null && <GradientFill gradient={t.gradients.chipActive} style={styles.chipFill} />}
           <AppIcon
             name="apps"
             size={18}
-            color={activeLibraryId === null ? t.colors.chipActiveText : t.colors.chipText}
+            color={activeLibraryId === null ? t.colors.chipActiveText : t.colors.textSecondary}
           />
           <Text
             style={[
@@ -330,10 +340,11 @@ export default function HomeScreen() {
             ]}
             onPress={() => setActiveLibraryId(lib.id)}
           >
+            {activeLibraryId === lib.id && <GradientFill gradient={t.gradients.chipActive} style={styles.chipFill} />}
             <AppIcon
               name={lib.icon as any}
               size={18}
-              color={activeLibraryId === lib.id ? t.colors.chipActiveText : t.colors.chipText}
+              color={activeLibraryId === lib.id ? t.colors.chipActiveText : t.colors.textSecondary}
             />
             <Text
               style={[
@@ -347,31 +358,26 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
-      {/* Stats Cards */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.statsContainer}
-        style={styles.statsScroll}
-      >
+      {/* Stats Cards: tre colonne uguali, tutte visibili. Il riquadro degli avvisi si colora solo se ce ne sono. */}
+      <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{stats.available}</Text>
-          <Text style={styles.statLabel}>DISPONIBILI</Text>
+          <Text style={styles.statLabel}>Disponibili</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{stats.sold}</Text>
-          <Text style={styles.statLabel}>VENDUTI</Text>
+          <Text style={styles.statLabel}>Venduti</Text>
         </View>
-        <View style={[styles.statCard, stats.alerts > 0 && styles.statCardAlert]}>
+        <View style={stats.alerts > 0 ? styles.statCardAlert : styles.statCard}>
           <View style={styles.statValueRow}>
-            <Text style={styles.statValue}>{stats.alerts}</Text>
+            <Text style={[styles.statValue, stats.alerts > 0 && styles.statTextAlert]}>{stats.alerts}</Text>
             {stats.alerts > 0 && (
-              <AppIcon name="warning" size={20} color={t.colors.warning} />
+              <AppIcon name="warning" size={20} color={t.colors.warningText} />
             )}
           </View>
-          <Text style={styles.statLabel}>RICHIEDONO ATTENZIONE</Text>
+          <Text style={[styles.statLabel, stats.alerts > 0 && styles.statTextAlert]}>Richiedono attenzione</Text>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Filter Chips */}
       <ScrollView
@@ -380,25 +386,22 @@ export default function HomeScreen() {
         contentContainerStyle={styles.filterContainer}
         style={styles.filterScroll}
       >
-        {filters.map((filter) => (
-          <Pressable
-            key={filter.id}
-            style={[
-              styles.filterChip,
-              activeFilter === filter.id && styles.filterChipActive,
-            ]}
-            onPress={() => setActiveFilter(filter.id)}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                activeFilter === filter.id && styles.filterTextActive,
-              ]}
+        {filters.map((filter) => {
+          const active = activeFilter === filter.id;
+          return (
+            <Pressable
+              key={filter.id}
+              style={[styles.filterChip, active && styles.filterChipActive]}
+              onPress={() => setActiveFilter(filter.id)}
             >
-              {filter.label} ({filter.count})
-            </Text>
-          </Pressable>
-        ))}
+              {active && <GradientFill gradient={t.gradients.chipActive} style={styles.chipFill} />}
+              <Text style={[styles.filterText, active && styles.filterTextActive]}>
+                {filter.label}{' '}
+                <Text style={active ? styles.filterCountActive : styles.filterCount}>{filter.count}</Text>
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       {/* Products Grid */}
@@ -407,11 +410,8 @@ export default function HomeScreen() {
         renderItem={renderProductCard}
         numColumns={2}
         style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal: t.spacing.screenPadding,
-          paddingBottom: insets.bottom + 16,
-          paddingTop: 8,
-        }}
+        columnWrapperStyle={styles.gridRow}
+        contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 16 }]}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id}
       />
@@ -423,14 +423,15 @@ export default function HomeScreen() {
             <Text style={styles.selectionCount}>{selectedIds.length}</Text>
           </View>
           <View style={styles.actionButtons}>
-            <Pressable style={styles.actionButton} onPress={() => setShowActionModal(true)}>
-              <AppIcon name="folder-open" size={24} color={t.colors.onAccent} />
+            <Pressable style={[styles.actionButton, styles.actionButtonPrimary]} onPress={() => setShowActionModal(true)}>
+              <GradientFill gradient={t.gradients.button} style={styles.actionButtonFill} />
+              <AppIcon name="folder-open" size={24} color={t.colors.onButton} />
             </Pressable>
             <Pressable style={[styles.actionButton, styles.actionButtonDestructive]} onPress={CONFIRM_DELETE_PRODUCT}>
-              <AppIcon name="delete" size={24} color="#FFF" />
+              <AppIcon name="delete" size={24} color={t.colors.onData} />
             </Pressable>
             <Pressable style={styles.closeSelectionButton} onPress={exitSelectionMode}>
-              <AppIcon name="close" size={24} color={t.colors.textPrimary} />
+              <AppIcon name="close" size={24} color={t.colors.onButtonSecondary} />
             </Pressable>
           </View>
         </View>
@@ -452,7 +453,7 @@ export default function HomeScreen() {
               <Text style={styles.modalTitle}>Gestisci {selectedIds.length} Prodotti</Text>
             </View>
 
-            <Text style={styles.modalSectionLabel}>SPOSTA IN CARTELLA</Text>
+            <Text style={styles.modalSectionLabel}>Sposta in cartella</Text>
             <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalList}>
               {/* Option to clear folder */}
               <Pressable
@@ -503,102 +504,143 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: t.spacing.screenPadding,
-    paddingVertical: 12,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   headerTitle: {
-    ...t.typography.cardTitle,
-    fontSize: 20,
+    fontSize: t.title.size,
+    lineHeight: Math.round(t.title.size * 1.15),
+    fontWeight: t.title.weight,
+    letterSpacing: t.title.tracking,
+    color: t.colors.textPrimary,
   },
   headerSubtitle: {
-    ...t.typography.caption,
     marginTop: 2,
+    fontSize: 13,
+    color: t.colors.textSecondary,
   },
   iconButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    ...cardSurface(t),
+    borderRadius: t.radius.chip,
   },
-  statsScroll: {
-    flexGrow: 0,
-  },
-  statsContainer: {
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
     paddingHorizontal: t.spacing.screenPadding,
     paddingVertical: 8,
-    gap: 12,
   },
   statCard: {
-    backgroundColor: t.colors.tile,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    flex: 1,
+    padding: 12,
+    ...cardSurface(t),
     borderRadius: t.radius.tile,
-    minWidth: 140,
-    ...t.shadows.card,
   },
+  // Al posto di `statCard` quando ci sono avvisi (senza ombra, come nella tela)
   statCardAlert: {
+    flex: 1,
+    padding: 12,
+    borderRadius: t.radius.tile,
     borderWidth: 1,
     borderColor: t.colors.warningLine,
+    backgroundColor: t.colors.warningSoft,
   },
   statValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
   statValue: {
-    ...t.typography.cardValue,
-    fontSize: 32,
+    fontSize: 26,
+    lineHeight: 30,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
     color: t.colors.statNumber,
   },
   statLabel: {
-    ...t.typography.heroLabel,
     marginTop: 4,
+    fontSize: 12,
+    lineHeight: 16,
+    color: t.colors.textSecondary,
+  },
+  statTextAlert: {
+    color: t.colors.warningText,
   },
   filterScroll: {
     flexGrow: 0,
-    marginTop: 8,
   },
   filterContainer: {
     paddingHorizontal: t.spacing.screenPadding,
-    paddingVertical: 6,
+    paddingVertical: 8,
     gap: 8,
   },
   filterChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    height: 36,
+    paddingHorizontal: 14,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: t.colors.chip,
     borderRadius: t.radius.chip,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: t.colors.chipBorder,
-    minWidth: 90,
-    minHeight: 48,
+    overflow: 'hidden',
   },
   filterChipActive: {
     backgroundColor: t.colors.chipActive,
     borderColor: t.colors.chipActiveBorder,
   },
   filterText: {
-    ...t.typography.caption,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
     color: t.colors.chipText,
   },
   filterTextActive: {
+    fontWeight: '600',
     color: t.colors.chipActiveText,
+  },
+  filterCount: {
+    color: t.colors.textSecondary,
+  },
+  filterCountActive: {
+    fontWeight: '500',
+    color: withAlpha(t.colors.chipActiveText, 0.8),
+  },
+  chipFill: {
+    borderRadius: t.radius.chip,
+  },
+  grid: {
+    paddingHorizontal: t.spacing.screenPadding,
+    paddingTop: 8,
+    gap: 12,
+  },
+  gridRow: {
+    gap: 12,
   },
   productCard: {
     flex: 1,
-    margin: 6,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.card,
+    ...cardSurface(t),
     overflow: 'hidden',
-    ...t.shadows.card,
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   productCardSelected: {
+    borderWidth: 2,
     borderColor: t.colors.accent,
+  },
+  photo: {
+    height: 160,
+    marginTop: t.photo.inset.top,
+    marginRight: t.photo.inset.right,
+    marginBottom: t.photo.inset.bottom,
+    marginLeft: t.photo.inset.left,
+    borderRadius: t.radius.photo,
+    overflow: 'hidden',
+    backgroundColor: t.colors.backgroundSecondary,
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
   },
   selectionOverlay: {
     position: 'absolute',
@@ -612,18 +654,13 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 12,
     backgroundColor: t.colors.scrim,
     borderWidth: 1.5,
-    borderColor: '#FFF',
+    borderColor: t.colors.onData, // anello bianco fisso sopra la foto
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxSelected: {
     backgroundColor: t.colors.checkOn,
     borderColor: t.colors.checkOn,
-  },
-  productImage: {
-    width: '100%',
-    height: 160,
-    backgroundColor: t.colors.backgroundSecondary,
   },
   badgeContainer: {
     position: 'absolute',
@@ -648,45 +685,58 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.alertBadge,
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
     color: t.colors.soldBadgeText,
   },
   badgeTextAlert: {
     color: t.colors.alertBadgeText,
   },
   productInfo: {
-    padding: 12,
+    paddingTop: 10,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    gap: 4,
   },
   productSku: {
-    ...t.typography.cardTitle,
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: t.weights.strong,
+    color: t.colors.textPrimary,
   },
   productType: {
-    ...t.typography.caption,
-    fontSize: 12,
-    marginBottom: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.colors.textSecondary,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 6,
+    gap: 6,
+  },
+  locationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   locationText: {
-    ...t.typography.caption,
-    fontSize: 11,
     flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.colors.textSecondary,
   },
   priceText: {
-    ...t.typography.cardValue,
+    marginTop: 4,
     fontSize: 16,
+    lineHeight: 22,
+    fontWeight: t.weights.price,
+    fontVariant: ['tabular-nums'],
     color: t.colors.accentInk,
   },
   searchContainer: {
     paddingHorizontal: t.spacing.screenPadding,
-    paddingBottom: 12,
+    paddingTop: 8,
   },
   searchBox: {
     flexDirection: 'row',
@@ -702,7 +752,7 @@ const useStyles = makeStyles((t) => ({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: t.colors.textSecondary,
+    color: t.colors.inputText,
   },
   cardDeleteButton: {
     position: 'absolute',
@@ -726,36 +776,36 @@ const useStyles = makeStyles((t) => ({
   },
   libraryScroll: {
     flexGrow: 0,
-    marginTop: 12,
   },
   libraryContainer: {
     paddingHorizontal: t.spacing.screenPadding,
-    paddingVertical: 6,
+    paddingVertical: 8,
     gap: 8,
   },
   libraryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: t.radius.chip,
     backgroundColor: t.colors.chip,
     gap: 6,
     borderWidth: 1,
     borderColor: t.colors.chipBorder,
+    overflow: 'hidden',
   },
   libraryChipActive: {
-    backgroundColor: t.colors.chipActive, // Gold for active
+    backgroundColor: t.colors.chipActive,
     borderColor: t.colors.chipActiveBorder,
   },
   libraryText: {
-    ...t.typography.caption,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: t.colors.chipText,
   },
   libraryTextActive: {
-    color: t.colors.chipActiveText, // Black text on Gold background
+    fontWeight: '600',
+    color: t.colors.chipActiveText,
   },
   modalOverlay: {
     flex: 1,
@@ -763,9 +813,12 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'center',
     padding: t.spacing.screenPadding,
   },
+  // Pannello sopra il contenuto: fondo opaco (regola 7)
   modalContent: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    backgroundColor: t.colors.backgroundSecondary,
+    borderRadius: t.radius.card,
+    borderWidth: 1,
+    borderColor: t.colors.border,
     padding: 20,
     maxHeight: '80%',
     ...t.shadows.cardElevated,
@@ -785,11 +838,10 @@ const useStyles = makeStyles((t) => ({
     color: t.colors.accentInk,
   },
   modalSectionLabel: {
-    ...t.typography.caption,
-    fontSize: 12,
-    fontWeight: '700',
+    ...t.typography.sectionHeader,
     marginBottom: 12,
     marginTop: 4,
+    ...(t.section.line ? { paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   modalScroll: {
     maxHeight: 300,
@@ -801,10 +853,7 @@ const useStyles = makeStyles((t) => ({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: t.radius.medium,
-    backgroundColor: t.colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    ...tileSurface(t),
   },
   modalOptionSelected: {
     borderColor: t.colors.accent,
@@ -813,8 +862,8 @@ const useStyles = makeStyles((t) => ({
   modalOptionIcon: {
     width: 32,
     height: 32,
-    borderRadius: t.radius.small,
-    backgroundColor: t.colors.surface,
+    borderRadius: t.radius.iconWrap,
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -862,13 +911,14 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'center',
     marginTop: 8,
   },
+  // Barra della selezione multipla, sopra la griglia: fondo opaco (regola 7)
   bottomActionBar: {
     position: 'absolute',
     bottom: 20,
     left: 16,
     right: 16,
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radius.large,
+    backgroundColor: t.colors.surfaceElevated,
+    borderRadius: t.radius.card,
     padding: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -896,8 +946,15 @@ const useStyles = makeStyles((t) => ({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: t.colors.accent,
-    borderRadius: t.radius.full,
+    borderRadius: t.radius.button,
+    overflow: 'hidden',
+  },
+  actionButtonPrimary: {
+    backgroundColor: t.colors.button,
+    ...t.shadows.button,
+  },
+  actionButtonFill: {
+    borderRadius: t.radius.button,
   },
   actionButtonDestructive: {
     backgroundColor: t.colors.error,
@@ -911,8 +968,10 @@ const useStyles = makeStyles((t) => ({
   closeSelectionButton: {
     padding: 8,
     marginLeft: 8,
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.full,
+    backgroundColor: t.colors.buttonSecondary,
+    borderWidth: 1,
+    borderColor: t.colors.buttonSecondaryBorder,
+    borderRadius: t.radius.button,
   },
   textButton: {
     paddingHorizontal: 12,
