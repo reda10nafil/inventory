@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { LinearGradient } from '../../src/lib/LinearGradient';
@@ -20,6 +20,9 @@ export function gradientPoints(g: Gradient) {
 export function Backdrop() {
   const t = useTheme();
   const { width, height } = useWindowDimensions();
+  // id unico per ogni sfondo montato: sul web più sfondi convivono (schede nascoste sotto la pila) e un id ripetuto
+  // farebbe puntare `url(#…)` alla definizione di uno sfondo nascosto, che non disegna nulla
+  const uid = `bagliore${useId().replace(/[^A-Za-z0-9_-]/g, '')}_`;
   const { glows, gradient } = t.backdrop;
   if (!glows.length && !gradient) return null;
   return (
@@ -36,14 +39,14 @@ export function Backdrop() {
         <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
           <Defs>
             {glows.map((g, i) => (
-              <RadialGradient key={i} id={`bagliore${i}`} cx="50%" cy="50%" rx="50%" ry="50%">
+              <RadialGradient key={i} id={`${uid}${i}`} cx="50%" cy="50%" rx="50%" ry="50%">
                 <Stop offset={0} stopColor={g.color} />
                 <Stop offset={g.stop} stopColor={g.color} stopOpacity={0} />
               </RadialGradient>
             ))}
           </Defs>
           {glows.map((g, i) => (
-            <Ellipse key={i} cx={g.x * width} cy={g.y * height} rx={g.rx} ry={g.ry} fill={`url(#bagliore${i})`} />
+            <Ellipse key={i} cx={g.x * width} cy={g.y * height} rx={g.rx} ry={g.ry} fill={`url(#${uid}${i})`} />
           ))}
         </Svg>
       )}
