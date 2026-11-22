@@ -26,12 +26,18 @@ Aggiornato il 22 novembre 2026 (pomeriggio) dalla sessione delle fette M, dopo M
    - **Finestra Movimenta**: pillole facoltative del contatto per carico e scarico (poche voci; la finestra è già un `Modal`, niente seconda finestra annidata). **Non filtrare** per tipo: prima i contatti del tipo suggerito (carico → fornitori, scarico → clienti), poi gli altri, perché «Reso» in carico viene da un cliente. Niente contatto per trasferimento e rettifica.
    - **Prezzo e contatto**: oggi `sellProduct` ha il prezzo e non il contatto, lo scarico della finestra ha il contatto e non il prezzo. O si aggiunge un prezzo facoltativo allo scarico con causale vendita (`Movement` ha già `finalPrice`), o si annota il buco in `DECISIONI_DA_RIVEDERE.md`.
    - **Nomi**: `describeStockEvent` riceve un risolutore facoltativo del nome del contatto («· Fornitore Rossi»); aggiornare **tutti** i chiamanti nello stesso commit (Cronologia, Scheda, Azione rapida). In `SettingsScreen` passare `contact` a `movementCsvRows`: il risolutore deve restituire `undefined` per un id sconosciuto (il ripiego è `??`, quindi `''` stamperebbe vuoto).
+   - **Non** aggiungere codice o testo che dia per scontato «Categoria = `furType`» (vedi «Decisioni dell'utente del 22 sera»).
    - Prova `prova/m10-contatti.cjs` (stato salvato: chiave dei contatti, `contactId` negli eventi, report movimenti con il nome), regressione `m04-movimenta`, `m09-azione`, `m08-csv`, `a1-cronologia`, `a4-impostazioni`; `FETTA=m10` in `stili-fette.cjs`.
-2. Dopo le fette, i difetti rimasti (riga «dopo» della tabella delle correzioni in `prova-funzioni.md`): D16, D19, P16-P17, P20, P23, P26-P30, il messaggio di LokiJS al primo avvio web. P31 (pagina web in inglese tradotta da Chrome) è già corretto (C15, `public/index.html`).
+2. Dopo le fette, i difetti rimasti (riga «dopo» della tabella delle correzioni in `prova-funzioni.md`): D16, P16-P17, P20, P23, P26-P30 (**non D19**: vedi «Decisioni dell'utente del 22 sera»), il messaggio di LokiJS al primo avvio web. P31 (pagina web in inglese tradotta da Chrome) è già corretto (C15, `public/index.html`).
 
 Fatte e chiuse (indicazioni di allora in `git log` e `CRONOLOGIA.md`): M07, M09.
 
 Cose pronte da riusare: `moveStock` e `MovementSheet` (M04, con `initialKind` e `onDone` da M09), `countStock` e `countOf` (M07), `canMoveStock` (M09), `applyMovement`, `movementErrorText`, `MOVEMENT_LABELS`, `REASON_LABELS`, `UNITS`, `qtyAt`, `describeStockEvent`, `refusalText`; la prova `m03-giacenza.cjs` (`rendiAQuantita`, `replay`, `check`); `canSell` / `canMove` / `usage` (`utils/productRules.ts`, `usage` conta anche le categorie); `describeChanges` (`utils/productChanges.ts`); `productCsvRows` (`utils/productCsv.ts`); `appendToLayout` e `useInstallFields`; `formatNumber` / `formatNumberInput` / `parseNumber` / `parseStoredNumber` (l'import CSV delle quantità in M08 deve usare `parseStoredNumber`); `PhotoPlaceholder`; `useCategories().labelOf`.
+
+## Decisioni dell'utente del 22 sera (riferite dalla sessione orchestratrice)
+
+- **D19** (preferenze Scanner & NFC non lette) **non si corregge** tra i difetti: entra in una fetta NFC nuova dell'orchestratrice (NFC solo su richiesta, modalità QR/NFC/entrambi rispettata).
+- **M01 è nel verso sbagliato**: «Tipo di pelle» è un campo; le **categorie sono le Cartelle** (con sottocategorie). Ci sarà una fetta apposta dopo M10 e i difetti. Nel frattempo non aggiungere codice o testo che dia per scontato «Categoria = `furType`». Oggi lo usano già (da M01) Scheda, card, PDF, CSV, Audit, Conta (M07, sottotitolo delle righe) e Azione rapida (`useCategories().labelOf(furType)`): li cambierà quella fetta.
 
 ## Come si verifica un task (tutto verde prima del commit)
 
