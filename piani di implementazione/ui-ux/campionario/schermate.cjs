@@ -2,6 +2,7 @@
 // Uso: node schermate.cjs <percorso di playwright> [stile] [cartella]   (app web e serve-seed.mjs su 8765 accesi)
 //   stile: attuale | babilonia | ishtar | ardesia | minimal (scritto in AsyncStorage prima di caricare; vuoto = predefinito)
 //   cartella: dove salvare (predefinito ../schermate-attuali); APP=http://localhost:8082 per un'altra porta
+//   EXTRA=1 aggiunge le schermate raggiungibili da indirizzo (posizioni, cartelle, GS1, hardware, cestino, condivisione, automazioni, azione rapida)
 const { chromium } = require(process.argv[2] || 'playwright');
 const path = require('path');
 
@@ -65,6 +66,18 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
   await step('campi', async () => { await home(); await tab('Impostazioni'); await vis('Campi Personalizzati').click(); await page.waitForTimeout(1500); await shot('07-campi.png'); await tall('07b-campi-intera.png'); });
   await step('layout', async () => { await home(); await tab('Impostazioni'); await vis('Configura Layout Aggiungi').click(); await page.waitForTimeout(1500); await shot('08-layout-builder.png'); await tall('08b-layout-builder-intera.png'); });
   await step('venduto', async () => { await home(); await vis('VOL-0087').click(); await page.waitForTimeout(1500); await shot('02c-scheda-venduto.png'); });
+
+  if (process.env.EXTRA) {
+    const extra = [
+      ['10-posizioni.png', 'settings/locations'], ['11-cartelle.png', 'settings/folders'], ['12-gs1.png', 'settings/gs1-config'],
+      ['13-hardware.png', 'settings/hardware'], ['14-cestino.png', 'settings/trash'], ['15-condivisione.png', 'settings/share'],
+      ['16-audit.png', 'automations/audit'], ['17-spostamento.png', 'automations/batch-move'], ['18-vendita.png', 'automations/scan-sell'],
+      ['19-tag-rapidi.png', 'automations/quick-tag'], ['20-azione-rapida.png', 'scanner-action'], ['21-non-trovato.png', 'pagina-che-non-esiste'],
+    ];
+    for (const [name, route] of extra) {
+      await step(name, async () => { await page.goto(`${APP}/${route}`); await page.waitForTimeout(2500); await shot(name); });
+    }
+  }
 
   await browser.close();
   log('fine');

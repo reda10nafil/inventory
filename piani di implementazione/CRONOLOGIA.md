@@ -2,6 +2,16 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — UI/UX L2 e controllo G1: schermate sul tema attivo
+
+- Branch / SHA: `ui-ux/stili`, un commit per corsia (L2a-L2e) e uno per G1, dopo a9e479e.
+- Fatto: uno script (in scratchpad, non nel repository) ha fatto la parte meccanica su 34 file (import, `StyleSheet.create` → `makeStyles`, `theme.*` → `t.colors.*` ecc., `MaterialIcons` → `AppIcon`, `Text`/`TextInput` dell'app); sette subagenti con file separati hanno messo gli hook nei componenti, portato i colori scritti a mano sui ruoli e scelto il ruolo giusto dove il valore di `oggi` era identico; L2e (App, navigazione, tema di React Navigation dallo stile attivo, barra in basso su `t.bar`/`t.tab`) fatta dalla sessione principale. Nessun `StyleSheet.create` resta nel codice vivo; i colori di dati restano scritti a mano.
+- Regola ESLint del G1: blocco TypeScript in `eslint.config.js` con `no-restricted-imports` su `constants/theme` (esclusi i temi, `app/`, `DynamicFieldRenderer` e il test del tema); il plugin `@typescript-eslint` è registrato solo per riconoscere i commenti già presenti.
+- Verifiche: tsc 0; eslint 0; jest 52 verdi. Schermate: alle 18 del campionario si aggiungono 12 schermate raggiunte per indirizzo (`EXTRA=1`: posizioni, cartelle, GS1, hardware, cestino, condivisione, quattro automazioni, azione rapida, pagina non trovata); «prima» prese dal checkout principale (porta 8081, stesso codice di L0, verificato identico). A soglia zero: **21 su 30 identiche**; le altre 9 differiscono solo per la riga di 1 px sotto le intestazioni native, che passa dal grigio chiaro `#D8D8D8` del tema predefinito di React Navigation al bordo del tema (`#374151`): effetto atteso del tema di navigazione (L2e). Il titolo della finestra di scelta (D08) non compare nelle schermate.
+- Regole degli hook (controllo a parte con `eslint-plugin-react-hooks`): nessuna violazione nuova; restano quelle di prima in `DetailScreen` (D17, L7), `CustomRunnerScreen` (`useCallback` e `useState` dopo il ritorno anticipato) e `ScannerActionScreen` (`useLocalSearchParams` condizionale), queste due fuori dal ticket 09.
+- Per L6: `ui-ux/note-l2-per-l6.md` elenca i colori rimasti scritti a mano e i punti dove il ruolo giusto ha oggi un valore diverso.
+- Ancora da fare: L4, L5a (caratteri), L3, L5b-e, L6, L7, L9.
+
 ## 22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti
 
 - Branch / SHA: `ui-ux/stili`, commit di L1 dopo faf0f3a.
