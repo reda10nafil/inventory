@@ -11,6 +11,16 @@ Il login Google è spento dal commit `cfcdecb` (`LOGIN_ENABLED = false` in `cont
 - **Login Google da riaccendere, a patto che funzioni**: prima va provato che funziona, su web e su Android; poi si riaccende il cloud per lo spazio.
 - Ogni account ha il proprio spazio e il proprio backup; le foto restano private dello spazio (ticket 11).
 
+## Schema Supabase letto dal database (22 novembre sera, sola lettura)
+
+Copia fedele nelle note dell'orchestratore (`side-session-notes/local_12e15b39…/supabase-schema/`: 19 migrazioni e 16 funzioni, md5 uguale al database, più una fotografia dello stato). Da portare nel repository in L1.
+
+- Bucket `organization-media`: esiste, privato, 500 MB per file, 0 oggetti. Zero utenti, zero righe, nessuna funzione edge.
+- Avvisi di sicurezza: solo 3 WARN (funzioni `security definer` eseguibili da `authenticated`: `ensure_personal_organization`, `create_organization_invitation`, `accept_organization_invitation`).
+- **Probabile guasto della sincronizzazione**: `merge_inventory_snapshot` è `security invoker` e chiama `public.is_organization_member`, su cui `authenticated` non ha `EXECUTE`. Dedotto dai cataloghi, non provato: da provare in L1 e correggere con una migrazione, con il sì dell'utente.
+- Le tabelle vecchie (`users`, `operators`, `products`, `sync_logs`) e `update_updated_at_column` non sono in nessuna migrazione: ricostruire il database dalle sole migrazioni fallirebbe.
+- Non verificabile da qui se l'API espone lo schema `auth_internal`.
+
 ## L0 — ricerca in sola lettura (chiusa il 22 novembre sera)
 
 Resoconto completo, con file e righe: [`ricerche/L0-login.md`](../ricerche/L0-login.md). In breve:
