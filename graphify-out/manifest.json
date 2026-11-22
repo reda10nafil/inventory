@@ -1026,9 +1026,9 @@
     "semantic_hash": ""
   },
   "types/index.ts": {
-    "mtime": 1795315120.0867617,
-    "seen": 1795323475.1495197,
-    "ast_hash": "65b9245758f52457cca400effeed8611",
+    "mtime": 1795337894.1916173,
+    "seen": 1795338271.0092845,
+    "ast_hash": "e952086078bb388edc23870d38dc759d",
     "semantic_hash": ""
   },
   "utils/barcodeDecoder.ts": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795337600.6769874,
-    "seen": 1795337616.5117605,
-    "ast_hash": "cde276ae40db2dc292e08aa3fca04e5f",
+    "mtime": 1795338213.8134897,
+    "seen": 1795338271.0158005,
+    "ast_hash": "43bf81d167477ebc3f5e7905e0224b74",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795337600.6779814,
-    "seen": 1795337616.5117605,
-    "ast_hash": "f376b78757e206a5d5b03da21f6a9e96",
+    "mtime": 1795338213.8144884,
+    "seen": 1795338271.0158005,
+    "ast_hash": "3f361329f55460a185e0943679e9538c",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795335736.6899722,
-    "seen": 1795337616.5117605,
-    "ast_hash": "2df4a754f7c37c24189637e711c29903",
+    "mtime": 1795338249.235613,
+    "seen": 1795338271.0158005,
+    "ast_hash": "0eeda1142dfd364dc962e63e3d38daaf",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3525,6 +3525,18 @@
     "mtime": 1795337074.3163762,
     "seen": 1795337616.5197778,
     "ast_hash": "9333af414d9aea6a480ad33931e36b88",
+    "semantic_hash": ""
+  },
+  "__tests__/stock.test.ts": {
+    "mtime": 1795337989.5896661,
+    "seen": 1795338270.948322,
+    "ast_hash": "01860bc7524767dfcd4d16dc5db8dc08",
+    "semantic_hash": ""
+  },
+  "utils/stock.ts": {
+    "mtime": 1795337938.5473254,
+    "seen": 1795338271.0102897,
+    "ast_hash": "034d4ba094396d54a83ec1e03d2d33e6",
     "semantic_hash": ""
   }
 }

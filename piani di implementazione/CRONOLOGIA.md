@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 — Fase B, M02: logica della giacenza (ticket 01-03)
+
+- Branch `funzioni/magazzino`. Parere del revisore chiesto prima di cambiare `Product` (come da passaggio); seguite le sue tre correzioni: eventi in un array (il primo movimento di un pezzo unico registra prima un carico «iniziale» di 1, così i soli eventi `stock` ridanno la giacenza), conti in millesimi interi, articolo a quantità = `stock` presente anche a 0 (la posizione principale resta a 0, le altre a 0 si tolgono).
+- `types/index.ts`: in `Product` tre campi facoltativi `unit`, `stock` (giacenza per posizione), `minStock`; in `TimelineEvent` il tipo `stock` e nei dettagli `movement`, `qty` (sempre positiva: tolta da `from`, aggiunta a `to`), `reason`, `note`, `before`/`after` (giacenza totale), `contactId`. Tipi `MovementKind` e `MovementReason` (causali del ticket 02 più `iniziale`).
+- `utils/stock.ts` (puro): `isStocked`, `stockOf` (pezzo unico disponibile = 1 nella sua posizione; venduto o nel cestino = niente; nel cestino anche per gli articoli a quantità), `totalStock`, `isOutOfStock` (esaurito), `isAt` (posizione principale o giacenza lì: sostituirà `p.location === x`), `positionsOf` (tutte le posizioni scritte, anche nel cestino: per `usage`), `mainLocation`, `round3`, `parseQty` («2,5»), `formatQty`, `applyMovement` (carico, scarico, trasferimento, rettifica; rifiuta quantità non positive, posizioni mancanti o uguali, scarichi oltre la giacenza della posizione, rettifiche senza differenza, prodotti nel cestino o non disponibili; non modifica il prodotto di partenza), `movementErrorText`, `replayStock`.
+- Test (`__tests__/stock.test.ts`, 26): pezzo unico letto come 1, 0,1 + 0,2 e scarico di 0,3, rifiuti, conversione del pezzo unico, rettifica che conta 1 su un pezzo unico = niente da fare, esaurito che resta articolo a quantità e accetta un nuovo carico, prodotto congelato non modificato, rigioco degli eventi in qualsiasi ordine uguale alla giacenza salvata.
+- Regola 7: nessuna schermata né il contesto scrivono o leggono `stock` (controllato con grep); nessun cambiamento visibile, quindi niente prova sul web né foglio nei 5 stili per questa fetta. Gli instradamenti arrivano tutti insieme in M03.
+- Verifiche (`controllo.sh`): tsc 0, eslint 0, jest 166 verdi, bundle Android 5,11 MB con 62 asset, 32 schermate senza errori in console.
+
 ## 22 novembre 2026 — Fase B, M01: categorie modificabili (ticket 04)
 
 - Branch `funzioni/magazzino`.

@@ -34,6 +34,16 @@ export interface Product {
   gs1DigitalLink?: string;
   /** Whether the product is marked as fragile */
   isFragile?: boolean;
+  /** Unità di misura degli articoli a quantità («pz», «kg», «m», «l», «conf.»). M02, ticket 01. */
+  unit?: string;
+  /**
+   * Giacenza per posizione (id posizione → quantità, fino a 3 decimali). C'è solo negli articoli a quantità:
+   * i prodotti senza `stock` sono pezzi unici. Si legge con `stockOf` e si scrive solo con `applyMovement`
+   * (`utils/stock.ts`). La posizione principale (`location`) resta anche a 0.
+   */
+  stock?: Record<string, number>;
+  /** Scorta minima per l'avviso di riordino (ticket 05). */
+  minStock?: number;
 }
 
 export interface ProductCustomData {
@@ -46,7 +56,7 @@ export type FieldUIType = 'grid' | 'stepper' | 'segmented' | 'text' | 'gps-link'
 export interface TimelineEvent {
   id: string;
   productId: string;
-  type: 'created' | 'moved' | 'modified' | 'sold' | 'scanned' | 'photo_added' | 'deleted' | 'restored';
+  type: 'created' | 'moved' | 'modified' | 'sold' | 'scanned' | 'photo_added' | 'deleted' | 'restored' | 'stock';
   timestamp: string;
   details: {
     from?: string;
@@ -57,8 +67,20 @@ export interface TimelineEvent {
     finalPrice?: number;
     photoCount?: number;
     changes?: string[];
+    // Movimenti di magazzino (`type: 'stock'`, ticket 02): `qty` sempre positiva, tolta da `from` e/o
+    // aggiunta a `to`; `before`/`after` = giacenza totale. Per la vendita `finalPrice` è il prezzo.
+    movement?: MovementKind;
+    qty?: number;
+    reason?: MovementReason;
+    note?: string;
+    before?: number;
+    after?: number;
+    contactId?: string;
   };
 }
+
+export type MovementKind = 'carico' | 'scarico' | 'trasferimento' | 'rettifica';
+export type MovementReason = 'iniziale' | 'acquisto' | 'reso' | 'vendita' | 'uso_interno' | 'danno' | 'conta' | 'altro';
 
 export interface Library {
   id: string;
