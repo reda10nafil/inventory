@@ -1,4 +1,5 @@
 import { withAlpha } from '../utils/color';
+import { formatPrice } from '../utils/price';
 import { DEFAULT_STYLE, THEMES, isStyleId, oggi, themeFor } from '../constants/themes';
 import { theme as today } from '../constants/theme';
 
@@ -59,5 +60,15 @@ describe('stili pronti', () => {
 
   it.each(Object.values(THEMES))('$name: ha tutte le chiavi tipografiche', (t) => {
     for (const key of Object.keys(oggi.typography)) expect(t!.typography[key as keyof typeof oggi.typography]).toBeDefined();
+  });
+});
+
+describe('formatPrice', () => {
+  it('scrive i prezzi in formato italiano', () => {
+    expect(formatPrice(4200)).toBe('4.200 €');
+    expect(formatPrice(950)).toBe('950 €');
+    expect(formatPrice(1450.5)).toBe('1.450,50 €');
+    expect(formatPrice(1234567)).toBe('1.234.567 €');
+    expect(formatPrice(-80)).toBe('-80 €');
   });
 });
