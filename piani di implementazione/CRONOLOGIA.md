@@ -2,6 +2,15 @@
 
 Registro progressivo. Aggiungere nuove voci in cima senza cancellare quelle vecchie. Specificare data, branch/SHA, file e servizi, prove con esito e ciò che resta aperto. Non segnare una funzione come verificata finché la prova non è stata svolta.
 
+## 22 novembre 2026 sera — Seconda mappa: categorie, scaffali, NFC, foto nel CSV, login (solo documenti)
+
+- Branch `funzioni/magazzino`. Nessun codice toccato.
+- `funzionalita/map-2.md` e ticket `funzionalita/issues/11-20`: le risposte dell'utente del 22 sera (categorie = cartelle con sottocategorie, scaffali dentro le posizioni con capacità in pezzi, peso e volume, NFC solo su richiesta, foto WebP sul cloud con link pubblici e permanenti, login Google «a patto che funzioni») e le proposte dell'orchestratore ancora da confermare (soglie del riempimento, pause e ritardi NFC, cosa succede alla lettura, dati locali al primo accesso, condivisione su Drive).
+- Bozza allineata alle ultime risposte: link pubblici al posto dei link firmati, scaffali come entità a sé, nessun ascolto continuo; aggiunte le fette L0 e L2; regola per riconoscere i CSV vecchi nel ticket 19.
+- Ticket 04 e `map.md` segnati come superati dal ticket 19; `PASSAGGIO.md` rimanda a `map-2.md` dopo M10 e i difetti.
+- Ricerche L0 (login) e N0 (NFC) avviate in sola lettura: esito da riportare nei ticket 20 e 17.
+- Aperto: M10 e i difetti della fase B non sono iniziati; nessuna fetta della seconda mappa è iniziata.
+
 ## 22 novembre 2026 — Fase B, C15: pagina web in italiano e senza traduzione automatica (P31)
 
 - Branch `funzioni/magazzino`. Difetto segnalato dalla sessione orchestratrice: la pagina servita da :8082 aveva `<html lang="en">` (modello di Expo), quindi il Chrome dell'utente la traduceva da solo («Magazzino» → «Rivista», «Venduti» → «Venditi») e la traduzione inserisce nodi `<font>` nel DOM gestito da React.

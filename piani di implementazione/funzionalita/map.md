@@ -21,7 +21,7 @@ Un **grafo dei lavori** (`grafo-lavori.md`) pronto da eseguire, una fetta per ta
 - [Modello delle quantità](issues/01-modello-quantita.md): pezzo unico (senza `stock`, come tutti i prodotti di oggi: nessuna riscrittura) o articolo a quantità (giacenza per posizione `stock`, unità, scorta minima); `stockOf` e `isAt` sono le sole letture.
 - [Movimenti](issues/02-movimenti.md): carico, scarico, trasferimento e rettifica sono eventi di Cronologia di tipo `stock` con quantità, posizioni, causale e nota; la giacenza salvata e l'evento si scrivono insieme.
 - [Venduto ed esaurito](issues/03-venduto-esaurito.md): «venduto» solo per i pezzi unici; per gli articoli a quantità la vendita è uno scarico con il prezzo nell'evento; «esaurito» è calcolato.
-- [Categorie](issues/04-categorie.md): «Tipo di pelle» diventa «Categoria», con una lista modificabile per spazio (contesto proprio) che parte dai tipi di pelle di oggi.
+- [Categorie](issues/04-categorie.md): «Tipo di pelle» diventa «Categoria», con una lista modificabile per spazio (contesto proprio) che parte dai tipi di pelle di oggi. **Superato dal [ticket 19](issues/19-cartelle-categorie.md)** (`map-2.md`): le categorie sono le cartelle, «Tipo di pelle» torna un campo.
 - [Scorta minima e riordino](issues/05-scorta-minima.md): avviso `low_stock` tra quelli esistenti (filtro Attenzione), più il filtro «Da riordinare».
 - [Conta fisica](issues/06-conta-fisica.md): schermata nuova «Conta» per posizione; le differenze diventano rettifiche, scritte in una sola volta.
 - [Fornitori e clienti](issues/07-contatti.md): anagrafica minima di contatti per spazio, collegata ai movimenti.

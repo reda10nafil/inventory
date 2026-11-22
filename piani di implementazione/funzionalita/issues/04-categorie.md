@@ -2,6 +2,8 @@
 
 Tipo: grilling (deciso dall'agente). Stato: **chiuso** il 22 novembre 2026 (notte, regola 4 di `NOTTE_22_23.md`; da rivedere con l'utente).
 
+**Superato dal [ticket 19](19-cartelle-categorie.md)** il 22 novembre sera (risposta dell'utente): le categorie sono le cartelle, «Tipo di pelle» torna un campo. Quanto segue descrive M01 com'è nel codice finché la fetta C1 non la rifà.
+
 ## Question
 
 Il campo di base «Tipo di pelle» offre solo la lista fissa `FUR_TYPES`: come renderlo valido per qualsiasi prodotto?
