@@ -56,6 +56,25 @@ Frontiera: 03 (campionario di prova), 04 (famiglia di icone), 05 (effetti e cara
 - **Branch**: `ui-ux/stili`, da main a cfcdecb, primo commit con i documenti del piano, pubblicato su GitHub (`reda10nafil/inventory` è pubblico). Il checkout principale resta su main con gli stessi documenti non committati: prima di un merge in main vanno scartati lì.
 - **Chi esegue**: parte da `ui-ux/grafo-lavori.md`, lavoro L0, in un worktree del branch `ui-ux/stili`; un commit per lavoro chiuso; `git push origin HEAD:ui-ux/stili`; mai su main, nessuna pull request senza un nuovo sì.
 
+## Aggiornamento del 22 novembre 2026, quinta parte (esecuzione: L0, L1, L2 e G1 fatti)
+
+**Dove si lavora**: worktree `D:\FurInventory Pro\inventory-stili` sul branch `ui-ux/stili` (pubblicato su GitHub), con una sua copia di `node_modules`. Il checkout principale `D:\FurInventory Pro\inventory` resta su main. Versione web del worktree: configurazione `syncro-flow-stili-web` (porta **8082**) e seed `campionario-seed` (8765) in `D:\FurInventory Pro\.claude\launch.json`; la 8081 è del checkout principale (stesso codice di L0: serve per le schermate «prima»).
+
+**Fatto** (dettagli in CRONOLOGIA): L0 tutto verde; L1 tema (`constants/themes/`, `contexts/ThemeContext.tsx`, `utils/color.ts`, `components/ui/AppIcon.tsx`, `components/ui/Text.tsx`); L2 tutte le schermate su `makeStyles`/`useTheme`, colori scritti a mano sui ruoli, `AppIcon`, `Text` dell'app; G1 superato (21/30 schermate identiche, le altre solo per la riga sotto le intestazioni native), regola ESLint sul tema statico. `Text.tsx` sceglie già il file del carattere per peso quando lo stile ha una famiglia (con `oggi` non cambia nulla).
+
+**Strumenti** (nel repository):
+- schermate: `APP=http://localhost:8082 EXTRA=1 node "piani di implementazione/ui-ux/campionario/schermate.cjs" "$APPDATA/npm/node_modules/@playwright/mcp/node_modules/playwright" <stile> <cartella>` (30 schermate; `<stile>` vuoto = predefinito);
+- confronto: `python -I "piani di implementazione/ui-ux/campionario/confronta.py" <prima> <dopo> [diff]` (soglia zero);
+- temi: `python -I "piani di implementazione/ui-ux/temi/genera_temi.py" "piani di implementazione/ui-ux/temi/token-stili.json" constants/themes <stile>` scrive `constants/themes/<stile>.ts` dai 93 token, con le regole dei valori ricavati in testa al file, e stampa i contrasti (tutti ≥ 4,5 tranne: bianco su accento `#0A84FF` in Babilonia 3,65, va bene solo per icone e testo grande; bianco sui colori di dati delle posizioni, 2,1 sull'oro, come oggi).
+- note per L6: `ui-ux/note-l2-per-l6.md` (colori rimasti scritti a mano, punti dove il ruolo giusto ha oggi un valore diverso).
+
+**Prossimi passi, in ordine** (grafo in `ui-ux/grafo-lavori.md`):
+1. **L4**: riempire `ICON_REPLACEMENTS` in `AppIcon.tsx` con la tabella del ticket 07 (`activeName` per le icone piene della barra); in `TabsNavigator` passare `active={focused}`. «Tutti» delle cartelle = `apps` → `folder-multiple`. Controllare che ogni voce dei cataloghi (10, 8, 39, 106) abbia una resa.
+2. **L5a**: `npm install --legacy-peer-deps @expo-google-fonts/outfit @expo-google-fonts/urbanist @expo-google-fonts/manrope`; Android: copiare in `android/app/src/main/assets/fonts/` (cartella da creare) i TTF usati (Inter 400-600, Outfit 400-600, Urbanist 400-700, Manrope 400-700, 14 file) con `LICENSE_FONT` di ogni famiglia; web: un registro `constants/themes/fonts.web.ts` (e `fonts.ts` vuoto per il nativo) e caricamento con `expo-font` nel `ThemeProvider` solo per la famiglia attiva, con attesa; barra di stato chiara o scura secondo `t.dark`, sfondo della pagina web, tema di navigazione con `fonts`; generare `attuale.ts`, registrarlo in `THEMES` (diventa il predefinito); schermate nello stile `attuale`.
+3. **L3**: riga «Aspetto» in Impostazioni e `src/screens/settings/AppearanceScreen.tsx` con gli stili pronti (`useStyleChoice`); provare il riavvio sul web.
+4. **L5b-e**: Babilonia, Ardesia, Ishtar, Minimal uno alla volta con il generatore, schermate nelle 30 viste, contrasti.
+5. **L6** (sei corsie, conviene ancora con subagenti a file separati, partendo da `note-l2-per-l6.md` e dalle tavole della tela), **L7** (difetti del ticket 09), **L9** (verifica nei 5 stili, bundle Android, `graphify update .`, resoconto).
+
 ## Domanda aperta (chiusa il 22 novembre: «Redex» = Ishtar Lab, ticket 01)
 
 Cosa intende con «stile Redex, sul progetto Rede»? La sessione precedente ha **supposto** che fosse il sito del progetto `Progetti suddivisi/Analisi software/Rea reverse` (`website/public/assets/styles.css`: bianco, inchiostro, blu `#294f82`). Non è confermato.
