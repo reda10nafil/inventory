@@ -1,17 +1,17 @@
 # Graph Report - inventory-stili  (2026-11-23)
 
 ## Corpus Check
-- 572 files · ~1,492,306 words
+- 572 files · ~1,493,230 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 104 file(s) not represented in the graph (top: .xml 18, .ttf 16, (none) 11)
 
 ## Summary
-- 5223 nodes · 11177 edges · 298 communities (255 shown, 43 thin omitted)
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 1092 edges (avg confidence: 0.94)
+- 5223 nodes · 11179 edges · 301 communities (258 shown, 43 thin omitted)
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 1093 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c28744ab`
+- Built from commit: `1f5df032`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -47,7 +47,7 @@
 - package:flutter/material.dart
 - OptionsEditor.tsx
 - main.dart
-- CustomField
+- LayoutContext.tsx
 - auth.ts
 - chip
 - layout_builder_screen.dart
@@ -148,7 +148,7 @@
 - Collaudo finale — tutto collegato (mappa 3)
 - Passaggio di consegne — aggiornamento UI/UX di Syncro Flow (React Native)
 - ChatMessage
-- inventoryOps.ts
+- moveOf
 - build-seed.py
 - Foto del prodotto: galleria da scorrere e foto che non si perdono
 - Lavori
@@ -173,14 +173,14 @@
 - v-automazioni.cjs
 - Mappa funzionale di Syncro Flow (React Native v1)
 - 4. Piano ordinato
-- product/[id].tsx
-- Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente)
+- HardwareConfigContext.tsx
+- decodeBarcodeImage
 - 4. Disegno consigliato per N1 e N2
 - 10. Servizi
 - Mappa Wayfinder 2 — categorie, scaffali, NFC, foto nel CSV, login
 - mock/context.tsx
 - Prova delle funzioni sul web (fase B, punto 1)
-- .readTag
+- Esito a4: Impostazioni, Posizioni, Cartelle, GS1, Hardware, Condivisione, Team, Aspetto, Dati
 - ct-chat-team.cjs
 - ThemeContext.tsx
 - Modello delle quantità
@@ -193,12 +193,12 @@
 - 2. Import CSV dei prodotti
 - ese-automazioni.cjs
 - productChanges.ts
-- Conta fisica
+- AutomationsContext.tsx
 - Passaggio di consegne — fase B, funzionalità di magazzino (Syncro Flow)
 - Codice a barre
 - Piano di Implementazione — Colmare il gap Flutter ↔ React Native
 - m04-movimenta.cjs
-- InventoryContext.tsx
+- stock.ts
 - a2-aggiungi.cjs
 - Fase 7: Schermate Automazioni
 - pathlib
@@ -245,17 +245,17 @@
 - Design System — La Palais (vincolo visivo post-eject)
 - Audit Applicazione Syncro Flow — Parità pre-eject Expo
 - Campi personalizzati: tipi, modi di inserimento, lettura veloce
-- Mappa Screen — Syncro Flow (estratta da `app/`)
+- nfcService
 - nfc_route_guard.dart
 - mobile-mcp
 - Screenshot — Placeholder (device non connesso al momento audit)
 - Permissions Audit — Pre-eject vs Post-eject
 - bossShare.test.ts
 - 5. Perché le due schermate sembrano complesse e vecchie, e un disegno semplice
-- serve-seed.mjs
+- Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente)
 - Backend Auth & Configuration
 - ng.cjs
-- Foto: formato WebP
+- 7. Automazioni — 6 flussi
 - linking.ts
 - CustomFieldsContext.tsx
 - 1. Export CSV dei prodotti
@@ -267,7 +267,7 @@
 - c2-indietro.cjs
 - chatPayload.test.ts
 - Campi per categoria con i Modelli di settore («selettori»)
-- inventoryFilter.test.ts
+- InventoryContext.tsx
 - m06-scorta.cjs
 - v-scaffali.cjs
 - v2-opzioni-modifica.cjs
@@ -275,7 +275,7 @@
 - Mandato dell'utente per la notte del 23 novembre 2026 (dalle 4 circa)
 - windows/flutter/generated_plugin_registrant.cc
 - 3. «Crea campo» dall'import
-- 1. Impostazioni › GS1 Digital Link (`Gs1ConfigScreen`)
+- Automazioni: funzionano? passi e automazioni che mancano
 - ref_fs
 - «Tipo di pelle» solo nei campi, freccia Indietro dopo un ricaricamento
 - m01-categorie.cjs
@@ -298,10 +298,13 @@
 - v4-categorie-modelli.cjs
 - v6-rinomina-campo.cjs
 - ci-zero.cjs
-- schermate.cjs
-- Fase 3: Servizi
+- Scorta minima e riordino
+- Report ed export
 - expo-print
 - Photos
+- Aggiornamento del 23 novembre 2026 mattina (mappa 3)
+- NFC: cosa succede alla lettura
+- 3. Scheda › Programma NFC e la prova NFC
 - test_detox_mercusys.sh
 
 ## God Nodes (most connected - your core abstractions)
@@ -311,7 +314,7 @@
 4. `Cosa fare adesso, in ordine` - 100 edges
 5. `react-native` - 99 edges
 6. `useInventory()` - 84 edges
-7. `Decisioni da rivedere` - 80 edges
+7. `Decisioni da rivedere` - 81 edges
 8. `Alert` - 72 edges
 9. `inventoryProvider` - 64 edges
 10. `react-native-safe-area-context` - 63 edges
@@ -325,21 +328,21 @@
   piani di implementazione/funzionalita/ricerche/verifiche-23/verifica-automazioni.md → components/BarcodeScanner.tsx
 - `4.1 Candidati (nell'interfaccia non c'è nessuna etichetta «Selettori»)` --references--> `CategoryPicker()`  [INFERRED]
   piani di implementazione/funzionalita/ricerche/verifiche-23/verifica-campi-layout-selettori.md → components/CategoryPicker.tsx
-- `Cronologia delle modifiche (25/08/2026)` --references--> `DynamicFieldRenderer()`  [INFERRED]
-  docs/cronologia_migrazione.md → components/DynamicFieldRenderer.tsx
+- `Decisioni` --references--> `MovementSheet()`  [INFERRED]
+  piani di implementazione/funzionalita/issues/29-automazioni.md → components/MovementSheet.tsx
 
 ## Import Cycles
 - 2-file cycle: `src/services/meshServer.ts -> src/services/meshSync.ts -> src/services/meshServer.ts`
 
-## Communities (298 total, 43 thin omitted)
+## Communities (301 total, 43 thin omitted)
 
 ### Community 0 - "Create"
 Cohesion: 0.14
 Nodes (14): wchar_t, Scale(), Size, height, width, Create, Destroy, Win32Window::Win32Window() (+6 more)
 
 ### Community 1 - "react-native-safe-area-context"
-Cohesion: 0.08
-Nodes (53): AuditItem, AuditStatus, styles, AutomationFlowScreen(), styles, Step, styles, CustomRunnerScreen() (+45 more)
+Cohesion: 0.11
+Nodes (37): AuditItem, AuditStatus, styles, Step, styles, COMMON_TAGS, styles, styles (+29 more)
 
 ### Community 2 - "expo"
 Cohesion: 0.06
@@ -362,8 +365,8 @@ Cohesion: 0.07
 Nodes (29): static const Color, accentGold, accentGoldLight, alert, AppColors, available, background, backgroundSecondary (+21 more)
 
 ### Community 7 - "Dove siamo"
-Cohesion: 0.08
-Nodes (62): Props, hydrateSharedProductImages(), inferMediaType(), InventoryProvider(), ShelvesContext, ShelvesContextType, ShelvesProvider(), 23 novembre 2026 — Seconda mappa, S1a: scaffali, anagrafica e pezzi unici (ticket 13) (+54 more)
+Cohesion: 0.11
+Nodes (52): hydrateSharedProductImages(), InventoryProvider(), ShelvesProvider(), 22 novembre 2026 — Fase B, M03: articoli a quantità (ticket 01 e 03), 23 novembre 2026 — Seconda mappa, S1a: scaffali, anagrafica e pezzi unici (ticket 13), Decisioni da rivedere, Piano di implementazione (fetta S2, dopo S1b), Dove siamo (+44 more)
 
 ### Community 8 - "scripts"
 Cohesion: 0.14
@@ -378,8 +381,8 @@ Cohesion: 0.06
 Nodes (34): CustomField, barcode, copyWith, createdAt, customData, customFields, deletedAt, fieldSnapshot (+26 more)
 
 ### Community 11 - "productCsv.ts"
-Cohesion: 0.10
-Nodes (35): createGoogleSheetBackup(), driveRequest(), ensureOrganizationDriveFolder(), uploadDriveFile(), uploadLocalUriToDrive(), RFC-4180, 22 novembre 2026 — Fase B, C06: export CSV con la cartella e senza cestino, import col pulsante sul web (P07, P18), 22 novembre 2026 — Fase B, M08: CSV con giacenza, report giacenze e movimenti (ticket 09) (+27 more)
+Cohesion: 0.14
+Nodes (29): RFC-4180, 22 novembre 2026 — Fase B, C06: export CSV con la cartella e senza cestino, import col pulsante sul web (P07, P18), 22 novembre 2026 — Fase B, M08: CSV con giacenza, report giacenze e movimenti (ticket 09), Fetta EXP — export leggibile (dopo VAL), Fetta IMP — schermata d'import (dopo EDC ed EXP; se MCAT è già fatta, obbligatori per categoria), Piano di implementazione, 2.4 Proposta semplice (fetta X1), SettingsScreen() (+21 more)
 
 ### Community 12 - "inventory_provider.dart"
 Cohesion: 0.03
@@ -453,9 +456,9 @@ Nodes (4): EditorOption, OptionsEditor(), Props, useStyles
 Cohesion: 0.06
 Nodes (35): AppLinks, ../core/theme/app_theme.dart, core/utils/nfc_route_guard.dart, GoRouter, NavigatorState, package:app_links/app_links.dart, providers/storage_provider.dart, screens/add_product_screen.dart (+27 more)
 
-### Community 31 - "CustomField"
-Cohesion: 0.06
-Nodes (43): COMMON_ICONS, SIZE_OPTIONS, styles, DynamicFieldRendererProps, SectorTemplate, USER_TEMPLATES_KEY, DEFAULT_LAYOUT, DEFAULT_SECTION_LABELS (+35 more)
+### Community 31 - "LayoutContext.tsx"
+Cohesion: 0.12
+Nodes (21): COMMON_ICONS, SIZE_OPTIONS, styles, DEFAULT_LAYOUT, DEFAULT_SECTION_LABELS, FieldSize, LayoutContext, LayoutContextType (+13 more)
 
 ### Community 32 - "auth.ts"
 Cohesion: 0.33
@@ -518,8 +521,8 @@ Cohesion: 0.24
 Nodes (10): Come si torna indietro, 2.1 Le due strade a confronto, 2.2 Effetti della scelta A, 2.3 Tasto Indietro di sistema durante la Conta e nelle finestre (dal codice), 2. Correzione per C2: quale delle due, Domande per l'utente, In breve, Proposte (il modo più giusto, corretto e semplice) (+2 more)
 
 ### Community 47 - "soundService"
-Cohesion: 0.11
-Nodes (15): 4. Esecuzione, 7. Cosa non deve cambiare (vincolo), 7.1 Audit `app/automations/audit.tsx:1`, 7.2 Flow `app/automations/automation-flow.tsx:1`, 7.3 Batch Move `app/automations/batch-move.tsx:1`, 7.4 Custom Runner `app/automations/custom-runner.tsx:1`, 7.5 Quick Tag `app/automations/quick-tag.tsx:1`, 7.6 Scan Sell `app/automations/scan-sell.tsx:1` (+7 more)
+Cohesion: 0.09
+Nodes (16): 1. Modelli, 2. Store & Persistenza, 3. UI Entry, 4. Esecuzione, 6. Settore-agnostico — esempi, 7. Cosa non deve cambiare (vincolo), Automazioni — Engine Completo (per qualsiasi settore), Checklist parità automazioni (+8 more)
 
 ### Community 48 - "barcode_decoder_service.dart"
 Cohesion: 0.06
@@ -578,8 +581,8 @@ Cohesion: 0.03
 Nodes (68): app_image.dart, ../core/constants/config.dart, Route /add, Route /automations, Route /settings, Route /timeline, Set, StatelessWidget (+60 more)
 
 ### Community 62 - "useInventory"
-Cohesion: 0.08
-Nodes (65): AuditScreen(), BatchMoveScreen(), QuickTagScreen(), ScanSellScreen(), EditProductScreen(), ProductDetailScreen(), ScannerActionScreen(), ScannerScreen() (+57 more)
+Cohesion: 0.07
+Nodes (76): AuditScreen(), BatchMoveScreen(), QuickTagScreen(), ScanSellScreen(), EditProductScreen(), ProductDetailScreen(), ScannerActionScreen(), ScannerScreen() (+68 more)
 
 ### Community 63 - "Welcome to"
 Cohesion: 0.20
@@ -638,8 +641,8 @@ Cohesion: 0.15
 Nodes (12): int?, barcode, capacity, color, copyWith, fromJson, id, label (+4 more)
 
 ### Community 78 - "prova/stato-da-indirizzo.mjs"
-Cohesion: 0.13
-Nodes (13): avanzano, carica(), CORE(), dir, { MADRE, daAprire, REPO }, require, righe, schermate (+5 more)
+Cohesion: 0.10
+Nodes (18): avanzano, carica(), CORE(), dir, { MADRE, daAprire, REPO }, require, righe, schermate (+10 more)
 
 ### Community 79 - "custom_runner_screen.dart"
 Cohesion: 0.03
@@ -679,11 +682,11 @@ Nodes (90): AuditStatus, int get, Location?, ../../models/library.dart, ../../mo
 
 ### Community 89 - "codes.ts"
 Cohesion: 0.09
-Nodes (51): useCodeReader(), 23 novembre 2026 — Terza mappa, COD: lettore unico dei codici e codici che non si rovinano (ticket 22 e 29), Fetta COD — lettore unico e codici che non si rovinano (dopo C2; blocca S3, N1, ETI, ESE) — **fatta il 23/11**, Fetta ETI — etichette e finestra «Codice ed etichetta» (dopo COD), Fetta GS1 — Impostazioni «Codici ed etichette» (dopo ETI e la risposta sul GTIN), N1 e N2 (ticket 16-18, mappa 2) — aggiunte, Piano di implementazione, automations (+43 more)
+Nodes (51): Props, useCodeReader(), 23 novembre 2026 — Terza mappa, COD: lettore unico dei codici e codici che non si rovinano (ticket 22 e 29), Fetta COD — lettore unico e codici che non si rovinano (dopo C2; blocca S3, N1, ETI, ESE) — **fatta il 23/11**, Fetta ETI — etichette e finestra «Codice ed etichetta» (dopo COD), Fetta GS1 — Impostazioni «Codici ed etichette» (dopo ETI e la risposta sul GTIN), N1 e N2 (ticket 16-18, mappa 2) — aggiunte, Piano di implementazione (+43 more)
 
 ### Community 90 - "add.tsx"
-Cohesion: 0.06
-Nodes (40): styles, styles, DynamicFieldRenderer(), formatDateToInput(), FurType, SIZE_FLEX, styles, DORMANT_THRESHOLD_DAYS (+32 more)
+Cohesion: 0.09
+Nodes (30): styles, styles, styles, DynamicFieldRendererProps, FurType, SIZE_FLEX, styles, DORMANT_THRESHOLD_DAYS (+22 more)
 
 ### Community 91 - "fonts.web.ts"
 Cohesion: 0.11
@@ -694,8 +697,8 @@ Cohesion: 0.83
 Nodes (3): gradlew script, die(), warn()
 
 ### Community 93 - "Cosa fare adesso, in ordine"
-Cohesion: 0.25
-Nodes (26): CategoryPicker(), 22 novembre 2026 sera — Seconda mappa, C1: categorie = cartelle, «Tipo di pelle» campo facoltativo (ticket 19), Cosa fare adesso, in ordine, ManageFoldersScreen(), CON_SOTTO, OGGI, CATEGORY_SEPARATOR, categoryAncestors() (+18 more)
+Cohesion: 0.23
+Nodes (27): CategoryPicker(), ShelfPicker(), 22 novembre 2026 sera — Seconda mappa, C1: categorie = cartelle, «Tipo di pelle» campo facoltativo (ticket 19), Cosa fare adesso, in ordine, ManageFoldersScreen(), CON_SOTTO, OGGI, CATEGORY_SEPARATOR (+19 more)
 
 ### Community 94 - "quick_tag_screen.dart"
 Cohesion: 0.07
@@ -802,8 +805,8 @@ Cohesion: 0.15
 Nodes (13): 10. Icone sparite (segnalazione dello stesso giorno, prima), 11. Chat e Team tra operatori (risposta dell'utente a una domanda dell'orchestratore 3), 1. Scaffali: capacità, misure, peso, blocco quando è pieno, 2. NFC e GS1 Digital Link: capire se funzionano, rifare le interfacce, 3. Campi personalizzati: tipi, modi di inserimento, lettura veloce, 4. Layout builder (Configura Layout Aggiungi), 5. Selettori: campi per categoria, 6. Import ed export CSV: immagini e corrispondenza delle colonne (+5 more)
 
 ### Community 126 - "ref_path"
-Cohesion: 0.13
-Nodes (10): IMPORTANT: keep the reminder string free of backticks and $(...) constructs., { scenario }, stile(), { chromium }, path, { chromium }, FETTE, path (+2 more)
+Cohesion: 0.12
+Nodes (12): { scenario }, stile(), { chromium }, path, { chromium }, FETTE, path, STILI (+4 more)
 
 ### Community 127 - "battery.ts"
 Cohesion: 0.50
@@ -825,9 +828,9 @@ Nodes (14): Aggiornamento del 22 novembre 2026, Aggiornamento del 22 novembre 20
 Cohesion: 0.33
 Nodes (4): ChatMessage, date, json, text
 
-### Community 132 - "inventoryOps.ts"
-Cohesion: 0.06
-Nodes (59): KINDS, MovementSheet(), 22 novembre 2026 — Fase B, C03: niente vendite doppie né dal cestino (P05, P06, P25), 22 novembre 2026 — Fase B, M03: articoli a quantità (ticket 01 e 03), 22 novembre 2026 — Fase B, M07: Conta di magazzino (ticket 06), Modello dei dati (decisione tecnica dell'orchestratore, da validare con i test in S1), Fetta CON — conta e audit che lasciano traccia (dopo FLU1), Fetta FLU1 — ingresso e uscita (dopo S3 ed ESE) (+51 more)
+### Community 132 - "moveOf"
+Cohesion: 0.16
+Nodes (18): 0. Difetti aperti, riconfermati uno per uno, 1.1 Stato attuale, 1.2 Difetti nuovi, con i passi per riprodurli, 1.3 Che cosa manca nelle automazioni esistenti, 1.5 Come si proverebbe, 1. Automazioni pronte e passi del costruttore, 3.1 Stato attuale, punti di carico, 3.2 Stato attuale, punti di lettura (N1) (+10 more)
 
 ### Community 133 - "build-seed.py"
 Cohesion: 0.20
@@ -925,13 +928,13 @@ Nodes (16): 1. A cosa serve, 2. Navigazione, 4. Layout builder, 5. Modulo Aggiun
 Cohesion: 0.06
 Nodes (27): Google login, Drive backup, and Sheets export, One-time Google Console configuration, Provisioned services, 1. Requisiti e decisioni dell'utente, 2. Fatti verificati, 3. Ricerca WMS, 4. Piano ordinato, 5. Verifiche da eseguire dopo approvazione (+19 more)
 
-### Community 157 - "product/[id].tsx"
-Cohesion: 0.13
-Nodes (12): styles, HardwareSettingsScreen(), styles, DEFAULT_HARDWARE_CONFIG, HardwareConfigContext, HardwareConfigContextType, ScanMode, useHardwareConfig() (+4 more)
+### Community 157 - "HardwareConfigContext.tsx"
+Cohesion: 0.25
+Nodes (7): HardwareSettingsScreen(), DEFAULT_HARDWARE_CONFIG, HardwareConfigContext, HardwareConfigContextType, ScanMode, useHardwareConfig(), 3.3 Difetti che toccano i punti di aggancio
 
-### Community 158 - "Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente)"
-Cohesion: 0.10
-Nodes (20): 10. Navigazione — `_layout.tsx` + `(tabs)/_layout.tsx` + `+not-found.tsx`, 11. Interazioni trasversali (come ogni componente parla con gli altri), 1. Home — `app/(tabs)/index.tsx:16`, 2. Cronologia — `app/(tabs)/timeline.tsx:14`, 3. Automazioni Hub — `app/(tabs)/automations.tsx:45`, 4. Aggiungi Prodotto — `app/(tabs)/add.tsx:22`, 8. Scanner — `app/scanner.tsx:1` + `scanner-action.tsx:6` + `BarcodeScanner.tsx:1`, Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente) (+12 more)
+### Community 158 - "decodeBarcodeImage"
+Cohesion: 0.13
+Nodes (12): 8. Scanner — `app/scanner.tsx:1` + `scanner-action.tsx:6` + `BarcodeScanner.tsx:1`, 4. Scanner & Acquisizione (da `app/scanner.tsx:5`, `components/BarcodeScanner.tsx:3`, `utils/barcodeDecoder.ts:6`), ref_expo_file_system_legacy, expo-image-manipulator, SaveFormat, launchImageLibraryAsync(), MediaTypeOptions, BarcodeDecodeResult (+4 more)
 
 ### Community 159 - "4. Disegno consigliato per N1 e N2"
 Cohesion: 0.18
@@ -953,9 +956,9 @@ Nodes (11): MockAuthContext, MockAuthContextActions, MockAuthContextState, MockA
 Cohesion: 0.22
 Nodes (8): Difetti trovati (nuovi), in ordine di gravità, La prova (prima delle correzioni), Ordine delle correzioni (punto 2), Prova delle funzioni sul web (fase B, punto 1), Riepilogo per funzione (righe della lista B.1), Rilancio di controllo, Stato attuale (22 novembre, mattina, dopo le correzioni), P
 
-### Community 164 - ".readTag"
-Cohesion: 0.17
-Nodes (10): Difetti nuovi, Difetti precedenti ricontrollati, Esito a4: Impostazioni, Posizioni, Cartelle, GS1, Hardware, Condivisione, Team, Aspetto, Dati, Risultati, 3.2 Stato attuale, punti di lettura (N1), 3.2 Difetti, con i passi, 3.3 Che cosa manca, 3.4 Proposta (+2 more)
+### Community 164 - "Esito a4: Impostazioni, Posizioni, Cartelle, GS1, Hardware, Condivisione, Team, Aspetto, Dati"
+Cohesion: 0.40
+Nodes (4): Difetti nuovi, Difetti precedenti ricontrollati, Esito a4: Impostazioni, Posizioni, Cartelle, GS1, Hardware, Condivisione, Team, Aspetto, Dati, Risultati
 
 ### Community 165 - "ct-chat-team.cjs"
 Cohesion: 0.17
@@ -997,9 +1000,9 @@ Nodes (7): c, filtri, { iconAt, timelineIds, newEvents }, OTTO, run(), { scenari
 Cohesion: 0.27
 Nodes (10): 22 novembre 2026 — Fase B, C10: la Cronologia registra tutte le modifiche (P13), 22 novembre 2026 — Fase B: rilettura finale delle correzioni (numeri del CSV, note vuote, prove), before, describeChanges(), describeCustomChanges(), empty(), num(), price() (+2 more)
 
-### Community 178 - "Conta fisica"
-Cohesion: 0.33
-Nodes (5): Come si torna indietro, Conta fisica, Opzioni, Question, Risposta
+### Community 178 - "AutomationsContext.tsx"
+Cohesion: 0.12
+Nodes (18): AutomationFlowScreen(), styles, CustomRunnerScreen(), styles, styles, AutomationBuilderScreen(), AVAILABLE_STEPS, COLOR_OPTIONS (+10 more)
 
 ### Community 179 - "Passaggio di consegne — fase B, funzionalità di magazzino (Syncro Flow)"
 Cohesion: 0.29
@@ -1017,9 +1020,9 @@ Nodes (23): 1.1 Diagnosi `flutter_app/` (quella testata sul telefono) — "invol
 Cohesion: 0.26
 Nodes (10): again(), apri(), check(), label(), movimento(), positive(), replay(), same() (+2 more)
 
-### Community 183 - "InventoryContext.tsx"
-Cohesion: 0.08
-Nodes (57): DEFAULT_LIBRARIES, InventoryContext, InventoryContextType, 2. Inventario Core (da `InventoryContext.tsx:21`), 22 novembre 2026 — Fase B, M02: logica della giacenza (ticket 01-03), 22 novembre 2026 — Fase B, M04: «Movimenta» nella Scheda e filtro Movimenti (ticket 02), 22 novembre 2026 — Fase B, M06: scorta minima e avviso di riordino (ticket 05), Grafo (+49 more)
+### Community 183 - "stock.ts"
+Cohesion: 0.07
+Nodes (61): 22 novembre 2026 — Fase B, M02: logica della giacenza (ticket 01-03), 22 novembre 2026 — Fase B, M04: «Movimenta» nella Scheda e filtro Movimenti (ticket 02), 22 novembre 2026 — Fase B, M07: Conta di magazzino (ticket 06), Grafo, Grafo dei lavori — gestionale di magazzino (fase B), Modello dei dati (decisione tecnica dell'orchestratore, da validare con i test in S1), Decisions so far, Destination (+53 more)
 
 ### Community 184 - "a2-aggiungi.cjs"
 Cohesion: 0.29
@@ -1034,8 +1037,8 @@ Cohesion: 0.33
 Nodes (6): pathlib, Foglio delle fette M nei 5 stili (solo per sviluppo): righe = schermate,…, Fogli di confronto per il resoconto (lavoro L9) - solo per sviluppo, NON fa…, Confronta due cartelle di schermate: per ogni PNG stampa la quota di pixel…, pil, sys
 
 ### Community 187 - "Verifica NFC e GS1 Digital Link (23 novembre 2026)"
-Cohesion: 0.18
-Nodes (11): 0. In breve, 4.1 Stato attuale, 4.2 Difetti, con i passi, 4.3 Che cosa manca, 4.4 Proposta, 4.5 Come si proverebbe, 4. QR ed etichette: dove nascono e dove si stampano, Domande per l'utente (+3 more)
+Cohesion: 0.12
+Nodes (17): 0. In breve, 1.2 Dove finisce il link nel resto dell'app, 1.4 Difetti, con i passi, 1.5 Che cosa manca, 1.6 Proposta («il modo più giusto e corretto e semplificato»), 1.7 Come si proverebbe, 1. Impostazioni › GS1 Digital Link (`Gs1ConfigScreen`), 4.1 Stato attuale (+9 more)
 
 ### Community 188 - "Setup Supabase (Synchroflow)"
 Cohesion: 0.25
@@ -1058,12 +1061,12 @@ Cohesion: 0.13
 Nodes (8): Database, Model, @nozbe/watermelondb, @nozbe/watermelondb/adapters/sqlite, @nozbe/watermelondb/decorators, @nozbe/watermelondb/react, @nozbe/watermelondb/sync, SQLiteAdapter
 
 ### Community 193 - ".writeGS1Uri"
-Cohesion: 0.27
-Nodes (7): 6.8 Condivisione `app/settings/share.tsx:1`, [NEW] `lib/services/nfc_service.dart`, 1.2 Tag sul telefono, app in primo piano, nessuna richiesta in corso, 1.3 Subito dopo una scrittura riuscita, con il tag ancora appoggiato, 1.4 Difetto: gara tra «Pulisci» e «Scrivi» (Scheda prodotto), 1. Che cosa succede oggi, 3.1 Stato attuale
+Cohesion: 0.21
+Nodes (10): Fase 3: Servizi, [NEW] `lib/services/barcode_decoder_service.dart`, [NEW] `lib/services/nfc_service.dart`, [NEW] `lib/services/sound_service.dart`, [NEW] `lib/services/storage_service.dart`, 1.2 Tag sul telefono, app in primo piano, nessuna richiesta in corso, 1.3 Subito dopo una scrittura riuscita, con il tag ancora appoggiato, 1.4 Difetto: gara tra «Pulisci» e «Scrivi» (Scheda prodotto) (+2 more)
 
 ### Community 194 - "funzionalita/map.md"
-Cohesion: 0.08
-Nodes (21): Categorie, Come si torna indietro, Opzioni, Question, Risposta, Come si torna indietro, Opzioni, Question (+13 more)
+Cohesion: 0.11
+Nodes (16): Categorie, Come si torna indietro, Opzioni, Question, Risposta, Come si torna indietro, Conta fisica, Opzioni (+8 more)
 
 ### Community 195 - "4. «Selettori»"
 Cohesion: 0.33
@@ -1091,19 +1094,19 @@ Nodes (8): ref_readline, exampleDirPath, fs, oldDirs, path, readline, rl, root
 
 ### Community 203 - "map-3.md"
 Cohesion: 0.14
-Nodes (4): Come si torna indietro, NFC: cosa succede alla lettura, Proposta dell'orchestratore, Question
+Nodes (4): Come si torna indietro, Da stabilire nella fetta I1, Foto: formato WebP, Question
 
 ### Community 204 - "automationRun.ts"
-Cohesion: 0.13
-Nodes (39): stepMeta(), 23 novembre 2026 — Terza mappa, ESE: esecuzione corretta delle automazioni (ticket 29), Fetta ESE — esecuzione corretta (dopo COD) — **fatta il 23**, 1.4 Proposta semplice, con i file e i rischi, CustomRunnerScreen(), AutomationBuilderScreen(), CONFIGURABLE, base (+31 more)
+Cohesion: 0.12
+Nodes (43): stepMeta(), 23 novembre 2026 — Terza mappa, ESE: esecuzione corretta delle automazioni (ticket 29), Fetta CON — conta e audit che lasciano traccia (dopo FLU1), Fetta ESE — esecuzione corretta (dopo COD) — **fatta il 23**, Fetta FLU1 — ingresso e uscita (dopo S3 ed ESE), Fette FLU2, RIO, RES, VOCI (dopo FLU1), Piano di implementazione, 1.4 Proposta semplice, con i file e i rischi (+35 more)
 
 ### Community 205 - "Fornitori e clienti"
 Cohesion: 0.33
 Nodes (5): Come si torna indietro, Fornitori e clienti, Opzioni, Question, Risposta
 
 ### Community 206 - "6. Sotto-Impostazioni (10)"
-Cohesion: 0.22
-Nodes (9): 6.10 Builder Automazioni `app/settings/automation-builder.tsx:1`, 6.1 GS1 Config `app/settings/gs1-config.tsx:1`, 6.2 Hardware `app/settings/hardware.tsx:1`, 6.3 Cartelle `app/settings/folders.tsx:1`, 6.4 Campi `app/settings/fields.tsx:1`, 6.6 Cestino `app/settings/trash.tsx:1`, 6.7 Posizioni `app/settings/locations.tsx:1`, 6.9 Modelli Settore `app/settings/sector-templates.tsx:1` (+1 more)
+Cohesion: 0.18
+Nodes (10): 6.10 Builder Automazioni `app/settings/automation-builder.tsx:1`, 6.1 GS1 Config `app/settings/gs1-config.tsx:1`, 6.2 Hardware `app/settings/hardware.tsx:1`, 6.3 Cartelle `app/settings/folders.tsx:1`, 6.4 Campi `app/settings/fields.tsx:1`, 6.6 Cestino `app/settings/trash.tsx:1`, 6.7 Posizioni `app/settings/locations.tsx:1`, 6.8 Condivisione `app/settings/share.tsx:1` (+2 more)
 
 ### Community 207 - "photos.ts"
 Cohesion: 0.38
@@ -1154,8 +1157,8 @@ Cohesion: 0.33
 Nodes (5): defaultConfig, { getDefaultConfig }, { mergeConfig }, ref_expo_metro_config, @react-native/metro-config
 
 ### Community 230 - "Codici, QR, etichette e NFC: funzionano? interfacce semplici"
-Cohesion: 0.11
-Nodes (14): Codici, QR, etichette e NFC: funzionano? interfacce semplici, Come si torna indietro, Decisioni, Piano di verifica, Question, Richiesta dell'utente (23 novembre mattina), Stato verificato (sintesi; i dettagli e i passi sono nel resoconto), Automazioni: funzionano? passi e automazioni che mancano (+6 more)
+Cohesion: 0.18
+Nodes (7): Codici, QR, etichette e NFC: funzionano? interfacce semplici, Come si torna indietro, Decisioni, Piano di verifica, Question, Richiesta dell'utente (23 novembre mattina), Stato verificato (sintesi; i dettagli e i passi sono nel resoconto)
 
 ### Community 231 - "drive.ts"
 Cohesion: 0.36
@@ -1177,9 +1180,9 @@ Nodes (6): Audit Applicazione Syncro Flow — Parità pre-eject Expo, Come rigen
 Cohesion: 0.22
 Nodes (9): Campi personalizzati: tipi, modi di inserimento, lettura veloce, Come si torna indietro, Decisioni, Fetta EDC — editor in tre domande e lettura veloce (dopo VAL), Piano di implementazione, Piano di verifica, Question, Richiesta dell'utente (23 novembre mattina) (+1 more)
 
-### Community 237 - "Mappa Screen — Syncro Flow (estratta da `app/`)"
+### Community 237 - "nfcService"
 Cohesion: 0.06
-Nodes (31): CustomAutomation, FieldType, GS1ConfigProvider(), HardwareConfig, LayoutConfig, Location, 1. Modelli, 2. Store & Persistenza (+23 more)
+Nodes (34): DynamicFieldRenderer(), formatDateToInput(), CustomAutomation, GS1ConfigProvider(), LayoutConfig, LayoutProvider(), 5. QR Trigger, Dipendenze Expo effettive per screen (riepilogo) (+26 more)
 
 ### Community 238 - "nfc_route_guard.dart"
 Cohesion: 0.33
@@ -1205,9 +1208,9 @@ Nodes (6): ref_buffer, LightPayload, mockAutomation, mockProducts, normalize(), 
 Cohesion: 0.33
 Nodes (6): 5.1 Che cosa le rende pesanti (conteggi letti nel codice; l'effetto nullo dei controlli è provato, punti 1.4 e 2.2), 5.2 Schermata nuova «Codici ed etichette» (al posto di GS1 Digital Link), 5.3 Schermata nuova «Scanner e NFC» (al posto di Scanner & NFC), 5.4 Registrare uno scaffale (o una posizione, o una categoria) con QR o NFC, nel modo più semplice, 5.5 File, rischi e prove delle schermate nuove, 5. Perché le due schermate sembrano complesse e vecchie, e un disegno semplice
 
-### Community 244 - "serve-seed.mjs"
-Cohesion: 0.33
-Nodes (5): here, ref_node_fs_promises, ref_node_http, ref_node_path, ref_node_url
+### Community 244 - "Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente)"
+Cohesion: 0.20
+Nodes (9): 10. Navigazione — `_layout.tsx` + `(tabs)/_layout.tsx` + `+not-found.tsx`, 11. Interazioni trasversali (come ogni componente parla con gli altri), 1. Home — `app/(tabs)/index.tsx:16`, 2. Cronologia — `app/(tabs)/timeline.tsx:14`, 3. Automazioni Hub — `app/(tabs)/automations.tsx:45`, 4. Aggiungi Prodotto — `app/(tabs)/add.tsx:22`, Dettaglio Schermate — Syncro Flow (Audit minimo per ogni componente), Indice (+1 more)
 
 ### Community 245 - "Backend Auth & Configuration"
 Cohesion: 0.40
@@ -1217,17 +1220,17 @@ Nodes (4): Backend Auth & Configuration, Nota per Google Anti Gravity, Setup, St
 Cohesion: 0.22
 Nodes (3): { press }, { scan }, { scenario, APP }
 
-### Community 247 - "Foto: formato WebP"
-Cohesion: 0.40
-Nodes (4): Come si torna indietro, Da stabilire nella fetta I1, Foto: formato WebP, Question
+### Community 247 - "7. Automazioni — 6 flussi"
+Cohesion: 0.25
+Nodes (8): 7.1 Audit `app/automations/audit.tsx:1`, 7.2 Flow `app/automations/automation-flow.tsx:1`, 7.3 Batch Move `app/automations/batch-move.tsx:1`, 7.4 Custom Runner `app/automations/custom-runner.tsx:1`, 7.5 Quick Tag `app/automations/quick-tag.tsx:1`, 7.6 Scan Sell `app/automations/scan-sell.tsx:1`, 7. Automazioni — 6 flussi, found()
 
 ### Community 248 - "linking.ts"
 Cohesion: 0.28
 Nodes (5): config, linking, LinkingState, PARENT_TAB, screens
 
 ### Community 249 - "CustomFieldsContext.tsx"
-Cohesion: 0.16
-Nodes (10): COMMON_ICONS, styles, AutomationsProvider(), CustomFieldOption, CustomFieldsContext, CustomFieldsContextType, CustomFieldsProvider(), DEFAULT_CUSTOM_FIELDS (+2 more)
+Cohesion: 0.08
+Nodes (32): COMMON_ICONS, styles, SectorTemplate, USER_TEMPLATES_KEY, CustomFieldOption, CustomFieldsContext, CustomFieldsContextType, CustomFieldsProvider() (+24 more)
 
 ### Community 250 - "1. Export CSV dei prodotti"
 Cohesion: 0.25
@@ -1261,9 +1264,9 @@ Nodes (5): ChatPayload, HydratedPayload, LightPayload, normalizePayload(), parse
 Cohesion: 0.29
 Nodes (7): Campi per categoria con i Modelli di settore («selettori»), Come si torna indietro, Piano di implementazione (fetta MCAT, dopo MOD), Piano di verifica, Question, Richiesta dell'utente (23 novembre mattina), Stato verificato (sintesi)
 
-### Community 259 - "inventoryFilter.test.ts"
-Cohesion: 0.33
-Nodes (6): 22 novembre 2026 — Fase B, C09: ricerca, Attenzione e filtro della cartella nell'Inventario (P14, P15, D14), locations, p, types, matchesFilter(), matchesSearch()
+### Community 259 - "InventoryContext.tsx"
+Cohesion: 0.07
+Nodes (38): createGoogleSheetBackup(), driveRequest(), ensureOrganizationDriveFolder(), uploadDriveFile(), uploadLocalUriToDrive(), DEFAULT_LIBRARIES, inferMediaType(), InventoryContext (+30 more)
 
 ### Community 261 - "v-scaffali.cjs"
 Cohesion: 0.33
@@ -1285,13 +1288,13 @@ Nodes (12): app_links_plugin_c_api, audioplayers_windows_plugin, battery_plus_wi
 Cohesion: 0.33
 Nodes (6): 3.1 Stato attuale, 3.2 Difetti, 3.3 Che cosa manca, 3.4 Proposta semplice, 3.5 Come si proverebbe, 3. «Crea campo» dall'import
 
-### Community 268 - "1. Impostazioni › GS1 Digital Link (`Gs1ConfigScreen`)"
-Cohesion: 0.33
-Nodes (6): 1.2 Dove finisce il link nel resto dell'app, 1.4 Difetti, con i passi, 1.5 Che cosa manca, 1.6 Proposta («il modo più giusto e corretto e semplificato»), 1.7 Come si proverebbe, 1. Impostazioni › GS1 Digital Link (`Gs1ConfigScreen`)
+### Community 268 - "Automazioni: funzionano? passi e automazioni che mancano"
+Cohesion: 0.29
+Nodes (7): Automazioni: funzionano? passi e automazioni che mancano, Come si torna indietro, Decisioni, Piano di verifica, Question, Richiesta dell'utente (23 novembre mattina), Stato verificato (sintesi)
 
 ### Community 269 - "ref_fs"
-Cohesion: 0.33
-Nodes (3): fs, { scenario }, ref_fs
+Cohesion: 0.22
+Nodes (4): IMPORTANT: keep the reminder string free of backticks and $(...) constructs., fs, { scenario }, ref_fs
 
 ### Community 270 - "«Tipo di pelle» solo nei campi, freccia Indietro dopo un ricaricamento"
 Cohesion: 0.40
@@ -1341,17 +1344,29 @@ Nodes (7): field, readonly, Product, date, json, text, writer
 Cohesion: 0.29
 Nodes (6): **1\. Panoramica e Obiettivi del Modulo**, **2\. Architettura di Rete e Connettività Locale**, **3\. Pipeline di Acquisizione e Compressione Media (Bare React Native)**, **4\. Chat Operativa con "Hydrated Product Cards"**, **5\. Fasi di Implementazione e Librerie (Roadmap Tecnica)**, **Product Requirements Document (PRD): SyncroFlow \- Modulo Mesh, Chat Avanzata e Storage Ottimizzato**
 
-### Community 292 - "schermate.cjs"
-Cohesion: 0.40
-Nodes (3): { chromium }, DIR, path
+### Community 292 - "Scorta minima e riordino"
+Cohesion: 0.33
+Nodes (5): Come si torna indietro, Opzioni, Question, Risposta, Scorta minima e riordino
 
-### Community 293 - "Fase 3: Servizi"
-Cohesion: 0.50
-Nodes (4): Fase 3: Servizi, [NEW] `lib/services/barcode_decoder_service.dart`, [NEW] `lib/services/sound_service.dart`, [NEW] `lib/services/storage_service.dart`
+### Community 293 - "Report ed export"
+Cohesion: 0.33
+Nodes (5): Come si torna indietro, Opzioni, Question, Report ed export, Risposta
 
 ### Community 294 - "expo-print"
 Cohesion: 0.50
 Nodes (3): expo-print, expo-print, printToFileAsync()
+
+### Community 296 - "Aggiornamento del 23 novembre 2026 mattina (mappa 3)"
+Cohesion: 0.33
+Nodes (6): Aggiornamento del 23 novembre 2026 mattina (mappa 3), Che cosa si configura (il «che cosa» è dell'utente; la forma è una proposta dell'orchestratore), Controllo del singolo prodotto (decisione tecnica, da validare con i test in S2), Piano di verifica, Richieste dell'utente, Stato verificato (letto nel codice a `7bfcd72`)
+
+### Community 297 - "NFC: cosa succede alla lettura"
+Cohesion: 0.40
+Nodes (4): Come si torna indietro, NFC: cosa succede alla lettura, Proposta dell'orchestratore, Question
+
+### Community 298 - "3. Scheda › Programma NFC e la prova NFC"
+Cohesion: 0.40
+Nodes (5): 3.2 Difetti, con i passi, 3.3 Che cosa manca, 3.4 Proposta, 3.5 Come si proverebbe, 3. Scheda › Programma NFC e la prova NFC
 
 ## Knowledge Gaps
 - **2333 isolated node(s):** `$schema`, `plugin`, `type`, `command`, `enabled` (+2328 more)
@@ -1362,11 +1377,11 @@ Nodes (3): expo-print, expo-print, printToFileAsync()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `rgba()` connect `Audit del tema (misurato il 22 novembre 2026)` to `4. Disegno consigliato per N1 e N2`, `react`, `genera_temi.py`?**
-  _High betweenness centrality (0.192) - this node is a cross-community bridge._
+  _High betweenness centrality (0.190) - this node is a cross-community bridge._
 - **Why does `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` connect `react` to `Audit del tema (misurato il 22 novembre 2026)`, `Cronologia aggiornabile`, `useTheme`, `ThemeContext.tsx`, `cardSurface`?**
-  _High betweenness centrality (0.189) - this node is a cross-community bridge._
+  _High betweenness centrality (0.187) - this node is a cross-community bridge._
 - **Why does `shadow()` connect `genera_temi.py` to `chip`, `react`?**
-  _High betweenness centrality (0.164) - this node is a cross-community bridge._
+  _High betweenness centrality (0.163) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `useTheme()` (e.g. with `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` and `Regole per ogni fetta`) actually correct?**
   _`useTheme()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 99 inferred relationships involving `Dove siamo` (e.g. with `MovementSheet()` and `useFurTypes()`) actually correct?**

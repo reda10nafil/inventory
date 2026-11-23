@@ -10,6 +10,7 @@
 // - automazione salvata senza lettura iniziale: «Modifica»; tipo di passo sconosciuto che non fa cadere (P16);
 // - Audit: intruso riletto «già segnato», 8 posizioni con la ricerca, posizione dall'Azione rapida (AU-V08, V09, N17);
 // - uso contato aprendo l'esecuzione dall'indirizzo (AU-N13); avviso eliminando una posizione usata (AU-V05).
+// - (dopo il revisore) prodotto già nella posizione del passo: la catena continua; valuta con la virgola nella Scheda.
 // Ogni scenario dà `ok` (true se il comportamento è quello atteso) e i valori letti dallo stato salvato.
 // Uso (dalla cartella prova/, app su :8082 e campionario su :8765): node ese-automazioni.cjs [filtro…]
 const { scenario } = require('./lib.cjs');
@@ -289,6 +290,38 @@ const run = (name, fn, opts) => (!filtri.length || filtri.some((f) => name.inclu
     const seconda = ((await h.store(AK, 1200)) || [])[0];
     const out = { usoDopoPrimaApertura: prima?.usageCount ?? null, usoDopoSeconda: seconda?.usageCount ?? null, ultimoUso: !!seconda?.lastUsedAt };
     return { ok: out.usoDopoPrimaApertura === 1 && out.usoDopoSeconda === 2 && out.ultimoUso, ...out };
+  });
+
+  // 13. (Parere del revisore) Prodotto già nella posizione del passo: niente spostamento e la catena continua; dopo
+  //     «Annulla» nella finestra del prezzo il capo si può rileggere e vendere; una valuta scritta con la virgola si
+  //     legge giusta nella Scheda (non «NaN €»)
+  await run('ese-gia-in-posizione', async (h) => {
+    await salva(h, [auto('auto_vetrina', [SP,
+      st('s2', 'move_to', { useLastScannedLocation: false, locationId: 'vetrina', locationName: 'Vetrina' }, 'Sposta in: Vetrina'),
+      st('s3', 'add_tag', { tag: 'Visto' }, 'Aggiungi Tag: Visto'),
+      st('s4', 'set_field', { fieldId: 'field_cmp_riparazione', fieldName: 'Costo riparazione', fieldValue: '12,5' }, 'Imposta Costo riparazione = 12,5'),
+      st('s5', 'mark_sold', { pricePrompt: true }, 'Vendi (con conferma prezzo)')])]);
+    await h.go('automations/custom-runner/auto_vetrina');
+    await c.ultima(h, 'Scansiona Prodotto');
+    const before = await timelineIds(h);
+    await c.leggi(h, 'VIS-0142', { wait: 1500 }); // VIS-0142 è già in Vetrina
+    const primaFinestra = (await prezzo(h).count()) > 0;
+    if (primaFinestra) await h.click('Annulla');
+    await c.leggi(h, 'VIS-0142', { wait: 1500 });
+    const secondaFinestra = (await prezzo(h).count()) > 0;
+    if (secondaFinestra) { await prezzo(h).first().fill('4000'); await h.click('CONFERMA'); await h.page.waitForTimeout(800); }
+    const p = await c.prodotto(h, 'VIS-0142', 600);
+    const costo = (p.customData || []).find((d) => d.fieldSnapshot?.id === 'field_cmp_riparazione');
+    const ev = await newEvents(h, before, 0);
+    await h.go(`product/${p.id}`);
+    const scheda = await c.testo(h);
+    const out = {
+      primaFinestra, secondaFinestra, posizione: p.location, nota: (p.technicalNotes || '').endsWith('[Visto]'), costo: costo?.value ?? null,
+      status: p.status, sellPrice: p.sellPrice, eventi: ev.map((e) => e.type), schedaCosto: scheda.includes('12,50 €'), schedaNaN: scheda.includes('NaN'),
+    };
+    const ok = primaFinestra && secondaFinestra && p.location === 'vetrina' && out.nota && out.costo === '12.5' && p.status === 'sold'
+      && p.sellPrice === 4000 && !out.eventi.includes('moved') && out.schedaCosto && !out.schedaNaN;
+    return { ok, ...out };
   });
 
   // 12. Eliminando una posizione usata da un passo «Sposta in» si avvisa; poi il passo si rifiuta (AU-V05)

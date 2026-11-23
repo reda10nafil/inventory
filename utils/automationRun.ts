@@ -67,12 +67,15 @@ export function fieldOf<F extends CustomField>(config: RunStepConfig, fields: re
 }
 
 /** Il valore da salvare, nella forma di Modifica: il testo scritto (un numero deve essere un numero, con la virgola);
- *  per una scelta l'etichetta dell'opzione (si accetta anche il suo id). */
+ *  per una valuta il numero in forma da macchina («12,5» → «12.5», «1.200» → «1200»), perché la Scheda lo legge con
+ *  `Number` e «12,5» diventerebbe «NaN €»; per una scelta l'etichetta dell'opzione (si accetta anche il suo id). */
 export function fieldValueOf(field: CustomField, raw: string | undefined): { ok: true; value: string } | { ok: false; error: string } {
   const text = (raw ?? '').trim();
   if (!text) return { ok: false, error: `Scrivi il valore di «${field.name}».` };
   if (field.type === 'number' || field.type === 'currency') {
-    return parseNumber(text) == null ? { ok: false, error: `«${text}» non è un numero (per esempio 12,5).` } : { ok: true, value: text };
+    const n = parseNumber(text);
+    if (n == null) return { ok: false, error: `«${text}» non è un numero (per esempio 12,5).` };
+    return { ok: true, value: field.type === 'currency' ? String(n) : text };
   }
   if (field.type === 'single_choice') {
     const option = (field.options ?? []).find((o: { id: string; label?: string }) => o.id === text || fold(o.label) === fold(text));
@@ -163,6 +166,8 @@ export function runStep(product: Product | undefined, step: RunStep, ctx: RunCon
       const place = ctx.locations.find((l) => l.id === to);
       if (!place) return refuse(scanned ? 'Posizione non trovata.' : `La posizione di questo passo non esiste più: ${EDIT}`);
       const r = moveOf(product, to, ctx.now);
+      // Già lì: niente da spostare e la catena continua, come prima di ESE (il prodotto è dove il passo lo vuole)
+      if (!r.ok && r.reason === 'same_place') return { ok: true, op: 'patch', patch: {}, text: `📦 ${product.sku} è già in ${place.label}` };
       if (!r.ok) return refuse(refusalText(r.reason, product.sku));
       return { ok: true, op: 'move', to, text: `📦 Spostato in ${place.label}` };
     }
@@ -216,8 +221,11 @@ export function flowErrors(steps: readonly RunStep[], ctx: FlowContext = {}): st
     if (step.type === 'move_to' && !usesScannedLocation(step) && ctx.locations && !ctx.locations.some((l) => l.id === step.config?.locationId)) {
       errors.push(`${n}${name}: la posizione non esiste più.`);
     }
-    if (step.type === 'set_field' && ctx.fields && !fieldOf(step.config ?? {}, ctx.fields)) {
-      errors.push(`${n}${name}: il campo non c'è tra i campi personalizzati.`);
+    if (step.type === 'set_field' && ctx.fields) {
+      const field = fieldOf(step.config ?? {}, ctx.fields);
+      const value = field ? fieldValueOf(field, step.config?.fieldValue) : null;
+      if (!field) errors.push(`${n}${name}: il campo non c'è tra i campi personalizzati.`);
+      else if (value && !value.ok) errors.push(`${n}${name}: ${value.error}`);
     }
   });
   return errors;

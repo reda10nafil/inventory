@@ -137,8 +137,8 @@ describe('runStep: rifiuti (AU-V03, AU-V04, AU-V05, AU-V06)', () => {
     expect(runStep(item(), st('move_to', { locationId: 'vetrina' }), ctx())).toMatchObject({ ok: true, op: 'move', to: 'vetrina' });
     expect(runStep(item(), st('move_to', {}), ctx())).toMatchObject({ ok: false, refusal: expect.stringMatching(/non ha una posizione/) });
   });
-  it('già in quella posizione', () => {
-    expect(runStep(item(), st('move_to', { locationId: 'sartoria' }), ctx())).toEqual({ ok: false, refusal: 'AST-0033 è già in quella posizione.' });
+  it('già in quella posizione: non è un rifiuto (niente da spostare, il passo riesce)', () => {
+    expect(runStep(item(), st('move_to', { locationId: 'sartoria' }), ctx())).toEqual({ ok: true, op: 'patch', patch: {}, text: '📦 AST-0033 è già in Sartoria' });
   });
   it('tipo di passo sconosciuto: messaggio, nessuna caduta', () => {
     const r = runStep(item(), { type: 'carico', config: { qty: 2 } as never }, ctx());
@@ -204,6 +204,29 @@ describe('costruttore: riordino e spunta (AU-V12, AU-V06)', () => {
     expect(canUseScannedLocation(flow, 2)).toBe(true);
     expect(canUseScannedLocation(flow, 3)).toBe(true);
     expect(canUseScannedLocation([st('scan_product')], 1)).toBe(false);
+  });
+});
+
+describe('dopo il parere del revisore', () => {
+  it('prodotto già nella posizione del passo: niente spostamento, la catena continua (come prima di ESE)', () => {
+    const r = runStep(item({ location: 'vetrina' }), st('move_to', { locationId: 'vetrina' }), ctx());
+    expect(r).toEqual({ ok: true, op: 'patch', patch: {}, text: '📦 AST-0033 è già in Vetrina' });
+    expect(runStep(item({ location: 'stand_b' }), st('move_to', { useLastScannedLocation: true }), ctx({ locationId: 'stand_b' })))
+      .toMatchObject({ ok: true, op: 'patch', patch: {} });
+  });
+  it('valuta: si salva il numero in forma da macchina, così la Scheda lo mostra («12,5» non diventa «NaN €»)', () => {
+    const COSTO = field({ id: 'field_costo', name: 'Costo riparazione', type: 'currency' });
+    expect(fieldValueOf(COSTO, '12,5')).toEqual({ ok: true, value: '12.5' });
+    expect(fieldValueOf(COSTO, '1.200,50')).toEqual({ ok: true, value: '1200.5' });
+    expect(fieldValueOf(COSTO, '180')).toEqual({ ok: true, value: '180' });
+    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: '2,5' });
+  });
+  it('il costruttore controlla anche il valore di «Imposta Campo» (opzione tolta, testo in un numero)', () => {
+    const SP = st('scan_product');
+    expect(flowErrors([SP, st('set_field', { fieldName: 'Condizione', fieldValue: 'Rotto' }, 'Imposta Condizione = Rotto')], { fields: FIELDS }))
+      .toEqual(['Passo 2 («Imposta Condizione = Rotto»): «Rotto» non è tra i valori di «Condizione».']);
+    expect(flowErrors([SP, st('set_field', { fieldId: 'field_spess', fieldValue: 'tanto' })], { fields: FIELDS }))
+      .toEqual(['Passo 2: «tanto» non è un numero (per esempio 12,5).']);
   });
 });
 

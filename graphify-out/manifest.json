@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795434082.8808177,
-    "seen": 1795434417.6509342,
-    "ast_hash": "9ccf2e864dd1e9ceeba065f4269f0f8d",
+    "mtime": 1795435720.784469,
+    "seen": 1795436310.9769313,
+    "ast_hash": "a4ecf23492a5752f97d476a009975d07",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795432367.5479474,
-    "seen": 1795434417.6509342,
-    "ast_hash": "42e2f70dc6797f3717165b38889266aa",
+    "mtime": 1795435686.8781624,
+    "seen": 1795436310.9769313,
+    "ast_hash": "b4932bcd87bcd93c30a76efe9c5cabe3",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795432469.5346925,
-    "seen": 1795434417.6519337,
-    "ast_hash": "3372a0789cf59ef128e608b1fb79089f",
+    "mtime": 1795435720.783469,
+    "seen": 1795436310.9769313,
+    "ast_hash": "fd8ee332a1e6c8b03216fc2cf3fb49bc",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -4104,9 +4104,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/29-automazioni.md": {
-    "mtime": 1795432385.067011,
-    "seen": 1795434417.6549342,
-    "ast_hash": "1afe42931dea1c023b008bb14e6d862e",
+    "mtime": 1795435720.784469,
+    "seen": 1795436310.9799154,
+    "ast_hash": "541cd17adad785e3f45921731f0cd66f",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/30-chat-e-team.md": {
@@ -4116,9 +4116,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-3.md": {
-    "mtime": 1795432399.1565373,
-    "seen": 1795434417.6549342,
-    "ast_hash": "b7d24109b10ad461e68fc773b95b5b3f",
+    "mtime": 1795435720.783469,
+    "seen": 1795436310.9799154,
+    "ast_hash": "ffb11fa1444515ea1c9e0830eb1c04e9",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/ricerche/verifiche-23/script/indietro/modali.txt": {
@@ -4254,21 +4254,21 @@
     "semantic_hash": ""
   },
   "__tests__/automationRun.test.ts": {
-    "mtime": 1795431363.0998006,
-    "seen": 1795434417.6042926,
-    "ast_hash": "06c28171ccb8d0c75a6f6f6ee77ddd41",
+    "mtime": 1795435481.2383223,
+    "seen": 1795436310.9325423,
+    "ast_hash": "a7458ce87d18fcd66903f83055ed1a73",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/ese-automazioni.cjs": {
-    "mtime": 1795431128.0777056,
-    "seen": 1795434417.6202734,
-    "ast_hash": "8264e5b6f0aa0b4556774ad6a49dd1da",
+    "mtime": 1795435720.784469,
+    "seen": 1795436310.9487042,
+    "ast_hash": "a21f45bb21682de61d390202406bc1a2",
     "semantic_hash": ""
   },
   "utils/automationRun.ts": {
-    "mtime": 1795431363.075176,
-    "seen": 1795434417.6449337,
-    "ast_hash": "2528783df5eb40b2c132af590c2ddab1",
+    "mtime": 1795435457.1639652,
+    "seen": 1795436310.971916,
+    "ast_hash": "a73755c649bbaae22f76a92825b07fb1",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-ese.jpg": {
