@@ -9,11 +9,9 @@ import * as ImageManipulator from '../lib/imageManipulator';
 import * as FileSystem from '../lib/fileSystem';
 import { decodeBarcodeImage } from '../../utils/barcodeDecoder';
 import { useInventory } from '../../contexts/InventoryContext';
-import { useLocations } from '../../contexts/LocationsContext';
-import { useShelves } from '../../contexts/ShelvesContext';
-import { shelfByCode } from '../../utils/shelves';
+import { useCodeReader } from '../../hooks/useCodeReader';
+import type { CodeRef, CodeResult } from '../../utils/codes';
 import { soundService } from '../../services/SoundService';
-import { useAutomations } from '../../contexts/AutomationsContext';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
@@ -25,10 +23,8 @@ export default function ScannerScreen() {
   const t = useTheme();
   const styles = useStyles();
   const router = useRouter();
-  const { products, scanProduct, libraries } = useInventory();
-  const { locations } = useLocations();
-  const { shelves } = useShelves();
-  const { getAutomationByQR } = useAutomations();
+  const { products, scanProduct } = useInventory();
+  const { read, choose, name } = useCodeReader();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
@@ -38,7 +34,46 @@ export default function ScannerScreen() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<number | null>(null);
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  // COD (ticket 22): fotocamera, «Inserisci Manualmente» e immagine dalla galleria passano tutte dal lettore unico
+  // (`utils/codes.ts`): link GS1 (anche vecchi o con un altro dominio), SKU senza maiuscole, codici e tag di posizioni,
+  // scaffali e categorie, `AUTO:`. Le tre strade aprono le stesse cose; i suoni restano della fotocamera e della foto.
+  const openRef = (ref: CodeRef, withSound: boolean) => {
+    if (ref.kind === 'product') {
+      const product = products.find((p) => p.id === ref.id);
+      if (withSound) {
+        // Fragile check logic
+        if (product?.isFragile) soundService.playSuccess().then(() => soundService.playFragileAlert());
+        else soundService.playSuccess();
+      }
+      // «scansionato» in cronologia anche dalla fotocamera, come a mano (P26)
+      scanProduct(ref.id);
+      router.push({ pathname: '/scanner-action', params: { type: 'product', id: ref.id } });
+      return;
+    }
+    if (withSound) soundService.playSuccess();
+    if (ref.kind === 'automation') {
+      router.push({ pathname: '/automations/custom-runner', params: { id: ref.id } } as any);
+      return;
+    }
+    router.push({ pathname: '/scanner-action', params: { type: ref.kind === 'category' ? 'library' : ref.kind, id: ref.id } });
+  };
+
+  // Un risultato del lettore che non è «sconosciuto»: apre, rifiuta il cestino o chiede quale (mai il primo a caso)
+  const answer = (result: CodeResult, withSound: boolean) => {
+    if (result.status === 'trashed') {
+      // Un prodotto nel cestino non si apre per spostarlo o venderlo (P06)
+      if (withSound) soundService.playBlockingError();
+      Alert.alert('Nel cestino', `${name(result)} è nel cestino: ripristinalo da Impostazioni › Cestino.`);
+    } else if (result.status === 'ambiguous') {
+      choose(result.candidates, (ref) => openRef(ref, withSound));
+    } else if (result.status === 'found') {
+      openRef(result, withSound);
+    }
+  };
+
+  const NOT_FOUND = 'Nessun prodotto, posizione, categoria o scaffale corrisponde a questo codice.';
+
+  const handleBarCodeScanned = ({ data }: { type: string; data: string }) => {
     if (scanned) return;
 
     // Clear any pending error
@@ -47,92 +82,21 @@ export default function ScannerScreen() {
       setErrorTimeoutRef(null);
     }
 
-    // 1. Try Product
-    const product = products.find((p) => p.sku === data || p.id === data);
-    if (product?.deletedAt) {
-      // Un prodotto nel cestino non si apre per spostarlo o venderlo (P06)
+    const result = read(data);
+    if (result.status !== 'unknown') {
       setScanned(true);
-      soundService.playBlockingError();
-      Alert.alert('Nel cestino', `${product.sku} è nel cestino: ripristinalo da Impostazioni › Cestino.`);
-      setTimeout(() => setScanned(false), 2000);
-      return;
-    }
-    if (product) {
-      setScanned(true);
-
-      // Fragile check logic
-      if (product.isFragile) {
-        soundService.playSuccess().then(() => soundService.playFragileAlert());
-      } else {
-        soundService.playSuccess();
-      }
-      
-      router.push({
-        pathname: '/scanner-action',
-        params: { type: 'product', id: product.id },
-      });
+      answer(result, true);
       setTimeout(() => setScanned(false), 2000);
       return;
     }
 
-    // 2. Try Location
-    const location = locations.find((l) => l.barcode === data || l.id === data);
-    if (location) {
-      setScanned(true);
-      soundService.playSuccess();
-      router.push({
-        pathname: '/scanner-action',
-        params: { type: 'location', id: location.id },
-      });
-      setTimeout(() => setScanned(false), 2000);
-      return;
-    }
-
-    // 3. Try Library (Folder)
-    const library = libraries.find((l) => l.barcode === data || l.id === data);
-    if (library) {
-      setScanned(true);
-      soundService.playSuccess();
-      router.push({
-        pathname: '/scanner-action',
-        params: { type: 'library', id: library.id },
-      });
-      setTimeout(() => setScanned(false), 2000);
-      return;
-    }
-
-    // 4. Scaffale (S1a): per codice o per id, come posizioni e categorie
-    const shelf = shelfByCode(shelves, data);
-    if (shelf) {
-      setScanned(true);
-      soundService.playSuccess();
-      router.push({
-        pathname: '/scanner-action',
-        params: { type: 'shelf', id: shelf.id },
-      });
-      setTimeout(() => setScanned(false), 2000);
-      return;
-    }
-
-    // 5. Try Custom Automation (AUTO:xxx)
-    if (data.startsWith('AUTO:')) {
-      const automation = getAutomationByQR(data);
-      if (automation) {
-        setScanned(true);
-        soundService.playSuccess();
-        router.push({ pathname: '/automations/custom-runner', params: { id: automation.id } } as any);
-        setTimeout(() => setScanned(false), 2000);
-        return;
-      }
-    }
-
-    // 6. Not Found - Delay error by 400ms to allow immediate valid scan
+    // Not Found - Delay error by 400ms to allow immediate valid scan
     const timeout = setTimeout(() => {
       setScanned(true);
       soundService.playBlockingError();
       Alert.alert(
         'Codice Non Riconosciuto',
-        `Codice scansionato: ${data}\n\nNessun prodotto, posizione, categoria o scaffale corrisponde a questo codice.`,
+        `Codice scansionato: ${data}\n\n${NOT_FOUND}`,
         [
           {
             text: 'OK',
@@ -148,37 +112,22 @@ export default function ScannerScreen() {
   };
 
   const handleManualSearch = () => {
-    if (!manualCode.trim()) {
+    const code = manualCode.trim();
+    if (!code) {
       Alert.alert('Errore', 'Inserisci un codice valido');
       return;
     }
 
-    // Find product by SKU or ID
-    const product = products.find((p) =>
-      p.sku.toLowerCase() === manualCode.trim().toLowerCase() ||
-      p.id === manualCode.trim()
-    );
-
     setShowManualInput(false);
     setManualCode('');
 
-    if (product?.deletedAt) {
-      Alert.alert('Nel cestino', `${product.sku} è nel cestino: ripristinalo da Impostazioni › Cestino.`);
+    // Prima cercava solo i prodotti; ora trova anche posizioni, scaffali, categorie e automazioni (resto di S1a)
+    const result = read(code);
+    if (result.status === 'unknown') {
+      Alert.alert('Codice Non Riconosciuto', `Codice inserito: ${code}\n\n${NOT_FOUND}`, [{ text: 'OK' }]);
       return;
     }
-    if (product) {
-      scanProduct(product.id);
-      router.push({
-        pathname: '/scanner-action',
-        params: { productId: product.id },
-      });
-    } else {
-      Alert.alert(
-        'Prodotto Non Trovato',
-        `Codice inserito: ${manualCode}\n\nNessun prodotto corrisponde a questo codice.`,
-        [{ text: 'OK' }]
-      );
-    }
+    answer(result, false);
   };
 
   const pickQRImage = async () => {
@@ -218,23 +167,14 @@ export default function ScannerScreen() {
             const scannedCode = decodeResult.data;
             console.log(`🎉 Barcode decoded successfully (${decodeResult.source}):`, scannedCode);
 
-            // Find product by code
-            const product = products.find((p) =>
-              p.sku.toLowerCase() === scannedCode.toLowerCase() ||
-              p.id === scannedCode
-            );
-
-            if (product) {
-              scanProduct(product.id);
-              router.push({
-                pathname: '/scanner-action',
-                params: { productId: product.id },
-              });
+            const result = read(scannedCode);
+            if (result.status !== 'unknown') {
+              answer(result, true);
             } else {
-              console.log('⚠️  No product matches the scanned code');
+              console.log('⚠️  No code matches the scanned image');
               Alert.alert(
-                'Prodotto Non Trovato',
-                `Codice scansionato: ${scannedCode}\n\nNessun prodotto corrisponde a questo codice.`,
+                'Codice Non Riconosciuto',
+                `Codice scansionato: ${scannedCode}\n\n${NOT_FOUND}`,
                 [
                   {
                     text: 'Inserisci Manualmente',
@@ -381,7 +321,7 @@ export default function ScannerScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Inserisci Codice</Text>
             <Text style={styles.modalSubtitle}>
-              Digita il codice SKU o barcode del prodotto
+              Codice, SKU o link di un prodotto, di una posizione, di uno scaffale o di una categoria
             </Text>
 
             <TextInput

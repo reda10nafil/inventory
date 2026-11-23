@@ -19,8 +19,6 @@ import { CategoryPicker } from '../../../components/CategoryPicker';
 import { categoryPath, categoryTree } from '../../../utils/categories';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { useGS1Config } from '../../../contexts/GS1ConfigContext';
-import { keepGS1DigitalLink } from '../../../utils/gs1';
 import { editableFields } from '../../../utils/layoutOrder';
 import type { Product } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -72,7 +70,6 @@ function EditProductForm({ product }: { product: Product }) {
 
   const { customFields } = useCustomFields();
   const { layout } = useLayout();
-  const { gs1Config } = useGS1Config();
   const { products } = useInventory();
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>(
@@ -186,14 +183,9 @@ function EditProductForm({ product }: { product: Product }) {
       return;
     }
 
-    // Link GS1: resta quello di prima finché SKU e lotto non cambiano (P01)
-    let gs1DigitalLink = product.gs1DigitalLink;
-    if (gs1Config.baseUrl) {
-      const lottoValue = gs1Config.enableLotto && gs1Config.lottoFieldId
-        ? customFieldValues[gs1Config.lottoFieldId]?.toString()
-        : undefined;
-      gs1DigitalLink = keepGS1DigitalLink(gs1Config, product.gs1DigitalLink, formData.sku.trim(), products.length, lottoValue);
-    }
+    // Link GS1 (COD, NG02 e NG27, vincolo 5 di map-3): la Modifica non lo crea e non lo riscrive mai, nemmeno con un
+    // lotto o uno SKU nuovi; etichette e tag già fatti restano validi e il lettore unico (`utils/codes.ts`) li riconosce.
+    // Il link non è tra i campi salvati qui: resta quello che c'è.
 
     // Un campo nel cestino non è più tra i campi attivi: il suo valore resta con la sua scheda di prima (P02)
     const previous = new Map((product.customData || []).map((entry) => [entry.fieldSnapshot?.id, entry.fieldSnapshot]));
@@ -212,7 +204,6 @@ function EditProductForm({ product }: { product: Product }) {
       weight: parseNumber(formData.weight),
       technicalNotes: formData.technicalNotes || undefined,
       libraryId: formData.libraryId || undefined,
-      gs1DigitalLink,
       customData: Object.keys(customFieldValues)
         .map(fieldId => {
           const field = customFields.find(f => f.id === fieldId) ?? previous.get(fieldId);

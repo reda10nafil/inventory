@@ -9,7 +9,9 @@
 const { scenario } = require('./lib.cjs');
 const u = require('./c2-util.cjs');
 const g = require('./gal-util.cjs');
-const { textOf } = require('./a1-util.cjs');
+const { textOf, press } = require('./a1-util.cjs');
+const c = require('./cod-util.cjs');
+const { scan, iconAt } = require('./a3-util.cjs');
 
 const goBacks = (page) => { const l = []; page.on('console', (m) => { if (/GO_BACK/.test(m.text())) l.push(m.text()); }); return l; };
 const IN_BASSO = ['Indietro', 'Annulla', 'Torna Indietro', 'Chiudi'];
@@ -155,12 +157,14 @@ async function cfC3(h) {
   return { ok, foto, percorsi: p.storageImagePaths, scheda, richiesteSupabaseBloccate: bloccate.n };
 }
 
-// CF-C4 (parte GAL): prezzo d'acquisto 0 (VIS-0098) mostrato bene nella Scheda, prima e dopo una Modifica senza
-// cambiare nulla (resta 0, nessuna riga «Prezzo acquisto» in Cronologia). Restano a COD il codice e il link, a VAL gli
-// obbligatori.
+// CF-C4 (parti GAL e COD): prezzo d'acquisto 0 (VIS-0098) mostrato bene nella Scheda, prima e dopo una Modifica senza
+// cambiare nulla (resta 0, nessuna riga «Prezzo acquisto» in Cronologia); COD: dopo quella Modifica VIS-0098 resta
+// senza link GS1 (NG02) e con lo stesso SKU; VIS-0142 con il lotto acceso in Impostazioni › GS1, Modifica senza
+// cambiare nulla e poi con il peso cambiato: SKU e link identici (NG27). Restano a VAL gli obbligatori.
 async function cfC4(h) {
   const { page } = h;
-  await g.prepara(h, "list.find((p) => p.id === 'cmp-5').purchasePrice = 0;");
+  // COD: lotto acceso con un campo scelto, come in ng-lotto-modifica (il corpo gira nel browser prima di riaprire l'app)
+  await g.prepara(h, "list.find((p) => p.id === 'cmp-5').purchasePrice = 0; localStorage.setItem('furinventory_gs1_config:local', JSON.stringify({ baseUrl: 'https://syncroflow.app/id', enableSerial: true, serialMode: 'uuid', enableLotto: true, lottoFieldId: 'field_cmp_fornitore' }));");
   const prezzi = () => g.prezziScheda(page);
   await h.click('VIS-0098'); await page.waitForTimeout(1200);
   const out = { prima: await prezzi() };
@@ -174,8 +178,142 @@ async function cfC4(h) {
   await h.go('product/cmp-5');
   out.dopo = await prezzi();
   const zero = 'Prezzi Acquisto 0 € Vendita 3.800 €';
-  const ok = out.prima === zero && out.dopo === zero && out.campo === '0' && out.salvato === 0 && !out.righe.some((r) => /Prezzo acquisto/.test(r));
-  return { ok, ...out, daFare: 'COD: codice e link del prodotto invariati; VAL: obbligatori controllati' };
+  const okGal = out.prima === zero && out.dopo === zero && out.campo === '0' && out.salvato === 0 && !out.righe.some((r) => /Prezzo acquisto/.test(r));
+  // COD: codice e link
+  out.vis0098 = { sku: p.sku, link: p.gs1DigitalLink ?? null };
+  const v0 = (await h.products(0)).find((x) => x.id === 'cmp-1');
+  await h.go(''); await page.getByText('VIS-0142', { exact: true }).first().waitFor();
+  await g.openEdit(h, 'VIS-0142');
+  await h.click('Salva Modifiche', false); await page.waitForTimeout(800);
+  const v1 = (await h.products()).find((x) => x.id === 'cmp-1');
+  await h.go(''); await page.getByText('VIS-0142', { exact: true }).first().waitFor();
+  await g.openEdit(h, 'VIS-0142');
+  await page.getByPlaceholder('1,2').locator('visible=true').first().fill('2,4');
+  await h.click('Salva Modifiche', false); await page.waitForTimeout(800);
+  const v2 = (await h.products()).find((x) => x.id === 'cmp-1');
+  out.vis0142 = { prima: v0.gs1DigitalLink, senzaCambi: v1.gs1DigitalLink, conPeso: v2.gs1DigitalLink, peso: v2.weight, sku: v2.sku };
+  const okCod = out.vis0098.sku === 'VIS-0098' && out.vis0098.link === null && v0.gs1DigitalLink === 'https://syncroflow.app/id/01/VIS-0142/21/000142'
+    && v1.gs1DigitalLink === v0.gs1DigitalLink && v2.gs1DigitalLink === v0.gs1DigitalLink && v2.weight === 2.4 && v2.sku === 'VIS-0142';
+  return { ok: okGal && okCod, ...out, daFare: 'VAL: obbligatori controllati' };
+}
+
+// CF-E1 (COD): Scanner a mano con lo SKU, lo SKU in minuscolo, il link GS1 di VIS-0142 e lo stesso link con un altro
+// dominio (un'etichetta già stampata); poi la fotocamera (lettura simulata) con il link. Ogni volta l'Azione rapida di
+// VIS-0142 e un evento «scansionato» in più (P26: anche dalla fotocamera).
+async function cfE1(h) {
+  await c.prepara(h);
+  const link = (await c.prodotto(h, 'VIS-0142')).gs1DigitalLink;
+  const out = {};
+  for (const [k, code] of [['sku', 'VIS-0142'], ['minuscolo', 'vis-0142'], ['link', link], ['altroDominio', 'https://esempio.it/01/VIS-0142/21/000142']]) {
+    await c.aMano(h, code);
+    out[k] = await c.aperto(h);
+  }
+  await h.go('scanner');
+  await scan(h, link, { wait: 1500 });
+  out.fotocamera = await c.aperto(h);
+  const scansionati = (await c.eventi(h, 'cmp-1', 'scanned', 800)).length;
+  return { ok: Object.values(out).every((v) => v === 'prodotto VIS-0142') && scansionati === 5, ...out, scansionati };
+}
+
+// CF-E2 (COD): Scanner a mano con il codice di una posizione, dello scaffale A1 (anche il suo tag NFC), di una categoria;
+// il codice di A1 come destinazione dello Spostamento rapido (vale la sua posizione, Magazzino); poi nessun codice doppio
+// accettato: una posizione con il codice di A1, una categoria con quello di una posizione, A1 con quello di una categoria.
+async function cfE2(h) {
+  const { page } = h;
+  await c.prepara(h);
+  const out = {};
+  for (const [k, code] of [['posizione', 'LOC-MAGAZZINO'], ['scaffale', 'SCAF-MAG-A1'], ['tag', '04:A2:3B:1C'], ['categoria', 'LIB-PELLICCE']]) {
+    await c.aMano(h, code);
+    out[k] = await c.aperto(h);
+  }
+  await h.go('automations/batch-move');
+  await h.click('Scansiona Posizione');
+  await c.leggi(h, 'SCAF-MAG-A1');
+  out.destinazione = (await c.testo(h)).match(/Destinazione Attuale: (\S+)/)?.[1] ?? null;
+  await h.click('Scansiona Prodotto');
+  await c.leggi(h, 'PUZ-0012');
+  out.spostato = (await c.prodotto(h, 'PUZ-0012', 500)).location;
+  const visti = [];
+  page.on('dialog', (d) => visti.push(d.message()));
+  // Posizione Vetrina con il codice di A1
+  await h.go('settings/locations');
+  await h.click('Vetrina');
+  await page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().fill('SCAF-MAG-A1');
+  await h.click('Salva Modifiche');
+  // Categoria Pellicce con il codice di Magazzino
+  await h.go('settings/folders');
+  await page.locator('[tabindex="0"]').filter({ hasText: 'ID: pellicce' }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+  await page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().fill('LOC-MAGAZZINO');
+  await h.click('Salva Modifiche');
+  // Scaffale A1 con il codice di Pellicce
+  await h.go('settings/shelves');
+  await page.getByLabel('Modifica scaffale A1').locator('visible=true').first().click(); await page.waitForTimeout(400);
+  await page.getByLabel('Codice dello scaffale').locator('visible=true').first().fill('LIB-PELLICCE');
+  await page.getByLabel('Salva scaffale').locator('visible=true').first().click(); await page.waitForTimeout(700);
+  out.rifiutati = visti.filter((m) => /è già usato/.test(m)).length;
+  const locs = await h.store(c.LOC, 300);
+  const libs = await h.store(c.LK, 0);
+  const shelves = await h.store(c.SK, 0);
+  out.salvati = { vetrina: locs.find((l) => l.id === 'vetrina').barcode ?? null, pellicce: libs.find((l) => l.id === 'pellicce').barcode, a1: shelves[0].barcode };
+  const ok = out.posizione === 'posizione Magazzino' && out.scaffale === 'scaffale A1' && out.tag === 'scaffale A1' && out.categoria === 'categoria Pellicce'
+    && out.destinazione === 'Magazzino' && out.spostato === 'magazzino' && out.rifiutati === 3
+    && out.salvati.vetrina === 'LOC-VETRINA' && out.salvati.pellicce === 'LIB-PELLICCE' && out.salvati.a1 === 'SCAF-MAG-A1';
+  return { ok, ...out };
+}
+
+// CF-E3 (parte COD): il link di VIS-0142 scritto nel lettore («Scrivi il codice») è riconosciuto nelle 5 automazioni
+// (Vendita flash, Tagging, Spostamento rapido, Audit, Esecuzione); PUZ-0012 nel cestino è rifiutato in tutte con il
+// messaggio e i suoi dati non cambiano. Resta a ESE l'esecuzione corretta (prezzi, note in fila, rifiuti detti).
+async function cfE3(h) {
+  const { page } = h;
+  await c.prepara(h, { cestino: true });
+  const link = (await c.prodotto(h, 'VIS-0142')).gs1DigitalLink;
+  const visti = [];
+  page.on('dialog', (d) => visti.push(d.message()));
+  const fab = async () => { const b = (await iconAt(h)).sort((a, z) => z.y - a.y)[0]; await page.mouse.click(b.x, b.y); await page.waitForTimeout(700); };
+  const out = { riconosciuto: {}, cestino: {} };
+  const puz0 = await c.prodotto(h, 'PUZ-0012');
+  // Vendita flash
+  await h.go('automations/scan-sell'); await h.click('Scansiona Prodotto');
+  await c.leggi(h, link);
+  out.riconosciuto.venditaFlash = (await page.getByPlaceholder('0.00').locator('visible=true').count()) > 0;
+  await h.go('automations/scan-sell'); await h.click('Scansiona Prodotto');
+  await c.leggi(h, 'PUZ-0012');
+  out.cestino.venditaFlash = visti.some((m) => /nel cestino/.test(m));
+  // Tagging
+  await h.go('automations/quick-tag'); await h.click('Da Pulire'); await h.click('Scansiona Prodotto');
+  // prima il prodotto nel cestino: il messaggio sul lettore di una lettura si cancella dopo un secondo
+  await c.leggi(h, 'PUZ-0012', { wait: 300 });
+  out.cestino.tagging = /PUZ-0012 è nel cestino/.test(await c.testo(h));
+  await page.waitForTimeout(2200);
+  await c.leggi(h, link);
+  out.riconosciuto.tagging = ((await c.prodotto(h, 'VIS-0142', 500)).technicalNotes || '').includes('[Da Pulire]');
+  // Spostamento rapido
+  await h.go('automations/batch-move'); await h.click('Magazzino'); await h.click('Scansiona Prodotto');
+  await c.leggi(h, 'PUZ-0012', { wait: 300 });
+  out.cestino.spostamento = /PUZ-0012 è nel cestino/.test(await c.testo(h));
+  await page.waitForTimeout(2200);
+  await c.leggi(h, link);
+  out.riconosciuto.spostamento = (await c.prodotto(h, 'VIS-0142', 500)).location === 'magazzino';
+  // Audit (Magazzino: VIS-0142 ora è lì)
+  await h.go('automations/audit'); await h.click('Magazzino'); await fab();
+  await c.leggi(h, link, { wait: 1200 });
+  out.riconosciuto.audit = /Trovati:\s*1/.test(await c.testo(h));
+  if (!(await h.has('Scrivi il codice', true))) await fab(); // dopo un trovato il lettore si riapre da solo
+  const prima = visti.length;
+  await c.leggi(h, 'PUZ-0012', { wait: 800 });
+  out.cestino.audit = visti.slice(prima).some((m) => /nel cestino/.test(m));
+  // Esecuzione (automazione personale: Scansiona Prodotto, Tag «Visto»)
+  await h.go('automations/custom-runner/auto_tag'); await c.ultima(h, 'Scansiona Prodotto');
+  await c.leggi(h, 'PUZ-0012', { wait: 300 });
+  out.cestino.esecuzione = /PUZ-0012 è nel cestino/.test(await c.testo(h));
+  await page.waitForTimeout(2200);
+  await c.leggi(h, link, { wait: 1200 });
+  out.riconosciuto.esecuzione = ((await c.prodotto(h, 'VIS-0142', 800)).technicalNotes || '').includes('[Visto]');
+  const puz = await c.prodotto(h, 'PUZ-0012');
+  out.puzInvariato = puz.technicalNotes === puz0.technicalNotes && puz.location === puz0.location && puz.status === puz0.status;
+  const ok = Object.values(out.riconosciuto).every(Boolean) && Object.values(out.cestino).every(Boolean) && out.puzInvariato;
+  return { ok, ...out, daFare: 'ESE: esecuzione corretta delle automazioni (AU-V01-V06, AU-V08, AU-V09, AU-V12, AU-N13, AU-N17, P16, P17)' };
 }
 
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
@@ -197,9 +335,9 @@ const PASSI = [
   ['CF-D3', 'Prodotto troppo grande, troppo pesante, pezzo in più: blocco e proposta', 'S3'],
   ['CF-D4', 'Stesso carico da tutti i punti di carico', 'S3'],
   ['CF-D5', 'Barra appendiabiti da 15 grucce, 16° capo', 'S2, S3'],
-  ['CF-E1', 'Scanner con SKU, SKU minuscolo, vecchio link GS1', 'COD'],
-  ['CF-E2', 'Scanner con i codici di posizione, scaffale, categoria; nessun codice doppio', 'COD'],
-  ['CF-E3', 'Le 5 automazioni con lo stesso codice di prodotto', 'COD, ESE'],
+  ['CF-E1', 'Scanner con SKU, SKU minuscolo, vecchio link GS1', 'COD', cfE1],
+  ['CF-E2', 'Scanner con i codici di posizione, scaffale, categoria; nessun codice doppio', 'COD', cfE2],
+  ['CF-E3', 'Le 5 automazioni con lo stesso codice di prodotto', 'COD, ESE', cfE3],
   ['CF-E4', '«Codice ed etichetta» di un prodotto e di A1: Stampa', 'ETI'],
   ['CF-E5', 'Impostazioni › Codici ed etichette, vuote e con una configurazione GS1 vecchia', 'GS1'],
   ['CF-E6', 'Impostazioni › Scanner e NFC sul web: «Non disponibile sul web»', 'N1'],

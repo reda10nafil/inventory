@@ -5,6 +5,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
+import { useCodeReader } from '../../../hooks/useCodeReader';
+import type { Product } from '../../../types';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
@@ -26,7 +28,8 @@ export default function QuickTagScreen() {
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, getProductBySku, updateProduct } = useInventory();
+    const { products, updateProduct } = useInventory();
+    const { readProduct, choose, isText } = useCodeReader();
 
     const [step, setStep] = useState<'select_tag' | 'scan_loop'>('select_tag');
     const [activeTag, setActiveTag] = useState('');
@@ -47,7 +50,36 @@ export default function QuickTagScreen() {
 
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
-    const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    const feedback = (text: string, ms = 1000) => {
+        setFeedbackMessage(text);
+        setTimeout(() => setFeedbackMessage(null), ms);
+    };
+
+    // Tag sul prodotto letto (o scelto tra più prodotti con lo stesso codice)
+    const tagProduct = (product: Product) => {
+        // Append tag to technical notes
+        const currentNotes = product.technicalNotes || '';
+        // Avoid duplicates
+        if (currentNotes.includes(`[${activeTag}]`)) {
+            setFeedbackMessage(`${product.sku} già taggato`);
+            setTimeout(() => setFeedbackMessage(null), 1000);
+            return;
+        }
+
+        const newNotes = currentNotes ? `${currentNotes}\n[${activeTag}]` : `[${activeTag}]`;
+
+        updateProduct(product.id, { technicalNotes: newNotes });
+
+        setTaggedCount(c => c + 1);
+        setLastTaggedProduct(`${product.sku}`);
+        soundService.playSuccess();
+
+        // Overlay feedback
+        setFeedbackMessage(`${product.sku} Taggato!`);
+        setTimeout(() => setFeedbackMessage(null), 1000);
+    };
+
+    const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
         // Continuous scanning — do NOT close scanner
         
         // Clear pending error
@@ -56,42 +88,35 @@ export default function QuickTagScreen() {
             setErrorTimeoutRef(null);
         }
 
-        let product = products.find((p) => p.id === data);
-        if (!product) {
-            product = getProductBySku(data);
+        // Lettore unico (COD): link GS1, SKU senza maiuscole; un prodotto nel cestino non si tagga
+        const read = readProduct(data);
+        const byId = (id: string) => products.find((p) => p.id === id);
+        if (read.status === 'product') {
+            const product = byId(read.id);
+            if (product) tagProduct(product);
+            return;
+        }
+        if (read.status === 'trashed') {
+            soundService.playBlockingError();
+            feedback(`${byId(read.id)?.sku ?? 'Il prodotto'} è nel cestino: ripristinalo da Impostazioni › Cestino.`, 2000);
+            return;
+        }
+        if (read.status === 'choose') {
+            choose(read.candidates, (ref) => { const product = byId(ref.id); if (product) tagProduct(product); });
+            return;
+        }
+        if (read.status === 'other') {
+            feedback(`${isText(data, read.ref)} Scansiona un prodotto.`, 2000);
+            return;
         }
 
-        if (product) {
-            // Append tag to technical notes
-            const currentNotes = product.technicalNotes || '';
-            // Avoid duplicates
-            if (currentNotes.includes(`[${activeTag}]`)) {
-                setFeedbackMessage(`${product.sku} già taggato`);
-                setTimeout(() => setFeedbackMessage(null), 1000);
-                return;
-            }
-
-            const newNotes = currentNotes ? `${currentNotes}\n[${activeTag}]` : `[${activeTag}]`;
-
-            updateProduct(product.id, { technicalNotes: newNotes });
-
-            setTaggedCount(c => c + 1);
-            setLastTaggedProduct(`${product.sku}`);
-            soundService.playSuccess();
-
-            // Overlay feedback
-            setFeedbackMessage(`${product.sku} Taggato!`);
-            setTimeout(() => setFeedbackMessage(null), 1000);
-
-        } else {
-            // Debounce error
-            const timeout = setTimeout(() => {
-                soundService.playBlockingError();
-                setFeedbackMessage(`Non trovato: ${data}`);
-                setTimeout(() => setFeedbackMessage(null), 2000);
-            }, 400);
-            setErrorTimeoutRef(timeout);
-        }
+        // Debounce error
+        const timeout = setTimeout(() => {
+            soundService.playBlockingError();
+            setFeedbackMessage(`Non trovato: ${data}`);
+            setTimeout(() => setFeedbackMessage(null), 2000);
+        }, 400);
+        setErrorTimeoutRef(timeout);
     };
 
     return (

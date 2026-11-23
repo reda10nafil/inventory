@@ -3,7 +3,7 @@ import { StyleSheet, View, Pressable, Dimensions } from 'react-native';
 import { CameraView, Camera } from '../src/lib/camera';
 import { AppIcon } from './ui/AppIcon';
 import { GradientFill } from './ui/GradientFill';
-import { Text } from './ui/Text';
+import { Text, TextInput } from './ui/Text';
 import { makeStyles, useTheme } from '../contexts/ThemeContext';
 import { withAlpha } from '../utils/color';
 
@@ -18,6 +18,10 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
     const t = useTheme();
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [scanned, setScanned] = useState(false);
+    // COD (ticket 22): «Scrivi il codice» per le etichette rovinate, i lettori a pistola (scrivono il codice e Invio)
+    // e il web. Va diritto a `onScan`, senza la pausa della fotocamera: due codici scritti di fila valgono tutti e due.
+    const [typing, setTyping] = useState(false);
+    const [code, setCode] = useState('');
 
     useEffect(() => {
         const getPermissions = async () => {
@@ -37,24 +41,71 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
         setTimeout(() => setScanned(false), delay);
     };
 
-    if (hasPermission === null) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.text}>Richiesta permessi fotocamera...</Text>
-            </View>
-        );
-    }
-    if (hasPermission === false) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.text}>Nessun accesso alla fotocamera</Text>
-                <Pressable style={styles.permissionButton} onPress={() => Camera.requestCameraPermissionsAsync()}>
+    // Il campo resta aperto e vuoto per il codice dopo (Spostamento rapido e Tagging leggono in fila)
+    const submitCode = () => {
+        const data = code.trim();
+        if (!data) return;
+        setCode('');
+        onScan({ type: 'manual', data });
+    };
+
+    const writeButton = !typing && (
+        <Pressable style={styles.writeButton} onPress={() => setTyping(true)} accessibilityRole="button" accessibilityLabel="Scrivi il codice">
+            <AppIcon name="keyboard" size={20} color={t.colors.onData} />
+            <Text style={styles.writeButtonText}>Scrivi il codice</Text>
+        </Pressable>
+    );
+    const writePanel = typing && (
+        <View style={styles.writePanel}>
+            <Text style={styles.writeTitle}>Scrivi il codice</Text>
+            <Text style={styles.writeHint}>SKU, codice dell'etichetta o link, come lo leggerebbe la fotocamera</Text>
+            <TextInput
+                style={styles.writeInput}
+                value={code}
+                onChangeText={setCode}
+                placeholder="Codice, SKU o link"
+                placeholderTextColor={t.colors.placeholder}
+                accessibilityLabel="Codice da usare"
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                blurOnSubmit={false}
+                onSubmitEditing={submitCode}
+            />
+            <View style={styles.writeButtons}>
+                <Pressable style={[styles.writeAction, styles.writeCancel]} onPress={() => { setTyping(false); setCode(''); }} accessibilityRole="button">
+                    <Text style={styles.writeCancelText}>Chiudi</Text>
+                </Pressable>
+                <Pressable style={[styles.writeAction, styles.writeUse]} onPress={submitCode} accessibilityRole="button">
                     <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-                    <Text style={styles.permissionButtonText}>Consenti Fotocamera</Text>
+                    <Text style={styles.writeUseText}>Usa codice</Text>
                 </Pressable>
-                <Pressable style={styles.closeButton} onPress={onClose}>
-                    <AppIcon name="close" size={32} color={t.colors.onData} />
-                </Pressable>
+            </View>
+        </View>
+    );
+
+    if (hasPermission === null || hasPermission === false) {
+        return (
+            <View style={styles.container}>
+                {hasPermission === null ? (
+                    <Text style={styles.text}>Richiesta permessi fotocamera...</Text>
+                ) : (
+                    <>
+                        <Text style={styles.text}>Nessun accesso alla fotocamera</Text>
+                        <Pressable style={styles.permissionButton} onPress={() => Camera.requestCameraPermissionsAsync()}>
+                            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                            <Text style={styles.permissionButtonText}>Consenti Fotocamera</Text>
+                        </Pressable>
+                    </>
+                )}
+                {writeButton}
+                {hasPermission === false && (
+                    <Pressable style={styles.closeButton} onPress={onClose}>
+                        <AppIcon name="close" size={32} color={t.colors.onData} />
+                    </Pressable>
+                )}
+                {writePanel}
             </View>
         );
     }
@@ -87,11 +138,13 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
             </View>
 
             <View style={styles.controls}>
+                {writeButton}
                 <Text style={styles.instructions}>Inquadra il codice</Text>
                 <Pressable style={styles.closeRoundButton} onPress={onClose}>
                     <AppIcon name="close" size={32} color={t.colors.onData} />
                 </Pressable>
             </View>
+            {writePanel}
         </View>
     );
 }
@@ -182,4 +235,86 @@ const useStyles = makeStyles((t) => ({
     cornerTR: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: t.colors.onData },
     cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: t.colors.onData },
     cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: t.colors.onData },
+    // COD: «Scrivi il codice». Il pulsante sta sul fondo nero della fotocamera (bianco fisso, come la X); la finestra
+    // in alto, così la tastiera del telefono non la copre
+    writeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        marginBottom: 16,
+        marginTop: 16,
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: t.colors.onData,
+        backgroundColor: t.colors.scrimStrong,
+    },
+    writeButtonText: {
+        color: t.colors.onData,
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    writePanel: {
+        position: 'absolute',
+        top: 48,
+        left: 16,
+        right: 16,
+        padding: 16,
+        backgroundColor: t.colors.backgroundSecondary,
+        borderRadius: t.radius.card,
+        borderWidth: 1,
+        borderColor: t.colors.border,
+        ...t.shadows.button,
+    },
+    writeTitle: {
+        ...t.typography.cardTitle,
+        fontSize: 17,
+        marginBottom: 4,
+    },
+    writeHint: {
+        ...t.typography.caption,
+        marginBottom: 12,
+    },
+    writeInput: {
+        height: t.input.height,
+        backgroundColor: t.colors.input,
+        borderWidth: 1,
+        borderColor: t.colors.inputBorder,
+        borderRadius: t.radius.input,
+        paddingHorizontal: 14,
+        fontSize: 16,
+        color: t.colors.inputText,
+        marginBottom: 12,
+    },
+    writeButtons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    writeAction: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: t.radius.button,
+    },
+    writeCancel: {
+        backgroundColor: t.colors.buttonSecondary,
+        borderWidth: 1,
+        borderColor: t.colors.buttonSecondaryBorder,
+    },
+    writeCancelText: {
+        ...t.typography.cardTitle,
+        fontSize: 15,
+        color: t.colors.onButtonSecondary,
+    },
+    writeUse: {
+        backgroundColor: t.colors.button,
+        overflow: 'hidden',
+        ...t.shadows.button,
+    },
+    writeUseText: {
+        ...t.typography.buttonPrimary,
+        fontSize: 15,
+    },
 }));

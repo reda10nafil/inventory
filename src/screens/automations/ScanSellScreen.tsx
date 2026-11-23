@@ -5,6 +5,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useProductKind } from '../../../hooks/useProductKind';
+import { useCodeReader } from '../../../hooks/useCodeReader';
+import type { Product } from '../../../types';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -22,7 +24,8 @@ export default function ScanSellScreen() {
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, sellProduct, getProductBySku } = useInventory();
+    const { products, sellProduct } = useInventory();
+    const { readProduct, choose, isText } = useCodeReader();
     const kindOf = useProductKind();
 
     const [scannedCount, setScannedCount] = useState(0);
@@ -34,51 +37,65 @@ export default function ScanSellScreen() {
     const [priceInput, setPriceInput] = useState('');
     const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<number | null>(null);
 
-    const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    // Un prodotto da vendere (letto, o scelto tra più prodotti con lo stesso codice)
+    const sellFlow = (product: Product) => {
+        setShowScanner(false);
+        if (product.status === 'sold') {
+            Alert.alert('Info', 'Questo prodotto risulta già venduto.');
+            return;
+        }
+        if (product.deletedAt) {
+            Alert.alert('Info', 'Questo prodotto è nel cestino: ripristinalo da Impostazioni › Cestino.');
+            return;
+        }
+        if (isOutOfStock(product)) {
+            Alert.alert('Info', `${product.sku} è esaurito: non c'è giacenza da vendere.`);
+            return;
+        }
+
+        // Open price confirmation modal
+        setPendingProduct(product);
+        setPriceInput(formatNumberInput(product.sellPrice)); // «3800,5»: si rilegge con parseNumber
+        setShowPriceModal(true);
+    };
+
+    const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
         // Clear pending error if any
         if (errorTimeoutRef) {
             clearTimeout(errorTimeoutRef);
             setErrorTimeoutRef(null);
         }
 
-        // Find product
-        let product = products.find(p => p.id === data);
-        if (!product) {
-            product = getProductBySku(data);
+        // Lettore unico (COD): link GS1, SKU senza maiuscole, cestino, più prodotti con lo stesso codice
+        const read = readProduct(data);
+        const byId = (id: string) => products.find((p) => p.id === id);
+        if (read.status === 'product' || read.status === 'trashed') {
+            const product = byId(read.id);
+            if (product) sellFlow(product);
+            return;
         }
-
-        if (product) {
+        if (read.status === 'choose') {
             setShowScanner(false);
-            if (product.status === 'sold') {
-                Alert.alert('Info', 'Questo prodotto risulta già venduto.');
-                return;
-            }
-            if (product.deletedAt) {
-                Alert.alert('Info', 'Questo prodotto è nel cestino: ripristinalo da Impostazioni › Cestino.');
-                return;
-            }
-            if (isOutOfStock(product)) {
-                Alert.alert('Info', `${product.sku} è esaurito: non c'è giacenza da vendere.`);
-                return;
-            }
-
-            // Open price confirmation modal
-            setPendingProduct(product);
-            setPriceInput(formatNumberInput(product.sellPrice)); // «3800,5»: si rilegge con parseNumber
-            setShowPriceModal(true);
-        } else {
-            // Debounce error for 400ms
-            const timeout = setTimeout(() => {
-                setShowScanner(false);
-                soundService.playBlockingError();
-                Alert.alert(
-                    'Errore', 
-                    'Prodotto non trovato.',
-                    [{ text: 'OK', onPress: () => setErrorTimeoutRef(null) }]
-                );
-            }, 400);
-            setErrorTimeoutRef(timeout);
+            choose(read.candidates, (ref) => { const product = byId(ref.id); if (product) sellFlow(product); });
+            return;
         }
+        if (read.status === 'other') {
+            setShowScanner(false);
+            Alert.alert('Non è un prodotto', `${isText(data, read.ref)} Scansiona un prodotto da vendere.`);
+            return;
+        }
+
+        // Debounce error for 400ms
+        const timeout = setTimeout(() => {
+            setShowScanner(false);
+            soundService.playBlockingError();
+            Alert.alert(
+                'Errore', 
+                'Prodotto non trovato.',
+                [{ text: 'OK', onPress: () => setErrorTimeoutRef(null) }]
+            );
+        }, 400);
+        setErrorTimeoutRef(timeout);
     };
 
     const confirmSale = () => {

@@ -1,6 +1,6 @@
 # Codici, QR, etichette e NFC: funzionano? interfacce semplici
 
-Tipo: grilling + research (verifica). Stato: **verificato** il 23 novembre 2026 mattina, **una risposta dell'utente**, due domande aperte. Fette: **COD**, **ETI**, **GS1**, più gli aggiornamenti di **N1** e **N2** (ticket 16-18). Mappa: [`../map-3.md`](../map-3.md). Verifica completa: [`../ricerche/verifiche-23/verifica-nfc-gs1.md`](../ricerche/verifiche-23/verifica-nfc-gs1.md) (difetti `NG01-NG27`) e, per i lettori nelle automazioni, [`verifica-automazioni.md`](../ricerche/verifiche-23/verifica-automazioni.md) (AU-V07, AU-V14, AU-A0, AU-A8).
+Tipo: grilling + research (verifica). Stato: **verificato** il 23 novembre 2026 mattina, **una risposta dell'utente**, due domande aperte; **fetta COD fatta** il 23 novembre (vedi sotto). Fette: **COD**, **ETI**, **GS1**, più gli aggiornamenti di **N1** e **N2** (ticket 16-18). Mappa: [`../map-3.md`](../map-3.md). Verifica completa: [`../ricerche/verifiche-23/verifica-nfc-gs1.md`](../ricerche/verifiche-23/verifica-nfc-gs1.md) (difetti `NG01-NG27`) e, per i lettori nelle automazioni, [`verifica-automazioni.md`](../ricerche/verifiche-23/verifica-automazioni.md) (AU-V07, AU-V14, AU-A0, AU-A8).
 
 ## Question
 
@@ -38,7 +38,12 @@ Riconfermati: P01 chiuso in parte (una Modifica senza cambiamenti tiene il link)
 
 ## Piano di implementazione
 
-### Fetta COD — lettore unico e codici che non si rovinano (dopo C2; blocca S3, N1, ETI, ESE)
+### Fetta COD — lettore unico e codici che non si rovinano (dopo C2; blocca S3, N1, ETI, ESE) — **fatta il 23/11**
+
+**Confine** (decisa dall'orchestratore al posto dell'utente, notte del 23): entrano i punti 1-7 qui sotto, cioè `utils/codes.ts` con i test; chi lo usa (Scanner e le 5 automazioni); «scansionato» anche dalla fotocamera (P26); l'inserimento a mano in `BarcodeScanner`; la Modifica che non crea né riscrive link (NG02, NG27); i doppioni (NG24, NG25); i resti di S1a e C1. Restano fuori: le etichette e la finestra «Codice ed etichetta» (ETI), il link GS1 conforme (GS1), l'esecuzione corretta delle automazioni, AU-V01-V06 e gli altri (ESE), l'NFC sul telefono (N1, N2).
+
+**Esito** (dettagli in `../../CRONOLOGIA.md`, decisioni nelle righe COD di `../../DECISIONI_DA_RIVEDERE.md`): `utils/codes.ts` (`resolveCode`, `gs1LinkParts`, `gs1ElementParts`, `productRead`, `placeRead`, `codeOwner`, `codeError`, `codeCheck`, testi) con `hooks/useCodeReader.ts`; Scanner (fotocamera, a mano, immagine) e 5 automazioni lo usano; «Scrivi il codice» in ogni lettore; prodotto nel cestino rifiutato alla lettura; scaffale = la sua posizione con l'avviso (AU-V14); Modifica senza link: **il link non si riscrive mai, nemmeno con lo SKU cambiato** (punto 5 cambiato per il vincolo 5: il lettore riconosce comunque il link vecchio); finestra del QR con uno stato suo e `codeCheck` con l'avviso sotto il campo in Posizioni, Categorie e Scaffali; `#666` → ruolo del tema in Posizioni e Categorie. `getProductBySku` resta solo per l'import CSV e la Chat. Prova `prova/cod-lettore.cjs` (11 scenari), jest `__tests__/codes.test.ts`, `__tests__/gs1Keep.test.ts` riscritto (la Modifica non usa più `keepGS1DigitalLink`), collaudo CF-E1, CF-E2, CF-E3 (parte COD), CF-C4 (parte COD). Non verificati: fotocamera vera e NFC sul telefono.
+
 
 1. Primo passo: **riprodurre su `HEAD`** NG24 e NG25 (le schermate Posizioni e Cartelle sono cambiate con S1a dopo la verifica).
 2. `utils/codes.ts` nuovo, puro, con test jest:

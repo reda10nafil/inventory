@@ -7,6 +7,9 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
 import { useProductKind } from '../../../hooks/useProductKind';
 import BarcodeScanner from '../../../components/BarcodeScanner';
+import { useCodeReader } from '../../../hooks/useCodeReader';
+import type { PlaceRead } from '../../../utils/codes';
+import type { Product } from '../../../types';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
@@ -32,7 +35,8 @@ export default function AuditScreen() {
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, getProductBySku, moveProduct } = useInventory();
+    const { products, moveProduct } = useInventory();
+    const { readProduct, readPlace, placeOf, choose, isText, shelfNote } = useCodeReader();
     const { locations } = useLocations();
     const kindOf = useProductKind();
 
@@ -62,13 +66,27 @@ export default function AuditScreen() {
         }
     };
 
+    // Lettore unico (COD): codice, id o nome di una posizione; uno scaffale vale la sua posizione, con l'avviso (AU-V14)
     const handleLocationScan = (data: string) => {
-        const loc = locations.find(l => l.id === data || l.label === data || l.barcode === data);
-        if (loc) {
-            startAudit(loc);
-        } else {
-            Alert.alert('Errore', 'Posizione non trovata.');
+        const place = readPlace(data);
+        if (place.status === 'choose') {
+            choose(place.candidates, (ref) => applyPlace(placeOf(ref)));
+            return;
         }
+        applyPlace(place);
+    };
+
+    const applyPlace = (place: PlaceRead) => {
+        const loc = place.status === 'location' ? locations.find((l) => l.id === place.id) : undefined;
+        if (!loc) {
+            Alert.alert('Errore', 'Posizione non trovata.');
+            return;
+        }
+        if (place.status === 'location' && place.shelfId) {
+            Alert.alert('Scaffale', shelfNote(place.shelfId), [{ text: 'OK', onPress: () => startAudit(loc) }]);
+            return;
+        }
+        startAudit(loc);
     };
 
     const startAudit = (loc: Location) => {
@@ -91,33 +109,9 @@ export default function AuditScreen() {
 
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
-    const handleProductScan = (data: string) => {
-        // Clear pending error
-        if (errorTimeoutRef) {
-            clearTimeout(errorTimeoutRef);
-            setErrorTimeoutRef(null);
-        }
-
-        // Safety check: is it a location?
-        const isLocation = locations.some(l => l.id === data || l.barcode === data);
-        if (isLocation) {
-            Alert.alert('Attenzione', 'Hai scansionato una Posizione. Scansiona un prodotto per l\'audit.');
-            return;
-        }
-
-        // Check if item corresponds to an expected item
-        // Try ID then SKU
-        let productFn = (p: any) => p.id === data;
-        const byId = auditItems.findIndex(productFn);
-        let index = byId;
-
-        if (index === -1) {
-            // Try via SKU
-            const prod = getProductBySku(data);
-            if (prod) {
-                index = auditItems.findIndex(i => i.id === prod.id);
-            }
-        }
+    // Prodotto letto (o scelto tra più prodotti con lo stesso codice): atteso qui → trovato, altrimenti intruso
+    const auditProduct = (product: Product) => {
+        const index = auditItems.findIndex(i => i.id === product.id);
 
         if (index !== -1) {
             // FOUND EXPECTED ITEM
@@ -135,48 +129,75 @@ export default function AuditScreen() {
             setTimeout(() => setShowScanner(true), 1000);
 
         } else {
-            // INTRUDER OR NOT FOUND IN DB
-            const product = products.find(p => p.id === data) || getProductBySku(data);
-
-            if (product) {
-                // Known product but wrong location
-                Alert.alert(
-                    '⚠️ Intruso Rilevato!',
-                    `Il prodotto ${product.sku} risulta in "${locations.find(l => l.id === product.location)?.label ?? product.location}".\nLo hai trovato qui.`,
-                    [
-                        { text: 'Ignora', style: 'cancel' },
-                        {
-                            text: 'Aggiungi all\'Audit',
-                            onPress: () => {
-                                addIntruder(product);
-                            }
-                        },
-                        {
-                            text: 'Sposta Qui & Aggiungi',
-                            onPress: () => {
-                                if (targetLocation) {
-                                    // «spostato» in cronologia (D15); un rifiuto (es. articolo esaurito) si dice (M04)
-                                    if (!moveProduct(product.id, targetLocation.id)) {
-                                        const refused = moveOf(product, targetLocation.id, '');
-                                        Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
-                                        return;
-                                    }
-                                    addIntruder(product);
-                                    Alert.alert('Spostato', 'Posizione aggiornata.');
+            // INTRUDER: Known product but wrong location
+            Alert.alert(
+                '⚠️ Intruso Rilevato!',
+                `Il prodotto ${product.sku} risulta in "${locations.find(l => l.id === product.location)?.label ?? product.location}".\nLo hai trovato qui.`,
+                [
+                    { text: 'Ignora', style: 'cancel' },
+                    {
+                        text: 'Aggiungi all\'Audit',
+                        onPress: () => {
+                            addIntruder(product);
+                        }
+                    },
+                    {
+                        text: 'Sposta Qui & Aggiungi',
+                        onPress: () => {
+                            if (targetLocation) {
+                                // «spostato» in cronologia (D15); un rifiuto (es. articolo esaurito) si dice (M04)
+                                if (!moveProduct(product.id, targetLocation.id)) {
+                                    const refused = moveOf(product, targetLocation.id, '');
+                                    Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
+                                    return;
                                 }
+                                addIntruder(product);
+                                Alert.alert('Spostato', 'Posizione aggiornata.');
                             }
                         }
-                    ]
-                );
-            } else {
-                // Debounce error
-                const timeout = setTimeout(() => {
-                    soundService.playBlockingError();
-                    Alert.alert('Errore', 'Prodotto sconosciuto (non in database).', [{ text: 'OK', onPress: () => setErrorTimeoutRef(null) }]);
-                }, 400);
-                setErrorTimeoutRef(timeout);
-            }
+                    }
+                ]
+            );
         }
+    };
+
+    const handleProductScan = (data: string) => {
+        // Clear pending error
+        if (errorTimeoutRef) {
+            clearTimeout(errorTimeoutRef);
+            setErrorTimeoutRef(null);
+        }
+
+        // Lettore unico (COD): link GS1, SKU senza maiuscole, cestino, più prodotti con lo stesso codice
+        const read = readProduct(data);
+        // Safety check: is it a location (or a shelf, a category)?
+        if (read.status === 'other') {
+            Alert.alert('Attenzione', read.ref.kind === 'location'
+                ? 'Hai scansionato una Posizione. Scansiona un prodotto per l\'audit.'
+                : `${isText(data, read.ref)} Scansiona un prodotto per l'audit.`);
+            return;
+        }
+        const byId = (id: string) => products.find((p) => p.id === id);
+        if (read.status === 'trashed') {
+            Alert.alert('Nel cestino', `${byId(read.id)?.sku ?? 'Il prodotto'} è nel cestino: ripristinalo da Impostazioni › Cestino.`);
+            return;
+        }
+        if (read.status === 'choose') {
+            choose(read.candidates, (ref) => { const product = byId(ref.id); if (product) auditProduct(product); });
+            return;
+        }
+        const product = read.status === 'product' ? byId(read.id) : undefined;
+        if (product) {
+            auditProduct(product);
+            return;
+        }
+
+        // Debounce error
+        const timeout = setTimeout(() => {
+            soundService.playBlockingError();
+            Alert.alert('Errore', 'Prodotto sconosciuto (non in database).', [{ text: 'OK', onPress: () => setErrorTimeoutRef(null) }]);
+        }, 400);
+        setErrorTimeoutRef(timeout);
     };
 
     const addIntruder = (product: any) => {

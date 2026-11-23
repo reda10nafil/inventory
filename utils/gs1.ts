@@ -45,40 +45,8 @@ export function generateSerial(
   return `${ts}-${rand}`.toUpperCase();
 }
 
-/** Parti di un link già salvato: GTIN, seriale e lotto (decodificati). */
-export function parseGS1DigitalLink(link: string): { gtin?: string; serial?: string; lotto?: string } {
-  const pick = (re: RegExp) => {
-    const m = link.match(re);
-    return m ? decodeURIComponent(m[1]) : undefined;
-  };
-  return { gtin: pick(/\/01\/([^/?#]+)/), serial: pick(/\/21\/([^/?#]+)/), lotto: pick(/[?&]10=([^&#]+)/) };
-}
-
-/**
- * Link da salvare in Modifica (P01). Prima si rigenerava a ogni salvataggio, con un seriale nuovo:
- * QR, etichette e tag NFC già fatti non corrispondevano più.
- * - Link presente con stesso GTIN e stesso lotto: resta com'è (anche se il dominio è cambiato dopo).
- * - GTIN o lotto cambiati: link nuovo con il dominio di oggi ma lo stesso seriale.
- * - Nessun link: come in Aggiungi.
- */
-export function keepGS1DigitalLink(
-  config: GS1Config,
-  existing: string | undefined,
-  gtin: string,
-  existingProductCount: number,
-  lottoValue?: string,
-): string {
-  if (!existing) return generateGS1DigitalLink(config, gtin, existingProductCount, lottoValue);
-  const old = parseGS1DigitalLink(existing);
-  const lotto = config.enableLotto && lottoValue?.trim() ? lottoValue.trim() : undefined;
-  if (old.gtin === gtin.trim() && (old.lotto ?? undefined) === lotto) return existing;
-  const base = config.baseUrl.replace(/\/+$/, '');
-  let uri = `${base}/01/${encodeURIComponent(gtin.trim())}`;
-  const serial = old.serial ?? (config.enableSerial ? generateSerial(config.serialMode, existingProductCount) : undefined);
-  if (serial) uri += `/21/${encodeURIComponent(serial)}`;
-  if (lotto) uri += `?10=${encodeURIComponent(lotto)}`;
-  return uri;
-}
+// Lettura dei link (anche quelli già stampati): `gs1LinkParts` in `utils/codes.ts`. La Modifica non crea e non
+// riscrive i link (COD, NG02 e NG27): `keepGS1DigitalLink` e `parseGS1DigitalLink` non servono più.
 
 /**
  * Compose the GS1 Digital Link URI following the standard path structure:

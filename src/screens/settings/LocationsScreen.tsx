@@ -8,7 +8,8 @@ import { useLocations, Location } from '../../../contexts/LocationsContext';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { usage } from '../../../utils/productRules';
 import { useShelves } from '../../../contexts/ShelvesContext';
-import { codeError, locationShelvesError } from '../../../utils/shelves';
+import { locationShelvesError } from '../../../utils/shelves';
+import { codeCheck } from '../../../utils/codes';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -37,7 +38,7 @@ export default function ManageLocationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { locations, loading, addLocation, updateLocation, deleteLocation } = useLocations();
-  const { products } = useInventory();
+  const { products, libraries } = useInventory();
   const { shelves } = useShelves();
 
   const [name, setName] = useState('');
@@ -46,7 +47,13 @@ export default function ManageLocationsScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [showScanner, setShowScanner] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false); // To show large QR
+  // Codice mostrato nella finestra grande del QR: uno stato suo, non il campo del modulo (NG24: il QR di un'altra
+  // riga riscriveva il codice della posizione che si stava modificando)
+  const [qrCode, setQrCode] = useState<string | null>(null);
+
+  // COD (NG25): il codice scritto, controllato mentre lo si scrive e al salvataggio
+  const codeHint = codeCheck(barcode, editingId ? locations.find((l) => l.id === editingId)?.barcode : undefined,
+    { products, locations, categories: libraries, shelves }, editingId ? { kind: 'location', id: editingId } : undefined);
 
   const resetForm = () => {
     setName('');
@@ -67,10 +74,11 @@ export default function ManageLocationsScreen() {
       Alert.alert('Errore', 'Inserisci un nome per la posizione');
       return;
     }
-    // S1a: un codice già usato da uno scaffale non si riusa (lo Scanner aprirebbe la posizione al suo posto)
-    const shelfCode = codeError(barcode, { shelves, placeLabel: (id) => locations.find((l) => l.id === id)?.label ?? id });
-    if (shelfCode) {
-      Alert.alert('Errore', shelfCode);
+    // COD (NG25): un codice nuovo già usato da un prodotto, una posizione, una categoria o uno scaffale si rifiuta (lo
+    // Scanner non saprebbe quale aprire); un doppione già salvato prima non blocca il salvataggio, ma si segnala
+    const check = codeHint;
+    if (check.error) {
+      Alert.alert('Errore', check.error);
       return;
     }
 
@@ -81,7 +89,8 @@ export default function ManageLocationsScreen() {
         color: selectedColor,
         barcode: barcode || undefined,
       });
-      Alert.alert('Successo', 'Posizione aggiornata');
+      if (check.warning) Alert.alert('Posizione aggiornata', check.warning);
+      else Alert.alert('Successo', 'Posizione aggiornata');
       resetForm();
     } else {
       // Create new
@@ -223,6 +232,9 @@ export default function ManageLocationsScreen() {
               <Text style={styles.qrText}>{barcode}</Text>
             </View>
           ) : null}
+          {codeHint.error || codeHint.warning ? (
+            <Text style={[styles.codeHint, codeHint.error ? styles.codeHintError : styles.codeHintWarning]}>{codeHint.error ?? codeHint.warning}</Text>
+          ) : null}
 
           <View style={styles.actionButtons}>
             {editingId && (
@@ -254,7 +266,7 @@ export default function ManageLocationsScreen() {
 
             <View style={styles.itemActions}>
               {loc.barcode && (
-                <Pressable onPress={() => { setBarcode(loc.barcode!); setShowQRModal(true); }} style={{ marginRight: 8 }}>
+                <Pressable onPress={() => setQrCode(loc.barcode!)} style={{ marginRight: 8 }}>
                   <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
                 </Pressable>
               )}
@@ -275,12 +287,12 @@ export default function ManageLocationsScreen() {
       )}
 
       {/* Large QR Modal */}
-      <Modal visible={showQRModal} transparent animationType="fade" onRequestClose={() => setShowQRModal(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowQRModal(false)}>
+      <Modal visible={qrCode !== null} transparent animationType="fade" onRequestClose={() => setQrCode(null)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setQrCode(null)}>
           <View style={styles.qrCard}>
             <Text style={styles.qrTitle}>Codice Posizione</Text>
-            <QRCode value={barcode || 'empty'} size={200} />
-            <Text style={styles.qrBigText}>{barcode}</Text>
+            <QRCode value={qrCode || 'empty'} size={200} />
+            <Text style={styles.qrBigText}>{qrCode}</Text>
             <Text style={styles.qrHint}>Scansiona per spostare prodotti qui</Text>
           </View>
         </Pressable>
@@ -478,8 +490,21 @@ const useStyles = makeStyles((t) => ({
   },
   qrHint: {
     fontSize: 14,
-    color: '#666',
+    color: withAlpha(t.colors.qrInk, 0.7),
     marginTop: 8,
     textAlign: 'center',
+  },
+  // COD: avviso sotto il codice mentre lo si scrive (già usato: rosso, si rifiuta; doppione di prima: si segnala)
+  codeHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  codeHintError: {
+    color: t.colors.error,
+  },
+  codeHintWarning: {
+    color: t.colors.warningText,
   },
 }));

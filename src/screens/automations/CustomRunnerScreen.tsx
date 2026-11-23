@@ -17,6 +17,8 @@ import {
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
+import { useCodeReader } from '../../../hooks/useCodeReader';
+import type { PlaceRead } from '../../../utils/codes';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
@@ -34,7 +36,8 @@ export default function CustomRunnerScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
     const { getAutomationById, recordUsage } = useAutomations();
-    const { products, getProductBySku, moveProduct, sellProduct, updateProduct } = useInventory();
+    const { products, moveProduct, sellProduct, updateProduct } = useInventory();
+    const { sources, readProduct, readPlace, placeOf, choose, isText } = useCodeReader();
     const { locations } = useLocations();
 
     const automation = getAutomationById(id as string);
@@ -158,19 +161,30 @@ export default function CustomRunnerScreen() {
             setErrorTimeoutRef(null);
         }
 
+        // Lettore unico (COD): link GS1, SKU senza maiuscole; un prodotto nel cestino non entra nell'esecuzione
         if (currentStep.type === 'scan_product') {
-            let product = products.find(p => p.id === data || p.sku === data);
-            if (!product) product = getProductBySku(data);
-
-            if (product) {
+            const read = readProduct(data);
+            const pickProduct = (productId: string) => {
+                const product = products.find((p) => p.id === productId);
+                if (!product) return;
                 soundService.playSuccess();
                 setScannedProductId(product.id);
                 showFeedback(`✅ ${product.sku}`);
 
                 // Auto-execute subsequent auto-steps
                 setTimeout(() => {
-                    advanceToNextScanStep(currentStepIndex + 1, product!.id, scannedLocationId);
+                    advanceToNextScanStep(currentStepIndex + 1, product.id, scannedLocationId);
                 }, 300);
+            };
+            if (read.status === 'product') {
+                pickProduct(read.id);
+            } else if (read.status === 'choose') {
+                choose(read.candidates, (ref) => pickProduct(ref.id));
+            } else if (read.status === 'trashed') {
+                soundService.playBlockingError();
+                showFeedback(`❌ ${products.find((p) => p.id === read.id)?.sku ?? 'Il prodotto'} è nel cestino`, true);
+            } else if (read.status === 'other') {
+                showFeedback(`❌ ${isText(data, read.ref)} Scansiona un prodotto.`, true);
             } else {
                 // Debounce error
                 const timeout = setTimeout(() => {
@@ -180,23 +194,35 @@ export default function CustomRunnerScreen() {
                 setErrorTimeoutRef(timeout);
             }
         } else if (currentStep.type === 'scan_location') {
-            const loc = locations.find(l => l.barcode === data || l.id === data);
-            if (loc) {
+            // Uno scaffale vale la sua posizione (AU-V14): il prodotto va lì, senza scaffale
+            const pickLocation = (place: PlaceRead) => {
+                const loc = place.status === 'location' ? locations.find((l) => l.id === place.id) : undefined;
+                if (!loc) {
+                    showFeedback('❌ Posizione non trovata', true);
+                    return;
+                }
                 soundService.playSuccess();
                 setScannedLocationId(loc.id);
-                showFeedback(`📍 ${loc.label}`);
+                const shelf = place.status === 'location' && place.shelfId ? sources.shelves?.find((x) => x.id === place.shelfId)?.name : undefined;
+                showFeedback(shelf ? `📍 ${loc.label} (scaffale ${shelf})` : `📍 ${loc.label}`);
                 setShowScanner(false);
 
                 setTimeout(() => {
                     advanceToNextScanStep(currentStepIndex + 1, scannedProductId, loc.id);
                 }, 300);
-            } else {
+            };
+            const place = readPlace(data);
+            if (place.status === 'choose') {
+                choose(place.candidates, (ref) => pickLocation(placeOf(ref)));
+            } else if (place.status === 'unknown') {
                 // Debounce error
                 const timeout = setTimeout(() => {
                     soundService.playBlockingError();
                     showFeedback(`❌ Posizione non trovata`, true);
                 }, 400);
                 setErrorTimeoutRef(timeout);
+            } else {
+                pickLocation(place);
             }
         }
     };

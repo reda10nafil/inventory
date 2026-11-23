@@ -17,7 +17,7 @@ import { withAlpha } from '../../../utils/color';
 import { categoryDeleteError, categoryNameError, categoryTree, childrenOf, parentIdOf, parentOptions } from '../../../utils/categories';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { codeError } from '../../../utils/shelves';
+import { codeCheck } from '../../../utils/codes';
 
 const ICON_OPTIONS = [
   'folder',
@@ -35,7 +35,7 @@ export default function ManageFoldersScreen() {
   const t = useTheme();
   const { libraries, products, addLibrary, updateLibrary, deleteLibrary } = useInventory();
   const { shelves } = useShelves();
-  const { getLocation } = useLocations();
+  const { locations } = useLocations();
 
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('folder');
@@ -44,7 +44,8 @@ export default function ManageFoldersScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [showScanner, setShowScanner] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
+  // Codice della finestra grande del QR: uno stato suo, non il campo del modulo (NG24)
+  const [qrCode, setQrCode] = useState<string | null>(null);
 
   // Prodotti (non nel cestino) direttamente nella categoria
   const getItemCount = (libraryId: string): number => {
@@ -52,6 +53,11 @@ export default function ManageFoldersScreen() {
   };
   const parents = parentOptions(libraries, editingId ?? undefined);
   const editingHasChildren = !!editingId && childrenOf(libraries, editingId).length > 0;
+
+  // COD (NG25): il codice scritto, controllato mentre lo si scrive e al salvataggio. Anche alla creazione, dove il
+  // codice non si salva (limite di prima): un codice già usato si rifiuta come prima (S1a)
+  const codeHint = codeCheck(barcode, editingId ? libraries.find((l) => l.id === editingId)?.barcode : undefined,
+    { products, locations, categories: libraries, shelves }, editingId ? { kind: 'category', id: editingId } : undefined);
 
   const resetForm = () => {
     setName('');
@@ -72,8 +78,10 @@ export default function ManageFoldersScreen() {
   const handleSave = () => {
     // Un genitore che nel frattempo non si può più scegliere vale «nessuno»
     const parent = parents.some((p) => p.id === parentId) ? parentId : undefined;
-    // S1a: un codice già usato da uno scaffale non si riusa (lo Scanner aprirebbe la categoria al suo posto)
-    const error = categoryNameError(libraries, name, parent, editingId ?? undefined) ?? codeError(barcode, { shelves, placeLabel: (id) => getLocation(id)?.label ?? id });
+    // COD (NG25): un codice nuovo già usato da un prodotto, una posizione, una categoria o uno scaffale si rifiuta; un
+    // doppione già salvato prima non blocca il salvataggio, ma si segnala. Il codice si salva solo modificando (vedi sotto)
+    const check = codeHint;
+    const error = categoryNameError(libraries, name, parent, editingId ?? undefined) ?? check.error;
     if (error) {
       Alert.alert('Errore', error);
       return;
@@ -86,7 +94,8 @@ export default function ManageFoldersScreen() {
         barcode: barcode || undefined,
         parentId: parent,
       });
-      Alert.alert('Successo', 'Categoria aggiornata');
+      if (check.warning) Alert.alert('Categoria aggiornata', check.warning);
+      else Alert.alert('Successo', 'Categoria aggiornata');
       resetForm();
     } else {
       // Il codice si salva modificando la categoria dopo averla creata (limite di prima, vedi l'avviso sotto)
@@ -225,6 +234,9 @@ export default function ManageFoldersScreen() {
               <Text style={styles.qrText}>{barcode}</Text>
             </View>
           ) : null}
+          {codeHint.error || codeHint.warning ? (
+            <Text style={[styles.codeHint, codeHint.error ? styles.codeHintError : styles.codeHintWarning]}>{codeHint.error ?? codeHint.warning}</Text>
+          ) : null}
 
           <View style={styles.actionButtons}>
             {editingId && (
@@ -277,7 +289,7 @@ export default function ManageFoldersScreen() {
 
               <View style={styles.itemActions}>
                 {library.barcode && (
-                  <Pressable onPress={() => { setBarcode(library.barcode!); setShowQRModal(true); }} style={{ marginRight: 8 }}>
+                  <Pressable onPress={() => setQrCode(library.barcode!)} style={{ marginRight: 8 }}>
                     <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
                   </Pressable>
                 )}
@@ -306,12 +318,12 @@ export default function ManageFoldersScreen() {
       )}
 
       {/* Large QR Modal */}
-      <Modal visible={showQRModal} transparent animationType="fade" onRequestClose={() => setShowQRModal(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowQRModal(false)}>
+      <Modal visible={qrCode !== null} transparent animationType="fade" onRequestClose={() => setQrCode(null)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setQrCode(null)}>
           <View style={styles.qrCard}>
             <Text style={styles.qrTitle}>Codice Categoria</Text>
-            <QRCode value={barcode || 'empty'} size={200} />
-            <Text style={styles.qrBigText}>{barcode}</Text>
+            <QRCode value={qrCode || 'empty'} size={200} />
+            <Text style={styles.qrBigText}>{qrCode}</Text>
             <Text style={styles.qrHint}>Scansiona per filtrare prodotti di questa categoria</Text>
           </View>
         </Pressable>
@@ -592,8 +604,21 @@ const useStyles = makeStyles((t) => ({
   },
   qrHint: {
     fontSize: 14,
-    color: '#666',
+    color: withAlpha(t.colors.qrInk, 0.7),
     marginTop: 8,
     textAlign: 'center',
+  },
+  // COD: avviso sotto il codice mentre lo si scrive (già usato: rosso, si rifiuta; doppione di prima: si segnala)
+  codeHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  codeHintError: {
+    color: t.colors.error,
+  },
+  codeHintWarning: {
+    color: t.colors.warningText,
   },
 }));

@@ -410,6 +410,42 @@ const FETTE = {
       }],
     ],
   },
+  // COD: Scanner con l'inserimento a mano (che ora trova anche posizioni, scaffali e categorie), una automazione con
+  // «Scrivi il codice» (pulsante sul lettore, poi il campo con il link), l'avviso di un codice doppio nel modulo delle
+  // Posizioni (doppione già salvato: si segnala; codice nuovo già usato: si rifiuta) e la scelta dello Scanner
+  cod: {
+    prepara: () => {
+      const lk = 'furinventory_locations:local';
+      localStorage.setItem(lk, JSON.stringify([
+        { id: 'magazzino', label: 'Magazzino', color: '#3B82F6', barcode: 'LOC-MAGAZZINO' },
+        { id: 'vetrina', label: 'Vetrina', color: '#D4AF37' },
+        { id: 'banco_uno', label: 'Banco Uno', color: '#10B981', barcode: 'LOC-DOPPIO' },
+        { id: 'banco_due', label: 'Banco Due', color: '#8B5CF6', barcode: 'LOC-DOPPIO' },
+      ]));
+    },
+    schermate: [
+      ['scanner-a-mano', async (page) => {
+        await page.goto(`${APP}/scanner`); await page.waitForTimeout(1800);
+        await page.getByText('Inserisci Manualmente', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByPlaceholder('Es: SKU-001, 1234567890123').fill('https://syncroflow.app/id/01/VIS-0142/21/000142');
+      }],
+      ['lettore', async (page) => {
+        await page.goto(`${APP}/automations/scan-sell`); await page.waitForTimeout(1800);
+        await page.getByText('Scansiona Prodotto', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(1200);
+      }],
+      ['scrivi-il-codice', async (page) => {
+        await page.getByText('Scrivi il codice', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByPlaceholder('Codice, SKU o link').locator('visible=true').first().fill('vis-0142');
+      }],
+      ['doppione-salvato', async (page) => {
+        await page.goto(`${APP}/settings/locations`); await page.waitForTimeout(1800);
+        await page.getByText('Banco Uno', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      }],
+      ['codice-gia-usato', async (page) => {
+        await page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().fill('LOC-MAGAZZINO'); await page.waitForTimeout(400);
+      }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

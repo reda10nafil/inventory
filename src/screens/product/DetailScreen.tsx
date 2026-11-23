@@ -1243,7 +1243,7 @@ export default function ProductDetailScreen() {
               </View>
             ) : (
               <View style={styles.gs1Card}>
-                 <Text style={styles.gs1MissingText}>Questo prodotto non ha un Digital Link GS1 generato. Modifica e salva il prodotto per generarlo.</Text>
+                 <Text style={styles.gs1MissingText}>Questo prodotto non ha un Digital Link GS1: il suo QR porta lo SKU.</Text>
                  <Pressable style={styles.qrButton} onPress={() => setShowQRModal(true)}>
                     <AppIcon name="qr-code-2" size={20} color={t.colors.onButtonSecondary} />
                     <Text style={styles.qrButtonText}>Mostra SKU QR (Legacy)</Text>

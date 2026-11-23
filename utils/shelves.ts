@@ -252,49 +252,7 @@ export function locationShelvesError(label: string, shelves: readonly Pick<Shelf
 export const shelvesOfCategory = (shelves: readonly Pick<Shelf, 'libraryId'>[], libraryId: string): number =>
   shelves.filter((s) => s.libraryId === libraryId).length;
 
-/** Dove lo Scanner cerca un codice: prodotti (SKU o id), posizioni, categorie e scaffali (codice o id). */
-export interface CodeSources {
-  products?: readonly Pick<Product, 'id' | 'sku'>[];
-  locations?: readonly { id: string; label: string; barcode?: string }[];
-  categories?: readonly (CategoryNode & { barcode?: string })[];
-  shelves?: readonly Shelf[];
-  /** Nome di una posizione per descrivere uno scaffale, quando `locations` non si passa (moduli di Posizioni e
-   *  Categorie, che controllano solo gli scaffali). */
-  placeLabel?: (id: string) => string;
-}
-
-/**
- * Chi usa già questo codice, come lo direbbe un messaggio («dalla posizione "Magazzino"»), altrimenti null. Si guarda
- * dove guarda lo Scanner, con maiuscole e spazi indifferenti; `editingShelfId` è lo scaffale che si sta modificando.
- */
-export function codeOwner(code: string, sources: CodeSources, editingShelfId?: string): string | null {
-  const c = fold(code);
-  if (!c) return null;
-  const same = (value?: string) => !!value && fold(value) === c;
-  const product = sources.products?.find((p) => same(p.sku) || same(p.id));
-  if (product) return `dal prodotto ${product.sku}`;
-  const location = sources.locations?.find((l) => same(l.barcode) || same(l.id));
-  if (location) return `dalla posizione "${location.label}"`;
-  const category = sources.categories?.find((l) => same(l.barcode) || same(l.id));
-  if (category) return `dalla categoria "${categoryPath(sources.categories ?? [], category.id)}"`;
-  const shelf = sources.shelves?.find((s) => s.id !== editingShelfId && (same(s.barcode) || same(s.id)));
-  if (shelf) {
-    const place = sources.locations?.find((l) => l.id === shelf.locationId)?.label ?? sources.placeLabel?.(shelf.locationId) ?? shelf.locationId;
-    return `dallo scaffale "${placeWithShelf(place, shelf)}"`;
-  }
-  return null;
-}
-
-/** Errore per un codice già usato, altrimenti null. */
-export function codeError(code: string, sources: CodeSources, editingShelfId?: string): string | null {
-  const owner = codeOwner(code, sources, editingShelfId);
-  return owner ? `Il codice "${code.trim()}" è già usato ${owner}.` : null;
-}
-
-/** Scaffale letto dallo Scanner: per codice o per id, come le posizioni e le categorie. */
-export function shelfByCode<T extends Shelf>(shelves: readonly T[], data: string): T | undefined {
-  return shelves.find((s) => s.barcode === data || s.id === data);
-}
+// Codici già usati (`codeOwner`, `codeError`, `codeCheck`) e lettura dei codici: `utils/codes.ts` (COD, ticket 22).
 
 /**
  * Codice proposto per uno scaffale nuovo: `SCAF-MAGAZZINO-A1` dalla posizione e dal nome, con `-2`, `-3`… se è già

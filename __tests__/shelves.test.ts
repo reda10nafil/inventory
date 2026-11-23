@@ -1,9 +1,10 @@
 import type { Product } from '../types';
 import {
-  codeError, codeOwner, GENERIC_SHELF, isShelfPlace, keptShelfId, locationShelvesError, newShelfId, parseShelves, placeWithShelf,
-  productShelf, productShelfId, shelfByCode, shelfData, shelfDeleteError, shelfIdFromCsv, shelfKind, shelfNameError, shelfPatch,
+  GENERIC_SHELF, isShelfPlace, keptShelfId, locationShelvesError, newShelfId, parseShelves, placeWithShelf,
+  productShelf, productShelfId, shelfData, shelfDeleteError, shelfIdFromCsv, shelfKind, shelfNameError, shelfPatch,
   shelfUsage, shelvesByLocation, shelvesFor, shelvesOfCategory, suggestShelfCode, withKeptShelf, type Shelf,
 } from '../utils/shelves';
+import { codeError, codeOwner } from '../utils/codes';
 
 const categories = [
   { id: 'pellicce', name: 'Pellicce' },
@@ -212,14 +213,9 @@ describe('codici', () => {
     expect(codeOwner('LOC-MAGAZZINO', { shelves })).toBeNull();
   });
   it('lo scaffale che si modifica può tenere il suo codice; un codice nuovo o vuoto va bene', () => {
-    expect(codeOwner('SCAF-A10', sources, a10.id)).toBeNull();
+    expect(codeOwner('SCAF-A10', sources, { kind: 'shelf', id: a10.id })).toBeNull();
     expect(codeOwner('SCAF-NUOVO', sources)).toBeNull();
     expect(codeError('  ', sources)).toBeNull();
-  });
-  it('shelfByCode: per codice o per id', () => {
-    expect(shelfByCode(shelves, 'SCAF-A10')).toBe(a10);
-    expect(shelfByCode(shelves, a1.id)).toBe(a1);
-    expect(shelfByCode(shelves, 'magazzino')).toBeUndefined();
   });
   it('suggestShelfCode: dalla posizione e dal nome, con un numero se è già usato', () => {
     expect(suggestShelfCode('Magazzino', 'Scaffale à 1', () => false)).toBe('SCAF-MAGAZZINO-SCAFFALE-A-1');

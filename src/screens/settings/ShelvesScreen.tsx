@@ -9,9 +9,10 @@ import { useShelves } from '../../../contexts/ShelvesContext';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
 import {
-  codeError, codeOwner, shelfDeleteError, shelfKind, shelfNameError, shelfUsage, shelvesByLocation, suggestShelfCode, type Shelf,
+  shelfDeleteError, shelfKind, shelfNameError, shelfUsage, shelvesByLocation, suggestShelfCode, type Shelf,
 } from '../../../utils/shelves';
 import BarcodeScanner from '../../../components/BarcodeScanner';
+import { codeCheck, codeOwner } from '../../../utils/codes';
 import { CategoryPicker } from '../../../components/CategoryPicker';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -47,6 +48,11 @@ export default function ShelvesScreen() {
   const editing = shelves.find((s) => s.id === editingId);
   const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
   const sources = { products, locations, categories: libraries, shelves };
+  // COD (NG25): codice e tag controllati mentre si scrivono e al salvataggio
+  const savedShelf = editingId ? shelves.find((x) => x.id === editingId) : undefined;
+  const shelfSelf = editingId ? { kind: 'shelf' as const, id: editingId } : undefined;
+  const barcodeHint = codeCheck(barcode, savedShelf?.barcode, sources, shelfSelf);
+  const tagHint = codeCheck(nfcTag, savedShelf?.nfcTag, sources, shelfSelf);
   // Senza scaffali il modulo è già aperto: è la prima cosa da fare
   const showForm = formOpen || shelves.length === 0;
 
@@ -63,16 +69,19 @@ export default function ShelvesScreen() {
   };
 
   const handleSave = async () => {
-    const error = shelfNameError(shelves, name, locationId, editingId ?? undefined)
-      ?? codeError(barcode, sources, editingId ?? undefined);
+    // COD (NG25): codice e tag (anche l'UID scritto in un altro modo) già usati altrove si rifiutano se sono nuovi;
+    // un doppione già salvato prima non blocca il salvataggio di un altro campo, ma si segnala
+    const codeChecks = [barcodeHint, tagHint];
+    const error = shelfNameError(shelves, name, locationId, editingId ?? undefined) ?? codeChecks.find((c) => c.error)?.error;
     if (error) {
       Alert.alert('Errore', error);
       return;
     }
+    const warning = codeChecks.map((c) => c.warning).filter(Boolean).join('\n\n');
     const data = { name, libraryId, barcode, nfcTag };
     if (editingId) {
       await updateShelf(editingId, data);
-      Alert.alert('Fatto', 'Scaffale aggiornato');
+      Alert.alert(warning ? 'Scaffale aggiornato' : 'Fatto', warning || 'Scaffale aggiornato');
     } else {
       await addShelf({ ...data, locationId });
       Alert.alert('Fatto', `Scaffale "${name.trim()}" creato in ${placeLabel(locationId)}`);
@@ -85,7 +94,7 @@ export default function ShelvesScreen() {
       Alert.alert('Errore', 'Scegli prima la posizione dello scaffale.');
       return;
     }
-    const code = suggestShelfCode(placeLabel(locationId), name, (c) => codeOwner(c, sources, editingId ?? undefined) !== null);
+    const code = suggestShelfCode(placeLabel(locationId), name, (c) => codeOwner(c, sources, editingId ? { kind: 'shelf', id: editingId } : undefined) !== null);
     if (!code) {
       Alert.alert('Errore', 'Inserisci prima un nome per generare il codice.');
       return;
@@ -208,8 +217,14 @@ export default function ShelvesScreen() {
                 <Text style={styles.qrText}>{barcode.trim()}</Text>
               </View>
             ) : null}
+            {barcodeHint.error || barcodeHint.warning ? (
+              <Text style={[styles.codeHint, barcodeHint.error ? styles.codeHintError : styles.codeHintWarning]}>{barcodeHint.error ?? barcodeHint.warning}</Text>
+            ) : null}
 
             {field('Tag NFC (facoltativo)', nfcTag, setNfcTag, 'Es. 04:A2:3B:1C')}
+            {tagHint.error || tagHint.warning ? (
+              <Text style={[styles.codeHint, tagHint.error ? styles.codeHintError : styles.codeHintWarning]}>{tagHint.error ?? tagHint.warning}</Text>
+            ) : null}
             <Text style={styles.hint}>Il tag si salva con lo scaffale; la lettura col telefono arriverà più avanti.</Text>
 
             <View style={styles.actionButtons}>
@@ -458,5 +473,18 @@ const useStyles = makeStyles((t) => ({
     color: withAlpha(t.colors.qrInk, 0.7),
     marginTop: 8,
     textAlign: 'center',
+  },
+  // COD: avviso sotto il codice mentre lo si scrive (già usato: rosso, si rifiuta; doppione di prima: si segnala)
+  codeHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  codeHintError: {
+    color: t.colors.error,
+  },
+  codeHintWarning: {
+    color: t.colors.warningText,
   },
 }));

@@ -9,6 +9,9 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
 import { useProductKind } from '../../../hooks/useProductKind';
 import BarcodeScanner from '../../../components/BarcodeScanner';
+import { useCodeReader } from '../../../hooks/useCodeReader';
+import type { PlaceRead } from '../../../utils/codes';
+import type { Product } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
@@ -26,7 +29,8 @@ export default function BatchMoveScreen() {
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, moveProduct, getProductBySku } = useInventory();
+    const { products, moveProduct } = useInventory();
+    const { readProduct, readPlace, placeOf, choose, isText, shelfNote } = useCodeReader();
     const { locations, getLocation, getNextLocation } = useLocations();
     const kindOf = useProductKind();
 
@@ -53,15 +57,27 @@ export default function BatchMoveScreen() {
         }
     };
 
+    // Lettore unico (COD): codice, id o nome di una posizione; uno scaffale vale la sua posizione, con l'avviso (AU-V14)
     const handleLocationScan = (data: string) => {
-        // Try to find location by ID, Label or Barcode
-        const loc = locations.find(l => l.id === data || l.label === data || l.barcode === data);
-
-        if (loc) {
-            checkCapacityAndSetLocation(loc);
-        } else {
-            Alert.alert('Errore', 'Posizione non trovata nel database.');
+        const place = readPlace(data);
+        if (place.status === 'choose') {
+            choose(place.candidates, (ref) => applyPlace(placeOf(ref)));
+            return;
         }
+        applyPlace(place);
+    };
+
+    const applyPlace = (place: PlaceRead) => {
+        const loc = place.status === 'location' ? locations.find((l) => l.id === place.id) : undefined;
+        if (!loc) {
+            Alert.alert('Errore', 'Posizione non trovata nel database.');
+            return;
+        }
+        if (place.status === 'location' && place.shelfId) {
+            Alert.alert('Scaffale', shelfNote(place.shelfId), [{ text: 'OK', onPress: () => checkCapacityAndSetLocation(loc) }]);
+            return;
+        }
+        checkCapacityAndSetLocation(loc);
     };
 
     const checkCapacityAndSetLocation = (loc: Location) => {
@@ -104,6 +120,54 @@ export default function BatchMoveScreen() {
 
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
+    // Cambio di destinazione dalla lettura di una posizione (o di uno scaffale, che vale la sua posizione)
+    const askChange = (place: PlaceRead) => {
+        const potentialLoc = place.status === 'location' ? locations.find((l) => l.id === place.id) : undefined;
+        if (!potentialLoc) return;
+        setShowScanner(false); // Pause scanner immediately to avoid spam
+        Vibration.vibrate(100);
+        const note = place.status === 'location' && place.shelfId ? `\n\n${shelfNote(place.shelfId)}` : '';
+        Alert.alert(
+            'Cambio Destinazione',
+            `Vuoi cambiare la destinazione a "${potentialLoc.label}"?${note}`,
+            [
+                { text: 'No', style: 'cancel', onPress: () => setShowScanner(true) },
+                {
+                    text: 'Sì',
+                    onPress: () => {
+                        checkCapacityAndSetLocation(potentialLoc);
+                    }
+                }
+            ]
+        );
+    };
+
+    // Sposta il prodotto letto (o scelto tra più prodotti con lo stesso codice) nella destinazione
+    const moveFlow = (product: Product) => {
+        if (!targetLocation) return;
+        if (product.location === targetLocation.id) {
+            setFeedbackMessage(`${product.sku} già qui!`);
+            setTimeout(() => setFeedbackMessage(null), 1000);
+            return;
+        }
+
+        // Spostamento vero: in cronologia «spostato», non «modificato» (D15)
+        if (!moveProduct(product.id, targetLocation.id)) {
+            const refused = moveOf(product, targetLocation.id, '');
+            setFeedbackMessage(refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
+            setTimeout(() => setFeedbackMessage(null), 1500);
+            return;
+        }
+
+        setScannedCount(c => c + 1);
+        setLastScannedProduct(kindOf(product).line ? `${product.sku} (${kindOf(product).line})` : product.sku);
+        playSuccessSound();
+
+        // Show overlay feedback
+        setFeedbackMessage(`${product.sku} Spostato!`);
+        setTimeout(() => setFeedbackMessage(null), 1000);
+    };
+
     const handleProductScan = async (data: string) => {
         // Clear pending error
         if (errorTimeoutRef) {
@@ -111,67 +175,51 @@ export default function BatchMoveScreen() {
             setErrorTimeoutRef(null);
         }
 
-        // Check if scanned code is actually a Location (to switch target)
-        const potentialLoc = locations.find(l => l.id === data || l.barcode === data);
-        if (potentialLoc) {
-            setShowScanner(false); // Pause scanner immediately to avoid spam
-            Vibration.vibrate(100);
-            Alert.alert(
-                'Cambio Destinazione',
-                `Vuoi cambiare la destinazione a "${potentialLoc.label}"?`,
-                [
-                    { text: 'No', style: 'cancel', onPress: () => setShowScanner(true) },
-                    {
-                        text: 'Sì',
-                        onPress: () => {
-                            checkCapacityAndSetLocation(potentialLoc);
-                        }
-                    }
-                ]
-            );
-            return;
+        // Lettore unico (COD). Una posizione o uno scaffale letti qui cambiano la destinazione, con conferma
+        const read = readProduct(data);
+        if (read.status === 'other' || read.status === 'unknown') {
+            const place = readPlace(data);
+            if (place.status === 'location') {
+                askChange(place);
+                return;
+            }
+            if (place.status === 'choose') {
+                setShowScanner(false);
+                choose(place.candidates, (ref) => askChange(placeOf(ref)), () => setShowScanner(true));
+                return;
+            }
         }
 
         if (!targetLocation) return;
 
-        // Find product - try ID first, then SKU
-        let product = products.find(p => p.id === data);
-        if (!product) {
-            product = getProductBySku(data);
+        const byId = (id: string) => products.find((p) => p.id === id);
+        if (read.status === 'product') {
+            const product = byId(read.id);
+            if (product) moveFlow(product);
+            return;
+        }
+        if (read.status === 'trashed') {
+            setFeedbackMessage(refusalText('trash', byId(read.id)?.sku));
+            setTimeout(() => setFeedbackMessage(null), 1500);
+            return;
+        }
+        if (read.status === 'choose') {
+            choose(read.candidates, (ref) => { const product = byId(ref.id); if (product) moveFlow(product); });
+            return;
+        }
+        if (read.status === 'other') {
+            setFeedbackMessage(`${isText(data, read.ref)} Scansiona un prodotto.`);
+            setTimeout(() => setFeedbackMessage(null), 2000);
+            return;
         }
 
-        if (product) {
-            if (product.location === targetLocation.id) {
-                setFeedbackMessage(`${product.sku} già qui!`);
-                setTimeout(() => setFeedbackMessage(null), 1000);
-                return;
-            }
-
-            // Spostamento vero: in cronologia «spostato», non «modificato» (D15)
-            if (!moveProduct(product.id, targetLocation.id)) {
-                const refused = moveOf(product, targetLocation.id, '');
-                setFeedbackMessage(refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
-                setTimeout(() => setFeedbackMessage(null), 1500);
-                return;
-            }
-
-            setScannedCount(c => c + 1);
-            setLastScannedProduct(kindOf(product).line ? `${product.sku} (${kindOf(product).line})` : product.sku);
-            playSuccessSound();
-
-            // Show overlay feedback
-            setFeedbackMessage(`${product.sku} Spostato!`);
-            setTimeout(() => setFeedbackMessage(null), 1000);
-
-        } else {
-            // Debounce error feedback by 400ms
-            const timeout = setTimeout(() => {
-                soundService.playBlockingError();
-                setFeedbackMessage(`Prodotto non trovato: ${data}`);
-                setTimeout(() => setFeedbackMessage(null), 2000);
-            }, 400);
-            setErrorTimeoutRef(timeout);
-        }
+        // Debounce error feedback by 400ms
+        const timeout = setTimeout(() => {
+            soundService.playBlockingError();
+            setFeedbackMessage(`Prodotto non trovato: ${data}`);
+            setTimeout(() => setFeedbackMessage(null), 2000);
+        }, 400);
+        setErrorTimeoutRef(timeout);
     };
 
     const resetFlow = () => {
