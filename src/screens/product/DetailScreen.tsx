@@ -834,7 +834,7 @@ export default function ProductDetailScreen() {
           width={heroWidth}
           height={320}
           onOpen={(index) => { setCurrentImageIndex(index); setViewer({ images: product.images }); }}
-          keyboard={focused && !viewer}
+          keyboard={focused && !viewer && !showQRModal && !showMovement} // non sotto le finestre aperte sopra la Scheda
           thumbnails
         />
 

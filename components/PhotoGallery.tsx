@@ -50,12 +50,16 @@ export function PhotoGallery({ images, index, onIndexChange, variant, width, hei
   const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
   const markFailed = (uri: string) => setFailed((prev) => (prev.has(uri) ? prev : new Set(prev).add(uri)));
 
-  // L'indice comanda: se la foto grande non è quella, si porta lì (anche dopo un'eliminazione o un cambio d'ordine)
-  const align = () => {
-    if (n > 0 && width > 0 && Math.round(offset.current / width) !== current) {
-      scroller.current?.scrollTo({ x: current * width, y: 0, animated: false });
-    }
+  // L'indice comanda: se la foto grande non è quella, si porta lì (anche dopo un'eliminazione o un cambio d'ordine).
+  // Lo scostamento si annota subito, senza aspettare `onScroll`: se uno scorrimento senza animazione non lo facesse
+  // arrivare (telefono), la miniatura scelta dopo non verrebbe creduta già lì. Quando il contenuto cambia misura (prima
+  // misura, foto aggiunte o tolte) si riporta comunque sull'indice: prima della misura lo scorrimento non riesce.
+  const scrollToCurrent = () => {
+    if (n === 0 || width <= 0) return;
+    scroller.current?.scrollTo({ x: current * width, y: 0, animated: false });
+    offset.current = current * width;
   };
+  const align = () => { if (Math.round(offset.current / width) !== current) scrollToCurrent(); };
   useEffect(align, [current, width, n]);
 
   const go = (i: number) => { if (i >= 0 && i < n && i !== current) onIndexChange(i); };
@@ -133,7 +137,7 @@ export function PhotoGallery({ images, index, onIndexChange, variant, width, hei
         showsHorizontalScrollIndicator={false}
         style={{ width, height }}
         contentOffset={startOffset}
-        onContentSizeChange={align}
+        onContentSizeChange={scrollToCurrent}
         onScroll={(event) => {
           offset.current = event.nativeEvent.contentOffset.x;
           go(clampPhotoIndex(offset.current / width, n));

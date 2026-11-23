@@ -61,7 +61,8 @@ dei campi «immagini»; Scheda con prezzo 0 (CSV-I6), note vuote (CSV-I7) e foto
   CF-C4 (prezzo 0) verdi; tutta `prova/` confrontata con la base; foglio `prova/stili-gal.jpg`.
 - Decisioni prese al posto dell'utente: righe GAL in `../../DECISIONI_DA_RIVEDERE.md`.
 - Non verificato: Android (scorrimento col dito, frecce e comandi sul telefono, Scheda con prezzo d'acquisto 0 che non
-  cade, CF-T5). Il caricamento delle foto sul cloud (`InventoryContext`, effetto del backup) scrive il percorso
+  cade, CF-T5). Sequenza da fare sul telefono per CSV-G1: Modifica › miniatura 3 › miniatura 1 → la foto grande deve
+  essere la 1 e «Elimina» deve togliere la 1 (sul web provato; sul telefono dipende dallo scorrimento senza animazione). Il caricamento delle foto sul cloud (`InventoryContext`, effetto del backup) scrive il percorso
   all'indice che la foto aveva quando il caricamento è partito: un riordino durante un caricamento li disallineerebbe. Con
   il login spento non succede; da guardare quando torna il cloud (L1, L2).
 

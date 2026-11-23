@@ -1,6 +1,6 @@
 # Passaggio di consegne — fase B, funzionalità di magazzino (Syncro Flow)
 
-Aggiornato il 23 novembre 2026 dall'esecutore di GAL (prima da quello di C2), dopo M01-M04, M08, M06, M07, M09, M10 (prima mappa, tutte fatte), C1 e S1a (seconda mappa) C2 e GAL (terza mappa). Le regole della notte sono in `../NOTTE_22_23.md` e nella nota della coordinatrice (`side-session-notes/local_5c439c03…/notte-22-23-novembre.md`): carta bianca, un task per volta, tutto verde dopo ogni task, decisioni semplici e reversibili annotate in `../DECISIONI_DA_RIVEDERE.md`, mai su `main`.
+Aggiornato il 23 novembre 2026 dall'esecutore di GAL (prima da quello di C2), dopo M01-M04, M08, M06, M07, M09, M10 (prima mappa, tutte fatte), C1 e S1a (seconda mappa), C2 e GAL (terza mappa). Le regole della notte sono in `../NOTTE_22_23.md` e nella nota della coordinatrice (`side-session-notes/local_5c439c03…/notte-22-23-novembre.md`): carta bianca, un task per volta, tutto verde dopo ogni task, decisioni semplici e reversibili annotate in `../DECISIONI_DA_RIVEDERE.md`, mai su `main`.
 
 ## Dove siamo
 
