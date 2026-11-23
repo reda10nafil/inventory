@@ -1678,7 +1678,7 @@
       "file_type": "code",
       "norm_label": "runcontext",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L96"
+      "source_location": "L101"
     },
     {
       "id": "utils_automationrun_runstep",
@@ -1691,7 +1691,7 @@
       "file_type": "code",
       "norm_label": "runstep",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L134"
+      "source_location": "L139"
     },
     {
       "id": "utils_automationrun_runstepconfig",
@@ -1717,7 +1717,7 @@
       "file_type": "code",
       "norm_label": "stepoutcome",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L106"
+      "source_location": "L111"
     },
     {
       "id": "src_components_chat_chatmessageitem_chatmessageitemprops",
@@ -1938,7 +1938,7 @@
       "file_type": "code",
       "norm_label": "flowcontext",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L195"
+      "source_location": "L200"
     },
     {
       "id": "tests_chatpayload_test_chatpayload",
@@ -8672,7 +8672,7 @@
       "file_type": "code",
       "norm_label": "automationsusing()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L273"
+      "source_location": "L278"
     },
     {
       "id": "utils_automationrun_canusescannedlocation",
@@ -8684,7 +8684,7 @@
       "file_type": "code",
       "norm_label": "canusescannedlocation()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L266"
+      "source_location": "L271"
     },
     {
       "id": "utils_automationrun_fieldchoices",
@@ -8720,7 +8720,7 @@
       "file_type": "code",
       "norm_label": "fieldvalueof()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L72"
+      "source_location": "L76"
     },
     {
       "id": "utils_automationrun_flowerrors",
@@ -8732,7 +8732,7 @@
       "file_type": "code",
       "norm_label": "flowerrors()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L207"
+      "source_location": "L212"
     },
     {
       "id": "utils_automationrun_fold",
@@ -8780,7 +8780,7 @@
       "file_type": "code",
       "norm_label": "locationinusetext()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L278"
+      "source_location": "L283"
     },
     {
       "id": "utils_automationrun_loopindex",
@@ -8792,7 +8792,7 @@
       "file_type": "code",
       "norm_label": "loopindex()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L248"
+      "source_location": "L253"
     },
     {
       "id": "utils_automationrun_movestepby",
@@ -8804,7 +8804,7 @@
       "file_type": "code",
       "norm_label": "movestepby()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L256"
+      "source_location": "L261"
     },
     {
       "id": "utils_automationrun_noteswithtag",
@@ -8816,7 +8816,7 @@
       "file_type": "code",
       "norm_label": "noteswithtag()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L121"
+      "source_location": "L126"
     },
     {
       "id": "utils_automationrun_refuse",
@@ -8828,7 +8828,7 @@
       "file_type": "code",
       "norm_label": "refuse()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L117"
+      "source_location": "L122"
     },
     {
       "id": "utils_automationrun_resumeindex",
@@ -8840,7 +8840,7 @@
       "file_type": "code",
       "norm_label": "resumeindex()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L241"
+      "source_location": "L246"
     },
     {
       "id": "utils_automationrun_salepriceinput",
@@ -8852,7 +8852,7 @@
       "file_type": "code",
       "norm_label": "salepriceinput()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L187"
+      "source_location": "L192"
     },
     {
       "id": "utils_automationrun_starterror",
@@ -8864,7 +8864,7 @@
       "file_type": "code",
       "norm_label": "starterror()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L235"
+      "source_location": "L240"
     },
     {
       "id": "utils_automationrun_usesscannedlocation",
@@ -8888,7 +8888,7 @@
       "file_type": "code",
       "norm_label": "withfieldvalue()",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L88"
+      "source_location": "L93"
     },
     {
       "id": "utils_inventoryops_refusaltext",
@@ -52161,7 +52161,7 @@
       "file_type": "code",
       "norm_label": "usestyles",
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L539"
+      "source_location": "L540"
     },
     {
       "id": "src_screens_settings_foldersscreen_usestyles",
@@ -67711,7 +67711,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L196",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -67723,7 +67723,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L203",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -67735,7 +67735,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L264",
+      "source_location": "L265",
       "weight": 1.0
     },
     {
@@ -67747,7 +67747,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L294",
+      "source_location": "L295",
       "weight": 1.0
     },
     {
@@ -67867,7 +67867,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L565",
+      "source_location": "L566",
       "weight": 1.0
     },
     {
@@ -67879,7 +67879,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L578",
+      "source_location": "L579",
       "weight": 1.0
     },
     {
@@ -71959,7 +71959,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L274",
+      "source_location": "L279",
       "weight": 1.0
     },
     {
@@ -71995,7 +71995,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L76",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -72007,7 +72007,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L81",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -72019,7 +72019,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L210",
+      "source_location": "L215",
       "weight": 1.0
     },
     {
@@ -72031,24 +72031,12 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L218",
+      "source_location": "L223",
       "weight": 1.0
     },
     {
       "source": "utils_automationrun_flowerrors",
       "target": "utils_automationrun_usesscannedlocation",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "utils/automationRun.ts",
-      "source_location": "L220",
-      "weight": 1.0
-    },
-    {
-      "source": "utils_automationrun_flowerrors",
-      "target": "utils_automationrun_fieldof",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -72060,6 +72048,18 @@
     },
     {
       "source": "utils_automationrun_flowerrors",
+      "target": "utils_automationrun_fieldof",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "utils/automationRun.ts",
+      "source_location": "L230",
+      "weight": 1.0
+    },
+    {
+      "source": "utils_automationrun_flowerrors",
       "target": "utils_automationrun_fieldvalueof",
       "relation": "calls",
       "_origin": "ast",
@@ -72067,7 +72067,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L226",
+      "source_location": "L231",
       "weight": 1.0
     },
     {
@@ -72079,7 +72079,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L243",
+      "source_location": "L248",
       "weight": 1.0
     },
     {
@@ -72091,7 +72091,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L136",
+      "source_location": "L141",
       "weight": 1.0
     },
     {
@@ -72103,7 +72103,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L137",
+      "source_location": "L142",
       "weight": 1.0
     },
     {
@@ -72115,7 +72115,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L139",
+      "source_location": "L144",
       "weight": 1.0
     },
     {
@@ -72127,7 +72127,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L141",
+      "source_location": "L146",
       "weight": 1.0
     },
     {
@@ -72139,7 +72139,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L147",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -72151,7 +72151,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L153",
+      "source_location": "L158",
       "weight": 1.0
     },
     {
@@ -72163,7 +72163,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L155",
+      "source_location": "L160",
       "weight": 1.0
     },
     {
@@ -72175,7 +72175,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L160",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -72187,7 +72187,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L163",
+      "source_location": "L168",
       "weight": 1.0
     },
     {
@@ -72199,7 +72199,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L168",
+      "source_location": "L173",
       "weight": 1.0
     },
     {
@@ -72211,7 +72211,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L176",
+      "source_location": "L181",
       "weight": 1.0
     },
     {
@@ -72223,7 +72223,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L178",
+      "source_location": "L183",
       "weight": 1.0
     },
     {
@@ -72235,7 +72235,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L188",
+      "source_location": "L193",
       "weight": 1.0
     },
     {
@@ -72247,7 +72247,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L236",
+      "source_location": "L241",
       "weight": 1.0
     },
     {
@@ -80170,7 +80170,7 @@
       "confidence_score": 1.0,
       "context": "field",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L197",
+      "source_location": "L202",
       "weight": 1.0
     },
     {
@@ -80182,7 +80182,7 @@
       "confidence_score": 1.0,
       "context": "field",
       "source_file": "utils/automationRun.ts",
-      "source_location": "L102",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -151531,17 +151531,6 @@
     },
     {
       "source": "src_screens_settings_automationbuilderscreen",
-      "target": "src_screens_settings_automationbuilderscreen_usestyles",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
-      "source_location": "L539",
-      "weight": 1.0
-    },
-    {
-      "source": "src_screens_settings_automationbuilderscreen",
       "target": "src_screens_settings_automationbuilderscreen_color_options",
       "relation": "contains",
       "_origin": "ast",
@@ -151549,6 +151538,17 @@
       "confidence_score": 1.0,
       "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
       "source_location": "L54",
+      "weight": 1.0
+    },
+    {
+      "source": "src_screens_settings_automationbuilderscreen",
+      "target": "src_screens_settings_automationbuilderscreen_usestyles",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/screens/settings/AutomationBuilderScreen.tsx",
+      "source_location": "L540",
       "weight": 1.0
     },
     {
@@ -155348,13 +155348,24 @@
     },
     {
       "source": "utils_automationrun",
+      "target": "utils_automationrun_runcontext",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "utils/automationRun.ts",
+      "source_location": "L101",
+      "weight": 1.0
+    },
+    {
+      "source": "utils_automationrun",
       "target": "utils_automationrun_stepoutcome",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L106",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -155365,7 +155376,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L117",
+      "source_location": "L122",
       "weight": 1.0
     },
     {
@@ -155376,7 +155387,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L121",
+      "source_location": "L126",
       "weight": 1.0
     },
     {
@@ -155398,7 +155409,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L187",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -155409,7 +155420,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L195",
+      "source_location": "L200",
       "weight": 1.0
     },
     {
@@ -155420,7 +155431,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L207",
+      "source_location": "L212",
       "weight": 1.0
     },
     {
@@ -155431,7 +155442,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L235",
+      "source_location": "L240",
       "weight": 1.0
     },
     {
@@ -155442,7 +155453,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L241",
+      "source_location": "L246",
       "weight": 1.0
     },
     {
@@ -155453,7 +155464,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L248",
+      "source_location": "L253",
       "weight": 1.0
     },
     {
@@ -155464,7 +155475,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L256",
+      "source_location": "L261",
       "weight": 1.0
     },
     {
@@ -155475,7 +155486,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L266",
+      "source_location": "L271",
       "weight": 1.0
     },
     {
@@ -155486,7 +155497,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L273",
+      "source_location": "L278",
       "weight": 1.0
     },
     {
@@ -155497,7 +155508,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L278",
+      "source_location": "L283",
       "weight": 1.0
     },
     {
@@ -155607,7 +155618,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L72",
+      "source_location": "L76",
       "weight": 1.0
     },
     {
@@ -155618,18 +155629,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "utils/automationRun.ts",
-      "source_location": "L88",
-      "weight": 1.0
-    },
-    {
-      "source": "utils_automationrun",
-      "target": "utils_automationrun_runcontext",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "utils/automationRun.ts",
-      "source_location": "L96",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -190384,5 +190384,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "1f5df032c32f5ba389892a182a945b6f85b69da6"
+  "built_at_commit": "c230c1c165c47608de65cd9e365af9e744feb6fd"
 }

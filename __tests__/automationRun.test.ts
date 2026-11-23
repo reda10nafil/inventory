@@ -93,11 +93,11 @@ describe('runStep: «Imposta Campo» in customData (P17)', () => {
     }
   });
   it('valori: numero con la virgola, opzione per etichetta o id, testo', () => {
-    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: '2,5' });
+    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: '2,5', label: '2,5' });
     expect(fieldValueOf(SPESS, 'tanto').ok).toBe(false);
-    expect(fieldValueOf(COND, 'opt_0')).toEqual({ ok: true, value: 'Nuovo' });
+    expect(fieldValueOf(COND, 'opt_0')).toEqual({ ok: true, value: 'Nuovo', label: 'Nuovo' });
     expect(fieldValueOf(COND, 'Rotto').ok).toBe(false);
-    expect(fieldValueOf(FORN, '  Bianchi ')).toEqual({ ok: true, value: 'Bianchi' });
+    expect(fieldValueOf(FORN, '  Bianchi ')).toEqual({ ok: true, value: 'Bianchi', label: 'Bianchi' });
     expect(fieldValueOf(FORN, '').ok).toBe(false);
   });
   it('campi che si possono scegliere: personalizzati, attivi, testo, numero, valuta, scelta con opzioni', () => {
@@ -216,10 +216,18 @@ describe('dopo il parere del revisore', () => {
   });
   it('valuta: si salva il numero in forma da macchina, così la Scheda lo mostra («12,5» non diventa «NaN €»)', () => {
     const COSTO = field({ id: 'field_costo', name: 'Costo riparazione', type: 'currency' });
-    expect(fieldValueOf(COSTO, '12,5')).toEqual({ ok: true, value: '12.5' });
-    expect(fieldValueOf(COSTO, '1.200,50')).toEqual({ ok: true, value: '1200.5' });
-    expect(fieldValueOf(COSTO, '180')).toEqual({ ok: true, value: '180' });
-    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: '2,5' });
+    expect(fieldValueOf(COSTO, '12,5')).toEqual({ ok: true, value: '12.5', label: '12,5' });
+    expect(fieldValueOf(COSTO, '1.200,50')).toEqual({ ok: true, value: '1200.5', label: '1.200,50' });
+    expect(fieldValueOf(COSTO, '180')).toEqual({ ok: true, value: '180', label: '180' });
+    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: '2,5', label: '2,5' });
+  });
+  it('valuta: il valore scritto nel passo dal costruttore, eseguito, resta lo stesso numero («2,125» non diventa 2125)', () => {
+    const COSTO = field({ id: 'field_costo', name: 'Costo riparazione', type: 'currency' });
+    const scritto = fieldValueOf(COSTO, '2,125');
+    if (!scritto.ok) throw new Error(scritto.error);
+    const r = runStep(item(), st('set_field', { fieldId: 'field_costo', fieldValue: scritto.label }), ctx({ fields: [...FIELDS, COSTO] }));
+    expect(r).toMatchObject({ ok: true, op: 'patch', patch: { customData: [{ value: '2.125', fieldSnapshot: COSTO }] } });
+    expect(scritto.label).toBe('2,125');
   });
   it('il costruttore controlla anche il valore di «Imposta Campo» (opzione tolta, testo in un numero)', () => {
     const SP = st('scan_product');

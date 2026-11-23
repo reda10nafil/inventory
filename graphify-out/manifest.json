@@ -1854,9 +1854,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
-    "mtime": 1795432689.6031923,
-    "seen": 1795434417.630784,
-    "ast_hash": "6fd5e2270618f2b3e62612802e69f076",
+    "mtime": 1795436453.2927592,
+    "seen": 1795436884.7560618,
+    "ast_hash": "42e957e8b429e438a0082f2ea3367fc4",
     "semantic_hash": ""
   },
   "src/screens/settings/FieldsScreen.tsx": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795435720.784469,
-    "seen": 1795436310.9769313,
-    "ast_hash": "a4ecf23492a5752f97d476a009975d07",
+    "mtime": 1795436485.4065037,
+    "seen": 1795436884.7755675,
+    "ast_hash": "c70a752ae3e4a16977b10e640ab1cd48",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795435686.8781624,
-    "seen": 1795436310.9769313,
-    "ast_hash": "b4932bcd87bcd93c30a76efe9c5cabe3",
+    "mtime": 1795436485.404998,
+    "seen": 1795436884.7755675,
+    "ast_hash": "3e36b06447af617dca76fc34103d83ef",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795435720.783469,
-    "seen": 1795436310.9769313,
-    "ast_hash": "fd8ee332a1e6c8b03216fc2cf3fb49bc",
+    "mtime": 1795436485.4065037,
+    "seen": 1795436884.7755675,
+    "ast_hash": "3336d52b2d4e5a8fb3c65f46c02f17a3",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -4104,9 +4104,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/29-automazioni.md": {
-    "mtime": 1795435720.784469,
-    "seen": 1795436310.9799154,
-    "ast_hash": "541cd17adad785e3f45921731f0cd66f",
+    "mtime": 1795436485.4075077,
+    "seen": 1795436884.779077,
+    "ast_hash": "3f424f86a29cd25f41a504eda541a8b9",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/30-chat-e-team.md": {
@@ -4254,9 +4254,9 @@
     "semantic_hash": ""
   },
   "__tests__/automationRun.test.ts": {
-    "mtime": 1795435481.2383223,
-    "seen": 1795436310.9325423,
-    "ast_hash": "a7458ce87d18fcd66903f83055ed1a73",
+    "mtime": 1795436453.2938488,
+    "seen": 1795436884.7314508,
+    "ast_hash": "e361d9cafa07eda6f4ed237ee949f2e1",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/ese-automazioni.cjs": {
@@ -4266,9 +4266,9 @@
     "semantic_hash": ""
   },
   "utils/automationRun.ts": {
-    "mtime": 1795435457.1639652,
-    "seen": 1795436310.971916,
-    "ast_hash": "a73755c649bbaae22f76a92825b07fb1",
+    "mtime": 1795436453.2922356,
+    "seen": 1795436884.7710645,
+    "ast_hash": "471ee2d82738027a8b6dd7cb2c495de4",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-ese.jpg": {

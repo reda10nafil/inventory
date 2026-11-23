@@ -165,8 +165,9 @@ export default function AutomationBuilderScreen() {
             if (!value.ok) { Alert.alert('Errore', value.error); return; }
             config.fieldId = configField.id;
             config.fieldName = configField.name;
-            config.fieldValue = value.value;
-            label = `Imposta ${configField.name} = ${value.value}`;
+            // Nel passo il testo scritto (la forma da salvare la calcola l'esecuzione)
+            config.fieldValue = value.label;
+            label = `Imposta ${configField.name} = ${value.label}`;
         } else if (configStep.type === 'move_to') {
             config.useLastScannedLocation = useLast;
             if (!useLast) {

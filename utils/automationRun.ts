@@ -66,22 +66,27 @@ export function fieldOf<F extends CustomField>(config: RunStepConfig, fields: re
   return name ? list.find((f) => fold(f.name) === name) : undefined;
 }
 
-/** Il valore da salvare, nella forma di Modifica: il testo scritto (un numero deve essere un numero, con la virgola);
- *  per una valuta il numero in forma da macchina («12,5» → «12.5», «1.200» → «1200»), perché la Scheda lo legge con
- *  `Number` e «12,5» diventerebbe «NaN €»; per una scelta l'etichetta dell'opzione (si accetta anche il suo id). */
-export function fieldValueOf(field: CustomField, raw: string | undefined): { ok: true; value: string } | { ok: false; error: string } {
+/**
+ * Il valore di «Imposta Campo». `label` è quello da tenere nel passo e da mostrare (il testo scritto; per una scelta
+ * l'etichetta dell'opzione, che si accetta anche per id); `value` è quello da salvare in `customData`, nella forma di
+ * Modifica: il testo, ma per una valuta il numero in forma da macchina («12,5» → «12.5», «1.200» → «1200»), perché la
+ * Scheda lo legge con `Number` («12,5» diventerebbe «NaN €»). Nel passo resta il testo scritto: la forma da macchina,
+ * riletta, cambierebbe il numero («2.125» = 2125).
+ */
+export function fieldValueOf(field: CustomField, raw: string | undefined): { ok: true; value: string; label: string } | { ok: false; error: string } {
   const text = (raw ?? '').trim();
   if (!text) return { ok: false, error: `Scrivi il valore di «${field.name}».` };
   if (field.type === 'number' || field.type === 'currency') {
     const n = parseNumber(text);
     if (n == null) return { ok: false, error: `«${text}» non è un numero (per esempio 12,5).` };
-    return { ok: true, value: field.type === 'currency' ? String(n) : text };
+    return { ok: true, value: field.type === 'currency' ? String(n) : text, label: text };
   }
   if (field.type === 'single_choice') {
     const option = (field.options ?? []).find((o: { id: string; label?: string }) => o.id === text || fold(o.label) === fold(text));
-    return option ? { ok: true, value: option.label ?? option.id } : { ok: false, error: `«${text}» non è tra i valori di «${field.name}».` };
+    const label = option?.label ?? option?.id;
+    return label ? { ok: true, value: label, label } : { ok: false, error: `«${text}» non è tra i valori di «${field.name}».` };
   }
-  return { ok: true, value: text };
+  return { ok: true, value: text, label: text };
 }
 
 /** `customData` con il valore del campo: al suo posto se c'era, in fondo se no; la scheda del campo è quella di adesso. */
@@ -155,7 +160,7 @@ export function runStep(product: Product | undefined, step: RunStep, ctx: RunCon
       const v = fieldValueOf(field, config.fieldValue);
       if (!v.ok) return refuse(`${v.error} Poi ${EDIT}`);
       const current = (product.customData || []).find((d) => d.fieldSnapshot?.id === field.id);
-      const text = `✏️ ${field.name} = ${v.value}`;
+      const text = `✏️ ${field.name} = ${v.label}`;
       if (current && current.value === v.value) return { ok: true, op: 'patch', patch: {}, text };
       return { ok: true, op: 'patch', patch: { customData: withFieldValue(product.customData || [], field, v.value) }, text };
     }
