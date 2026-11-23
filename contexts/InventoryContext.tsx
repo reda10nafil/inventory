@@ -93,6 +93,9 @@ interface InventoryContextType {
   scanProduct: (id: string) => void;
   dismissAlert: (alertId: string) => void;
   getProductById: (id: string) => Product | undefined;
+  /** La copia più recente, con le scritture appena fatte (ESE): per chi scrive più volte di fila sullo stesso prodotto
+   *  nello stesso istante, come i passi in fila di un'automazione (due note non si cancellano, AU-V02). */
+  latestProduct: (id: string) => Product | undefined;
   getTimelineForProduct: (productId: string) => TimelineEvent[];
   filterProducts: (filter: 'all' | 'available' | 'sold' | 'alert' | 'trash') => Product[];
   getTrashProducts: () => Product[];
@@ -590,6 +593,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return products.find((p) => p.id === id);
   };
 
+  const latestProduct = (id: string) => productsRef.current.find((p) => p.id === id);
+
   const getProductBySku = (sku: string) => {
     return products.find((p) => p.sku === sku);
   };
@@ -692,6 +697,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         scanProduct,
         dismissAlert,
         getProductById,
+        latestProduct,
         getProductBySku,
         getTimelineForProduct,
         filterProducts,

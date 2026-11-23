@@ -446,6 +446,53 @@ const FETTE = {
       }],
     ],
   },
+  // ESE (ticket 29): costruttore con le frecce dei passi e «Imposta Campo», un rifiuto nell'esecuzione, l'automazione
+  // che non inizia con una lettura, l'Audit con 8 posizioni e la ricerca
+  ese: {
+    prepara: () => {
+      const st = (id, type, config, label) => ({ id, order: 0, type, config, label });
+      const auto = (id, name, steps) => ({ id, name, icon: 'flash-on', color: '#3B82F6', description: '', qrValue: `AUTO:${id}`, steps: steps.map((s, i) => ({ ...s, order: i })), createdAt: '2026-11-22T00:00:00Z', usageCount: 0 });
+      localStorage.setItem('@furinventory_custom_automations:local', JSON.stringify([
+        auto('auto_controllo', 'Controllo capi', [st('s1', 'scan_product', {}, 'Scansiona Prodotto'),
+          st('s2', 'add_tag', { tag: 'Controllato' }, 'Aggiungi Tag: Controllato'),
+          st('s3', 'set_field', { fieldId: 'field_cmp_cond', fieldName: 'Condizione', fieldValue: 'Buono' }, 'Imposta Condizione = Buono'),
+          st('s4', 'mark_sold', { pricePrompt: true }, 'Vendi (con conferma prezzo)')]),
+        auto('auto_fissa', 'Solo vetrina', [st('s1', 'move_to', { useLastScannedLocation: false, locationId: 'vetrina' }, 'Sposta in: Vetrina')]),
+      ]));
+      localStorage.setItem('furinventory_locations:local', JSON.stringify([
+        { id: 'magazzino', label: 'Magazzino', color: '#3B82F6' }, { id: 'vetrina', label: 'Vetrina', color: '#D4AF37' },
+        { id: 'stand_a', label: 'Stand A', color: '#10B981' }, { id: 'stand_b', label: 'Stand B', color: '#10B981' },
+        { id: 'stand_c', label: 'Stand C', color: '#10B981' }, { id: 'sartoria', label: 'Sartoria', color: '#8B5CF6' },
+        { id: 'deposito', label: 'Deposito', color: '#14B8A6' }, { id: 'ricevimento', label: 'Ricevimento', color: '#EC4899' },
+      ]));
+    },
+    schermate: [
+      ['costruttore', async (page) => {
+        await page.goto(`${APP}/automations/automation-flow/auto_controllo`); await page.waitForTimeout(1800);
+        // matita in alto (la seconda icona da sinistra nella barra), come in a3-builder
+        const top = await page.evaluate(() => [...document.querySelectorAll('[tabindex="0"]')].map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; }).filter((r) => r.w > 0 && r.y < 90).sort((a, b) => a.x - b.x));
+        await page.mouse.click(top[1].x, top[1].y); await page.waitForTimeout(1200);
+        await page.getByText('Flusso di lavoro', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['imposta-campo', async (page) => {
+        await page.getByText('Imposta Condizione = Buono', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(800);
+      }],
+      ['rifiuto', async (page) => {
+        await page.goto(`${APP}/automations/custom-runner/auto_controllo`); await page.waitForTimeout(1800);
+        await page.getByText('Scansiona Prodotto', { exact: true }).locator('visible=true').last().click(); await page.waitForTimeout(1000);
+        await page.getByText('Scrivi il codice', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+        await page.getByPlaceholder('Codice, SKU o link').locator('visible=true').first().fill('VOL-0087');
+        await page.getByText('Usa codice', { exact: true }).locator('visible=true').first().click(); // il rifiuto resta 2 s
+      }],
+      ['senza-lettura', async (page) => {
+        await page.goto(`${APP}/automations/custom-runner/auto_fissa`); await page.waitForTimeout(1800);
+      }],
+      ['audit-ricerca', async (page) => {
+        await page.goto(`${APP}/automations/audit`); await page.waitForTimeout(1800);
+        await page.getByPlaceholder('Cerca posizione').locator('visible=true').first().fill('stand'); await page.waitForTimeout(400);
+      }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

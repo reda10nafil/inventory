@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
-import { useAutomations, STEP_TYPE_META } from '../../../contexts/AutomationsContext';
+import { useAutomations, stepMeta } from '../../../contexts/AutomationsContext';
 import QRCode from 'react-native-qrcode-svg';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
@@ -122,7 +122,7 @@ export default function AutomationFlowScreen() {
                     <View style={styles.connectorLine} />
 
                     {automation.steps.map((step, index) => {
-                        const meta = STEP_TYPE_META[step.type];
+                        const meta = stepMeta(step.type);
                         const isLoop = step.type === 'scan_product' || step.type === 'scan_location';
                         return (
                             <View key={step.id}>

@@ -10,6 +10,8 @@ import { usage } from '../../../utils/productRules';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { locationShelvesError } from '../../../utils/shelves';
 import { codeCheck } from '../../../utils/codes';
+import { useAutomations } from '../../../contexts/AutomationsContext';
+import { automationsUsing, locationInUseText } from '../../../utils/automationRun';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -40,6 +42,7 @@ export default function ManageLocationsScreen() {
   const { locations, loading, addLocation, updateLocation, deleteLocation } = useLocations();
   const { products, libraries } = useInventory();
   const { shelves } = useShelves();
+  const { automations } = useAutomations();
 
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
@@ -132,9 +135,12 @@ export default function ManageLocationsScreen() {
       Alert.alert('Attenzione', withShelves);
       return;
     }
+    // ESE (AU-V05): si avvisa se un passo «Sposta in» di un'automazione va qui (dopo si rifiuta, non sposta nel vuoto);
+    // senza automazioni il testo è quello di prima
+    const inUse = locationInUseText(automationsUsing(automations, id).map((a) => a.name));
     Alert.alert(
       'Conferma Eliminazione',
-      'Eliminare questa posizione?',
+      inUse ? ['Eliminare questa posizione?', inUse].join(' ') : 'Eliminare questa posizione?',
       [
         { text: 'Annulla', style: 'cancel' },
         {

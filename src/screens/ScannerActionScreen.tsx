@@ -85,15 +85,11 @@ export default function ScannerActionScreen() {
         router.replace(`/product/${product.id}` as any);
       }
     } else if (type === 'location' && location) {
+      // La posizione letta è già scelta nell'Audit e nello Spostamento rapido (ESE, AU-N17)
       if (selectedAction === 'audit') {
-        // Navigate to audit with pre-selected location? 
-        // Currently audit doesn't take params, but we can make it smart or just open it.
-        // For now, let's just go to Audit screen, user can scan again or select.
-        // BETTER: Pass param to audit if we modify audit to accept it.
-        router.push('/automations/audit' as any);
-        // Note for future: Edit audit.tsx to accept ?locationId=...
+        router.push({ pathname: '/automations/audit', params: { locationId: location.id } } as any);
       } else if (selectedAction === 'batch-move') {
-        router.push('/automations/batch-move' as any);
+        router.push({ pathname: '/automations/batch-move', params: { locationId: location.id } } as any);
       }
     } else if (type === 'library' && library) {
       // Just view folder
@@ -121,7 +117,7 @@ export default function ScannerActionScreen() {
 
           <Text style={styles.sectionTitle}>Azioni disponibili</Text>
 
-          <Pressable style={styles.actionButton} onPress={() => router.push('/automations/batch-move')}>
+          <Pressable style={styles.actionButton} onPress={() => router.push({ pathname: '/automations/batch-move', params: { locationId: location.id } } as any)}>
             <View style={[styles.actionIcon, { backgroundColor: t.colors.accent }]}>
               <AppIcon name="move-to-inbox" size={24} color={t.colors.onAccent} />
             </View>
@@ -132,7 +128,7 @@ export default function ScannerActionScreen() {
             <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
           </Pressable>
 
-          <Pressable style={styles.actionButton} onPress={() => router.push('/automations/audit')}>
+          <Pressable style={styles.actionButton} onPress={() => router.push({ pathname: '/automations/audit', params: { locationId: location.id } } as any)}>
             <View style={[styles.actionIcon, { backgroundColor: '#F59E0B' }]}>
               <AppIcon name="fact-check" size={24} color={t.colors.onData} />
             </View>

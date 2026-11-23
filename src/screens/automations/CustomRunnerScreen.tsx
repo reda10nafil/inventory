@@ -1,24 +1,29 @@
 // FurInventory Pro - Custom Automation Runner (Execution Engine)
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+// ESE (ticket 29): un esecutore solo. Ogni passo d'azione chiede a `utils/automationRun.ts` (`runStep`) che cosa fare
+// sulla copia più recente del prodotto letto (`latestProduct`: due note in fila non si cancellano, AU-V02) e scrive
+// con le funzioni del contesto; il contatore cresce solo se l'operazione riesce, altrimenti il motivo si dice sul
+// lettore e si torna alla lettura del prodotto (AU-V03-V06, P17). Prezzo con la virgola (AU-V01); uso contato quando
+// l'automazione è caricata (AU-N13); automazione che non inizia con una lettura → «Modifica» (P16).
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
   Pressable,
-  Alert,
   Modal,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
-import {
-    useAutomations,
-    STEP_TYPE_META,
-    AutomationStep,
-} from '../../../contexts/AutomationsContext';
+import { useAutomations, stepMeta } from '../../../contexts/AutomationsContext';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { useCodeReader } from '../../../hooks/useCodeReader';
 import type { PlaceRead } from '../../../utils/codes';
+import {
+    isScanStep, loopIndex, resumeIndex, runStep, salePriceInput, startError, type StepOutcome,
+} from '../../../utils/automationRun';
+import { moveOf, refusalText, saleOf } from '../../../utils/inventoryOps';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
@@ -32,13 +37,13 @@ import { cardSurface } from '../../../components/ui/surfaces';
 export default function CustomRunnerScreen() {
     const styles = useStyles();
     const t = useTheme();
-    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { id } = useLocalSearchParams();
     const { getAutomationById, recordUsage } = useAutomations();
-    const { products, moveProduct, sellProduct, updateProduct } = useInventory();
+    const { products, moveProduct, sellProduct, updateProduct, latestProduct } = useInventory();
     const { sources, readProduct, readPlace, placeOf, choose, isText } = useCodeReader();
     const { locations } = useLocations();
+    const { customFields } = useCustomFields();
 
     const automation = getAutomationById(id as string);
 
@@ -54,108 +59,32 @@ export default function CustomRunnerScreen() {
     const [scannedProductId, setScannedProductId] = useState<string | null>(null);
     const [scannedLocationId, setScannedLocationId] = useState<string | null>(null);
 
-    // Sell modal
+    // Vendita con conferma del prezzo: il passo, il prodotto e la posizione letta che la aspettano
     const [showPriceModal, setShowPriceModal] = useState(false);
     const [priceInput, setPriceInput] = useState('');
-    const [pendingSellProductId, setPendingSellProductId] = useState<string | null>(null);
+    const [priceError, setPriceError] = useState<string | null>(null);
+    const pendingSale = useRef<{ index: number; productId: string; locationId: string | null } | null>(null);
 
-    // Record usage on mount
+    // Uso contato una volta per apertura, quando l'automazione è caricata (AU-N13: aperta dall'indirizzo o ricaricando,
+    // prima si contava al montaggio, quando l'elenco non era ancora letto, e l'uso restava 0)
+    const usageRecorded = useRef<string | null>(null);
     useEffect(() => {
-        if (automation) recordUsage(automation.id);
-    }, []);
-
+        if (!automation || usageRecorded.current === automation.id) return;
+        usageRecorded.current = automation.id;
+        recordUsage(automation.id);
+    }, [automation?.id]);
 
     // Gli hook stanno tutti prima del ritorno «Automazione non trovata» (prima `useCallback` e `useState` venivano
     // dopo e la schermata andava in errore aperta da indirizzo o ricaricata).
     const steps = automation?.steps ?? [];
     const currentStep = steps[currentStepIndex];
     const isComplete = currentStepIndex >= steps.length;
-
-    // ── Execute automatic steps ─────────────────────────────
-    const executeAutoStep = useCallback((step: AutomationStep) => {
-        if (step.type === 'move_to') {
-            if (!scannedProductId) {
-                showFeedback('⚠️ Nessun prodotto scansionato', true);
-                return false;
-            }
-            const targetLocation = step.config.useLastScannedLocation
-                ? scannedLocationId
-                : step.config.locationId;
-
-            if (!targetLocation) {
-                showFeedback('⚠️ Nessuna posizione trovata', true);
-                return false;
-            }
-
-            moveProduct(scannedProductId, targetLocation);
-            const loc = locations.find(l => l.id === targetLocation);
-            showFeedback(`📦 Spostato in ${loc?.label || targetLocation}`);
-            setCompletedCount(c => c + 1);
-            return true;
-
-        } else if (step.type === 'add_tag') {
-            if (!scannedProductId) {
-                showFeedback('⚠️ Nessun prodotto scansionato', true);
-                return false;
-            }
-            const product = products.find(p => p.id === scannedProductId);
-            if (!product) return false;
-
-            const tag = step.config.tag || 'Tagged';
-            const currentNotes = product.technicalNotes || '';
-            if (!currentNotes.includes(`[${tag}]`)) {
-                const newNotes = currentNotes ? `${currentNotes}\n[${tag}]` : `[${tag}]`;
-                updateProduct(product.id, { technicalNotes: newNotes });
-            }
-            showFeedback(`🏷️ Tag "${tag}" aggiunto`);
-            setCompletedCount(c => c + 1);
-            return true;
-
-        } else if (step.type === 'set_field') {
-            if (!scannedProductId) {
-                showFeedback('⚠️ Nessun prodotto scansionato', true);
-                return false;
-            }
-            const fieldName = step.config.fieldName || '';
-            const fieldValue = step.config.fieldValue || '';
-            const product = products.find(p => p.id === scannedProductId);
-            if (!product) return false;
-
-            const notes = product.technicalNotes || '';
-            const entry = `[${fieldName}=${fieldValue}]`;
-            if (!notes.includes(entry)) {
-                updateProduct(product.id, { technicalNotes: notes ? `${notes}\n${entry}` : entry });
-            }
-            showFeedback(`✏️ ${fieldName} = ${fieldValue}`);
-            setCompletedCount(c => c + 1);
-            return true;
-
-        } else if (step.type === 'mark_sold') {
-            if (!scannedProductId) {
-                showFeedback('⚠️ Nessun prodotto scansionato', true);
-                return false;
-            }
-            if (step.config.pricePrompt) {
-                // Show price modal
-                const product = products.find(p => p.id === scannedProductId);
-                setPriceInput(product?.sellPrice?.toString() || '');
-                setPendingSellProductId(scannedProductId);
-                setShowPriceModal(true);
-                return false; // Don't auto-advance — modal will handle it
-            } else {
-                sellProduct(scannedProductId);
-                showFeedback('💰 Venduto!');
-                setCompletedCount(c => c + 1);
-                return true;
-            }
-        }
-        return false;
-    }, [scannedProductId, scannedLocationId, products, locations]);
+    const blocked = automation ? startError(steps) : null;
 
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
     // ── Handle scan result ──────────────────────────────────
-    const handleScan = ({ type, data }: { type: string; data: string }) => {
+    const handleScan = ({ data }: { type: string; data: string }) => {
         if (!currentStep) return;
 
         // Clear pending error
@@ -176,7 +105,7 @@ export default function CustomRunnerScreen() {
 
                 // Auto-execute subsequent auto-steps
                 setTimeout(() => {
-                    advanceToNextScanStep(currentStepIndex + 1, product.id, scannedLocationId);
+                    runFrom(currentStepIndex + 1, product.id, scannedLocationId);
                 }, 300);
             };
             if (read.status === 'product') {
@@ -211,7 +140,7 @@ export default function CustomRunnerScreen() {
                 setShowScanner(false);
 
                 setTimeout(() => {
-                    advanceToNextScanStep(currentStepIndex + 1, scannedProductId, loc.id);
+                    runFrom(currentStepIndex + 1, scannedProductId, loc.id);
                 }, 300);
             };
             const place = readPlace(data);
@@ -230,75 +159,68 @@ export default function CustomRunnerScreen() {
         }
     };
 
-    // ── Advance through auto-steps until next scan or end ───
-    const advanceToNextScanStep = (fromIndex: number, productId: string | null, locationId: string | null) => {
-        let idx = fromIndex;
-        // Temporarily update context for auto-execution
-        let tmpProductId = productId;
-        let tmpLocationId = locationId;
+    // ── Rifiuto: il motivo sul lettore, e si torna alla lettura del prodotto (la catena di questo prodotto si ferma)
+    const refuse = (text: string, at: number) => {
+        soundService.playBlockingError();
+        showFeedback(`❌ ${text}`, true);
+        setCurrentStepIndex(resumeIndex(steps, at));
+    };
 
-        while (idx < steps.length) {
+    /** Scrive un passo riuscito con le funzioni del contesto; il motivo se il contesto lo rifiuta comunque. */
+    const apply = (out: Extract<StepOutcome, { ok: true }>, productId: string): string | null => {
+        const product = latestProduct(productId);
+        if (out.op === 'patch') {
+            if (Object.keys(out.patch).length > 0) updateProduct(productId, out.patch);
+            return null;
+        }
+        if (out.op === 'move') {
+            if (moveProduct(productId, out.to)) return null;
+            const r = moveOf(product, out.to, '');
+            return refusalText(r.ok ? 'not_allowed' : r.reason, product?.sku);
+        }
+        if (out.op === 'sell') {
+            if (sellProduct(productId)) return null;
+            const r = saleOf(product, undefined, 1, '');
+            return refusalText(r.ok ? 'not_allowed' : r.reason, product?.sku);
+        }
+        return null;
+    };
+
+    // ── Passi d'azione in fila fino alla lettura dopo (o alla fine) ───
+    const runFrom = (fromIndex: number, productId: string | null, locationId: string | null) => {
+        for (let idx = fromIndex; idx < steps.length; idx += 1) {
             const step = steps[idx];
-            if (step.type === 'scan_product' || step.type === 'scan_location') {
+            if (isScanStep(step)) {
                 // Reached a scan step — stop and wait for user
                 setCurrentStepIndex(idx);
                 return;
             }
-
-            // Execute auto step with current context
-            const context = { scannedProductId: tmpProductId, scannedLocationId: tmpLocationId };
-
-            // Quick inline execution
-            if (step.type === 'move_to') {
-                if (tmpProductId) {
-                    const targetLoc = step.config.useLastScannedLocation ? tmpLocationId : step.config.locationId;
-                    if (targetLoc) {
-                        moveProduct(tmpProductId, targetLoc);
-                        setCompletedCount(c => c + 1);
-                    }
-                }
-            } else if (step.type === 'add_tag' && tmpProductId) {
-                const product = products.find(p => p.id === tmpProductId);
-                if (product) {
-                    const tag = step.config.tag || '';
-                    const notes = product.technicalNotes || '';
-                    if (!notes.includes(`[${tag}]`)) {
-                        updateProduct(product.id, { technicalNotes: notes ? `${notes}\n[${tag}]` : `[${tag}]` });
-                    }
-                    setCompletedCount(c => c + 1);
-                }
-            } else if (step.type === 'set_field' && tmpProductId) {
-                const product = products.find(p => p.id === tmpProductId);
-                if (product) {
-                    const notes = product.technicalNotes || '';
-                    const entry = `[${step.config.fieldName || ''}=${step.config.fieldValue || ''}]`;
-                    if (!notes.includes(entry)) {
-                        updateProduct(product.id, { technicalNotes: notes ? `${notes}\n${entry}` : entry });
-                    }
-                    setCompletedCount(c => c + 1);
-                }
-            } else if (step.type === 'mark_sold' && tmpProductId) {
-                if (step.config.pricePrompt) {
-                    setCurrentStepIndex(idx);
-                    setPendingSellProductId(tmpProductId);
-                    const p = products.find(pp => pp.id === tmpProductId);
-                    setPriceInput(p?.sellPrice?.toString() || '');
-                    setShowPriceModal(true);
-                    return;
-                } else {
-                    sellProduct(tmpProductId);
-                    setCompletedCount(c => c + 1);
-                }
+            const product = productId ? latestProduct(productId) : undefined;
+            const out = runStep(product, step, { locationId, locations, fields: customFields, now: new Date().toISOString() });
+            if (!out.ok) {
+                refuse(out.refusal, idx);
+                return;
             }
-            idx++;
+            if (out.op === 'ask_price') {
+                pendingSale.current = { index: idx, productId: productId as string, locationId };
+                setCurrentStepIndex(idx);
+                setPriceInput(out.proposal);
+                setPriceError(null);
+                setShowPriceModal(true);
+                return;
+            }
+            const refused = apply(out, productId as string);
+            if (refused) {
+                refuse(refused, idx);
+                return;
+            }
+            setCompletedCount((c) => c + 1);
         }
 
-        // We've reached the end of steps — check if there's a scan_product loop
-        // If last scan was scan_product, go back to it (loop behavior)
-        const lastScanIdx = [...steps].reverse().findIndex(s => s.type === 'scan_product');
-        if (lastScanIdx !== -1) {
-            const loopBackIdx = steps.length - 1 - lastScanIdx;
-            setCurrentStepIndex(loopBackIdx);
+        // Fine del flusso: si torna all'ultimo «Scansiona Prodotto» (lettura in fila), altrimenti è completata
+        const loop = loopIndex(steps);
+        if (loop !== -1) {
+            setCurrentStepIndex(loop);
             soundService.playSuccess();
             showFeedback(`✅ Fatto! Scansiona il prossimo...`);
         } else {
@@ -306,20 +228,45 @@ export default function CustomRunnerScreen() {
         }
     };
 
-    const confirmSale = () => {
-        if (!pendingSellProductId) return;
-        const price = priceInput ? parseFloat(priceInput) : undefined;
-        sellProduct(pendingSellProductId, price);
-        soundService.playSuccess();
-        showFeedback(`💰 Venduto! ${formatPrice(price || 0)}`);
-        setCompletedCount(c => c + 1);
+    const closePriceModal = () => {
         setShowPriceModal(false);
-        setPendingSellProductId(null);
+        setPriceError(null);
+        pendingSale.current = null;
+    };
+
+    const confirmSale = () => {
+        const pending = pendingSale.current;
+        if (!pending) return;
+        // «1300,50» = 1300,5; «5.900» = 5900; vuoto = listino; un prezzo sbagliato non vende (AU-V01)
+        const price = salePriceInput(priceInput);
+        if (!price.ok) {
+            setPriceError(price.refusal);
+            return;
+        }
+        const product = latestProduct(pending.productId);
+        closePriceModal();
+        if (!sellProduct(pending.productId, price.price)) {
+            const r = saleOf(product, price.price, 1, '');
+            refuse(refusalText(r.ok ? 'not_allowed' : r.reason, product?.sku), pending.index);
+            return;
+        }
+        soundService.playSuccess();
+        showFeedback(`💰 Venduto! ${formatPrice(price.price ?? product?.sellPrice ?? 0)}`);
+        setCompletedCount(c => c + 1);
 
         // Continue advancing
         setTimeout(() => {
-            advanceToNextScanStep(currentStepIndex + 1, scannedProductId, scannedLocationId);
+            runFrom(pending.index + 1, pending.productId, pending.locationId);
         }, 300);
+    };
+
+    // «Annulla» o tocco fuori dalla finestra: nessuna vendita, si torna alla lettura (prima il passo restava fermo
+    // su «Vendi» senza pulsanti)
+    const cancelSale = () => {
+        const pending = pendingSale.current;
+        closePriceModal();
+        if (pending) setCurrentStepIndex(resumeIndex(steps, pending.index));
+        showFeedback('Vendita annullata');
     };
 
     // ── Feedback overlay ────────────────────────────────────
@@ -343,7 +290,7 @@ export default function CustomRunnerScreen() {
     }
 
     // ── Render ──────────────────────────────────────────────
-    const meta = currentStep ? STEP_TYPE_META[currentStep.type] : null;
+    const meta = currentStep ? stepMeta(currentStep.type) : null;
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
@@ -363,20 +310,39 @@ export default function CustomRunnerScreen() {
             </View>
 
             {/* Progress bar */}
-            <View style={styles.progressBar}>
-                {steps.map((_, i) => (
-                    <View
-                        key={i}
-                        style={[
-                            styles.progressDot,
-                            i < currentStepIndex && { backgroundColor: t.colors.success },
-                            i === currentStepIndex && { backgroundColor: automation.color, transform: [{ scale: 1.3 }] },
-                        ]}
-                    />
-                ))}
-            </View>
+            {!blocked && (
+                <View style={styles.progressBar}>
+                    {steps.map((_, i) => (
+                        <View
+                            key={i}
+                            style={[
+                                styles.progressDot,
+                                i < currentStepIndex && { backgroundColor: t.colors.success },
+                                i === currentStepIndex && { backgroundColor: automation.color, transform: [{ scale: 1.3 }] },
+                            ]}
+                        />
+                    ))}
+                </View>
+            )}
 
-            {isComplete ? (
+            {blocked ? (
+                /* ── Automazione salvata che non si può avviare (P16): si dice e si apre il costruttore ── */
+                <View style={styles.completedContainer}>
+                    <AppIcon name="report-problem" size={64} color={t.colors.warning} />
+                    <Text style={styles.blockedTitle}>{blocked}</Text>
+                    <Text style={styles.completedSub}>Il primo passo deve essere «Scansiona Prodotto» o «Scansiona Posizione».</Text>
+                    <Pressable
+                        style={styles.doneButton}
+                        onPress={() => router.push({ pathname: '/settings/automation-builder', params: { editId: automation.id } } as any)}
+                    >
+                        <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
+                        <Text style={styles.doneButtonText}>Modifica</Text>
+                    </Pressable>
+                    <Pressable style={{ marginTop: 16, padding: 12 }} onPress={() => router.back()}>
+                        <Text style={{ color: t.colors.accentInk, fontSize: 16 }}>Chiudi</Text>
+                    </Pressable>
+                </View>
+            ) : isComplete ? (
                 /* ── COMPLETED STATE ── */
                 <View style={styles.completedContainer}>
                     <AppIcon name="check-circle" size={80} color={t.colors.success} />
@@ -416,8 +382,8 @@ export default function CustomRunnerScreen() {
                     {/* Mini flow (remaining steps) */}
                     <View style={styles.miniFlow}>
                         <Text style={styles.miniFlowLabel}>Prossimi step</Text>
-                        {steps.slice(currentStepIndex + 1, currentStepIndex + 4).map((s, i) => {
-                            const m = STEP_TYPE_META[s.type];
+                        {steps.slice(currentStepIndex + 1, currentStepIndex + 4).map((s) => {
+                            const m = stepMeta(s.type);
                             return (
                                 <View key={s.id} style={styles.miniFlowItem}>
                                     <View style={[styles.miniFlowDot, { backgroundColor: m.color }]} />
@@ -456,22 +422,27 @@ export default function CustomRunnerScreen() {
             )}
 
             {/* ── Price Modal ── */}
-            <Modal visible={showPriceModal} transparent animationType="slide" onRequestClose={() => setShowPriceModal(false)}>
-                <Pressable style={styles.modalOverlay} onPress={() => setShowPriceModal(false)}>
+            <Modal visible={showPriceModal} transparent animationType="slide" onRequestClose={cancelSale}>
+                <Pressable style={styles.modalOverlay} onPress={cancelSale}>
                     <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
                         <Text style={styles.modalTitle}>Prezzo Vendita</Text>
                         <TextInput
                             style={styles.priceInput}
                             keyboardType="numeric"
                             value={priceInput}
-                            onChangeText={setPriceInput}
+                            onChangeText={(v) => { setPriceInput(v); setPriceError(null); }}
+                            onSubmitEditing={confirmSale}
                             placeholder="0.00"
                             placeholderTextColor={t.colors.placeholder}
                             autoFocus
                         />
+                        {priceError && <Text style={styles.priceError}>{priceError}</Text>}
                         <Pressable style={styles.confirmButton} onPress={confirmSale}>
                             <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
                             <Text style={styles.confirmButtonText}>CONFERMA</Text>
+                        </Pressable>
+                        <Pressable style={styles.cancelButton} onPress={cancelSale}>
+                            <Text style={styles.cancelButtonText}>Annulla</Text>
                         </Pressable>
                     </Pressable>
                 </Pressable>
@@ -519,7 +490,8 @@ const useStyles = makeStyles((t) => ({
     miniFlowMore: { fontSize: 13, color: t.colors.textSecondary, marginTop: 4 },
     completedContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
     completedTitle: { fontSize: 24, fontWeight: 'bold', color: t.colors.textPrimary, marginTop: 20 },
-    completedSub: { fontSize: 16, color: t.colors.textSecondary, marginTop: 8 },
+    completedSub: { fontSize: 16, color: t.colors.textSecondary, marginTop: 8, textAlign: 'center' },
+    blockedTitle: { fontSize: 20, fontWeight: 'bold', color: t.colors.textPrimary, marginTop: 20, textAlign: 'center' },
     doneButton: {
         marginTop: 32, paddingVertical: 16, paddingHorizontal: 40, borderRadius: t.radius.button,
         backgroundColor: t.colors.button, overflow: 'hidden', ...t.shadows.button,
@@ -553,4 +525,7 @@ const useStyles = makeStyles((t) => ({
         backgroundColor: t.colors.button, overflow: 'hidden', ...t.shadows.button,
     },
     confirmButtonText: { color: t.colors.onButton, fontSize: 16, fontWeight: 'bold' },
+    priceError: { color: t.colors.error, fontSize: 14, textAlign: 'center', marginTop: -8, marginBottom: 16 },
+    cancelButton: { marginTop: 12, minHeight: 44, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center' },
+    cancelButtonText: { color: t.colors.accentInk, fontSize: 16, fontWeight: '600' },
 }));

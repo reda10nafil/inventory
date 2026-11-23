@@ -261,9 +261,9 @@ async function cfE2(h) {
   return { ok, ...out };
 }
 
-// CF-E3 (parte COD): il link di VIS-0142 scritto nel lettore («Scrivi il codice») è riconosciuto nelle 5 automazioni
-// (Vendita flash, Tagging, Spostamento rapido, Audit, Esecuzione); PUZ-0012 nel cestino è rifiutato in tutte con il
-// messaggio e i suoi dati non cambiano. Resta a ESE l'esecuzione corretta (prezzi, note in fila, rifiuti detti).
+// CF-E3 (parti COD ed ESE): il link di VIS-0142 scritto nel lettore («Scrivi il codice») è riconosciuto nelle 5
+// automazioni (Vendita flash, Tagging, Spostamento rapido, Audit, Esecuzione); PUZ-0012 nel cestino è rifiutato in tutte
+// con il messaggio e i suoi dati non cambiano. ESE: nell'esecuzione i rifiuti si dicono e non contano un'azione.
 async function cfE3(h) {
   const { page } = h;
   await c.prepara(h, { cestino: true });
@@ -309,10 +309,93 @@ async function cfE3(h) {
   await page.waitForTimeout(2200);
   await c.leggi(h, link, { wait: 1200 });
   out.riconosciuto.esecuzione = ((await c.prodotto(h, 'VIS-0142', 800)).technicalNotes || '').includes('[Visto]');
+  // Parte ESE: nell'esecuzione un rifiuto si dice e non si conta. Il cestino prima del link: 1 azione sola (il tag di
+  // VIS-0142); un capo già venduto (VOL-0087) non apre la finestra del prezzo, il motivo si legge e il contatore resta 0
+  const azioni = async () => (await c.testo(h)).match(/(\d+) azioni completate/)?.[1] ?? null;
+  out.ese = { azioniDopoCestinoELink: await azioni() };
+  await page.evaluate(([k]) => {
+    const list = JSON.parse(localStorage.getItem(k) || '[]');
+    list.push({ id: 'auto_vendi', name: 'auto_vendi', icon: 'sell', color: '#EF4444', description: '', qrValue: 'AUTO:auto_vendi', createdAt: '2026-11-23T00:00:00Z', usageCount: 0,
+      steps: [{ id: 's1', order: 0, type: 'scan_product', config: {}, label: 'Scansiona Prodotto' }, { id: 's2', order: 1, type: 'mark_sold', config: { pricePrompt: true }, label: 'Vendi (con conferma prezzo)' }] });
+    localStorage.setItem(k, JSON.stringify(list));
+  }, [c.AK]);
+  const vol0 = await c.prodotto(h, 'VOL-0087');
+  await h.go('automations/custom-runner/auto_vendi'); await c.ultima(h, 'Scansiona Prodotto');
+  await c.leggi(h, 'VOL-0087', { wait: 700 });
+  out.ese.finestraPrezzo = (await page.getByPlaceholder('0.00').locator('visible=true').count()) > 0;
+  out.ese.motivo = /VOL-0087 risulta già venduto/.test(await c.testo(h));
+  out.ese.azioniDopoVenduto = await azioni();
+  const vol = await c.prodotto(h, 'VOL-0087', 500);
+  out.ese.volInvariato = vol.soldAt === vol0.soldAt && vol.sellPrice === vol0.sellPrice;
   const puz = await c.prodotto(h, 'PUZ-0012');
   out.puzInvariato = puz.technicalNotes === puz0.technicalNotes && puz.location === puz0.location && puz.status === puz0.status;
-  const ok = Object.values(out.riconosciuto).every(Boolean) && Object.values(out.cestino).every(Boolean) && out.puzInvariato;
-  return { ok, ...out, daFare: 'ESE: esecuzione corretta delle automazioni (AU-V01-V06, AU-V08, AU-V09, AU-V12, AU-N13, AU-N17, P16, P17)' };
+  const okEse = out.ese.azioniDopoCestinoELink === '1' && !out.ese.finestraPrezzo && out.ese.motivo && out.ese.azioniDopoVenduto === '0' && out.ese.volInvariato;
+  const ok = Object.values(out.riconosciuto).every(Boolean) && Object.values(out.cestino).every(Boolean) && out.puzInvariato && okEse;
+  return { ok, ...out };
+}
+
+// CF-F7 (ESE): un'automazione personale fatta dal costruttore come l'utente, [Scansiona Prodotto, Tag «Controllato»,
+// Tag «Da Pulire», Imposta Campo Condizione = Buono, Vendi con conferma], eseguita su AST-0033 con il prezzo «1300,50»
+// scritto con la virgola. Tre note presenti (la nota che AST-0033 aveva già e i due tag), Condizione in `customData` con
+// la scheda del campo, prezzo 1300,5 nel prodotto e nell'evento «venduto», 4 azioni. Poi un'automazione che non inizia
+// con una lettura non si salva («Flusso da correggere»).
+async function cfF7(h) {
+  const { page } = h;
+  const visti = [];
+  page.on('dialog', (d) => visti.push(d.message().replace(/\s+/g, ' ')));
+  const nuovoPasso = async (tipo) => { await h.click('Aggiungi Step'); await c.ultima(h, tipo); };
+  await h.tab('Automazioni');
+  await h.click('Crea Nuova');
+  await page.getByPlaceholder('Es. Scarico Merci').fill('Controllo e vendita');
+  await nuovoPasso('Scansiona Prodotto');
+  for (const tag of ['Controllato', 'Da Pulire']) {
+    await nuovoPasso('Aggiungi Tag');
+    await page.getByPlaceholder('Es. Da Pulire').fill(tag);
+    await c.ultima(h, 'Aggiungi');
+  }
+  await nuovoPasso('Imposta Campo');
+  await c.ultima(h, 'Condizione');
+  await c.ultima(h, 'Buono');
+  await c.ultima(h, 'Aggiungi');
+  await nuovoPasso('Segna Venduto'); // «Chiedi conferma prezzo» già spuntata
+  await c.ultima(h, 'Aggiungi');
+  await h.click('Salva');
+  const salvate = (await h.store(c.AK)) || [];
+  const passi = (salvate[0]?.steps || []).map((s) => s.label);
+  // Esecuzione su AST-0033 (In sartoria, con una nota)
+  const ast0 = await c.prodotto(h, 'AST-0033');
+  await h.click('Controllo e vendita');
+  await h.click('Avvia Automazione');
+  await c.ultima(h, 'Scansiona Prodotto');
+  await c.leggi(h, 'AST-0033', { wait: 1500 });
+  await page.getByPlaceholder('0.00').locator('visible=true').first().fill('1300,50');
+  await h.click('CONFERMA');
+  await page.waitForTimeout(1200);
+  const azioni = (await c.testo(h)).match(/(\d+) azioni completate/)?.[1] ?? null;
+  const ast = await c.prodotto(h, 'AST-0033', 600);
+  const cond = (ast.customData || []).find((d) => d.fieldSnapshot?.id === 'field_cmp_cond');
+  const venduto = (await c.eventi(h, ast.id, 'sold')).map((e) => e.details.finalPrice);
+  const note = (ast.technicalNotes || '').split('\n');
+  // Automazione senza lettura iniziale: non si salva
+  await h.go('automations');
+  await h.click('Crea Nuova');
+  await page.getByPlaceholder('Es. Scarico Merci').fill('Senza lettura');
+  await nuovoPasso('Aggiungi Tag');
+  await page.getByPlaceholder('Es. Da Pulire').fill('Visto');
+  await c.ultima(h, 'Aggiungi');
+  await h.click('Salva');
+  const dopo = ((await h.store(c.AK)) || []).map((a) => a.name);
+  const out = {
+    passi, note, condizione: cond?.value ?? null, schedaCondizione: cond?.fieldSnapshot?.name ?? null, sellPrice: ast.sellPrice,
+    status: ast.status, venduto, azioni, salvateDopoSenzaLettura: dopo,
+    flussoDaCorreggere: visti.some((m) => /Flusso da correggere Il primo passo deve essere una lettura/.test(m)),
+  };
+  const ok = passi.join('|') === 'Scansiona Prodotto|Aggiungi Tag: Controllato|Aggiungi Tag: Da Pulire|Imposta Condizione = Buono|Vendi (con conferma prezzo)'
+    && note.length === 3 && note[0] === ast0.technicalNotes && note[1] === '[Controllato]' && note[2] === '[Da Pulire]'
+    && out.condizione === 'Buono' && out.schedaCondizione === 'Condizione' && ast.sellPrice === 1300.5 && ast.status === 'sold'
+    && venduto.length === 1 && venduto[0] === 1300.5 && azioni === '4'
+    && dopo.length === 1 && dopo[0] === 'Controllo e vendita' && out.flussoDaCorreggere;
+  return { ok, ...out };
 }
 
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
@@ -346,7 +429,7 @@ const PASSI = [
   ['CF-F4', 'Conta col lettore; Audit uscendo e rientrando', 'CON'],
   ['CF-F5', '«Da riordinare» › «Ricevi»', 'RIO'],
   ['CF-F6', 'Reso di un articolo a quantità e di un pezzo unico venduto', 'RES'],
-  ['CF-F7', 'Automazione personale [Scansiona, Tag, Tag, Imposta campo, Vendi]', 'ESE'],
+  ['CF-F7', 'Automazione personale [Scansiona, Tag, Tag, Imposta campo, Vendi]', 'ESE', cfF7],
   ['CF-F8', 'Costruttore: passi Carico e «Chiedi conferma», riordino', 'FLU2, ESE'],
   ['CF-G1', 'Esporta inventario: BOM, una colonna per campo, avviso foto', 'EXP'],
   ['CF-G2', 'Import di un CSV «;» con abbinamento, «+ Crea campo», rifiutate', 'IMP'],

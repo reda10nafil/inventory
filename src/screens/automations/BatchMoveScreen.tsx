@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from '../../navigation/compat';
+import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import { soundService } from '../../../services/SoundService';
 // import { Audio } from 'expo-av'; // Removed for now to simplify dependencies
 import { useInventory } from '../../../contexts/InventoryContext';
@@ -126,6 +126,18 @@ export default function BatchMoveScreen() {
         setStep('scan_products');
         playSuccessSound();
     };
+
+    // Dall'Azione rapida di una posizione (ESE, AU-N17): quella è la destinazione, con il controllo della capienza;
+    // una volta, a dati caricati
+    const { locationId } = useLocalSearchParams<{ locationId?: string }>();
+    const autoStarted = useRef(false);
+    useEffect(() => {
+        if (autoStarted.current || !locationId || step !== 'scan_location' || products.length === 0) return;
+        const loc = locations.find((l) => l.id === locationId);
+        if (!loc) return;
+        autoStarted.current = true;
+        checkCapacityAndSetLocation(loc);
+    }, [locationId, locations, products]);
 
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 

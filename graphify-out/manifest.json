@@ -270,9 +270,9 @@
     "semantic_hash": ""
   },
   "contexts/AutomationsContext.tsx": {
-    "mtime": 1795315119.8933437,
-    "seen": 1795323475.1485813,
-    "ast_hash": "232f869a51230085e2129533a7a1fad4",
+    "mtime": 1795431381.023197,
+    "seen": 1795434417.6142735,
+    "ast_hash": "903bcc3bee27e13c44e58fa955ee2c6e",
     "semantic_hash": ""
   },
   "contexts/CustomFieldsContext.tsx": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "contexts/InventoryContext.tsx": {
-    "mtime": 1795382184.5667667,
-    "seen": 1795403667.194937,
-    "ast_hash": "34bf24858427610f3684ddddca556a2c",
+    "mtime": 1795431388.492883,
+    "seen": 1795434417.6142735,
+    "ast_hash": "dcfc6f91580931662d32d5e5e1ae0dd5",
     "semantic_hash": ""
   },
   "contexts/LayoutContext.tsx": {
@@ -1794,9 +1794,9 @@
     "semantic_hash": ""
   },
   "src/screens/ScannerActionScreen.tsx": {
-    "mtime": 1795382550.0421698,
-    "seen": 1795403667.2066674,
-    "ast_hash": "b953fed9319f4ee20900e69c3a2f3f47",
+    "mtime": 1795431676.0879152,
+    "seen": 1795434417.630784,
+    "ast_hash": "0b51f8147690c58f5ac98993e33a836e",
     "semantic_hash": ""
   },
   "src/screens/ScannerScreen.tsx": {
@@ -1806,33 +1806,33 @@
     "semantic_hash": ""
   },
   "src/screens/automations/AuditScreen.tsx": {
-    "mtime": 1795424427.1427865,
-    "seen": 1795428043.1667693,
-    "ast_hash": "f061193b0df7f580556d264171db7807",
+    "mtime": 1795431644.5902314,
+    "seen": 1795434417.630784,
+    "ast_hash": "7ed270f5b45ddad53a653c211c3d13f4",
     "semantic_hash": ""
   },
   "src/screens/automations/AutomationFlowScreen.tsx": {
-    "mtime": 1795321060.6538477,
-    "seen": 1795323475.1485813,
-    "ast_hash": "92987f5f654a3a43b717d921ff348d70",
+    "mtime": 1795431499.534914,
+    "seen": 1795434417.630784,
+    "ast_hash": "9cce619c856f85adcfe4822050cbe71a",
     "semantic_hash": ""
   },
   "src/screens/automations/BatchMoveScreen.tsx": {
-    "mtime": 1795428348.6790502,
-    "seen": 1795428974.2029462,
-    "ast_hash": "9daff80e8ffad5ac7a0abb2086e32b77",
+    "mtime": 1795431664.3873546,
+    "seen": 1795434417.630784,
+    "ast_hash": "7c1cfe1724b932b148805616a39686e9",
     "semantic_hash": ""
   },
   "src/screens/automations/CustomRunnerScreen.tsx": {
-    "mtime": 1795428348.6800504,
-    "seen": 1795428974.2029462,
-    "ast_hash": "fc4c5b8175fb1cef312af38eb40c4c69",
+    "mtime": 1795431490.9473166,
+    "seen": 1795434417.630784,
+    "ast_hash": "a399e30be64b02ea5bec240820e4dad9",
     "semantic_hash": ""
   },
   "src/screens/automations/QuickTagScreen.tsx": {
-    "mtime": 1795428348.6790502,
-    "seen": 1795428974.2029462,
-    "ast_hash": "6b78a051eb06e1ebf20e7bb1dfd6c1c1",
+    "mtime": 1795431738.2590394,
+    "seen": 1795434417.630784,
+    "ast_hash": "8110ea32d0b1f0d43a26911cdf98ac73",
     "semantic_hash": ""
   },
   "src/screens/automations/ScanSellScreen.tsx": {
@@ -1854,9 +1854,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
-    "mtime": 1795321330.4349308,
-    "seen": 1795323475.1485813,
-    "ast_hash": "32c37db2c27e27b4f26e8ff30578e5e1",
+    "mtime": 1795432689.6031923,
+    "seen": 1795434417.630784,
+    "ast_hash": "6fd5e2270618f2b3e62612802e69f076",
     "semantic_hash": ""
   },
   "src/screens/settings/FieldsScreen.tsx": {
@@ -1890,9 +1890,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/LocationsScreen.tsx": {
-    "mtime": 1795425154.0769422,
-    "seen": 1795428043.1667693,
-    "ast_hash": "cd751d8f82fad104dc8eab0016ba0fda",
+    "mtime": 1795431707.0939763,
+    "seen": 1795434417.6317842,
+    "ast_hash": "cad43217acf99dcc2babf0b9aa1519e4",
     "semantic_hash": ""
   },
   "src/screens/settings/SectorTemplatesScreen.tsx": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795428960.8114686,
-    "seen": 1795428974.22112,
-    "ast_hash": "ef7aebf47704a4bab44bd356bb356449",
+    "mtime": 1795434082.8808177,
+    "seen": 1795434417.6509342,
+    "ast_hash": "9ccf2e864dd1e9ceeba065f4269f0f8d",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795428420.1116512,
-    "seen": 1795428974.22112,
-    "ast_hash": "b658c9af1ba74b3b01bc16b8d04a2170",
+    "mtime": 1795432367.5479474,
+    "seen": 1795434417.6509342,
+    "ast_hash": "42e2f70dc6797f3717165b38889266aa",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795428415.9942074,
-    "seen": 1795428974.22212,
-    "ast_hash": "5bdbcb57eee12aec0c24973e7ab325cb",
+    "mtime": 1795432469.5346925,
+    "seen": 1795434417.6519337,
+    "ast_hash": "3372a0789cf59ef128e608b1fb79089f",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3498,9 +3498,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-fette.cjs": {
-    "mtime": 1795425000.793091,
-    "seen": 1795428043.1587653,
-    "ast_hash": "3ace4c33133cf7e406675d0997d3f0a8",
+    "mtime": 1795432197.9486458,
+    "seen": 1795434417.62178,
+    "ast_hash": "9fb1333621aec368aafa7230ab4e02a8",
     "semantic_hash": ""
   },
   "utils/categories.ts": {
@@ -3870,9 +3870,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/collaudo.cjs": {
-    "mtime": 1795428283.2575443,
-    "seen": 1795428974.1929474,
-    "ast_hash": "d455fc5ef5a405963cfc312244d591cd",
+    "mtime": 1795432242.0811467,
+    "seen": 1795434417.6202734,
+    "ast_hash": "cbe0d83896995a71bba8f6678aada881",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stato-da-indirizzo.mjs": {
@@ -4050,9 +4050,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/collaudo-finale.md": {
-    "mtime": 1795428415.9942074,
-    "seen": 1795428974.22212,
-    "ast_hash": "3957e445be1c89e01e4aa716fb115567",
+    "mtime": 1795432416.8699334,
+    "seen": 1795434417.6519337,
+    "ast_hash": "5231fb8934daed1a50e101e431a36b95",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/21-tipo-di-pelle-nei-campi.md": {
@@ -4104,9 +4104,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/29-automazioni.md": {
-    "mtime": 1795425556.6107786,
-    "seen": 1795428043.186787,
-    "ast_hash": "5de003fcf488e5830aade2f21604c283",
+    "mtime": 1795432385.067011,
+    "seen": 1795434417.6549342,
+    "ast_hash": "1afe42931dea1c023b008bb14e6d862e",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/30-chat-e-team.md": {
@@ -4116,9 +4116,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-3.md": {
-    "mtime": 1795425574.91842,
-    "seen": 1795428043.186787,
-    "ast_hash": "6cd7956d718c902b40fe3f2bf7ec6e8c",
+    "mtime": 1795432399.1565373,
+    "seen": 1795434417.6549342,
+    "ast_hash": "b7d24109b10ad461e68fc773b95b5b3f",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/ricerche/verifiche-23/script/indietro/modali.txt": {
@@ -4251,6 +4251,30 @@
     "mtime": 1795426081.7323098,
     "seen": 1795428043.19379,
     "ast_hash": "f5e4b72c217875cad3d776fcf288bc29",
+    "semantic_hash": ""
+  },
+  "__tests__/automationRun.test.ts": {
+    "mtime": 1795431363.0998006,
+    "seen": 1795434417.6042926,
+    "ast_hash": "06c28171ccb8d0c75a6f6f6ee77ddd41",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/ese-automazioni.cjs": {
+    "mtime": 1795431128.0777056,
+    "seen": 1795434417.6202734,
+    "ast_hash": "8264e5b6f0aa0b4556774ad6a49dd1da",
+    "semantic_hash": ""
+  },
+  "utils/automationRun.ts": {
+    "mtime": 1795431363.075176,
+    "seen": 1795434417.6449337,
+    "ast_hash": "2528783df5eb40b2c132af590c2ddab1",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-ese.jpg": {
+    "mtime": 1795432801.0684927,
+    "seen": 1795434417.6624453,
+    "ast_hash": "dc9a5a9b3e636716beaacc2d713e7e4f",
     "semantic_hash": ""
   }
 }

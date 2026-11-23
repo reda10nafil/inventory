@@ -1,8 +1,10 @@
 // FurInventory Pro - Stock Audit Automation
-import React, { useState, useEffect, useMemo } from 'react';
+// ESE (ticket 29): un intruso riletto resta intruso (AU-V08); tutte le posizioni, con la ricerca oltre 6 (AU-V09);
+// dall'Azione rapida di una posizione l'Audit parte da lì (`locationId`, AU-N17).
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert, FlatList } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from '../../navigation/compat';
+import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
 import { useProductKind } from '../../../hooks/useProductKind';
@@ -12,7 +14,7 @@ import type { PlaceRead } from '../../../utils/codes';
 import type { Product } from '../../../types';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
-import { Text } from '../../../components/ui/Text';
+import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -21,6 +23,10 @@ import { qtyAt } from '../../../utils/stock';
 import { moveOf, refusalText } from '../../../utils/inventoryOps';
 
 type AuditStatus = 'missing' | 'found' | 'intruder';
+
+/** Oltre queste posizioni compare la ricerca (con il campionario di 6 non cambia nulla). */
+const SEARCH_FROM = 7;
+const fold = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLocaleLowerCase();
 
 interface AuditItem {
     id: string;
@@ -44,6 +50,13 @@ export default function AuditScreen() {
     const [targetLocation, setTargetLocation] = useState<Location | null>(null);
     const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
     const [showScanner, setShowScanner] = useState(false);
+    const [query, setQuery] = useState('');
+
+    // Tutte le posizioni (AU-V09: prima solo le prime 6, le altre irraggiungibili sul web), con la ricerca se sono tante
+    const manyLocations = locations.length >= SEARCH_FROM;
+    const shownLocations = manyLocations && query.trim()
+        ? locations.filter((l) => fold(l.label).includes(fold(query)))
+        : locations;
 
     // Derived stats
     const stats = useMemo(() => ({
@@ -107,6 +120,17 @@ export default function AuditScreen() {
         setStep('audit_loop');
     };
 
+    // Dall'Azione rapida di una posizione (AU-N17): l'Audit parte da quella posizione, una volta, a dati caricati
+    const { locationId } = useLocalSearchParams<{ locationId?: string }>();
+    const autoStarted = useRef(false);
+    useEffect(() => {
+        if (autoStarted.current || !locationId || step !== 'scan_location' || products.length === 0) return;
+        const loc = locations.find((l) => l.id === locationId);
+        if (!loc) return;
+        autoStarted.current = true;
+        startAudit(loc);
+    }, [locationId, locations, products]);
+
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
     // Prodotto letto (o scelto tra più prodotti con lo stesso codice): atteso qui → trovato, altrimenti intruso
@@ -117,6 +141,11 @@ export default function AuditScreen() {
             // FOUND EXPECTED ITEM
             if (auditItems[index].status === 'found') {
                 Alert.alert('Info', 'Prodotto già scansionato.');
+                return;
+            }
+            // Intruso già in elenco: resta intruso (AU-V08: prima diventava «trovato» e la percentuale saliva)
+            if (auditItems[index].status === 'intruder') {
+                Alert.alert('Info', `${product.sku} è già segnato come intruso.`);
                 return;
             }
 
@@ -254,7 +283,7 @@ export default function AuditScreen() {
             </View>
 
             {step === 'scan_location' ? (
-                <View style={styles.centerContent}>
+                <ScrollView contentContainerStyle={styles.centerContent} keyboardShouldPersistTaps="handled">
                     <AppIcon name="fact-check" size={64} color={t.colors.warning} style={{ marginBottom: 16 }} />
                     <Text style={styles.stepTitle}>Inizia Inventario</Text>
                     <Text style={styles.stepDescription}>
@@ -266,10 +295,19 @@ export default function AuditScreen() {
                         <Text style={styles.scanButtonText}>Scansiona Posizione</Text>
                     </Pressable>
 
-                    {/* Quick Select */}
-                    <Text style={styles.divider}>Posizioni recenti</Text>
+                    {/* Quick Select: tutte le posizioni (AU-V09) */}
+                    <Text style={styles.divider}>Oppure scegli la posizione</Text>
+                    {manyLocations && (
+                        <TextInput
+                            style={styles.searchInput}
+                            value={query}
+                            onChangeText={setQuery}
+                            placeholder="Cerca posizione"
+                            placeholderTextColor={t.colors.placeholder}
+                        />
+                    )}
                     <View style={styles.locationsGrid}>
-                        {locations.slice(0, 6).map(loc => (
+                        {shownLocations.map(loc => (
                             <Pressable
                                 key={loc.id}
                                 style={styles.locationChip}
@@ -280,7 +318,10 @@ export default function AuditScreen() {
                             </Pressable>
                         ))}
                     </View>
-                </View>
+                    {shownLocations.length === 0 && (
+                        <Text style={styles.noMatch}>Nessuna posizione con «{query.trim()}».</Text>
+                    )}
+                </ScrollView>
             ) : (
                 <View style={{ flex: 1 }}>
                     <View style={styles.auditHeader}>
@@ -356,11 +397,29 @@ const useStyles = makeStyles((t) => ({
         fontWeight: '600',
         color: t.colors.textPrimary,
     },
+    // Si scorre quando le posizioni sono tante (AU-V09)
     centerContent: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
+    },
+    searchInput: {
+        alignSelf: 'stretch',
+        minHeight: t.input.height,
+        backgroundColor: t.colors.input,
+        borderRadius: t.radius.input,
+        borderWidth: 1,
+        borderColor: t.colors.inputBorder,
+        paddingHorizontal: 14,
+        fontSize: 15,
+        color: t.colors.inputText,
+        marginBottom: 12,
+    },
+    noMatch: {
+        fontSize: 14,
+        color: t.colors.textSecondary,
+        marginTop: 8,
     },
     stepTitle: {
         fontSize: 24,

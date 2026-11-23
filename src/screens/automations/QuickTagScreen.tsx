@@ -7,6 +7,7 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { useCodeReader } from '../../../hooks/useCodeReader';
 import type { Product } from '../../../types';
+import { notesWithTag } from '../../../utils/automationRun';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
@@ -28,7 +29,7 @@ export default function QuickTagScreen() {
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, updateProduct } = useInventory();
+    const { products, updateProduct, latestProduct } = useInventory();
     const { readProduct, choose, isText } = useCodeReader();
 
     const [step, setStep] = useState<'select_tag' | 'scan_loop'>('select_tag');
@@ -59,17 +60,21 @@ export default function QuickTagScreen() {
         feedbackTimer.current = setTimeout(() => setFeedbackMessage(null), ms);
     };
 
-    // Tag sul prodotto letto (o scelto tra più prodotti con lo stesso codice)
-    const tagProduct = (product: Product) => {
-        // Append tag to technical notes
-        const currentNotes = product.technicalNotes || '';
-        // Avoid duplicates
-        if (currentNotes.includes(`[${activeTag}]`)) {
+    // Tag sul prodotto letto (o scelto tra più prodotti con lo stesso codice), sulla copia più recente come
+    // nell'esecuzione delle automazioni (ESE); un prodotto nel cestino non si tocca nemmeno qui (AU-V04)
+    const tagProduct = (scanned: Product) => {
+        const product = latestProduct(scanned.id) ?? scanned;
+        if (product.deletedAt) {
+            soundService.playBlockingError();
+            feedback(`${product.sku} è nel cestino: ripristinalo da Impostazioni › Cestino.`, 2000);
+            return;
+        }
+        // Append tag to technical notes, avoid duplicates
+        const newNotes = notesWithTag(product.technicalNotes, activeTag);
+        if (newNotes == null) {
             feedback(`${product.sku} già taggato`, 1000);
             return;
         }
-
-        const newNotes = currentNotes ? `${currentNotes}\n[${activeTag}]` : `[${activeTag}]`;
 
         updateProduct(product.id, { technicalNotes: newNotes });
 

@@ -1,4 +1,8 @@
 // FurInventory Pro - Automation Builder
+// ESE (ticket 29): il flusso si controlla al salvataggio (`flowErrors`: primo passo una lettura, prodotto letto prima
+// delle azioni, «Scansiona Posizione» prima di «Sposta nella Posizione Scansionata», P16 e AU-V06); i passi si spostano
+// con le frecce e si modificano toccandoli (AU-V12); «Imposta Campo» sceglie un campo personalizzato e il suo valore,
+// che l'esecuzione scrive in `customData` come Modifica (P17).
 import React, { useState } from 'react';
 import {
   View,
@@ -6,7 +10,6 @@ import {
   ScrollView,
   Alert,
   Modal,
-  FlatList,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
@@ -15,9 +18,13 @@ import {
     AutomationStep,
     StepType,
     STEP_TYPE_META,
-    CustomAutomation,
+    stepMeta,
 } from '../../../contexts/AutomationsContext';
 import { useLocations } from '../../../contexts/LocationsContext';
+import { useCustomFields } from '../../../contexts/CustomFieldsContext';
+import {
+    canUseScannedLocation, fieldChoices, fieldOf, fieldValueOf, flowErrors, moveStepBy, usesScannedLocation,
+} from '../../../utils/automationRun';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -35,6 +42,9 @@ const AVAILABLE_STEPS: { type: StepType; description: string }[] = [
     { type: 'add_tag', description: 'Aggiungi un tag al prodotto' },
     { type: 'set_field', description: 'Imposta un campo personalizzato' },
 ];
+
+/** Passi con una configurazione (si aprono nella finestra «Configura Step» e si modificano toccandoli). */
+const CONFIGURABLE: string[] = ['move_to', 'add_tag', 'set_field', 'mark_sold'];
 
 const ICON_OPTIONS = [
     'flash-on', 'local-shipping', 'inventory', 'sell', 'label',
@@ -54,6 +64,8 @@ export default function AutomationBuilderScreen() {
     const params = useLocalSearchParams();
     const { addAutomation, updateAutomation, getAutomationById } = useAutomations();
     const { locations } = useLocations();
+    const { customFields } = useCustomFields();
+    const settable = fieldChoices(customFields);
 
     // Edit mode
     const editId = params.editId as string | undefined;
@@ -67,15 +79,24 @@ export default function AutomationBuilderScreen() {
 
     const [showStepPicker, setShowStepPicker] = useState(false);
     const [configStep, setConfigStep] = useState<AutomationStep | null>(null);
+    // Passo che si modifica (indice nel flusso), null per un passo nuovo in fondo
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [showConfigModal, setShowConfigModal] = useState(false);
 
     // Config modal temps
     const [configTag, setConfigTag] = useState('');
-    const [configFieldName, setConfigFieldName] = useState('');
+    const [configFieldId, setConfigFieldId] = useState('');
     const [configFieldValue, setConfigFieldValue] = useState('');
     const [configLocationId, setConfigLocationId] = useState('');
     const [configPricePrompt, setConfigPricePrompt] = useState(true);
     const [configUseLastScanned, setConfigUseLastScanned] = useState(true);
+
+    // «Usa l'ultima posizione scansionata» solo con un «Scansiona Posizione» prima del passo (AU-V06): senza, resta
+    // spenta e si sceglie la posizione fissa
+    const configIndex = editingIndex ?? steps.length;
+    const canUseLast = canUseScannedLocation(steps, configIndex);
+    const useLast = configUseLastScanned && canUseLast;
+    const configField = settable.find((f) => f.id === configFieldId);
 
     // ── Add Step ──────────────────────────────────────────────
     const handleAddStep = (type: StepType) => {
@@ -90,70 +111,104 @@ export default function AutomationBuilderScreen() {
         };
 
         // Steps needing config
-        if (['move_to', 'add_tag', 'set_field', 'mark_sold'].includes(type)) {
+        if (CONFIGURABLE.includes(type)) {
             setConfigStep(newStep);
+            setEditingIndex(null);
             // Pre-fill config defaults
             setConfigTag('');
-            setConfigFieldName('');
+            setConfigFieldId('');
             setConfigFieldValue('');
             setConfigLocationId('');
             setConfigPricePrompt(true);
-            setConfigUseLastScanned(true);
+            setConfigUseLastScanned(canUseScannedLocation(steps, steps.length));
             setShowConfigModal(true);
         } else {
             setSteps(prev => [...prev, newStep]);
         }
     };
 
+    // ── Modifica di un passo (tocco sul passo, AU-V12) ────────
+    const openStep = (index: number) => {
+        const step = steps[index];
+        if (!step || !CONFIGURABLE.includes(step.type)) return;
+        const config = step.config ?? {};
+        setConfigStep(step);
+        setEditingIndex(index);
+        setConfigTag(config.tag ?? '');
+        setConfigFieldId(fieldOf(config, customFields)?.id ?? '');
+        setConfigFieldValue(config.fieldValue ?? '');
+        setConfigLocationId(config.locationId ?? '');
+        setConfigPricePrompt(!!config.pricePrompt);
+        setConfigUseLastScanned(usesScannedLocation(step));
+        setShowConfigModal(true);
+    };
+
+    const closeConfig = () => {
+        setShowConfigModal(false);
+        setConfigStep(null);
+        setEditingIndex(null);
+    };
+
     const handleSaveConfig = () => {
         if (!configStep) return;
-        const updated = { ...configStep };
+        // Configurazione nuova (il passo salvato nel contesto non si tocca finché non si salva l'automazione)
+        const config: AutomationStep['config'] = {};
+        let label = configStep.label;
 
         if (configStep.type === 'add_tag') {
             if (!configTag.trim()) { Alert.alert('Errore', 'Inserisci un tag.'); return; }
-            updated.config.tag = configTag.trim();
-            updated.label = `Aggiungi Tag: ${configTag.trim()}`;
+            config.tag = configTag.trim();
+            label = `Aggiungi Tag: ${configTag.trim()}`;
         } else if (configStep.type === 'set_field') {
-            if (!configFieldName.trim()) { Alert.alert('Errore', 'Inserisci il nome del campo.'); return; }
-            updated.config.fieldName = configFieldName.trim();
-            updated.config.fieldValue = configFieldValue.trim();
-            updated.label = `Imposta ${configFieldName.trim()} = ${configFieldValue.trim()}`;
+            if (!configField) { Alert.alert('Errore', 'Scegli il campo da impostare.'); return; }
+            const value = fieldValueOf(configField, configFieldValue);
+            if (!value.ok) { Alert.alert('Errore', value.error); return; }
+            config.fieldId = configField.id;
+            config.fieldName = configField.name;
+            config.fieldValue = value.value;
+            label = `Imposta ${configField.name} = ${value.value}`;
         } else if (configStep.type === 'move_to') {
-            updated.config.useLastScannedLocation = configUseLastScanned;
-            if (!configUseLastScanned) {
+            config.useLastScannedLocation = useLast;
+            if (!useLast) {
                 if (!configLocationId) { Alert.alert('Errore', 'Seleziona una posizione.'); return; }
-                updated.config.locationId = configLocationId;
+                config.locationId = configLocationId;
                 const loc = locations.find(l => l.id === configLocationId);
-                updated.config.locationName = loc?.label || configLocationId;
-                updated.label = `Sposta in: ${loc?.label || configLocationId}`;
+                config.locationName = loc?.label || configLocationId;
+                label = `Sposta in: ${loc?.label || configLocationId}`;
             } else {
-                updated.label = 'Sposta nella Posizione Scansionata';
+                label = 'Sposta nella Posizione Scansionata';
             }
         } else if (configStep.type === 'mark_sold') {
-            updated.config.pricePrompt = configPricePrompt;
-            updated.label = configPricePrompt ? 'Vendi (con conferma prezzo)' : 'Vendi (prezzo catalogo)';
+            config.pricePrompt = configPricePrompt;
+            label = configPricePrompt ? 'Vendi (con conferma prezzo)' : 'Vendi (prezzo catalogo)';
         }
 
-        setSteps(prev => [...prev, updated]);
-        setShowConfigModal(false);
-        setConfigStep(null);
+        const updated: AutomationStep = { ...configStep, config, label };
+        if (editingIndex == null) setSteps(prev => [...prev, { ...updated, order: prev.length }]);
+        else setSteps(prev => prev.map((s, i) => (i === editingIndex ? updated : s)));
+        closeConfig();
     };
 
-    // ── Remove Step ───────────────────────────────────────────
+    // ── Remove / move Step ────────────────────────────────────
     const removeStep = (id: string) => {
         setSteps(prev => prev.filter(s => s.id !== id).map((s, i) => ({ ...s, order: i })));
     };
+    const moveStep = (index: number, delta: number) => setSteps(prev => moveStepBy(prev, index, delta));
 
     // ── Save Automation ───────────────────────────────────────
     const handleSave = () => {
         if (!name.trim()) { Alert.alert('Errore', 'Dai un nome all\'automazione.'); return; }
         if (steps.length === 0) { Alert.alert('Errore', 'Aggiungi almeno uno step.'); return; }
+        // P16, AU-V06: un flusso che l'esecuzione non saprebbe fare non si salva
+        const errors = flowErrors(steps, { locations, fields: customFields });
+        if (errors.length > 0) { Alert.alert('Flusso da correggere', errors.join('\n')); return; }
+        const ordered = steps.map((s, i) => ({ ...s, order: i }));
 
         if (existing) {
-            updateAutomation(existing.id, { name, description, icon, color, steps });
+            updateAutomation(existing.id, { name, description, icon, color, steps: ordered });
             Alert.alert('Salvato!', `"${name}" aggiornata.`, [{ text: 'OK', onPress: () => router.back() }]);
         } else {
-            const created = addAutomation({ name, description, icon, color, steps });
+            addAutomation({ name, description, icon, color, steps: ordered });
             Alert.alert('Creato!', `"${name}" creata. Puoi trovarla nel Centro Automazioni.`, [
                 { text: 'OK', onPress: () => router.back() },
             ]);
@@ -236,7 +291,10 @@ export default function AutomationBuilderScreen() {
                     ) : (
                         <View style={styles.flowContainer}>
                             {steps.map((step, index) => {
-                                const meta = STEP_TYPE_META[step.type];
+                                const meta = stepMeta(step.type);
+                                const editable = CONFIGURABLE.includes(step.type);
+                                const first = index === 0;
+                                const last = index === steps.length - 1;
                                 return (
                                     <View key={step.id}>
                                         {/* Step node */}
@@ -244,11 +302,35 @@ export default function AutomationBuilderScreen() {
                                             <View style={[styles.flowNodeIcon, { backgroundColor: withAlpha(meta.color, 0.125) }]}>
                                                 <AppIcon name={meta.icon as any} size={24} color={meta.color} />
                                             </View>
-                                            <View style={styles.flowNodeContent}>
+                                            {/* Tocco sul passo: si modifica (AU-V12) */}
+                                            <Pressable
+                                                style={styles.flowNodeContent}
+                                                onPress={editable ? () => openStep(index) : undefined}
+                                                accessibilityLabel={editable ? `Modifica il passo ${index + 1}` : undefined}
+                                            >
                                                 <Text style={styles.flowNodeLabel}>{step.label}</Text>
-                                                <Text style={styles.flowNodeMeta}>Step {index + 1} · {meta.label}</Text>
-                                            </View>
-                                            <Pressable onPress={() => removeStep(step.id)} hitSlop={8}>
+                                                <Text style={styles.flowNodeMeta}>Step {index + 1} · {meta.label}{editable ? ' · tocca per modificare' : ''}</Text>
+                                            </Pressable>
+                                            {/* Frecce: il passo sale o scende di uno (AU-V12) */}
+                                            <Pressable
+                                                onPress={() => moveStep(index, -1)}
+                                                disabled={first}
+                                                hitSlop={6}
+                                                style={styles.flowNodeAction}
+                                                accessibilityLabel={`Sposta su il passo ${index + 1}`}
+                                            >
+                                                <AppIcon name="arrow-upward" size={20} color={first ? t.colors.border : t.colors.textSecondary} />
+                                            </Pressable>
+                                            <Pressable
+                                                onPress={() => moveStep(index, 1)}
+                                                disabled={last}
+                                                hitSlop={6}
+                                                style={styles.flowNodeAction}
+                                                accessibilityLabel={`Sposta giù il passo ${index + 1}`}
+                                            >
+                                                <AppIcon name="arrow-downward" size={20} color={last ? t.colors.border : t.colors.textSecondary} />
+                                            </Pressable>
+                                            <Pressable onPress={() => removeStep(step.id)} hitSlop={8} style={styles.flowNodeAction} accessibilityLabel={`Elimina il passo ${index + 1}`}>
                                                 <AppIcon name="delete-outline" size={20} color={t.colors.textSecondary} />
                                             </Pressable>
                                         </View>
@@ -312,10 +394,11 @@ export default function AutomationBuilderScreen() {
             </Modal>
 
             {/* ── Config Modal ── */}
-            <Modal visible={showConfigModal} transparent animationType="slide" onRequestClose={() => setShowConfigModal(false)}>
-                <Pressable style={styles.modalOverlay} onPress={() => setShowConfigModal(false)}>
+            <Modal visible={showConfigModal} transparent animationType="slide" onRequestClose={closeConfig}>
+                <Pressable style={styles.modalOverlay} onPress={closeConfig}>
                     <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
-                        <Text style={styles.modalTitle}>Configura Step</Text>
+                        <Text style={styles.modalTitle}>{editingIndex == null ? 'Configura Step' : `Modifica Step ${editingIndex + 1}`}</Text>
+                        <ScrollView style={styles.configScroll} keyboardShouldPersistTaps="handled">
 
                         {configStep?.type === 'add_tag' && (
                             <View>
@@ -330,41 +413,79 @@ export default function AutomationBuilderScreen() {
                             </View>
                         )}
 
+                        {/* «Imposta Campo»: un campo personalizzato e il suo valore, scritti in customData (P17) */}
                         {configStep?.type === 'set_field' && (
                             <View>
-                                <Text style={styles.configLabel}>Nome Campo:</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={configFieldName}
-                                    onChangeText={setConfigFieldName}
-                                    placeholder="Es. Stato"
-                                    placeholderTextColor={t.colors.placeholder}
-                                />
-                                <Text style={[styles.configLabel, { marginTop: 12 }]}>Valore:</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={configFieldValue}
-                                    onChangeText={setConfigFieldValue}
-                                    placeholder="Es. Controllato"
-                                    placeholderTextColor={t.colors.placeholder}
-                                />
+                                <Text style={styles.configLabel}>Campo personalizzato:</Text>
+                                {settable.length === 0 ? (
+                                    <Text style={styles.configHint}>Non ci sono campi da impostare: creali in Impostazioni › Campi Personalizzati (testo, numero, valuta o scelta singola).</Text>
+                                ) : (
+                                    <View style={styles.chipWrap}>
+                                        {settable.map((f) => {
+                                            const on = f.id === configFieldId;
+                                            return (
+                                                <Pressable
+                                                    key={f.id}
+                                                    style={[styles.choiceChip, on && { borderColor: color, backgroundColor: withAlpha(color, 0.082) }]}
+                                                    onPress={() => { if (!on) { setConfigFieldId(f.id); setConfigFieldValue(''); } }}
+                                                >
+                                                    <Text style={[styles.choiceChipText, on && { color }]} numberOfLines={2}>{f.name}</Text>
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                )}
+                                {configField && (
+                                    <View style={{ marginTop: 12 }}>
+                                        <Text style={styles.configLabel}>Valore:</Text>
+                                        {configField.type === 'single_choice' ? (
+                                            <View style={styles.chipWrap}>
+                                                {(configField.options ?? []).map((o: { id: string; label?: string }) => {
+                                                    const label = o.label ?? o.id;
+                                                    const on = configFieldValue === label;
+                                                    return (
+                                                        <Pressable
+                                                            key={o.id}
+                                                            style={[styles.choiceChip, on && { borderColor: color, backgroundColor: withAlpha(color, 0.082) }]}
+                                                            onPress={() => setConfigFieldValue(label)}
+                                                        >
+                                                            <Text style={[styles.choiceChipText, on && { color }]}>{label}</Text>
+                                                        </Pressable>
+                                                    );
+                                                })}
+                                            </View>
+                                        ) : (
+                                            <TextInput
+                                                style={styles.input}
+                                                value={configFieldValue}
+                                                onChangeText={setConfigFieldValue}
+                                                keyboardType={configField.type === 'number' || configField.type === 'currency' ? 'numeric' : 'default'}
+                                                placeholder={configField.type === 'number' || configField.type === 'currency' ? 'Es. 12,5' : 'Es. Controllato'}
+                                                placeholderTextColor={t.colors.placeholder}
+                                            />
+                                        )}
+                                    </View>
+                                )}
                             </View>
                         )}
 
                         {configStep?.type === 'move_to' && (
                             <View>
                                 <Pressable
-                                    style={styles.toggleRow}
-                                    onPress={() => setConfigUseLastScanned(!configUseLastScanned)}
+                                    style={[styles.toggleRow, !canUseLast && styles.toggleOff]}
+                                    onPress={() => { if (canUseLast) setConfigUseLastScanned(!configUseLastScanned); }}
                                 >
                                     <AppIcon
-                                        name={configUseLastScanned ? 'check-box' : 'check-box-outline-blank'}
+                                        name={useLast ? 'check-box' : 'check-box-outline-blank'}
                                         size={24}
-                                        color={color}
+                                        color={canUseLast ? color : t.colors.textSecondary}
                                     />
                                     <Text style={styles.toggleLabel}>Usa l'ultima posizione scansionata</Text>
                                 </Pressable>
-                                {!configUseLastScanned && (
+                                {!canUseLast && (
+                                    <Text style={styles.configHint}>Serve prima un passo «Scansiona Posizione».</Text>
+                                )}
+                                {!useLast && (
                                     <View style={{ marginTop: 12 }}>
                                         <Text style={styles.configLabel}>Posizione fissa:</Text>
                                         {locations.map(loc => (
@@ -397,13 +518,14 @@ export default function AutomationBuilderScreen() {
                                 </Pressable>
                             </View>
                         )}
+                        </ScrollView>
 
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-                            <Pressable style={[styles.configButton, styles.configButtonSecondary]} onPress={() => { setShowConfigModal(false); setConfigStep(null); }}>
+                            <Pressable style={[styles.configButton, styles.configButtonSecondary]} onPress={closeConfig}>
                                 <Text style={styles.configButtonSecondaryText}>Annulla</Text>
                             </Pressable>
                             <Pressable style={[styles.configButton, { backgroundColor: color, flex: 2 }]} onPress={handleSaveConfig}>
-                                <Text style={{ color: t.colors.onData, fontWeight: 'bold' }}>Aggiungi</Text>
+                                <Text style={{ color: t.colors.onData, fontWeight: 'bold' }}>{editingIndex == null ? 'Aggiungi' : 'Aggiorna'}</Text>
                             </Pressable>
                         </View>
                     </Pressable>
@@ -459,7 +581,9 @@ const useStyles = makeStyles((t) => ({
     flowNodeIcon: {
         width: 44, height: 44, borderRadius: t.radius.iconWrap, alignItems: 'center', justifyContent: 'center', marginRight: 12,
     },
-    flowNodeContent: { flex: 1, marginRight: 8 },
+    flowNodeContent: { flex: 1, marginRight: 4 },
+    // Frecce e cestino del passo: bersaglio da 36 punti
+    flowNodeAction: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
     flowNodeLabel: { fontSize: 15, fontWeight: t.weights.strong, color: t.colors.textPrimary },
     flowNodeMeta: { fontSize: 12, color: t.colors.textSecondary, marginTop: 2 },
     flowConnector: { alignItems: 'center', paddingVertical: 4 },
@@ -503,6 +627,15 @@ const useStyles = makeStyles((t) => ({
     configLabel: { fontSize: t.label.size, fontWeight: t.label.weight, color: t.label.color, lineHeight: 18, marginBottom: 6 },
     toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
     toggleLabel: { fontSize: 15, color: t.colors.textPrimary, flex: 1 },
+    toggleOff: { opacity: 0.55 },
+    configHint: { fontSize: 13, color: t.colors.textSecondary, lineHeight: 18, marginTop: 4 },
+    configScroll: { flexGrow: 0 },
+    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    choiceChip: {
+        ...tileSurface(t),
+        minHeight: 40, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 8, justifyContent: 'center',
+    },
+    choiceChipText: { fontSize: 15, color: t.colors.textPrimary },
     locationOption: {
         ...tileSurface(t),
         flexDirection: 'row', alignItems: 'center', padding: 12, marginBottom: 8, gap: 10,

@@ -21,6 +21,8 @@ export interface AutomationStep {
         locationId?: string;
         locationName?: string;
         tag?: string;
+        /** «Imposta Campo» (ESE, P17): id del campo personalizzato. Le automazioni di prima hanno solo `fieldName`. */
+        fieldId?: string;
         fieldName?: string;
         fieldValue?: string;
         pricePrompt?: boolean;
@@ -51,6 +53,12 @@ export const STEP_TYPE_META: Record<StepType, { label: string; icon: string; col
     add_tag: { label: 'Aggiungi Tag', icon: 'label', color: '#F59E0B' },
     set_field: { label: 'Imposta Campo', icon: 'edit', color: '#6366F1' },
 };
+
+/** Etichetta, icona e colore di un passo, anche di un tipo che questa versione non conosce (automazione salvata da una
+ *  versione più nuova): la scheda, il costruttore e l'esecuzione non cadono (ESE). */
+export function stepMeta(type: string): { label: string; icon: string; color: string } {
+    return STEP_TYPE_META[type as StepType] ?? { label: 'Passo sconosciuto', icon: 'help-outline', color: '#9CA3AF' };
+}
 
 // ── Context Interface ──────────────────────────────────────
 
