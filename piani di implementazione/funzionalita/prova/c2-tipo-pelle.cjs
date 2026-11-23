@@ -114,8 +114,13 @@ function parseCsv(input) {
   await run('c2-tp-rinomina', async (h) => {
     await h.page.evaluate((cf) => {
       const fields = JSON.parse(localStorage.getItem(cf));
-      fields.push({ id: 'field_c2_pelle', name: 'Pelle interna', type: 'single_choice', uiType: 'grid', dataset: null, required: false, icon: 'layers', order: 40, isSystem: false, linkTo: 'furType' });
+      const pelle = { id: 'field_c2_pelle', name: 'Pelle interna', type: 'single_choice', uiType: 'grid', dataset: null, required: false, icon: 'layers', order: 40, isSystem: false, linkTo: 'furType' };
+      fields.push(pelle);
       localStorage.setItem(cf, JSON.stringify(fields));
+      // VAL (ticket 23, punto 7): VIS-0098 ha il campo compilato prima di VAL, col nome «Visone» scritto
+      const list = JSON.parse(localStorage.getItem('inventory:v1:local:products'));
+      list.find((p) => p.sku === 'VIS-0098').customData.push({ value: 'Visone', fieldSnapshot: pelle });
+      localStorage.setItem('inventory:v1:local:products', JSON.stringify(list));
     }, CF);
     const prodPrima = await h.products(0);
     const f = finestre(h.page);
@@ -146,7 +151,7 @@ function parseCsv(input) {
       && salvata[0].label === 'Visone Black' && JSON.stringify(prodDopo) === JSON.stringify(prodPrima)
       && /Visone Black/.test(cardVis) && scheda && csv.giacenze === 'VIS-0142|Visone Black,VIS-0098|Visone Black' && csv.prodotti === 'VIS-0142|visone,VIS-0098|visone' && aggiungi.nuovo && !aggiungi.vecchio
       && detto(f, '«Visone» ora si chiama «Visone Black». I 2 prodotti che lo usano mostrano il nome nuovo.')
-      && detto(f, 'Il campo «Pelle interna» (Sorgente Dati: Tipi di pelle) salva il nome, non il tipo: nei prodotti già compilati resta «Visone».');
+      && detto(f, 'Nel campo «Pelle interna» 1 prodotto compilato prima ha il nome scritto: lì resta «Visone».');
     return { ok, salvata: salvata.slice(0, 2), prodottiUguali: JSON.stringify(prodDopo) === JSON.stringify(prodPrima), cardVis, scheda, csv, aggiungi };
   }, { dialogs: ['ok', 'ok'] });
 

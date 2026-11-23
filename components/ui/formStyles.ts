@@ -254,31 +254,5 @@ export const formStyles = (t: AppTheme) => {
   });
 };
 
-// Scelte singole e multiple (riquadri e finestra), uguali in Aggiungi e Modifica. Si salva l'etichetta dell'opzione;
-// un valore salvato con l'id resta riconosciuto. D01: è multipla ogni scelta di tipo `multi_choice`, qualunque sia
-// l'aspetto (prima i riquadri la trattavano da singola, quindi un vecchio valore può essere una stringa sola).
-
-export type ChoiceOption = { id: string; label?: string };
-
-/** Valori scelti di una scelta multipla, anche se salvati da singola. */
-export function choiceList(value: unknown): string[] {
-  if (Array.isArray(value)) return value;
-  return value ? [String(value)] : [];
-}
-
-export function isChoiceSelected(value: unknown, option: ChoiceOption, multi: boolean): boolean {
-  if (multi) {
-    const list = choiceList(value);
-    return list.includes(option.id) || (!!option.label && list.includes(option.label));
-  }
-  return value === option.id || (!!option.label && value === option.label);
-}
-
-/** Nuovo valore dopo il tocco di un'opzione: la singola si sceglie o si toglie, la multipla aggiunge o toglie. */
-export function toggleChoice(value: unknown, option: ChoiceOption, multi: boolean): string | string[] | null {
-  const saved = option.label || option.id;
-  const selected = isChoiceSelected(value, option, multi);
-  if (!multi) return selected ? null : saved;
-  const list = choiceList(value);
-  return selected ? list.filter((v) => v !== saved && v !== option.id) : [...list, saved];
-}
+// Le scelte (riquadri e finestra) leggono e scrivono i valori con utils/fieldValues.ts (VAL, ticket 23): id stabili
+// delle opzioni, etichette salvate prima riconosciute. Il disegno è components/FieldInput.tsx.

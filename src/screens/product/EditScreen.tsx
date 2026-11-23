@@ -1,14 +1,9 @@
 // FurInventory Pro - Edit Product Screen
 import React, { useState } from 'react';
-import { View, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, useWindowDimensions, Modal, Linking } from 'react-native';
+import { View, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import * as ImagePicker from '../../lib/imagePicker';
-import * as DocumentPicker from '../../lib/documentPicker';
-import { Image } from '../../lib/ExpoImage';
-import BarcodeScanner from '../../../components/BarcodeScanner';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { formatNumberInput, parseNumber } from '../../../utils/number';
 import { DEFAULT_UNIT, formatQty, isStocked, stockOf, totalStock } from '../../../utils/stock';
@@ -16,7 +11,6 @@ import { parseMinStock } from '../../../utils/alerts';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { CategoryPicker } from '../../../components/CategoryPicker';
-import { categoryPath, categoryTree } from '../../../utils/categories';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { editableFields } from '../../../utils/layoutOrder';
@@ -26,7 +20,10 @@ import { Backdrop } from '../../../components/ui/Backdrop';
 import { Glass } from '../../../components/ui/Glass';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { Text, TextInput } from '../../../components/ui/Text';
-import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
+import { formStyles } from '../../../components/ui/formStyles';
+import { FieldInput, fieldIcon } from '../../../components/FieldInput';
+import { missingRequiredFields } from '../../../utils/formValidation';
+import { fieldError, formValue, invalidNumberFields, NO_FLAGS, savedValue, type FlaggedFields } from '../../../utils/fieldValues';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { shelvesFor } from '../../../utils/shelves';
@@ -69,18 +66,19 @@ function EditProductForm({ product }: { product: Product }) {
   const placeLabel = (place: string) => locations.find((l) => l.id === place)?.label ?? place;
 
   const { customFields } = useCustomFields();
-  const { layout } = useLayout();
-  const { products } = useInventory();
+  const { layout, getVisibleFields } = useLayout();
 
-  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>(
-    product?.customData?.reduce((acc: Record<string, any>, current) => {
-      if (current.fieldSnapshot?.id) {
-        acc[current.fieldSnapshot.id] = current.value;
-      }
+  // Valori dei campi personalizzati nel modulo (i numeri salvati scritti con la virgola, il resto com'è) e quelli di
+  // partenza: un campo che non si tocca resta com'era, valore e copia del campo (VAL: nessuna riscrittura dei prodotti)
+  const [initialValues] = useState<Record<string, any>>(() =>
+    (product.customData || []).reduce((acc: Record<string, any>, entry) => {
+      if (entry.fieldSnapshot?.id) acc[entry.fieldSnapshot.id] = formValue(entry.fieldSnapshot, entry.value);
       return acc;
-    }, {}) || {}
+    }, {})
   );
-  const [showDatePickerMap, setShowDatePickerMap] = useState<Record<string, boolean>>({});
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>(initialValues);
+  // Campi segnati dall'ultimo salvataggio rifiutato (riga rossa sotto il campo)
+  const [flagged, setFlagged] = useState<FlaggedFields>(NO_FLAGS);
 
   const [formData, setFormData] = useState({
     sku: product?.sku || '',
@@ -156,9 +154,6 @@ function EditProductForm({ product }: { product: Product }) {
     }
   };
 
-  const [selectModalConfig, setSelectModalConfig] = useState<{ fieldId: string; name: string; options: any[]; isMulti: boolean } | null>(null);
-  const [scanFieldId, setScanFieldId] = useState<string | null>(null); // campo che riceve il codice letto
-
   // `withoutPhoto === true` solo dalla conferma qui sotto (onPress passa l'evento, che non è `true`)
   const handleSave = (withoutPhoto?: unknown) => {
     // C1: il tipo di pelle è facoltativo
@@ -174,6 +169,28 @@ function EditProductForm({ product }: { product: Product }) {
       return;
     }
 
+    // Un campo nel cestino non è più tra i campi attivi: il suo valore resta con la sua scheda di prima (P02).
+    // Un campo non toccato resta com'era (valore e copia); uno toccato si salva nella forma di VAL (id, numero)
+    const previous = new Map((product.customData || []).map((entry) => [entry.fieldSnapshot?.id, entry]));
+    const untouched = (fieldId: string) => previous.has(fieldId) && JSON.stringify(customFieldValues[fieldId]) === JSON.stringify(initialValues[fieldId]);
+
+    // VAL (CAM-F4): gli obbligatori come in Aggiungi, sui campi personalizzati che il modulo mostra
+    const missing = missingRequiredFields(getVisibleFields(), customFields, customFieldValues);
+    if (missing.length > 0) {
+      setFlagged({ missing: missing.map((f) => f.id), wrong: [] });
+      Alert.alert('Campi obbligatori', `Compila anche: ${missing.map((f) => f.name).join(', ')}`);
+      return;
+    }
+    // VAL (CAM-F2): i numeri si salvano come numero; un testo che non è un numero si dice. Solo nei campi toccati: un
+    // valore scritto prima di VAL che non è un numero resta com'era e non blocca il salvataggio
+    const wrong = invalidNumberFields(customFields, customFieldValues).filter((f) => !untouched(f.id));
+    if (wrong.length > 0) {
+      setFlagged({ missing: [], wrong: wrong.map((f) => f.id) });
+      Alert.alert('Numero non valido', `Scrivi un numero in: ${wrong.map((f) => f.name).join(', ')} (per esempio 12,5).`);
+      return;
+    }
+    setFlagged(NO_FLAGS);
+
     // Foto facoltativa come in Aggiungi: un prodotto senza foto si deve poter modificare (D18)
     if (images.length === 0 && withoutPhoto !== true) {
       Alert.alert('Attenzione', 'Il prodotto non ha foto', [
@@ -186,9 +203,6 @@ function EditProductForm({ product }: { product: Product }) {
     // Link GS1 (COD, NG02 e NG27, vincolo 5 di map-3): la Modifica non lo crea e non lo riscrive mai, nemmeno con un
     // lotto o uno SKU nuovi; etichette e tag già fatti restano validi e il lettore unico (`utils/codes.ts`) li riconosce.
     // Il link non è tra i campi salvati qui: resta quello che c'è.
-
-    // Un campo nel cestino non è più tra i campi attivi: il suo valore resta con la sua scheda di prima (P02)
-    const previous = new Map((product.customData || []).map((entry) => [entry.fieldSnapshot?.id, entry.fieldSnapshot]));
 
     updateProduct(id as string, {
       sku: formData.sku.trim(),
@@ -206,8 +220,11 @@ function EditProductForm({ product }: { product: Product }) {
       libraryId: formData.libraryId || undefined,
       customData: Object.keys(customFieldValues)
         .map(fieldId => {
-          const field = customFields.find(f => f.id === fieldId) ?? previous.get(fieldId);
-          return field ? { value: customFieldValues[fieldId], fieldSnapshot: field } : null;
+          if (untouched(fieldId)) return previous.get(fieldId);
+          const field = customFields.find(f => f.id === fieldId) ?? previous.get(fieldId)?.fieldSnapshot;
+          if (!field) return null;
+          const saved = savedValue(field, customFieldValues[fieldId]);
+          return saved.ok && saved.value !== undefined ? { value: saved.value, fieldSnapshot: field } : null;
         }).filter(Boolean) as any,
     });
 
@@ -470,280 +487,31 @@ function EditProductForm({ product }: { product: Product }) {
             />
           </View>
 
-          {/* Campi personalizzati: quelli del modulo Aggiungi più quelli che il prodotto ha già (D03) */}
+          {/* Campi personalizzati: quelli del modulo Aggiungi più quelli che il prodotto ha già (D03), prima le scelte.
+              Un disegnatore solo per Aggiungi e Modifica (VAL, `components/FieldInput.tsx`), contatore compreso (CAM-F5) */}
           {(() => {
-            const productFieldIds = (product.customData || []).map(d => d.fieldSnapshot?.id).filter(Boolean) as string[];
-            const existingFields = editableFields(customFields, layout.fields, productFieldIds);
-
+            const entries = new Map((product.customData || []).map((d) => [d.fieldSnapshot?.id, d]));
+            const existingFields = editableFields(customFields, layout.fields, [...entries.keys()].filter(Boolean) as string[]);
             if (existingFields.length === 0) return null;
-
-            const getDynamicOptionsList = (cf: any) => {
-              if (cf.linkTo === 'locations') return locations.map((l: any) => ({ id: l.id, label: l.label }));
-              if (cf.linkTo === 'libraries') return categoryTree(libraries).map(({ category: l }) => ({ id: l.id, label: categoryPath(libraries, l.id) }));
-              if (cf.linkTo === 'furType') return furTypes.map((c) => ({ id: c.id, label: c.label }));
-
-              return cf.dataset && Array.isArray(cf.dataset)
-                ? cf.dataset.map((val: string, i: number) => ({ id: `ds_${i}`, label: String(val) }))
-                : cf.options || [];
-            };
-
-            // Icon priority: Layout Override > Custom Field Definition > Type Default
-            const getIcon = (field: any): string => {
-              const layoutField = layout.fields.find(lf => lf.id === field.id);
-              if (layoutField?.icon) return layoutField.icon;
-
-              if (field.icon) return field.icon;
-
-              switch (field.type) {
-                case 'number': return 'tag';
-                case 'currency': return 'euro';
-                case 'text_long': return 'notes';
-                default: return 'short-text';
-              }
-            };
-
+            const isChoice = (f: { type: string }) => f.type === 'single_choice' || f.type === 'multi_choice';
+            const render = (field: typeof existingFields[number]) => (
+              <FieldInput
+                key={field.id}
+                field={field}
+                value={customFieldValues[field.id]}
+                onChange={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
+                snapshot={entries.get(field.id)?.fieldSnapshot}
+                icon={fieldIcon(field, layout.fields.find(lf => lf.id === field.id)?.icon)}
+                tileWidth={tileWidth}
+                style={styles.inputGroup}
+                error={fieldError(field, customFieldValues[field.id], flagged)}
+              />
+            );
             return (
               <>
                 {renderSection('Campi personalizzati')}
-
-                {/* Quick Settings Grid for Choice Fields */}
-                {existingFields.filter(f => f.type === 'single_choice' || f.type === 'multi_choice').map((field) => {
-                  const isMulti = field.type === 'multi_choice';
-
-                  if (field.uiType === 'picker' || field.uiType === 'modal_list') {
-                    const optionsList = getDynamicOptionsList(field);
-                    const val = customFieldValues[field.id];
-                    const count = choiceList(val).length;
-                    const hasValue = isMulti ? count > 0 : !!val;
-                    const displayValue = isMulti
-                      ? (count ? `${count} selezionati` : 'Seleziona...')
-                      : (val || 'Seleziona...');
-
-                    return (
-                      <View key={field.id} style={styles.inputGroup}>
-                        {renderLabel(field.name, field.required)}
-                        <Pressable
-                          style={styles.inputBox}
-                          onPress={() => setSelectModalConfig({ fieldId: field.id, name: field.name, options: optionsList, isMulti })}
-                        >
-                          <AppIcon name={getIcon(field)} size={18} color={t.colors.fieldIcon} />
-                          <Text style={[styles.valueText, !hasValue && styles.valuePlaceholder]} numberOfLines={1}>
-                            {displayValue}
-                          </Text>
-                          <AppIcon name="keyboard-arrow-down" size={20} color={t.colors.textMuted} />
-                        </Pressable>
-                      </View>
-                    );
-                  }
-
-                  return (
-                    <View key={field.id} style={styles.inputGroup}>
-                      {renderLabel(field.name, field.required)}
-                      <View style={styles.tileGrid}>
-                        {getDynamicOptionsList(field).map((option: any) => {
-                          const isSelected = isChoiceSelected(customFieldValues[field.id], option, isMulti);
-                          const icon = isMulti
-                            ? (isSelected ? 'check-box' : 'check-box-outline-blank')
-                            : (isSelected ? 'check-circle' : 'radio-button-unchecked');
-
-                          return (
-                            <Pressable
-                              key={option.id}
-                              style={[styles.tile, { width: tileWidth }, isSelected && styles.tileSelected]}
-                              onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: toggleChoice(prev[field.id], option, isMulti) }))}
-                            >
-                              <AppIcon name={icon} size={22} color={isSelected ? t.colors.checkOn : t.colors.checkRing} />
-                              <Text style={[styles.tileText, isSelected && styles.tileTextSelected]} numberOfLines={2}>
-                                {option.label}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                    </View>
-                  );
-                })}
-
-                {/* Input Fields for Text/Number/Document Types */}
-                {existingFields.filter(f => !['single_choice', 'multi_choice'].includes(f.type)).map((field) => {
-                  if (field.type === 'document' || field.uiType === 'document') {
-                    const docs = customFieldValues[field.id] || [];
-                    return (
-                      <View key={field.id} style={styles.inputGroup}>
-                        {renderLabel(field.name, field.required)}
-                        <View style={styles.docList}>
-                          {docs.map((docUri: string, index: number) => (
-                            <Pressable key={index} style={styles.docRow} onPress={() => (/^https?:\/\//i.test(docUri) ? Linking.openURL(docUri) : Sharing.shareAsync(docUri)).catch(console.error)}>
-                              <AppIcon name="insert-drive-file" size={20} color={t.colors.accentInk} />
-                              <Text style={styles.docName} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
-                              <Pressable style={styles.docRemove} onPress={() => {
-                                const newDocs = [...docs];
-                                newDocs.splice(index, 1);
-                                setCustomFieldValues(prev => ({ ...prev, [field.id]: newDocs }));
-                              }}>
-                                <AppIcon name="delete" size={20} color={t.colors.error} />
-                              </Pressable>
-                            </Pressable>
-                          ))}
-                          <Pressable
-                            style={styles.docAdd}
-                            onPress={async () => {
-                              try {
-                                const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
-                                if (!result.canceled && result.assets && result.assets.length > 0) {
-                                  setCustomFieldValues(prev => ({ ...prev, [field.id]: [...(customFieldValues[field.id] || []), result.assets[0].uri] }));
-                                }
-                              } catch (e) { console.error('Doc Picker err', e); }
-                            }}
-                          >
-                            <AppIcon name="upload-file" size={20} color={t.colors.accentInk} />
-                            <Text style={styles.docAddText}>Allega Documento</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    );
-                  }
-
-                  if (field.type === 'images') {
-                    const customImages = customFieldValues[field.id] || [];
-                    return (
-                      <View key={field.id} style={styles.inputGroup}>
-                        {renderLabel(field.name, field.required)}
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-                          {customImages.map((uri: string, index: number) => (
-                            <View key={index}>
-                              <Image source={{ uri }} style={styles.smallPhoto} contentFit="cover" />
-                              <Pressable
-                                style={styles.smallPhotoRemove}
-                                onPress={() => {
-                                  const newImages = [...customImages];
-                                  newImages.splice(index, 1);
-                                  setCustomFieldValues(prev => ({ ...prev, [field.id]: newImages }));
-                                }}
-                              >
-                                <AppIcon name="close" size={16} color={t.colors.onData} />
-                              </Pressable>
-                            </View>
-                          ))}
-                          {customImages.length < 10 && (
-                            <Pressable
-                              style={styles.smallPhotoAdd}
-                              onPress={async () => {
-                                const result = await ImagePicker.launchImageLibraryAsync({
-                                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                                  allowsMultipleSelection: true,
-                                  quality: 0.8,
-                                });
-                                if (!result.canceled) {
-                                  const newUris = result.assets.map(a => a.uri);
-                                  setCustomFieldValues(prev => ({ ...prev, [field.id]: [...(prev[field.id] || []), ...newUris].slice(0, 10) }));
-                                }
-                              }}
-                            >
-                              <AppIcon name="add-photo-alternate" size={26} color={t.colors.accentInk} />
-                            </Pressable>
-                          )}
-                        </ScrollView>
-                      </View>
-                    );
-                  }
-
-                  if (field.type === 'date') {
-                    const val = customFieldValues[field.id];
-                    return (
-                      <View key={field.id} style={styles.inputGroup}>
-                        {renderLabel(field.name, field.required)}
-                        <Pressable
-                          style={styles.inputBox}
-                          onPress={() => setShowDatePickerMap(prev => ({ ...prev, [field.id]: true }))}
-                        >
-                          <Text style={[styles.valueText, !val && styles.valuePlaceholder]} numberOfLines={1}>
-                            {val ? new Date(val).toLocaleDateString('it-IT') : `Seleziona Data`}
-                          </Text>
-                          <AppIcon name="calendar-today" size={18} color={t.colors.info} />
-                        </Pressable>
-                        {showDatePickerMap[field.id] && (
-                          <DateTimePicker
-                            value={val ? new Date(val) : new Date()}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={(_, selectedDate) => {
-                              setShowDatePickerMap(prev => ({ ...prev, [field.id]: false }));
-                              if (selectedDate) setCustomFieldValues(prev => ({ ...prev, [field.id]: selectedDate.toISOString() }));
-                            }}
-                          />
-                        )}
-                      </View>
-                    );
-                  }
-
-                  if (field.type === 'text_short' && field.isBarcode) {
-                    return (
-                      <View key={field.id} style={styles.inputGroup}>
-                        {renderLabel(field.name, field.required)}
-                        <View style={styles.inputRow}>
-                          <View style={[styles.inputBox, styles.inputFill]}>
-                            <AppIcon name={getIcon(field)} size={18} color={t.colors.fieldIcon} />
-                            <TextInput
-                              style={styles.inputText}
-                              placeholder="Scansiona o scrivi il codice"
-                              placeholderTextColor={t.colors.placeholder}
-                              value={customFieldValues[field.id]?.toString() || ''}
-                              onChangeText={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
-                            />
-                          </View>
-                          <Pressable
-                            style={styles.sideButton}
-                            onPress={() => setScanFieldId(field.id)} // lettore vero (D02: prima un codice finto)
-                          >
-                            <AppIcon name="qr-code-scanner" size={22} color={t.colors.accentInk} />
-                          </Pressable>
-                        </View>
-                      </View>
-                    );
-                  }
-
-                  if (field.type === 'text_long') {
-                    return (
-                      <View key={field.id} style={styles.inputGroup}>
-                        {renderLabel(field.name, field.required)}
-                        <View style={styles.area}>
-                          <AppIcon name={getIcon(field)} size={18} color={t.colors.fieldIcon} style={styles.areaIcon} />
-                          <TextInput
-                            style={styles.areaText}
-                            placeholder={`Inserisci ${field.name.toLowerCase()}...`}
-                            placeholderTextColor={t.colors.placeholder}
-                            multiline
-                            numberOfLines={3}
-                            textAlignVertical="top"
-                            value={customFieldValues[field.id] || ''}
-                            onChangeText={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
-                          />
-                        </View>
-                      </View>
-                    );
-                  }
-
-                  const isNumeric = field.type === 'number' || field.type === 'currency';
-                  const unit = field.unit || (field.type === 'currency' ? '€' : undefined);
-                  return (
-                    <View key={field.id} style={styles.inputGroup}>
-                      {renderLabel(field.name, field.required)}
-                      <View style={styles.inputBox}>
-                        <AppIcon name={getIcon(field)} size={18} color={t.colors.fieldIcon} />
-                        <TextInput
-                          style={styles.inputText}
-                          placeholder={isNumeric ? '0' : 'Inserisci...'}
-                          placeholderTextColor={t.colors.placeholder}
-                          keyboardType={isNumeric ? 'numeric' : 'default'}
-                          value={customFieldValues[field.id]?.toString() || ''}
-                          onChangeText={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
-                        />
-                        {unit ? <Text style={styles.unit}>{unit}</Text> : null}
-                      </View>
-                    </View>
-                  );
-                })}
+                {existingFields.filter(isChoice).map(render)}
+                {existingFields.filter((f) => !isChoice(f)).map(render)}
               </>
             );
           })()}
@@ -763,58 +531,6 @@ function EditProductForm({ product }: { product: Product }) {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Lettore del codice per i campi con scanner: il codice letto va nel campo */}
-      {scanFieldId && (
-        <Modal visible={true} animationType="slide" onRequestClose={() => setScanFieldId(null)}>
-          <BarcodeScanner
-            onScan={({ data }) => { setCustomFieldValues(prev => ({ ...prev, [scanFieldId]: data })); setScanFieldId(null); }}
-            onClose={() => setScanFieldId(null)}
-          />
-        </Modal>
-      )}
-
-      {/* Select Modal */}
-      {selectModalConfig && (
-        <Modal visible={true} transparent={true} animationType="slide" onRequestClose={() => setSelectModalConfig(null)}>
-          <View style={styles.sheetScrim}>
-            <View style={styles.sheet}>
-              <View style={styles.sheetHeader}>
-                <Text style={styles.sheetTitle}>{selectModalConfig.name}</Text>
-                <Pressable onPress={() => setSelectModalConfig(null)}>
-                  <AppIcon name="close" size={24} color={t.colors.textPrimary} />
-                </Pressable>
-              </View>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {selectModalConfig.options.map(opt => {
-                  const isSelected = isChoiceSelected(customFieldValues[selectModalConfig.fieldId], opt, selectModalConfig.isMulti);
-
-                  return (
-                    <Pressable
-                      key={opt.id}
-                      style={styles.sheetRow}
-                      onPress={() => {
-                        setCustomFieldValues(prev => ({ ...prev, [selectModalConfig.fieldId]: toggleChoice(prev[selectModalConfig.fieldId], opt, selectModalConfig.isMulti) }));
-                        if (!selectModalConfig.isMulti) setSelectModalConfig(null);
-                      }}
-                    >
-                      <Text style={[styles.sheetRowText, isSelected && styles.sheetRowTextSelected]}>
-                        {opt.label}
-                      </Text>
-                      {isSelected && <AppIcon name="check" size={24} color={t.colors.accentInk} />}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              {selectModalConfig.isMulti && (
-                <Pressable style={[styles.primaryButton, styles.sheetConfirm]} onPress={() => setSelectModalConfig(null)}>
-                  <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-                  <Text style={styles.primaryButtonText}>Conferma Selezione</Text>
-                </Pressable>
-              )}
-            </View>
-          </View>
-        </Modal>
-      )}
     </SafeAreaView>
   );
 }

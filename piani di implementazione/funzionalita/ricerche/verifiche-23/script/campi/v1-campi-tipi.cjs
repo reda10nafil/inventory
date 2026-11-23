@@ -35,9 +35,17 @@ async function createField(h, spec) {
   if (spec.barcode) await h.click('Abilita Scanner Barcode / QR');
   if (spec.ui) await h.click(spec.ui);
   if (spec.options) {
+    // Da VAL (ticket 23) i valori si scrivono nell'editor a id stabili (OptionsEditor): campo «Es. S, M, L» e
+    // «Aggiungi valore»; prima c'erano le caselle «Valore N» e «Aggiungi Opzione». Lo script va con tutte e due.
+    const nuovo = h.page.getByPlaceholder('Es. S, M, L');
     for (let i = 0; i < spec.options.length; i++) {
-      if (i > 0) await h.click('Aggiungi Opzione');
-      await h.page.getByPlaceholder(`Valore ${i + 1}`).fill(spec.options[i]);
+      if (await nuovo.count()) {
+        await nuovo.first().fill(spec.options[i]);
+        await h.click('Aggiungi valore');
+      } else {
+        if (i > 0) await h.click('Aggiungi Opzione');
+        await h.page.getByPlaceholder(`Valore ${i + 1}`).fill(spec.options[i]);
+      }
     }
   }
   if (spec.required) await h.click('Campo obbligatorio in fase di aggiunta');

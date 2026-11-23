@@ -3,6 +3,7 @@
 // non ne ha uno (stringa vuota). In M01 questa lista si chiamava «Categorie»; da C1 le categorie sono le cartelle
 // (`utils/categories.ts`). Nessuna migrazione: id e chiave `furinventory_categories:{org}` restano quelli di M01.
 import { FUR_TYPES } from '../constants/config';
+import { choiceList } from './fieldValues';
 
 export interface FurType {
   id: string;
@@ -133,15 +134,59 @@ export function furTypeLinkedFields(fields: readonly { name: string; linkTo?: st
   return fields.filter((f) => f.linkTo === 'furType' && !f.deletedAt).map((f) => f.name);
 }
 
+// ---- VAL (ticket 23, punto 7): i campi personalizzati con «Sorgente Dati: Tipi di pelle» salvano l'id del tipo ----
+
+type WithCustomData = {
+  furType?: string;
+  deletedAt?: string;
+  customData?: readonly { value: unknown; fieldSnapshot?: { id?: string; name?: string; linkTo?: string } }[];
+};
+const linkedValues = (p: WithCustomData) =>
+  (p.customData || []).filter((d) => d.fieldSnapshot?.linkTo === 'furType').flatMap((d) => choiceList(d.value));
+
 /**
- * Messaggio dopo il rinomina. I prodotti salvano l'id del tipo, quindi mostrano il nome nuovo; i campi personalizzati
- * con «Sorgente Dati: Tipi di pelle» salvano invece il nome (`AddScreen`), che lì resta quello vecchio (ticket 23).
+ * Prodotti che usano un tipo di pelle (cestino compreso): come tipo del prodotto, oppure in un campo collegato, con
+ * l'id (da VAL) o con il nome scritto prima. Un tipo usato così non si elimina (resterebbe un id senza nome).
  */
-export function furTypeRenameMessage(oldLabel: string, newLabel: string, used: FurTypeUsage, linkedFields: readonly string[]): string {
+export function furTypeUsage(products: readonly WithCustomData[], furType: FurType): FurTypeUsage {
+  const used = products.filter((p) => p.furType === furType.id || linkedValues(p).some((v) => v === furType.id || v === furType.label));
+  const trashed = used.filter((p) => p.deletedAt).length;
+  return { active: used.length - trashed, trashed };
+}
+
+/**
+ * Campi collegati dove dei prodotti hanno ancora il **nome** del tipo scritto (compilati prima di VAL): dopo un
+ * rinomina lì resta il nome vecchio, perché non si riscrive nessun prodotto. `fields` dà il nome di adesso del campo.
+ */
+export function furTypeLegacyNames(
+  products: readonly WithCustomData[],
+  fields: readonly { id: string; name: string }[],
+  furType: FurType,
+): { field: string; count: number }[] {
+  const counts = new Map<string, { field: string; count: number }>();
+  for (const p of products) {
+    const seen = new Set<string>();
+    for (const d of p.customData || []) {
+      const id = d.fieldSnapshot?.id;
+      if (!id || d.fieldSnapshot?.linkTo !== 'furType' || seen.has(id)) continue;
+      if (!choiceList(d.value).some((v) => v === furType.label && v !== furType.id)) continue;
+      seen.add(id);
+      const entry = counts.get(id) ?? { field: fields.find((f) => f.id === id)?.name ?? d.fieldSnapshot?.name ?? id, count: 0 };
+      entry.count += 1;
+      counts.set(id, entry);
+    }
+  }
+  return [...counts.values()];
+}
+
+/**
+ * Messaggio dopo il rinomina. I prodotti salvano l'id del tipo, quindi mostrano il nome nuovo, anche nei campi
+ * collegati compilati da VAL; dove un campo collegato ha ancora il nome scritto prima (`legacy`) lì resta il vecchio.
+ */
+export function furTypeRenameMessage(oldLabel: string, newLabel: string, used: FurTypeUsage, legacy: readonly { field: string; count: number }[] = []): string {
   const n = used.active + used.trashed;
   const follow = !n ? '' : n === 1 ? ' Il prodotto che lo usa mostra il nome nuovo.' : ` I ${n} prodotti che lo usano mostrano il nome nuovo.`;
-  const list = linkedFields.map((f) => `«${f}»`).join(', ');
-  const note = !linkedFields.length ? ''
-    : `${linkedFields.length === 1 ? ` Il campo ${list} (Sorgente Dati: Tipi di pelle) salva` : ` I campi ${list} (Sorgente Dati: Tipi di pelle) salvano`} il nome, non il tipo: nei prodotti già compilati resta «${oldLabel}».`;
+  const note = legacy.filter((l) => l.count > 0).map(({ field, count }) =>
+    ` Nel campo «${field}» ${count === 1 ? '1 prodotto compilato prima ha' : `${count} prodotti compilati prima hanno`} il nome scritto: lì resta «${oldLabel}».`).join('');
   return `«${oldLabel}» ora si chiama «${newLabel}».${follow}${note}`;
 }

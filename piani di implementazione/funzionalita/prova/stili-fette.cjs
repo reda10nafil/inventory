@@ -493,6 +493,47 @@ const FETTE = {
       }],
     ],
   },
+  // VAL (ticket 23): Aggiungi con una scelta, una valuta e il contatore; Modifica che rifiuta la Taglia tolta; Scheda con
+  // «12,50 €» e l'opzione rinominata («M» → «Media», id uguale); editor dei valori di Taglia (OptionsEditor)
+  val: {
+    prepara: () => {
+      const cf = 'furinventory_custom_fields:local';
+      const fields = JSON.parse(localStorage.getItem(cf));
+      const taglia = fields.find((f) => f.id === 'field_cmp_taglia');
+      taglia.options = taglia.options.map((o) => (o.id === 'opt_2' ? { ...o, label: 'Media' } : o));
+      taglia.dataset = taglia.options.map((o) => o.label);
+      localStorage.setItem(cf, JSON.stringify(fields));
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      const vis = list.find((p) => p.sku === 'VIS-0142'); // «12,50» scritto prima di VAL (testo), Taglia «M» com'era
+      vis.customData.find((d) => d.fieldSnapshot.id === 'field_cmp_riparazione').value = '12,50';
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['aggiungi', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByText('Media', { exact: true }).locator('visible=true').first().click();
+        await page.locator('xpath=//div[normalize-space()="Costo riparazione"]/following-sibling::div[1]//input').first().fill('12,50');
+        await page.getByText('Pezzi', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['modifica-obbligatorio', async (page) => {
+        await page.goto(`${APP}/product/edit/cmp-1`); await page.waitForTimeout(1800);
+        await page.getByText('Media', { exact: true }).locator('visible=true').first().click(); // toglie la Taglia
+        await page.getByText('Salva Modifiche', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(800);
+        await page.getByText('Taglia', { exact: false }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['scheda', async (page) => {
+        await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800);
+        await page.getByText('Campi strutturati', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['editor-valori', async (page) => {
+        await page.goto(`${APP}/settings/fields`); await page.waitForTimeout(1800);
+        const card = page.getByText('Taglia', { exact: true }).locator('visible=true').first().locator('xpath=ancestor::div[.//div[@tabindex="0"]][1]');
+        await card.locator('div[tabindex="0"]').first().click(); await page.waitForTimeout(900);
+        await page.getByText('Valori da scegliere', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

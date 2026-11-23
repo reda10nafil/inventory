@@ -9,6 +9,7 @@ const { scenario } = require('./lib.cjs');
     const forn = ph.find((p) => p === 'Inserisci...');
     if (!forn) return { ph, url: h.page.url() };
     await h.page.getByPlaceholder(forn).fill('Fornitore C08');
+    await h.click('S'); // VAL (CAM-F4): Taglia è obbligatoria anche in Modifica e PUZ-0012 non l'ha
     await h.click('Salva', false);
     const p = (await h.products()).find((x) => x.sku === 'PUZ-0012');
     const v = (p.customData || []).find((c) => c.value === 'Fornitore C08');

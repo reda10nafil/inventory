@@ -25,6 +25,7 @@ import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import {
     canUseScannedLocation, fieldChoices, fieldOf, fieldValueOf, flowErrors, moveStepBy, usesScannedLocation,
 } from '../../../utils/automationRun';
+import { fieldOptions } from '../../../utils/fieldValues';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -441,8 +442,8 @@ export default function AutomationBuilderScreen() {
                                         <Text style={styles.configLabel}>Valore:</Text>
                                         {configField.type === 'single_choice' ? (
                                             <View style={styles.chipWrap}>
-                                                {(configField.options ?? []).map((o: { id: string; label?: string }) => {
-                                                    const label = o.label ?? o.id;
+                                                {fieldOptions(configField).map((o) => {
+                                                    const label = o.label;
                                                     const on = configFieldValue === label;
                                                     return (
                                                         <Pressable

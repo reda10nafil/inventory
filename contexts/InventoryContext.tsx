@@ -5,6 +5,7 @@ import { Product, TimelineEvent, Alert } from '../types';
 import { isDormant, needsPromotion } from '../services/mockData';
 import { useAuth } from './AuthContext';
 import { useShelves } from './ShelvesContext';
+import { useFurTypes } from './FurTypesContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { usage } from '../utils/productRules';
@@ -134,6 +135,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const { shelves } = useShelves();
   const shelvesRef = useRef(shelves);
   shelvesRef.current = shelves;
+  // Tipi di pelle (VAL): un campo collegato salva l'id del tipo, la Cronologia ne scrive il nome
+  const { furTypes } = useFurTypes();
+  const furTypesRef = useRef(furTypes);
+  furTypesRef.current = furTypes;
   const loadedOrganization = useRef<string | null>(null);
   const lastRemoteUpdate = useRef<string | null>(null);
   const uploadingMedia = useRef(new Set<string>());
@@ -464,7 +469,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     // Tutto ciò che cambia davvero, compresi peso, misure, SKU, tipo, cartella e campi personalizzati (P13); lo
     // scaffale col suo nome (l'id è opaco)
     const shelfName = (shelfId: string) => shelvesRef.current.find((s) => s.id === shelfId)?.name ?? 'sconosciuto';
-    const changes = describeChanges(product, updates, { shelf: shelfName });
+    const changes = describeChanges(product, updates, {
+      shelf: shelfName,
+      options: (field) => (field.linkTo === 'furType' ? furTypesRef.current : undefined),
+    });
     if (updates.images && updates.images.length > product.images.length) {
       const newPhotos = updates.images.length - product.images.length;
       changes.push(`${newPhotos} foto aggiunte`);

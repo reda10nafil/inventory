@@ -84,6 +84,7 @@ async function filtroAttenzione(h, sku) {
     await campo.evaluate((e) => e.scrollIntoView({ block: 'center' }));
     await h.shot('modifica');
     await campo.fill('20');
+    await h.click('S'); // VAL (CAM-F4): Taglia è obbligatoria anche in Modifica e AST-0033 non l'ha
     await h.click('Salva Modifiche');
     await h.page.waitForTimeout(1200);
     const p1 = await product(h, 'AST-0033', 0);

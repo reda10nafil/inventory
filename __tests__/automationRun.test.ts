@@ -67,7 +67,8 @@ describe('runStep: «Imposta Campo» in customData (P17)', () => {
   it('scrive il campo scelto con la sua scheda, non nelle note', () => {
     const r = runStep(item({ technicalNotes: 'nota' }), st('set_field', { fieldId: 'field_cond', fieldName: 'Condizione', fieldValue: 'Buono' }), ctx());
     if (!r.ok || r.op !== 'patch') throw new Error('rifiutato');
-    expect(r.patch).toEqual({ customData: [{ value: 'Buono', fieldSnapshot: COND }] });
+    // VAL: si salva l'id dell'opzione
+    expect(r.patch).toEqual({ customData: [{ value: 'opt_1', fieldSnapshot: COND }] });
     expect(r.patch.technicalNotes).toBeUndefined();
   });
   it('sostituisce il valore che c\'era, al suo posto, e lascia gli altri campi', () => {
@@ -75,11 +76,15 @@ describe('runStep: «Imposta Campo» in customData (P17)', () => {
     const p = item({ customData: [{ value: 'Nuovo', fieldSnapshot: { ...COND, name: 'Condizione vecchia' } }, other] });
     const r = runStep(p, st('set_field', { fieldId: 'field_cond', fieldValue: 'buono' }), ctx());
     if (!r.ok || r.op !== 'patch') throw new Error('rifiutato');
-    expect(r.patch.customData).toEqual([{ value: 'Buono', fieldSnapshot: COND }, other]);
+    expect(r.patch.customData).toEqual([{ value: 'opt_1', fieldSnapshot: COND }, other]);
   });
-  it('stesso valore: patch vuota', () => {
+  it('stesso valore: patch vuota (anche salvato prima di VAL con l\'etichetta, o come testo)', () => {
     const r = runStep(item({ customData: [{ value: 'Buono', fieldSnapshot: COND }] }), st('set_field', { fieldId: 'field_cond', fieldValue: 'Buono' }), ctx());
     expect(r).toMatchObject({ ok: true, op: 'patch', patch: {} });
+    expect(runStep(item({ customData: [{ value: 'opt_1', fieldSnapshot: COND }] }), st('set_field', { fieldId: 'field_cond', fieldValue: 'buono' }), ctx()))
+      .toMatchObject({ ok: true, op: 'patch', patch: {} });
+    expect(runStep(item({ customData: [{ value: '2,5', fieldSnapshot: SPESS }] }), st('set_field', { fieldId: 'field_spess', fieldValue: '2,50' }), ctx()))
+      .toMatchObject({ ok: true, op: 'patch', patch: {} });
   });
   it('automazione di prima con il nome scritto a mano: il campo con lo stesso nome', () => {
     const r = runStep(item(), st('set_field', { fieldName: 'fornitore', fieldValue: 'Pellicceria Bianchi' }), ctx());
@@ -93,9 +98,11 @@ describe('runStep: «Imposta Campo» in customData (P17)', () => {
     }
   });
   it('valori: numero con la virgola, opzione per etichetta o id, testo', () => {
-    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: '2,5', label: '2,5' });
+    // VAL: il numero come numero, la scelta con l'id dell'opzione (nel passo resta il testo, `label`)
+    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: 2.5, label: '2,5' });
     expect(fieldValueOf(SPESS, 'tanto').ok).toBe(false);
-    expect(fieldValueOf(COND, 'opt_0')).toEqual({ ok: true, value: 'Nuovo', label: 'Nuovo' });
+    expect(fieldValueOf(COND, 'opt_0')).toEqual({ ok: true, value: 'opt_0', label: 'Nuovo' });
+    expect(fieldValueOf(COND, 'buono')).toEqual({ ok: true, value: 'opt_1', label: 'Buono' });
     expect(fieldValueOf(COND, 'Rotto').ok).toBe(false);
     expect(fieldValueOf(FORN, '  Bianchi ')).toEqual({ ok: true, value: 'Bianchi', label: 'Bianchi' });
     expect(fieldValueOf(FORN, '').ok).toBe(false);
@@ -214,19 +221,19 @@ describe('dopo il parere del revisore', () => {
     expect(runStep(item({ location: 'stand_b' }), st('move_to', { useLastScannedLocation: true }), ctx({ locationId: 'stand_b' })))
       .toMatchObject({ ok: true, op: 'patch', patch: {} });
   });
-  it('valuta: si salva il numero in forma da macchina, così la Scheda lo mostra («12,5» non diventa «NaN €»)', () => {
+  it('valuta: si salva il numero (VAL), così la Scheda lo mostra («12,5» non diventa «NaN €»)', () => {
     const COSTO = field({ id: 'field_costo', name: 'Costo riparazione', type: 'currency' });
-    expect(fieldValueOf(COSTO, '12,5')).toEqual({ ok: true, value: '12.5', label: '12,5' });
-    expect(fieldValueOf(COSTO, '1.200,50')).toEqual({ ok: true, value: '1200.5', label: '1.200,50' });
-    expect(fieldValueOf(COSTO, '180')).toEqual({ ok: true, value: '180', label: '180' });
-    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: '2,5', label: '2,5' });
+    expect(fieldValueOf(COSTO, '12,5')).toEqual({ ok: true, value: 12.5, label: '12,5' });
+    expect(fieldValueOf(COSTO, '1.200,50')).toEqual({ ok: true, value: 1200.5, label: '1.200,50' });
+    expect(fieldValueOf(COSTO, '180')).toEqual({ ok: true, value: 180, label: '180' });
+    expect(fieldValueOf(SPESS, '2,5')).toEqual({ ok: true, value: 2.5, label: '2,5' });
   });
   it('valuta: il valore scritto nel passo dal costruttore, eseguito, resta lo stesso numero («2,125» non diventa 2125)', () => {
     const COSTO = field({ id: 'field_costo', name: 'Costo riparazione', type: 'currency' });
     const scritto = fieldValueOf(COSTO, '2,125');
     if (!scritto.ok) throw new Error(scritto.error);
     const r = runStep(item(), st('set_field', { fieldId: 'field_costo', fieldValue: scritto.label }), ctx({ fields: [...FIELDS, COSTO] }));
-    expect(r).toMatchObject({ ok: true, op: 'patch', patch: { customData: [{ value: '2.125', fieldSnapshot: COSTO }] } });
+    expect(r).toMatchObject({ ok: true, op: 'patch', patch: { customData: [{ value: 2.125, fieldSnapshot: COSTO }] } });
     expect(scritto.label).toBe('2,125');
   });
   it('il costruttore controlla anche il valore di «Imposta Campo» (opzione tolta, testo in un numero)', () => {

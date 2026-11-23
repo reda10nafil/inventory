@@ -159,6 +159,7 @@ async function conSottocategoria(h) {
     // Modifica di PUZ-0012 (Altro): «Nessuno»
     await openEdit(h, 'PUZ-0012');
     await h.click('Nessuno');
+    await h.click('S'); // VAL (CAM-F4): Taglia è obbligatoria anche in Modifica e PUZ-0012 non l'ha
     await h.click('Salva Modifiche');
     const puz = (await h.products()).find((x) => x.sku === 'PUZ-0012');
     const tl = (await h.timeline(0)).filter((e) => e.productId === puz.id && e.type === 'modified').map((e) => e.details?.changes);

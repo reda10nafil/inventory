@@ -105,7 +105,8 @@ const run = (name, fn, opts) => (!filtri.length || filtri.some((f) => name.inclu
     const cond = (p.customData || []).find((d) => d.fieldSnapshot?.id === 'field_cmp_cond');
     const atteso = `${p0.technicalNotes}\n[Controllato]\n[Da Pulire]\n[Stirato]`;
     const out = { note: p.technicalNotes, condizione: cond?.value ?? null, schedaCampo: cond?.fieldSnapshot?.name ?? null, altriCampi: (p.customData || []).length, azioni: await azioni(h), eventi: ev.map((e) => `${e.type}:${JSON.stringify(e.details.changes)}`) };
-    const ok = p.technicalNotes === atteso && out.condizione === 'Buono' && out.altriCampi === (p0.customData || []).length + 1 && out.azioni === '4' && ev.length === 4;
+    // VAL (ticket 23): «Imposta Campo» salva l'id dell'opzione (opt_2 = «Buono» nel campionario), come Aggiungi e Modifica
+    const ok = p.technicalNotes === atteso && out.condizione === 'opt_2' && out.altriCampi === (p0.customData || []).length + 1 && out.azioni === '4' && ev.length === 4;
     return { ok, ...out };
   });
 
@@ -199,7 +200,7 @@ const run = (name, fn, opts) => (!filtri.length || filtri.some((f) => name.inclu
     const ok = avviso && nonSalvata && salvate.length === 1
       && passi.join('|') === '0:scan_product:Scansiona Prodotto|1:move_to:Sposta in: Vetrina|2:add_tag:Aggiungi Tag: Verificato|3:set_field:Imposta Condizione = Buono'
       && campo && campo.fieldId === 'field_cmp_cond' && campo.fieldValue === 'Buono'
-      && p.location === 'vetrina' && p.technicalNotes === '[Verificato]' && out.eseguita.condizione === 'Buono';
+      && p.location === 'vetrina' && p.technicalNotes === '[Verificato]' && out.eseguita.condizione === 'opt_2'; // VAL: l'id
     return { ok, ...out };
   }, { dialogs: ['ok', 'ok', 'ok', 'ok'] });
 
@@ -319,7 +320,8 @@ const run = (name, fn, opts) => (!filtri.length || filtri.some((f) => name.inclu
       primaFinestra, secondaFinestra, posizione: p.location, nota: (p.technicalNotes || '').endsWith('[Visto]'), costo: costo?.value ?? null,
       status: p.status, sellPrice: p.sellPrice, eventi: ev.map((e) => e.type), schedaCosto: scheda.includes('12,50 €'), schedaNaN: scheda.includes('NaN'),
     };
-    const ok = primaFinestra && secondaFinestra && p.location === 'vetrina' && out.nota && out.costo === '12.5' && p.status === 'sold'
+    // VAL: la valuta si salva come numero
+    const ok = primaFinestra && secondaFinestra && p.location === 'vetrina' && out.nota && out.costo === 12.5 && p.status === 'sold'
       && p.sellPrice === 4000 && !out.eventi.includes('moved') && out.schedaCosto && !out.schedaNaN;
     return { ok, ...out };
   });

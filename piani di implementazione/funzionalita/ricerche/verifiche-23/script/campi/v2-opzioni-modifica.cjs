@@ -28,7 +28,14 @@ async function labelOrder(page, names) {
     await h.go('settings/fields');
     await cardButtons(h, 'Taglia').nth(0).click();
     await h.page.waitForTimeout(700);
-    await h.page.getByPlaceholder('Valore 3').fill('Media');
+    // Da VAL (ticket 23) l'editor dei valori è OptionsEditor (tocco sul valore, nome nuovo, «Salva nome»); prima la
+    // casella «Valore 3». Lo script va con tutte e due.
+    if (await h.page.getByPlaceholder('Valore 3').count()) await h.page.getByPlaceholder('Valore 3').fill('Media');
+    else {
+      await h.page.locator('[aria-label="Rinomina M"]').locator('visible=true').first().click();
+      await h.page.getByPlaceholder('Es. S, M, L').fill('Media');
+      await h.click('Salva nome');
+    }
     await h.click('Aggiorna');
     const taglia = (await h.store(KEY)).find((f) => f.id === 'field_cmp_taglia');
     const p = (await h.products(0)).find((x) => x.sku === 'VIS-0142');

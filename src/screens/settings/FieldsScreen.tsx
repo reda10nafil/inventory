@@ -9,7 +9,8 @@ import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { FieldUIType, CustomField } from '../../../types';
 import { usage } from '../../../utils/productRules';
-import { furTypeDeleteError, furTypeLinkedFields, furTypeNameError, furTypeRenameMessage, furTypeUsageText } from '../../../utils/furTypes';
+import { furTypeDeleteError, furTypeLegacyNames, furTypeNameError, furTypeRenameMessage, furTypeUsage, furTypeUsageText } from '../../../utils/furTypes';
+import { fieldOptions, newOptionId, optionDeleteError, optionNameError, optionUsage, type FieldOption } from '../../../utils/fieldValues';
 import { OptionsEditor } from '../../../components/OptionsEditor';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -42,10 +43,13 @@ export default function CustomFieldsScreen() {
   // schermata con l'editor già aperto. Stessa lista e stessa chiave di prima (`useFurTypes`); i prodotti salvano l'id.
   const [showFurTypes, setShowFurTypes] = useState(route.name === 'SettingsCategories');
   const furTypeUsed = (id: string) => usage(products, { furType: id });
+  // VAL: anche i campi con «Sorgente Dati: Tipi di pelle» usano un tipo (con l'id, o col nome scritto prima)
+  const furTypeInUse = (id: string) => furTypeUsage(products, furTypes.find((f) => f.id === id) ?? { id, label: id });
   const handleRenameFurType = async (id: string, label: string) => {
     const old = furTypes.find((f) => f.id === id)?.label ?? id;
+    const legacy = furTypeLegacyNames(products, customFields, { id, label: old });
     await renameFurType(id, label);
-    Alert.alert('Fatto', furTypeRenameMessage(old, label, furTypeUsed(id), furTypeLinkedFields(customFields)));
+    Alert.alert('Fatto', furTypeRenameMessage(old, label, furTypeUsed(id), legacy));
   };
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -57,7 +61,8 @@ export default function CustomFieldsScreen() {
   const [fieldUnit, setFieldUnit] = useState('');
 
   const [stepperOptions, setStepperOptions] = useState({ min: '0', max: '100', step: '1' });
-  const [options, setOptions] = useState<string[]>(['']);
+  // Valori di un campo a scelta (VAL, CAM-F1): bozza a id stabili, salvata con «Aggiorna» / «Salva Campo»
+  const [options, setOptions] = useState<FieldOption[]>([]);
   const [isRequired, setIsRequired] = useState(false);
 
   // Advanced Inteligence Features
@@ -72,7 +77,7 @@ export default function CustomFieldsScreen() {
     setFieldUnit('');
     setStepperOptions({ min: '0', max: '100', step: '1' });
     setIsRequired(false);
-    setOptions(['']);
+    setOptions([]);
     setIsBarcode(false);
     setLinkTo(null);
     setEditingField(null);
@@ -89,9 +94,9 @@ export default function CustomFieldsScreen() {
     setIsBarcode(field.isBarcode || false);
     setLinkTo(field.linkTo || null);
 
-    if (field.dataset && Array.isArray(field.dataset)) {
-      setOptions(field.dataset);
-    } else if (field.dataset && typeof field.dataset === 'object') {
+    if (field.type === 'single_choice' || field.type === 'multi_choice') {
+      setOptions(fieldOptions(field));
+    } else if (field.dataset && typeof field.dataset === 'object' && !Array.isArray(field.dataset)) {
       setStepperOptions({
         min: String(field.dataset.min ?? '0'),
         max: String(field.dataset.max ?? '100'),
@@ -119,17 +124,17 @@ export default function CustomFieldsScreen() {
     if (baseType === 'images') finalUIType = 'images';
 
     let dataset: any = null;
-    let fieldOptions: any = undefined;
+    let savedOptions: FieldOption[] | undefined = undefined;
 
     if (baseType === 'single_choice' || baseType === 'multi_choice') {
       if (!linkTo) {
-        const validOptions = options.map(o => o.trim()).filter(Boolean);
-        if (validOptions.length === 0) {
+        if (options.length === 0) {
           Alert.alert('Errore', 'Aggiungi almeno una opzione nel Dataset oppure seleziona una Sorgente Dati dinamica');
           return;
         }
-        dataset = validOptions;
-        fieldOptions = validOptions.map((o, i) => ({ id: `opt_${i}`, label: o }));
+        // Gli id restano quelli di prima (mai rinumerati: i prodotti li salvano); `dataset` allineato alle etichette
+        dataset = options.map((o) => o.label);
+        savedOptions = options;
       }
     } else if (finalUIType === 'stepper') {
       dataset = {
@@ -144,7 +149,7 @@ export default function CustomFieldsScreen() {
       type: baseType,
       uiType: finalUIType,
       dataset,
-      options: fieldOptions,
+      options: savedOptions,
       required: isRequired,
       icon: selectedIcon,
       unit: fieldUnit || undefined,
@@ -178,17 +183,8 @@ export default function CustomFieldsScreen() {
     );
   };
 
-  const updateOption = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
-  };
-
-  const removeOption = (index: number) => {
-    if (options.length > 1) {
-      setOptions(options.filter((_, i) => i !== index));
-    }
-  };
+  // Uso di un valore nei prodotti (anche salvato con l'etichetta di prima): un valore usato non si elimina
+  const optionUsed = (id: string) => (editingField ? optionUsage(products, editingField, id) : { active: 0, trashed: 0 });
 
   if (loading) {
     return (
@@ -243,9 +239,9 @@ export default function CustomFieldsScreen() {
                     {FIELD_TYPE_INFO[field.type]?.label} {field.uiType && !field.isSystem ? `(UI: ${field.uiType})` : ''}
                     {field.unit ? ` • ${field.unit}` : ''}
                   </Text>
-                  {field.dataset && Array.isArray(field.dataset) && (
+                  {!field.linkTo && (field.type === 'single_choice' || field.type === 'multi_choice') && fieldOptions(field).length > 0 && (
                     <Text style={styles.fieldOptions} numberOfLines={1}>
-                      Valori: {field.dataset.join(', ')}
+                      Valori: {fieldOptions(field).map((o) => o.label).join(', ')}
                     </Text>
                   )}
                   {field.isSystem && field.id === 'furType' && (
@@ -470,29 +466,21 @@ export default function CustomFieldsScreen() {
                       ))}
                     </ScrollView>
 
+                    {/* Valori a id stabili (VAL, CAM-F1): rinominare cambia solo l'etichetta, i prodotti restano collegati */}
                     {!linkTo && (
                       <>
-                        <Text style={styles.inputLabel}>Opzioni del menu (Dataset manuale)</Text>
-                        {options.map((option, index) => (
-                          <View key={index} style={styles.optionRow}>
-                            <TextInput
-                              style={[styles.input, styles.optionInput]}
-                              placeholder={`Valore ${index + 1}`}
-                              placeholderTextColor={t.colors.placeholder}
-                              value={option}
-                              onChangeText={(text) => updateOption(index, text)}
-                            />
-                            {options.length > 1 && (
-                              <Pressable style={styles.removeOptionButton} onPress={() => removeOption(index)}>
-                                <AppIcon name="remove-circle" size={24} color={t.colors.error} />
-                              </Pressable>
-                            )}
-                          </View>
-                        ))}
-                        <Pressable style={styles.addOptionButton} onPress={() => setOptions([...options, ''])}>
-                          <AppIcon name="add" size={20} color={t.colors.accentInk} />
-                          <Text style={styles.addOptionText}>Aggiungi Opzione</Text>
-                        </Pressable>
+                        <Text style={styles.inputLabel}>Valori da scegliere</Text>
+                        <OptionsEditor
+                          options={options}
+                          usedBy={(id) => furTypeUsageText(optionUsed(id))}
+                          nameError={(label, editingId) => optionNameError(label, options, editingId)}
+                          deleteError={(id) => optionDeleteError(options, id, optionUsed(id))}
+                          onAdd={(label) => setOptions((prev) => [...prev, { id: newOptionId(prev), label }])}
+                          onRename={(id, label) => setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, label } : o)))}
+                          onDelete={(id) => setOptions((prev) => prev.filter((o) => o.id !== id))}
+                          placeholder="Es. S, M, L"
+                          hint="Tocca un valore per rinominarlo: i prodotti che lo usano restano collegati e mostrano il nome nuovo. Un valore usato da un prodotto, anche venduto o nel cestino, non si elimina. Le modifiche valgono con «Aggiorna»."
+                        />
                       </>
                     )}
                   </View>
@@ -563,9 +551,9 @@ export default function CustomFieldsScreen() {
             {/* Finché la lista salvata non è letta si aspetta: un valore aggiunto partirebbe dai predefiniti */}
             {furTypesLoading ? <ActivityIndicator size="large" color={t.colors.accentInk} /> : <OptionsEditor
               options={furTypes}
-              usedBy={(id) => furTypeUsageText(furTypeUsed(id))}
+              usedBy={(id) => furTypeUsageText(furTypeInUse(id))}
               nameError={(label, editingId) => furTypeNameError(label, furTypes, editingId)}
-              deleteError={(id) => furTypeDeleteError(furTypes, id, furTypeUsed(id))}
+              deleteError={(id) => furTypeDeleteError(furTypes, id, furTypeInUse(id))}
               onAdd={async (label) => { await addFurType(label); Alert.alert('Fatto', `«${label}» aggiunto ai tipi di pelle`); }}
               onRename={handleRenameFurType}
               onDelete={deleteFurType}
@@ -656,11 +644,6 @@ const useStyles = makeStyles((t) => ({
 
   datasetBox: { ...tileSurface(t), padding: 16, marginTop: 16 },
 
-  optionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  optionInput: { flex: 1, minWidth: 0 },
-  removeOptionButton: { padding: 4 },
-  addOptionButton: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, marginTop: 8 },
-  addOptionText: { color: t.colors.accentInk, fontWeight: '600' },
   requiredToggle: { ...tileSurface(t), flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, padding: 16, marginBottom: 40 },
   requiredToggleText: { ...t.typography.body, fontSize: 15 },
 }));

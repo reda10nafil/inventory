@@ -274,6 +274,7 @@ const apriModifica = async (h, sku) => { await h.click(sku); await h.page.waitFo
     await h.click('PUZ-0012'); await h.page.waitForTimeout(800);
     const out = { etichettaPrima: await h.has('Mostra SKU QR'), testoVecchio: await h.has('Modifica e salva il prodotto per generarlo') };
     await press(h.page, /^.?\s*Modifica$/); await h.page.waitForTimeout(1200);
+    await h.click('S'); // VAL (CAM-F4): Taglia è obbligatoria anche in Modifica e PUZ-0012 non l'ha
     await salvaModifica(h);
     out.link = (await prodotto(h, 'PUZ-0012', 500)).gs1DigitalLink ?? null;
     out.etichettaDopo = await h.has('Mostra SKU QR');

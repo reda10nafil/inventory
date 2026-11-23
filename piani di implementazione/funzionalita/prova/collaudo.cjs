@@ -12,6 +12,7 @@ const g = require('./gal-util.cjs');
 const { textOf, press } = require('./a1-util.cjs');
 const c = require('./cod-util.cjs');
 const { scan, iconAt } = require('./a3-util.cjs');
+const v = require('./val-util.cjs');
 
 const goBacks = (page) => { const l = []; page.on('console', (m) => { if (/GO_BACK/.test(m.text())) l.push(m.text()); }); return l; };
 const IN_BASSO = ['Indietro', 'Annulla', 'Torna Indietro', 'Chiudi'];
@@ -157,10 +158,11 @@ async function cfC3(h) {
   return { ok, foto, percorsi: p.storageImagePaths, scheda, richiesteSupabaseBloccate: bloccate.n };
 }
 
-// CF-C4 (parti GAL e COD): prezzo d'acquisto 0 (VIS-0098) mostrato bene nella Scheda, prima e dopo una Modifica senza
-// cambiare nulla (resta 0, nessuna riga «Prezzo acquisto» in Cronologia); COD: dopo quella Modifica VIS-0098 resta
+// CF-C4 (parti GAL, COD e VAL): prezzo d'acquisto 0 (VIS-0098) mostrato bene nella Scheda, prima e dopo una Modifica
+// senza cambiare nulla (resta 0, nessuna riga «Prezzo acquisto» in Cronologia); COD: dopo quella Modifica VIS-0098 resta
 // senza link GS1 (NG02) e con lo stesso SKU; VIS-0142 con il lotto acceso in Impostazioni › GS1, Modifica senza
-// cambiare nulla e poi con il peso cambiato: SKU e link identici (NG27). Restano a VAL gli obbligatori.
+// cambiare nulla e poi con il peso cambiato: SKU e link identici (NG27). VAL: la Modifica senza cambi lascia i campi
+// personalizzati identici (nessuna riscrittura); togliendo la Taglia (obbligatoria) la Modifica non salva.
 async function cfC4(h) {
   const { page } = h;
   // COD: lotto acceso con un campo scelto, come in ng-lotto-modifica (il corpo gira nel browser prima di riaprire l'app)
@@ -194,7 +196,19 @@ async function cfC4(h) {
   out.vis0142 = { prima: v0.gs1DigitalLink, senzaCambi: v1.gs1DigitalLink, conPeso: v2.gs1DigitalLink, peso: v2.weight, sku: v2.sku };
   const okCod = out.vis0098.sku === 'VIS-0098' && out.vis0098.link === null && v0.gs1DigitalLink === 'https://syncroflow.app/id/01/VIS-0142/21/000142'
     && v1.gs1DigitalLink === v0.gs1DigitalLink && v2.gs1DigitalLink === v0.gs1DigitalLink && v2.weight === 2.4 && v2.sku === 'VIS-0142';
-  return { ok: okGal && okCod, ...out, daFare: 'VAL: obbligatori controllati' };
+  // VAL: campi personalizzati identici dopo le due Modifiche (né la Taglia «M» né «180» riscritti), poi la Taglia tolta
+  const finestre = [];
+  page.on('dialog', (d) => finestre.push(d.message().replace(/\n+/g, ' | ')));
+  await v.openEdit(h, 'VIS-0142');
+  await h.click('M');
+  await press(page, /Salva Modifiche$/);
+  const v3 = (await h.products()).find((x) => x.id === 'cmp-1');
+  out.val = {
+    campiUguali: JSON.stringify(v1.customData) === JSON.stringify(v0.customData) && JSON.stringify(v2.customData) === JSON.stringify(v0.customData),
+    rifiuto: finestre.find((m) => /Compila anche/.test(m)) ?? null, taglia: v.valore(v3, 'field_cmp_taglia'), restaInModifica: /product\/edit/.test(page.url()),
+  };
+  const okVal = out.val.campiUguali && out.val.rifiuto === 'Campi obbligatori | Compila anche: Taglia' && out.val.taglia === 'M' && out.val.restaInModifica;
+  return { ok: okGal && okCod && okVal, ...out };
 }
 
 // CF-E1 (COD): Scanner a mano con lo SKU, lo SKU in minuscolo, il link GS1 di VIS-0142 e lo stesso link con un altro
@@ -392,10 +406,34 @@ async function cfF7(h) {
   };
   const ok = passi.join('|') === 'Scansiona Prodotto|Aggiungi Tag: Controllato|Aggiungi Tag: Da Pulire|Imposta Condizione = Buono|Vendi (con conferma prezzo)'
     && note.length === 3 && note[0] === ast0.technicalNotes && note[1] === '[Controllato]' && note[2] === '[Da Pulire]'
-    && out.condizione === 'Buono' && out.schedaCondizione === 'Condizione' && ast.sellPrice === 1300.5 && ast.status === 'sold'
+    && out.condizione === 'opt_2' && out.schedaCondizione === 'Condizione' && ast.sellPrice === 1300.5 && ast.status === 'sold'
     && venduto.length === 1 && venduto[0] === 1300.5 && azioni === '4'
     && dopo.length === 1 && dopo[0] === 'Controllo e vendita' && out.flussoDaCorreggere;
   return { ok, ...out };
+}
+
+// CF-B3 (parte VAL): un'opzione usata e rinominata dall'editor dei valori (Campi › Taglia, «M» → «Media»): i prodotti
+// che l'avevano non si riscrivono, mostrano «Media» nella Scheda e in Modifica resta scelta; gli id delle opzioni non
+// cambiano. Restano a EDC «Colore» con pillole, colori e icona, «Larghezza» con la ruota, la compilazione veloce.
+async function cfB3(h) {
+  const prima = await h.products(0);
+  await v.matita(h, 'Taglia');
+  await v.rinomina(h, 'M', 'Media');
+  await h.click('Aggiorna');
+  const taglia = (await h.store(v.CF)).find((f) => f.id === 'field_cmp_taglia');
+  const dopo = await h.products(0);
+  const schede = {
+    vis0142: (await v.scheda(h, 'cmp-1', [['Taglia', 5]])).Taglia,
+    vis0098: (await v.scheda(h, 'cmp-5', [['Taglia', 5]])).Taglia,
+  };
+  await v.openEdit(h, 'VIS-0098');
+  const inModifica = await v.scelti(h.page, ['XS', 'S', 'Media', 'L', 'XL']);
+  const out = {
+    opzioni: (taglia.options || []).map((o) => `${o.id}:${o.label}`).join(), prodottiUguali: JSON.stringify(dopo) === JSON.stringify(prima), schede, inModifica,
+  };
+  const ok = out.opzioni === 'opt_0:XS,opt_1:S,opt_2:Media,opt_3:L,opt_4:XL' && out.prodottiUguali && schede.vis0142 === 'Media' && schede.vis0098 === 'Media'
+    && inModifica.join() === 'Media';
+  return { ok, ...out, daFare: 'EDC: «Colore» con pillole, colori e icona, «Larghezza» con la ruota, compilazione veloce in Aggiungi, icone e colori nella Scheda' };
 }
 
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
@@ -405,7 +443,7 @@ const PASSI = [
   ['CF-A3', 'Avvio a freddo e giro di tutte le schermate: 0 errori in console; nessuna voce «Prossimamente» senza decisione', 'IND, VOCI'],
   ['CF-B1', 'Categoria «Borse» con la sottocategoria «Borse › Zaini»', 'C1 (fatta, passo da scrivere)'],
   ['CF-B2', 'Modulo di «Borse» da un Modello di settore', 'MCAT'],
-  ['CF-B3', 'Campo «Colore» (pillole, colori, icona) e «Larghezza» (ruota); rinomina di un\'opzione usata', 'VAL, EDC'],
+  ['CF-B3', 'Campo «Colore» (pillole, colori, icona) e «Larghezza» (ruota); rinomina di un\'opzione usata', 'VAL, EDC', cfB3],
   ['CF-B4', 'Modulo di «Borse»: nascondere, sezione, uscire senza salvare, salvare', 'MOD, MCAT'],
   ['CF-B5', 'Campi › «Tipo di pelle»: aggiungere e rinominare un valore; voce assente da Impostazioni; valore usato non eliminabile', 'C2', cfB5],
   ['CF-C1', 'Aggiungi con categoria in testa e 3 foto; Scheda con galleria e visore', 'MCAT, GAL', cfC1],

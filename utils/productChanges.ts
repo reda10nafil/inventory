@@ -1,10 +1,11 @@
 // Righe «modificato» della Cronologia: cosa è cambiato in un prodotto (P13).
 // Prima si registravano solo posizione, prezzi, note e foto: peso, misure, tipo, SKU, cartella e campi
 // personalizzati cambiavano senza lasciare traccia.
-import type { Product, ProductCustomData } from '../types';
+import type { CustomField, Product, ProductCustomData } from '../types';
 import { formatNumberInput } from './number';
 import { formatPrice } from './price';
 import { isReorder } from './photos';
+import { fieldOptions, sameValue, valueText, type FieldOption } from './fieldValues';
 
 const show = (value: unknown): string => {
   if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return '—';
@@ -21,8 +22,13 @@ const price = (v?: number) => (v == null ? '—' : formatPrice(v));
 /**
  * Righe leggibili per i campi che `updates` cambia davvero rispetto a `before`. `labels.shelf` dà il nome di uno
  * scaffale (S1a): il suo id è opaco e non si scrive mai; senza, il cambio di scaffale non ha una riga.
+ * `labels.options` dà le opzioni di un campo collegato a una lista dell'app (i tipi di pelle salvano l'id, VAL).
  */
-export function describeChanges(before: Product, updates: Partial<Product>, labels?: { shelf?: (id: string) => string }): string[] {
+export function describeChanges(
+  before: Product,
+  updates: Partial<Product>,
+  labels?: { shelf?: (id: string) => string; options?: (field: CustomField) => readonly FieldOption[] | undefined },
+): string[] {
   const changed = <K extends keyof Product>(k: K) => k in updates && !same(updates[k], before[k]);
   const out: string[] = [];
   if (changed('sku')) out.push(`SKU: ${show(before.sku)} → ${show(updates.sku)}`);
@@ -49,19 +55,32 @@ export function describeChanges(before: Product, updates: Partial<Product>, labe
   // GAL: «Metti come principale» e «Sposta» cambiano solo l'ordine (la prima è la foto della card, del PDF e della
   // condivisione)
   if (updates.images && isReorder(before.images || [], updates.images)) out.push('Foto riordinate');
-  if (updates.customData) out.push(...describeCustomChanges(before.customData || [], updates.customData));
+  if (updates.customData) out.push(...describeCustomChanges(before.customData || [], updates.customData, labels?.options));
   return out;
 }
 
-function describeCustomChanges(before: ProductCustomData[], after: ProductCustomData[]): string[] {
+// VAL: i valori si confrontano e si scrivono come li legge la Scheda: un'etichetta salvata prima e l'id della stessa
+// opzione non sono una modifica («M» → «opt_2»), e nella riga c'è l'etichetta, mai l'id; «3» e 3 sono uguali.
+function describeCustomChanges(
+  before: ProductCustomData[],
+  after: ProductCustomData[],
+  linked?: (field: CustomField) => readonly FieldOption[] | undefined,
+): string[] {
   const value = (list: ProductCustomData[]) => new Map(list.map((d) => [d.fieldSnapshot?.id, d]));
   const old = value(before);
   const now = value(after);
   const ids = [...new Set([...old.keys(), ...now.keys()])].filter(Boolean);
-  return ids
-    .filter((id) => !same(old.get(id)?.value, now.get(id)?.value))
-    .map((id) => {
-      const name = now.get(id)?.fieldSnapshot?.name ?? old.get(id)?.fieldSnapshot?.name ?? id;
-      return `${name}: ${show(old.get(id)?.value)} → ${show(now.get(id)?.value)}`;
-    });
+  const text = (field: CustomField, entry: ProductCustomData | undefined, options: readonly FieldOption[]) => {
+    const t = entry ? valueText(field, entry.value, { options, snapshot: entry.fieldSnapshot }) : '';
+    return t ? (t.length > 40 ? `${t.slice(0, 39)}…` : t) : '—';
+  };
+  return ids.flatMap((id) => {
+    const o = old.get(id);
+    const n = now.get(id);
+    const field = (n?.fieldSnapshot ?? o?.fieldSnapshot) as CustomField | undefined;
+    if (!field) return same(o?.value, n?.value) ? [] : [`${id}: ${show(o?.value)} → ${show(n?.value)}`];
+    const options = (field.linkTo ? linked?.(field) : undefined) ?? fieldOptions(field);
+    if (sameValue(field, o?.value, n?.value, { options, snapshots: [o?.fieldSnapshot, n?.fieldSnapshot] })) return [];
+    return [`${field.name ?? id}: ${text(field, o, options)} → ${text(field, n, options)}`];
+  });
 }

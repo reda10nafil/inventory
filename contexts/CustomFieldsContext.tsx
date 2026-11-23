@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { CustomField, FieldUIType } from '../types';
 import { withSystemFieldNames } from '../utils/furTypes';
+import { normalizeField } from '../utils/fieldValues';
 
 const STORAGE_KEY = 'furinventory_custom_fields';
 
@@ -85,8 +86,14 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
                     // si leggono coi nomi nuovi, e il tipo di pelle non obbligatorio, senza riscrivere nulla
                     const merged = withSystemFieldNames([...parsed, ...missingSystemFields]);
 
-                    // Sort by order
-                    setAllFields(merged.sort((a: CustomField, b: CustomField) => a.order - b.order));
+                    // VAL (CAM-F1): le opzioni dei campi a scelta diventano la fonte, con gli id di sempre (mai
+                    // rinumerati); un campo che aveva solo le etichette riceve gli id una volta, e il registro si salva
+                    // solo allora (i prodotti non si toccano)
+                    const normalized = merged.map(normalizeField);
+                    const sorted = normalized.sort((a: CustomField, b: CustomField) => a.order - b.order);
+                    fieldsRef.current = sorted;
+                    setAllFields(sorted);
+                    if (normalized.some((f: CustomField) => !merged.includes(f))) saveFields(sorted);
                 } else {
                     setAllFields(DEFAULT_CUSTOM_FIELDS);
                     saveFields(DEFAULT_CUSTOM_FIELDS);
@@ -131,39 +138,35 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
         return newField;
     }, [organizationId]); // saveFields scrive nella chiave dello spazio attivo
 
-    // Update an existing field
-    const updateField = useCallback(async (id: string, updates: Partial<CustomField>) => {
-        const newFields = allFields.map((f) =>
-            f.id === id ? { ...f, ...updates } : f
-        );
+    // Scrittura del registro dall'elenco più recente (`fieldsRef`), come `addField` (D12): chiamate di seguito non
+    // perdono la modifica di quella prima (CAM-F11, VAL)
+    const writeFields = async (change: (current: CustomField[]) => CustomField[]) => {
+        const newFields = change(fieldsRef.current);
+        fieldsRef.current = newFields;
         setAllFields(newFields);
         await saveFields(newFields);
-    }, [allFields]);
+    };
+
+    // Update an existing field
+    const updateField = useCallback(async (id: string, updates: Partial<CustomField>) => {
+        await writeFields((current) => current.map((f) => (f.id === id ? { ...f, ...updates } : f)));
+    }, [organizationId]);
 
     // Soft-delete a field (move to trash)
     const deleteField = useCallback(async (id: string) => {
-        const newFields = allFields.map((f) =>
-            f.id === id ? { ...f, deletedAt: new Date().toISOString() } : f
-        );
-        setAllFields(newFields);
-        await saveFields(newFields);
-    }, [allFields]);
+        const deletedAt = new Date().toISOString();
+        await writeFields((current) => current.map((f) => (f.id === id ? { ...f, deletedAt } : f)));
+    }, [organizationId]);
 
     // Restore a soft-deleted field
     const restoreField = useCallback(async (id: string) => {
-        const newFields = allFields.map((f) =>
-            f.id === id ? { ...f, deletedAt: undefined } : f
-        );
-        setAllFields(newFields);
-        await saveFields(newFields);
-    }, [allFields]);
+        await writeFields((current) => current.map((f) => (f.id === id ? { ...f, deletedAt: undefined } : f)));
+    }, [organizationId]);
 
     // Permanently delete a field
     const permanentlyDeleteField = useCallback(async (id: string) => {
-        const newFields = allFields.filter((f) => f.id !== id);
-        setAllFields(newFields);
-        await saveFields(newFields);
-    }, [allFields]);
+        await writeFields((current) => current.filter((f) => f.id !== id));
+    }, [organizationId]);
 
     // Get deleted fields
     const getDeletedFields = useCallback(() => {
@@ -172,18 +175,16 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
 
     // Reorder fields
     const reorderFields = useCallback(async (orderedIds: string[]) => {
-        const reordered = orderedIds.map((id, index) => {
-            const field = allFields.find((f) => f.id === id);
-            return field ? { ...field, order: index } : null;
-        }).filter(Boolean) as CustomField[];
-
-        // Keep deleted fields as-is
-        const deletedFields = allFields.filter(f => f.deletedAt && !orderedIds.includes(f.id));
-        const combined = [...reordered, ...deletedFields];
-
-        setAllFields(combined);
-        await saveFields(combined);
-    }, [allFields]);
+        await writeFields((current) => {
+            const reordered = orderedIds.map((id, index) => {
+                const field = current.find((f) => f.id === id);
+                return field ? { ...field, order: index } : null;
+            }).filter(Boolean) as CustomField[];
+            // Keep deleted fields as-is
+            const deletedFields = current.filter(f => f.deletedAt && !orderedIds.includes(f.id));
+            return [...reordered, ...deletedFields];
+        });
+    }, [organizationId]);
 
     // Get field by ID
     const getField = useCallback((id: string) => {
@@ -192,9 +193,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
 
     // Reset to defaults
     const resetToDefaults = useCallback(async () => {
-        setAllFields(DEFAULT_CUSTOM_FIELDS);
-        await saveFields(DEFAULT_CUSTOM_FIELDS);
-    }, []);
+        await writeFields(() => DEFAULT_CUSTOM_FIELDS);
+    }, [organizationId]);
 
     return (
         <CustomFieldsContext.Provider

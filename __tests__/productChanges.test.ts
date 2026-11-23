@@ -55,3 +55,21 @@ describe('describeChanges: scaffale (S1a)', () => {
     expect(describeChanges(before, { shelfId: undefined }, { shelf })).toEqual([]);
   });
 });
+
+describe('describeChanges: valori dei campi personalizzati (VAL)', () => {
+  const opts = ['XS', 'S', 'M', 'L'].map((label, i) => ({ id: `opt_${i}`, label }));
+  const taglia = { id: 'ft', name: 'Taglia', type: 'single_choice', uiType: 'grid', required: true, order: 0, options: opts } as any;
+  const tagliaDopo = { ...taglia, options: opts.map((o) => (o.id === 'opt_2' ? { ...o, label: 'Media' } : o)) };
+  const spess = { id: 'fs', name: 'Spessore', type: 'number', uiType: 'text', unit: 'mm', required: false, order: 0 } as any;
+  const pelle = { id: 'fp', name: 'Pelle interna', type: 'single_choice', uiType: 'grid', required: false, order: 0, linkTo: 'furType' } as any;
+  const prima = { ...before, customData: [{ value: 'M', fieldSnapshot: taglia }, { value: '3', fieldSnapshot: spess }, { value: 'Visone', fieldSnapshot: pelle }] };
+  it('l\'etichetta di prima e l\'id della stessa opzione, «3» e 3: nessuna riga', () => {
+    const customData = [{ value: 'opt_2', fieldSnapshot: tagliaDopo }, { value: 3, fieldSnapshot: spess }, { value: 'visone', fieldSnapshot: pelle }];
+    expect(describeChanges(prima, { customData }, { options: () => [{ id: 'visone', label: 'Visone' }] })).toEqual([]);
+  });
+  it('una modifica vera si scrive con le etichette, mai con gli id', () => {
+    const customData = [{ value: 'opt_3', fieldSnapshot: tagliaDopo }, { value: 4.5, fieldSnapshot: spess }, { value: 'volpe', fieldSnapshot: pelle }];
+    expect(describeChanges(prima, { customData }, { options: () => [{ id: 'visone', label: 'Visone' }, { id: 'volpe', label: 'Volpe' }] }))
+      .toEqual(['Taglia: Media → L', 'Spessore: 3 mm → 4,5 mm', 'Pelle interna: Visone → Volpe']);
+  });
+});

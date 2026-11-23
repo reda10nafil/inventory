@@ -1,22 +1,17 @@
 // FurInventory Pro - Add Product Screen
 import React, { useState } from 'react';
-import { View, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, useWindowDimensions, Modal } from 'react-native';
+import { View, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
 import * as ImagePicker from '../../lib/imagePicker';
 import * as DocumentPicker from '../../lib/documentPicker';
 import { ActionSheetIOS } from 'react-native';
-import { Image } from '../../lib/ExpoImage';
-import BarcodeScanner from '../../../components/BarcodeScanner';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Sharing from '../../lib/sharing';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { parseNumber } from '../../../utils/number';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { CategoryPicker } from '../../../components/CategoryPicker';
-import { categoryPath, categoryTree } from '../../../utils/categories';
-import { useCustomFields, CustomField } from '../../../contexts/CustomFieldsContext';
+import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { missingRequiredFields } from '../../../utils/formValidation';
 import { useLayout, LayoutField, sectionLabel } from '../../../contexts/LayoutContext';
 import { useGS1Config } from '../../../contexts/GS1ConfigContext';
@@ -25,7 +20,10 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { Text, TextInput } from '../../../components/ui/Text';
-import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
+import { formStyles } from '../../../components/ui/formStyles';
+import { FieldInput, fieldIcon } from '../../../components/FieldInput';
+import { useFieldOptions } from '../../../hooks/useFieldOptions';
+import { fieldError, invalidNumberFields, isChoiceField, NO_FLAGS, savedValue, stepperDefaults, valueText, type FlaggedFields } from '../../../utils/fieldValues';
 import { PhotoGallery } from '../../../components/PhotoGallery';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { DEFAULT_UNIT, parseQty, UNITS } from '../../../utils/stock';
@@ -47,7 +45,9 @@ export default function AddProductScreen() {
   const { gs1Config } = useGS1Config();
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
-  const [showDatePickerMap, setShowDatePickerMap] = useState<Record<string, boolean>>({});
+  // Campi segnati dall'ultimo salvataggio rifiutato (riga rossa sotto il campo)
+  const [flagged, setFlagged] = useState<FlaggedFields>(NO_FLAGS);
+  const optionsOf = useFieldOptions();
 
   const [formData, setFormData] = useState({
     sku: '',
@@ -190,8 +190,15 @@ export default function AddProductScreen() {
 
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectModalConfig, setSelectModalConfig] = useState<{ fieldId: string; name: string; options: any[]; isMulti: boolean } | null>(null);
-  const [scanFieldId, setScanFieldId] = useState<string | null>(null); // campo che riceve il codice letto
+
+  // Valori dei campi personalizzati: quelli scritti più il minimo dei contatori visibili non toccati, che è il valore
+  // vero e si salva (VAL, CAM-F3). Calcolato a ogni disegno, così vale anche dopo lo svuotamento (D22) e quando i
+  // campi arrivano dopo la schermata.
+  const visibleCustom = getVisibleFields()
+    .filter((f) => f.type === 'custom')
+    .map((f) => customFields.find((cf) => cf.id === f.id))
+    .filter((cf): cf is NonNullable<typeof cf> => !!cf);
+  const values: Record<string, any> = { ...stepperDefaults(visibleCustom), ...customFieldValues };
 
   const handleSubmit = () => {
     if (isSubmitting) return;
@@ -214,11 +221,20 @@ export default function AddProductScreen() {
     }
 
     // D24: anche i campi personalizzati segnati come obbligatori
-    const missing = missingRequiredFields(getVisibleFields(), customFields, customFieldValues);
+    const missing = missingRequiredFields(getVisibleFields(), customFields, values);
     if (missing.length > 0) {
+      setFlagged({ missing: missing.map((f) => f.id), wrong: [] });
       Alert.alert('Campi obbligatori', `Compila anche: ${missing.map((f) => f.name).join(', ')}`);
       return;
     }
+    // VAL (CAM-F2): i numeri si salvano come numero; un testo che non è un numero si dice
+    const wrong = invalidNumberFields(customFields, values);
+    if (wrong.length > 0) {
+      setFlagged({ missing: [], wrong: wrong.map((f) => f.id) });
+      Alert.alert('Numero non valido', `Scrivi un numero in: ${wrong.map((f) => f.name).join(', ')} (per esempio 12,5).`);
+      return;
+    }
+    setFlagged(NO_FLAGS);
 
     if (images.length === 0) {
       Alert.alert('Attenzione', 'Aggiungi almeno una foto del prodotto', [
@@ -239,9 +255,12 @@ export default function AddProductScreen() {
       // GS1 Digital Link generation
       let gs1DigitalLink: string | undefined;
       if (gs1Config.baseUrl) {
-        const lottoValue = gs1Config.enableLotto && gs1Config.lottoFieldId
-          ? customFieldValues[gs1Config.lottoFieldId]?.toString()
-          : undefined;
+        // Il lotto è il testo del campo: per una scelta il nome dell'opzione, non il suo id (VAL)
+        const lotField = gs1Config.enableLotto && gs1Config.lottoFieldId ? customFields.find((f) => f.id === gs1Config.lottoFieldId) : undefined;
+        const lotRaw = gs1Config.enableLotto && gs1Config.lottoFieldId ? values[gs1Config.lottoFieldId] : undefined;
+        const lottoValue = lotField && isChoiceField(lotField)
+          ? valueText(lotField, lotRaw, { options: optionsOf(lotField) }) || undefined
+          : lotRaw?.toString();
         gs1DigitalLink = generateGS1DigitalLink(
           gs1Config,
           finalSKU,
@@ -269,10 +288,13 @@ export default function AddProductScreen() {
         technicalNotes: formData.technicalNotes || undefined,
         libraryId: formData.libraryId || undefined,
         gs1DigitalLink,
-        customData: Object.keys(customFieldValues)
+        // VAL: scelte con l'id dell'opzione, numeri come numero (un numero vuoto non si salva), contatori col minimo
+        customData: Object.keys(values)
           .map(fieldId => {
             const field = customFields.find(f => f.id === fieldId);
-            return field ? { value: customFieldValues[fieldId], fieldSnapshot: field } : null;
+            if (!field) return null;
+            const saved = savedValue(field, values[fieldId]);
+            return saved.ok && saved.value !== undefined ? { value: saved.value, fieldSnapshot: field } : null;
           }).filter(Boolean) as any,
       }, qty != null ? { qty } : undefined);
       if (!added) {
@@ -472,287 +494,22 @@ export default function AddProductScreen() {
       );
     };
 
-    // If it's a custom field
+    // Campo personalizzato: un disegnatore solo per Aggiungi e Modifica (VAL, `components/FieldInput.tsx`)
     if (field.type === 'custom') {
       const customField = customFields.find(cf => cf.id === field.id);
       if (!customField) return null;
-
-      const getDynamicOptionsList = (cf: CustomField) => {
-        if (cf.linkTo === 'locations') return locations.map(l => ({ id: l.id, label: l.label }));
-        if (cf.linkTo === 'libraries') return categoryTree(libraries).map(({ category: l }) => ({ id: l.id, label: categoryPath(libraries, l.id) }));
-        if (cf.linkTo === 'furType') return furTypes.map(c => ({ id: c.id, label: c.label }));
-
-        return cf.dataset && Array.isArray(cf.dataset)
-          ? cf.dataset.map((val: string, i: number) => ({ id: `ds_${i}`, label: String(val) }))
-          : cf.options || [];
-      };
-
-      // Get field icon precedence:
-      // 1. Layout configuration (user override in Layout Builder)
-      // 2. Custom Field definition (user definition in Fields)
-      // 3. Type-based default
-      const getCustomFieldIcon = () => {
-        // Check layout override first
-        const layoutField = layout.fields.find(f => f.id === field.id);
-        if (layoutField?.icon) return layoutField.icon;
-
-        // Then Custom Field definition
-        if (customField.icon) return customField.icon;
-
-        // Then Type defaults
-        switch (customField.type) {
-          case 'number': return 'tag';
-          case 'currency': return 'euro';
-          case 'date': return 'event';
-          case 'text_long': return 'notes';
-          default: return 'text-fields';
-        }
-      };
-
-      // === Modals and Pickers ===
-      if (customField.uiType === 'picker' || customField.uiType === 'modal_list') {
-        const optionsList = getDynamicOptionsList(customField);
-
-        const isMulti = customField.type === 'multi_choice';
-        const val = customFieldValues[field.id];
-        const count = choiceList(val).length;
-        const hasValue = isMulti ? count > 0 : !!val;
-        // A 1/3 testo in 13 px e diciture corte; un valore lungo finisce con «…»
-        const displayValue = isMulti
-          ? (count ? `${count} ${small ? 'scelti' : 'selezionati'}` : (small ? 'Scegli' : 'Seleziona...'))
-          : (val || (small ? 'Scegli' : 'Seleziona...'));
-
-        return (
-          <View key={field.id} style={sizeStyle}>
-            {renderLabel(customField.name, customField.required)}
-            <Pressable
-              style={[styles.inputBox, small && styles.inputBoxSmall, styles.bottom]}
-              onPress={() => setSelectModalConfig({ fieldId: field.id, name: customField.name, options: optionsList, isMulti })}
-            >
-              {!small && <AppIcon name={getCustomFieldIcon()} size={18} color={t.colors.fieldIcon} />}
-              <Text style={[styles.valueText, small && styles.valueTextSmall, !hasValue && styles.valuePlaceholder]} numberOfLines={1}>
-                {displayValue}
-              </Text>
-              <AppIcon name="keyboard-arrow-down" size={20} color={t.colors.textMuted} />
-            </Pressable>
-          </View>
-        );
-      }
-
-      // === Grids and Segmented ===
-      if (customField.uiType === 'grid' || customField.uiType === 'segmented' || customField.type === 'single_choice' || customField.type === 'multi_choice') {
-        const optionsList = getDynamicOptionsList(customField);
-        // D01: la scelta multipla a riquadri resta multipla (quadratini di spunta), la singola ha i cerchi
-        const isMulti = customField.type === 'multi_choice';
-
-        return (
-          <View key={field.id} style={{ width: '100%' }}>
-            {renderLabel(customField.name, customField.required)}
-            <View style={styles.tileGrid}>
-              {optionsList.map((option: any) => {
-                const isSelected = isChoiceSelected(customFieldValues[field.id], option, isMulti);
-                const icon = isMulti
-                  ? (isSelected ? 'check-box' : 'check-box-outline-blank')
-                  : (isSelected ? 'check-circle' : 'radio-button-unchecked');
-
-                return (
-                  <Pressable
-                    key={option.id}
-                    style={[styles.tile, { width: tileWidth }, isSelected && styles.tileSelected]}
-                    onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: toggleChoice(prev[field.id], option, isMulti) }))}
-                  >
-                    <AppIcon name={icon} size={22} color={isSelected ? t.colors.checkOn : t.colors.checkRing} />
-                    <Text style={[styles.tileText, isSelected && styles.tileTextSelected]} numberOfLines={2}>
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        );
-      }
-
-      if (customField.uiType === 'stepper') {
-        const stepMap = customField.dataset || { min: 0, max: 100, step: 1 };
-        const val = parseFloat(customFieldValues[field.id]) || stepMap.min;
-        return (
-          <View key={field.id} style={sizeStyle}>
-            {renderLabel(customField.name, customField.required)}
-            <View style={[styles.stepper, small && styles.stepperSmall, styles.bottom]}>
-              <Pressable style={styles.stepperButton} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.max(stepMap.min, val - stepMap.step) }))}>
-                <AppIcon name="remove" size={20} color={val <= stepMap.min ? t.colors.textMuted : t.colors.textSecondary} />
-              </Pressable>
-              <Text style={styles.stepperValue}>{val}</Text>
-              <Pressable style={[styles.stepperButton, styles.stepperPlus]} onPress={() => setCustomFieldValues(prev => ({ ...prev, [field.id]: Math.min(stepMap.max, val + stepMap.step) }))}>
-                <AppIcon name="add" size={20} color={val >= stepMap.max ? t.colors.textMuted : t.colors.accentInk} />
-              </Pressable>
-            </View>
-          </View>
-        );
-      }
-
-      // === Images ===
-      if (customField.type === 'images') {
-        const customImages = customFieldValues[field.id] || [];
-        return (
-          <View key={field.id} style={{ width: '100%' }}>
-            {renderLabel(customField.name, customField.required)}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-              {customImages.map((uri: string, index: number) => (
-                <View key={index}>
-                  <Image source={{ uri }} style={styles.smallPhoto} contentFit="cover" />
-                  <Pressable
-                    style={styles.smallPhotoRemove}
-                    onPress={() => {
-                      const newImages = [...customImages];
-                      newImages.splice(index, 1);
-                      setCustomFieldValues(prev => ({ ...prev, [field.id]: newImages }));
-                    }}
-                  >
-                    <AppIcon name="close" size={16} color={t.colors.onData} />
-                  </Pressable>
-                </View>
-              ))}
-              {customImages.length < 10 && (
-                <Pressable
-                  style={styles.smallPhotoAdd}
-                  onPress={async () => {
-                    const result = await ImagePicker.launchImageLibraryAsync({
-                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                      allowsMultipleSelection: true,
-                      quality: 0.8,
-                    });
-                    if (!result.canceled) {
-                      const newUris = result.assets.map(a => a.uri);
-                      setCustomFieldValues(prev => ({ ...prev, [field.id]: [...(prev[field.id] || []), ...newUris].slice(0, 10) }));
-                    }
-                  }}
-                >
-                  <AppIcon name="add-photo-alternate" size={26} color={t.colors.accentInk} />
-                </Pressable>
-              )}
-            </ScrollView>
-          </View>
-        );
-      }
-
-      // === Date ===
-      if (customField.type === 'date') {
-        const val = customFieldValues[field.id];
-        return (
-          <View key={field.id} style={sizeStyle}>
-            {renderLabel(customField.name, customField.required)}
-            <Pressable
-              style={[styles.inputBox, small && styles.inputBoxSmall, small && styles.dateBoxSmall, styles.bottom]}
-              onPress={() => setShowDatePickerMap(prev => ({ ...prev, [field.id]: true }))}
-            >
-              <Text style={[styles.valueText, small && styles.valueTextSmall, !val && styles.valuePlaceholder]} numberOfLines={1}>
-                {val ? new Date(val).toLocaleDateString('it-IT') : (small ? 'Data' : 'Seleziona Data')}
-              </Text>
-              <AppIcon name="calendar-today" size={small ? 15 : 18} color={t.colors.info} />
-            </Pressable>
-            {showDatePickerMap[field.id] && (
-              <DateTimePicker
-                value={val ? new Date(val) : new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_, selectedDate) => {
-                  setShowDatePickerMap(prev => ({ ...prev, [field.id]: false }));
-                  if (selectedDate) setCustomFieldValues(prev => ({ ...prev, [field.id]: selectedDate.toISOString() }));
-                }}
-              />
-            )}
-          </View>
-        );
-      }
-
-      // === Document ===
-      if (customField.type === 'document') {
-        const docs = customFieldValues[field.id] || [];
-        return (
-          <View key={field.id} style={{ width: '100%' }}>
-            {renderLabel(customField.name, customField.required)}
-            <View style={styles.docList}>
-              {docs.map((docUri: string, index: number) => (
-                <Pressable key={index} style={styles.docRow} onPress={() => Sharing.shareAsync(docUri).catch(console.error)}>
-                  <AppIcon name="insert-drive-file" size={20} color={t.colors.accentInk} />
-                  <Text style={styles.docName} numberOfLines={1}>{docUri.split('/').pop() || 'Documento'}</Text>
-                  <Pressable style={styles.docRemove} onPress={() => {
-                    const newDocs = [...docs];
-                    newDocs.splice(index, 1);
-                    setCustomFieldValues(prev => ({ ...prev, [field.id]: newDocs }));
-                  }}>
-                    <AppIcon name="delete" size={20} color={t.colors.error} />
-                  </Pressable>
-                </Pressable>
-              ))}
-              <Pressable
-                style={styles.docAdd}
-                onPress={async () => {
-                  try {
-                    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
-                    if (!result.canceled && result.assets && result.assets.length > 0) {
-                      setCustomFieldValues(prev => ({ ...prev, [field.id]: [...(customFieldValues[field.id] || []), result.assets[0].uri] }));
-                    }
-                  } catch (e) { console.error('Doc Picker err', e); }
-                }}
-              >
-                <AppIcon name="upload-file" size={20} color={t.colors.accentInk} />
-                <Text style={styles.docAddText}>Allega Documento</Text>
-              </Pressable>
-            </View>
-          </View>
-        );
-      }
-
-      // === Short Text w/ Barcode Scanner ===
-      if (customField.type === 'text_short' && customField.isBarcode) {
-        return (
-          <View key={field.id} style={sizeStyle}>
-            {renderLabel(customField.name, customField.required)}
-            {renderInputWithButton({
-              icon: getCustomFieldIcon(),
-              placeholder: full ? 'Scansiona o scrivi il codice' : 'Codice',
-              value: customFieldValues[field.id]?.toString() || '',
-              onChangeText: (value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value })),
-              buttonIcon: 'qr-code-scanner',
-              onButtonPress: () => setScanFieldId(field.id), // lettore vero (D02: prima scriveva un codice finto)
-            })}
-          </View>
-        );
-      }
-
-      const isNumeric = customField.type === 'number' || customField.type === 'currency';
-      const textPlaceholder = full ? `Inserisci ${customField.name.toLowerCase()}` : 'Scrivi';
-
-      if (customField.type === 'text_long') {
-        return (
-          <View key={field.id} style={sizeStyle}>
-            {renderLabel(customField.name, customField.required)}
-            {renderTextArea({
-              icon: getCustomFieldIcon(),
-              placeholder: textPlaceholder,
-              value: customFieldValues[field.id]?.toString() || '',
-              onChangeText: (value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value })),
-              numberOfLines: 3,
-            })}
-          </View>
-        );
-      }
-
       return (
-        <View key={field.id} style={sizeStyle}>
-          {renderLabel(customField.name, customField.required)}
-          {renderInputWithIcon({
-            icon: getCustomFieldIcon(),
-            placeholder: isNumeric ? '0' : textPlaceholder,
-            value: customFieldValues[field.id]?.toString() || '',
-            onChangeText: (value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value })),
-            keyboardType: isNumeric ? 'numeric' : 'default',
-            unit: customField.unit || (customField.type === 'currency' ? '€' : undefined),
-          })}
-        </View>
+        <FieldInput
+          key={field.id}
+          field={customField}
+          value={values[field.id]}
+          onChange={(value) => setCustomFieldValues(prev => ({ ...prev, [field.id]: value }))}
+          size={field.size}
+          icon={fieldIcon(customField, layout.fields.find(f => f.id === field.id)?.icon)}
+          tileWidth={tileWidth}
+          style={sizeStyle}
+          error={fieldError(customField, values[field.id], flagged)}
+        />
       );
     }
 
@@ -1076,58 +833,6 @@ export default function AddProductScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Lettore del codice per i campi con scanner: il codice letto va nel campo */}
-      {scanFieldId && (
-        <Modal visible={true} animationType="slide" onRequestClose={() => setScanFieldId(null)}>
-          <BarcodeScanner
-            onScan={({ data }) => { setCustomFieldValues(prev => ({ ...prev, [scanFieldId]: data })); setScanFieldId(null); }}
-            onClose={() => setScanFieldId(null)}
-          />
-        </Modal>
-      )}
-
-      {/* Select Modal */}
-      {selectModalConfig && (
-        <Modal visible={true} transparent={true} animationType="slide" onRequestClose={() => setSelectModalConfig(null)}>
-          <View style={styles.sheetScrim}>
-            <View style={styles.sheet}>
-              <View style={styles.sheetHeader}>
-                <Text style={styles.sheetTitle}>{selectModalConfig.name}</Text>
-                <Pressable onPress={() => setSelectModalConfig(null)}>
-                  <AppIcon name="close" size={24} color={t.colors.textPrimary} />
-                </Pressable>
-              </View>
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {selectModalConfig.options.map(opt => {
-                  const isSelected = isChoiceSelected(customFieldValues[selectModalConfig.fieldId], opt, selectModalConfig.isMulti);
-
-                  return (
-                    <Pressable
-                      key={opt.id}
-                      style={styles.sheetRow}
-                      onPress={() => {
-                        setCustomFieldValues(prev => ({ ...prev, [selectModalConfig.fieldId]: toggleChoice(prev[selectModalConfig.fieldId], opt, selectModalConfig.isMulti) }));
-                        if (!selectModalConfig.isMulti) setSelectModalConfig(null);
-                      }}
-                    >
-                      <Text style={[styles.sheetRowText, isSelected && styles.sheetRowTextSelected]}>
-                        {opt.label}
-                      </Text>
-                      {isSelected && <AppIcon name="check" size={24} color={t.colors.accentInk} />}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              {selectModalConfig.isMulti && (
-                <Pressable style={[styles.primaryButton, styles.sheetConfirm]} onPress={() => setSelectModalConfig(null)}>
-                  <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-                  <Text style={styles.primaryButtonText}>Conferma Selezione</Text>
-                </Pressable>
-              )}
-            </View>
-          </View>
-        </Modal>
-      )}
     </SafeAreaView>
   );
 }
@@ -1164,12 +869,6 @@ const useStyles = makeStyles((t) => ({
     fontSize: 12,
     lineHeight: 16,
     color: t.colors.textSecondary,
-  },
-  // A 1/3 la data (13 px) deve stare intera accanto al calendario: margini interni più stretti
-  dateBoxSmall: {
-    paddingLeft: 8,
-    paddingRight: 6,
-    gap: 2,
   },
   submitButton: {
     height: 54,

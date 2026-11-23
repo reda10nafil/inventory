@@ -7,6 +7,8 @@ import {
   furTypeLinkedFields,
   furTypeNameError,
   furTypeRenameMessage,
+  furTypeUsage,
+  furTypeLegacyNames,
   furTypeUsageText,
   parseFurTypes,
   withSystemFieldNames,
@@ -144,9 +146,30 @@ describe('furTypeLinkedFields e furTypeRenameMessage (C2)', () => {
     expect(furTypeRenameMessage('Lapin', 'Coniglio', { active: 0, trashed: 0 }, [])).toBe('«Lapin» ora si chiama «Coniglio».');
     expect(furTypeRenameMessage('Volpe', 'Volpe rossa', { active: 1, trashed: 0 }, [])).toMatch(/Il prodotto che lo usa mostra il nome nuovo\.$/);
   });
-  it('e avvisa che i campi con «Sorgente Dati: Tipi di pelle» tengono il nome vecchio', () => {
-    expect(furTypeRenameMessage('Visone', 'Visone Black', { active: 0, trashed: 0 }, ['Pelle interna']))
-      .toBe('«Visone» ora si chiama «Visone Black». Il campo «Pelle interna» (Sorgente Dati: Tipi di pelle) salva il nome, non il tipo: nei prodotti già compilati resta «Visone».');
-    expect(furTypeRenameMessage('Visone', 'V', { active: 0, trashed: 0 }, ['A', 'B'])).toMatch(/I campi «A», «B» \(Sorgente Dati: Tipi di pelle\) salvano il nome/);
+  it('VAL: avvisa solo dove un campo collegato ha ancora il nome scritto (compilato prima)', () => {
+    expect(furTypeRenameMessage('Visone', 'Visone Black', { active: 2, trashed: 0 }, [{ field: 'Pelle interna', count: 1 }]))
+      .toBe('«Visone» ora si chiama «Visone Black». I 2 prodotti che lo usano mostrano il nome nuovo. Nel campo «Pelle interna» 1 prodotto compilato prima ha il nome scritto: lì resta «Visone».');
+    expect(furTypeRenameMessage('Visone', 'V', { active: 0, trashed: 0 }, [{ field: 'A', count: 3 }, { field: 'B', count: 0 }]))
+      .toBe('«Visone» ora si chiama «V». Nel campo «A» 3 prodotti compilati prima hanno il nome scritto: lì resta «Visone».');
+    expect(furTypeRenameMessage('Visone', 'V', { active: 0, trashed: 0 })).toBe('«Visone» ora si chiama «V».');
+  });
+});
+
+describe('furTypeUsage e furTypeLegacyNames (VAL, punto 7)', () => {
+  const PELLE = { id: 'field_pelle', name: 'Pelle interna', linkTo: 'furType' };
+  const products = [
+    { furType: 'visone', customData: [] },
+    { furType: 'volpe', customData: [{ value: 'visone', fieldSnapshot: PELLE }] },
+    { furType: 'volpe', deletedAt: '2026-11-23T08:00:00.000Z', customData: [{ value: 'Visone', fieldSnapshot: PELLE }] },
+    { furType: 'volpe', customData: [{ value: 'Visone', fieldSnapshot: { id: 'field_testo', name: 'Note' } }] },
+  ];
+  const visone = { id: 'visone', label: 'Visone' };
+  it('conta il tipo del prodotto e i campi collegati, con l\'id o col nome scritto prima', () => {
+    expect(furTypeUsage(products, visone)).toEqual({ active: 2, trashed: 1 });
+    expect(furTypeUsage(products, { id: 'lapin', label: 'Lapin' })).toEqual({ active: 0, trashed: 0 });
+  });
+  it('i campi dove resta il nome scritto, col nome di adesso del campo', () => {
+    expect(furTypeLegacyNames(products, [{ id: 'field_pelle', name: 'Pelle (interna)' }], visone)).toEqual([{ field: 'Pelle (interna)', count: 1 }]);
+    expect(furTypeLegacyNames(products, [], { id: 'volpe', label: 'Volpe' })).toEqual([]);
   });
 });

@@ -13,6 +13,7 @@
 import type { CustomField, Product, ProductCustomData } from '../types';
 import { moveOf, refusalText, saleOf } from './inventoryOps';
 import { formatNumberInput, parseNumber } from './number';
+import { fieldOptions, sameValue } from './fieldValues';
 import { parseSalePrice } from './stock';
 
 export interface RunStepConfig {
@@ -54,7 +55,7 @@ const SETTABLE: readonly string[] = ['text_short', 'text_long', 'number', 'curre
  *  singola con le sue opzioni (non quelle collegate a posizioni o categorie). */
 export function fieldChoices<F extends CustomField>(fields: readonly F[]): F[] {
   return fields.filter((f) => !f.isSystem && !f.deletedAt && SETTABLE.includes(f.type)
-    && (f.type !== 'single_choice' || (!f.linkTo && Array.isArray(f.options) && f.options.length > 0)));
+    && (f.type !== 'single_choice' || (!f.linkTo && fieldOptions(f).length > 0)));
 }
 
 /** Il campo di un passo: per id (passi nuovi); per le automazioni di prima, che hanno il nome scritto a mano, il campo
@@ -69,28 +70,26 @@ export function fieldOf<F extends CustomField>(config: RunStepConfig, fields: re
 /**
  * Il valore di «Imposta Campo». `label` è quello da tenere nel passo e da mostrare (il testo scritto; per una scelta
  * l'etichetta dell'opzione, che si accetta anche per id); `value` è quello da salvare in `customData`, nella forma di
- * Modifica: il testo, ma per una valuta il numero in forma da macchina («12,5» → «12.5», «1.200» → «1200»), perché la
- * Scheda lo legge con `Number` («12,5» diventerebbe «NaN €»). Nel passo resta il testo scritto: la forma da macchina,
- * riletta, cambierebbe il numero («2.125» = 2125).
+ * VAL (ticket 23), come Aggiungi e Modifica: per una scelta l'**id** dell'opzione, per numero e valuta il **numero**
+ * («12,5» = 12,5; «1.200» = 1200). Nel passo resta il testo scritto, riletto con `parseNumber` («2,125» = 2,125).
  */
-export function fieldValueOf(field: CustomField, raw: string | undefined): { ok: true; value: string; label: string } | { ok: false; error: string } {
+export function fieldValueOf(field: CustomField, raw: string | undefined): { ok: true; value: string | number; label: string } | { ok: false; error: string } {
   const text = (raw ?? '').trim();
   if (!text) return { ok: false, error: `Scrivi il valore di «${field.name}».` };
   if (field.type === 'number' || field.type === 'currency') {
     const n = parseNumber(text);
     if (n == null) return { ok: false, error: `«${text}» non è un numero (per esempio 12,5).` };
-    return { ok: true, value: field.type === 'currency' ? String(n) : text, label: text };
+    return { ok: true, value: n, label: text };
   }
   if (field.type === 'single_choice') {
-    const option = (field.options ?? []).find((o: { id: string; label?: string }) => o.id === text || fold(o.label) === fold(text));
-    const label = option?.label ?? option?.id;
-    return label ? { ok: true, value: label, label } : { ok: false, error: `«${text}» non è tra i valori di «${field.name}».` };
+    const option = fieldOptions(field).find((o) => o.id === text || fold(o.label) === fold(text));
+    return option ? { ok: true, value: option.id, label: option.label } : { ok: false, error: `«${text}» non è tra i valori di «${field.name}».` };
   }
   return { ok: true, value: text, label: text };
 }
 
 /** `customData` con il valore del campo: al suo posto se c'era, in fondo se no; la scheda del campo è quella di adesso. */
-function withFieldValue(list: readonly ProductCustomData[], field: CustomField, value: string): ProductCustomData[] {
+function withFieldValue(list: readonly ProductCustomData[], field: CustomField, value: unknown): ProductCustomData[] {
   const entry = { value, fieldSnapshot: field };
   const at = list.findIndex((d) => d.fieldSnapshot?.id === field.id);
   return at >= 0 ? list.map((d, i) => (i === at ? entry : d)) : [...list, entry];
@@ -161,7 +160,10 @@ export function runStep(product: Product | undefined, step: RunStep, ctx: RunCon
       if (!v.ok) return refuse(`${v.error} Poi ${EDIT}`);
       const current = (product.customData || []).find((d) => d.fieldSnapshot?.id === field.id);
       const text = `✏️ ${field.name} = ${v.label}`;
-      if (current && current.value === v.value) return { ok: true, op: 'patch', patch: {}, text };
+      // Lo stesso valore anche se salvato prima di VAL con l'etichetta o come testo («Buono» e il suo id, «12,5» e 12,5)
+      if (current && sameValue(field, current.value, v.value, { options: fieldOptions(field), snapshots: [current.fieldSnapshot, field] })) {
+        return { ok: true, op: 'patch', patch: {}, text };
+      }
       return { ok: true, op: 'patch', patch: { customData: withFieldValue(product.customData || [], field, v.value) }, text };
     }
     case 'move_to': {

@@ -18,6 +18,8 @@ import { useContacts } from '../../../contexts/ContactsContext';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { orderByLayout } from '../../../utils/layoutOrder';
+import { useFieldOptions } from '../../../hooks/useFieldOptions';
+import { choiceLabel, valueText } from '../../../utils/fieldValues';
 import { nfcService } from '../../../utils/nfcService';
 import Barcode from '../../../components/Barcode';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -47,7 +49,9 @@ export default function ProductDetailScreen() {
   const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
   const { shelfOf } = useShelves();
-  const { customFields } = useCustomFields();
+  const { customFields, allFieldsIncludingDeleted } = useCustomFields();
+  // VAL: le etichette delle opzioni dal registro (rinominate, il prodotto segue), nome e icona dalla copia (EDC)
+  const optionsOf = useFieldOptions();
 
   const { layout } = useLayout();
 
@@ -1003,6 +1007,7 @@ export default function ProductDetailScreen() {
                   const value = dataItem.value;
                   const field = dataItem.fieldSnapshot;
                   if (value === undefined || value === null || value === '') return null;
+                  const options = optionsOf(allFieldsIncludingDeleted.find((f) => f.id === field.id) ?? field);
 
                   // Text Long -> Spanning full width like a Note
                   if (field.type === 'text_long') {
@@ -1028,12 +1033,8 @@ export default function ProductDetailScreen() {
                         </View>
                         <View style={styles.customTagsRow}>
                           {displayArray.map(val => {
-                            // Find label if dataset has options
-                            let label = val;
-                            if (field.options) {
-                              const opt = field.options.find((o: any) => o.id === val);
-                              if (opt) label = opt.label;
-                            }
+                            // Etichetta di adesso anche per un'etichetta salvata prima di VAL o un'opzione rinominata
+                            const label = choiceLabel(val, options, field);
                             return (
                               <View key={val} style={styles.customTag}>
                                 <Text style={styles.customTagText}>{label}</Text>
@@ -1121,21 +1122,16 @@ export default function ProductDetailScreen() {
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                           <Text style={[styles.customFieldValue, { color: t.colors.accentInk }]}>
-                            {formatPrice(Number(value))}
+                            {/* «12,50» salvato come testo prima di VAL: «12,50 €», non «NaN,undefined» (CAM-F2) */}
+                            {valueText(field, value)}
                           </Text>
                         </View>
                       </View>
                     );
                   }
 
-                  // Default / Single Choice / Number / Text Short
-                  let displayValue = String(value) + (field.unit ? ` ${field.unit}` : '');
-                  if (typeof value === 'boolean') {
-                    displayValue = value ? 'Sì' : 'No';
-                  } else if (field.options && field.type === 'single_choice') {
-                    const opt = field.options.find((o: any) => o.id === value);
-                    if (opt) displayValue = opt.label;
-                  }
+                  // Default / Single Choice / Number / Text Short: numeri con la virgola, scelta con l'etichetta di adesso
+                  const displayValue = valueText(field, value, { options, snapshot: field });
 
                   return (
                     <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
