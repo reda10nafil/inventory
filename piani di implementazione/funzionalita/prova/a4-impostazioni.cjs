@@ -33,9 +33,9 @@ const VOCI = [
 
   await run('a4-imp-condivisione', async (h) => {
     await h.go('settings/share');
-    const premibili = await h.page.locator('[tabindex="0"]').count();
-    const interruttori = await h.page.getByRole('switch').count();
-    const campi = await h.page.locator('input').count();
+    const premibili = await h.page.locator('[tabindex="0"]:visible').count();
+    const interruttori = await h.page.getByRole('switch').locator('visible=true').count();
+    const campi = await h.page.locator('input:visible').count();
     return { premibili, interruttori, campi, avviso: await h.has('verrà completata nella prossima versione') };
   });
 

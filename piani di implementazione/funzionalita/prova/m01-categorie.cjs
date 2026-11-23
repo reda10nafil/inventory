@@ -2,12 +2,17 @@
 // card e Scheda col nome, rinomina senza cambiare l'id del prodotto, eliminazione bloccata se usata (anche
 // dal cestino) o se è l'ultima, eliminazione di una libera, ricarica che conserva la lista.
 // C1 (ticket 19): la lista di M01 si chiama «Tipi di pelle» (stessa chiave, stesso indirizzo); selettori aggiornati.
+// C2 (ticket 21): la schermata Impostazioni › Tipi di pelle non c'è più; la lista si apre da Campi Personalizzati con
+// la matita di «Tipo di pelle» (OptionsEditor: «Aggiungi valore», stesso segnaposto, stessi «Elimina …»). La voce di
+// Impostazioni manca apposta (`voceImpostazioni` false). Abbinamenti in c2-tipo-pelle.cjs.
 const { scenario } = require('./lib.cjs');
 const KEY = 'furinventory_categories:local';
+const apriMatita = async (h) => { await h.page.locator('[aria-label="Modifica i valori di Tipo di pelle"]').locator('visible=true').first().click(); await h.page.waitForTimeout(600); };
+const apriValori = async (h) => { await h.go('settings/fields'); await apriMatita(h); };
 const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-label^="Elimina "]')].map((e) => e.getAttribute('aria-label').slice(8)));
 (async () => {
   await scenario('m01-predefinite', async (h) => {
-    await h.go('settings/categories');
+    await apriValori(h);
     const elenco = await names(h);
     const chiave = await h.store(KEY, 500);
     await h.go('add');
@@ -19,12 +24,12 @@ const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-
   });
 
   await scenario('m01-crea-usa-rinomina', async (h) => {
-    await h.go('settings/categories');
+    await apriValori(h);
     await h.page.getByPlaceholder('Es. Lapin, Castoro, Montone').fill('Viti');
-    await h.click('Crea tipo di pelle');
+    await h.click('Aggiungi valore');
     const dopoCrea = await h.store(KEY, 800);
     await h.page.getByPlaceholder('Es. Lapin, Castoro, Montone').fill('viti');
-    await h.click('Crea tipo di pelle'); // doppione: rifiutato
+    await h.click('Aggiungi valore'); // doppione: rifiutato
     const dopoDoppione = (await h.store(KEY, 500)).length;
     await h.go('add');
     await h.click('Viti'); await h.click('Vetrina'); await h.click('M');
@@ -34,18 +39,19 @@ const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-
     const card = await h.has('Viti', true);
     await h.click('LOG-2026-001');
     const scheda = await h.has('Tipo di pelle: Viti', true); // C1: nella Scheda il tipo di pelle ha l'etichetta
-    await h.go('settings/categories');
+    await apriValori(h);
     await h.click('Viti');
     await h.page.getByPlaceholder('Es. Lapin, Castoro, Montone').fill('Viti inox');
     await h.click('Salva nome');
     const dopoRinomina = await h.store(KEY, 800);
     const p2 = (await h.products()).find((x) => x.sku === 'LOG-2026-001');
     await h.page.reload(); await h.page.waitForTimeout(2000);
+    await apriMatita(h);
     const dopoRicarica = await names(h);
     await h.go('');
     const cardRinominata = await h.has('Viti inox', true);
     await h.page.locator('[aria-label="Elimina Viti inox"]').count(); // la voce c'è
-    await h.go('settings/categories');
+    await apriValori(h);
     await h.page.locator('[aria-label="Elimina Viti inox"]').click(); await h.page.waitForTimeout(700);
     const dopoEliminaUsata = (await h.store(KEY, 500)).map((c) => c.id);
     return {
@@ -65,7 +71,7 @@ const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-
       ps.find((p) => p.sku === 'AST-0033').deletedAt = new Date().toISOString();
       localStorage.setItem(k, JSON.stringify(ps));
     });
-    await h.go('settings/categories');
+    await apriValori(h);
     await h.page.locator('[aria-label="Elimina Astrakan"]').click(); await h.page.waitForTimeout(700);
     const dopoAstrakan = (await h.store(KEY, 500));
     // Ermellino non è usata: si elimina dopo la conferma
@@ -73,7 +79,7 @@ const names = (h) => h.page.evaluate(() => [...document.querySelectorAll('[aria-
     const dopoErmellino = (await h.store(KEY, 800)).map((c) => c.id);
     // Ultima categoria: non si elimina
     await h.page.evaluate((k) => localStorage.setItem(k, JSON.stringify([{ id: 'solo', label: 'Solo' }])), KEY);
-    await h.go('settings/categories');
+    await apriValori(h);
     await h.page.locator('[aria-label="Elimina Solo"]').click(); await h.page.waitForTimeout(700);
     const dopoUltima = (await h.store(KEY, 500)).map((c) => c.id);
     return { astrakanBloccata: dopoAstrakan === null, ermellinoEliminata: !dopoErmellino.includes('ermellino'), voci: dopoErmellino.length, dopoUltima };

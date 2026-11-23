@@ -1,6 +1,6 @@
 // Compat layer expo-router → React Navigation per Fase 2
 // Permette a src/screens/* di mantenere router.push/back/replace e useLocalSearchParams senza modifiche massicce
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { StackActions, useNavigation, useRoute } from '@react-navigation/native';
 
 type Href = string | { pathname: string; params?: Record<string, any> };
 
@@ -74,7 +74,11 @@ export function useRouter() {
   return {
     push: (href: Href) => {
       const { name, params } = parseHref(href as any);
-      navigation.navigate(name, params);
+      // La barra delle schede sta sempre in fondo allo stack (`initialRouteName` in linking.ts, C2): si torna a quella
+      // invece di aggiungerne una copia sopra («Vedi prodotti», «Return Home»: IND-P3, IND-5). Lanciata anche da una
+      // scheda (Aggiungi), l'azione sale allo stack come le altre.
+      if (name === '(tabs)') navigation.dispatch(StackActions.popTo('(tabs)', params));
+      else navigation.navigate(name, params);
     },
     replace: (href: Href) => {
       const { name, params } = parseHref(href as any);

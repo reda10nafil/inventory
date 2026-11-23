@@ -31,9 +31,9 @@ E, prima, nello stesso giorno: le icone sparite.
 
 ## Piano di implementazione
 
-- **C2** (ticket 21): `initialRouteName: '(tabs)'` con la scheda madre in `linking.ts` (IND-P1) e i tre indirizzi mancanti (IND-P2).
+- **C2** (ticket 21, **fatta** il 23 novembre): `initialRouteName: '(tabs)'` con la scheda madre in `linking.ts` (IND-P1) e i tre indirizzi mancanti (IND-P2); in più IND-P3 (sotto).
 - **IND** (dopo C2):
-  1. `compat.ts`: `(tabs)` con `popTo` invece di `navigate`, così non nasce una seconda barra (IND-P3, IND-5); il parametro `library` deve arrivare alla Home filtrata.
+  1. ~~`compat.ts`: `(tabs)` con `popTo` invece di `navigate`, così non nasce una seconda barra (IND-P3, IND-5); il parametro `library` deve arrivare alla Home filtrata.~~ **Fatto in C2** (23 novembre): con il solo IND-P1 «Return Home» e «Vedi prodotti» aperti da un indirizzo montavano due barre delle schede (su `4674fbc` una); `push('/(tabs)')` usa `StackActions.popTo`, provato da `prova/c2-indietro.cjs` (`c2-ind-vedi-prodotti`, `c2-ind-notfound`: una barra, Scanner e Azione rapida smontati, Home filtrata su Pellicce). Riga in `DECISIONI_DA_RIVEDERE.md`.
   2. `ScannerScreen.tsx`: X in alto che torna da dove si era (IND-P4, IND-3).
   3. `CountScreen.tsx`: `usePreventRemove` per il tasto di sistema (IND-P5, IND-6), come deciso sopra.
   4. `DetailScreen.tsx` ed `EditScreen.tsx`: «Prodotto non trovato» con «Torna all'inventario» (IND-P6, IND-7).
@@ -44,7 +44,7 @@ E, prima, nello stesso giorno: le icone sparite.
 ## Piano di verifica
 
 - **C2**: vedi ticket 21 (`c2-indietro.cjs` e tutta la cartella `prova/`).
-- **IND**: prova nuova `prova/ind-indietro.cjs` (resoconto, «Come si proverebbe» 5-9): Scanner › lettura `pellicce` › «VEDI PRODOTTI» → Scanner e Azione rapida non più montati, Home filtrata su Pellicce; `/inesistente` › «Return Home» → una sola Home; X dello Scanner → Automazioni; Conta › Magazzino › scrivi 3 › `page.goBack()` → si resta in Conta, al passo precedente; `product/inesistente` → pulsante «Torna all'inventario». Regressioni: `a3-scanner.cjs`, `m07-conta.cjs`, `m09-azione.cjs`, `a1-modifica.cjs`, `a4-esplora.cjs`, `controllo.sh`.
+- **IND**: prova nuova `prova/ind-indietro.cjs` (resoconto, «Come si proverebbe» 5-9; i punti 6 e 7, «Vedi prodotti» e «Return Home», sono già in `c2-indietro.cjs`): X dello Scanner → Automazioni; Conta › Magazzino › scrivi 3 › `page.goBack()` → si resta in Conta, al passo precedente; `product/inesistente` → pulsante «Torna all'inventario». Regressioni: `a3-scanner.cjs`, `m07-conta.cjs`, `m09-azione.cjs`, `a1-modifica.cjs`, `a4-esplora.cjs`, `controllo.sh`.
 - **Icone**: passo del collaudo (`collaudo-finale.md`, gruppo A): glifi presenti su ogni schermata principale nei 5 stili (`d-icone.cjs` e `icone-nomi.cjs` in `ricerche/verifiche-23/script/indietro/`).
 - **Telefono**: Impostazioni › Categorie, freccia e tasto di sistema tornano a Impostazioni; link `syncroflow://settings/folders` ad app chiusa (con la freccia; il primo Indietro non chiude l'app); Conta col tasto di sistema; finestre (Movimenta, QR, foto a tutto schermo, inserimento del codice) che si chiudono col tasto di sistema lasciando la schermata sotto; icone e freccia su un APK di release in modalità aereo.
 

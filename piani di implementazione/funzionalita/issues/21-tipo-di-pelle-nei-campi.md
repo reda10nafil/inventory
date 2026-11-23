@@ -1,6 +1,6 @@
 # «Tipo di pelle» solo nei campi, freccia Indietro dopo un ricaricamento
 
-Tipo: grilling. Stato: **deciso** il 23 novembre 2026 mattina (risposta dell'utente), con il piano. Fetta: **C2**, piccola, prima di S1b. Dipende da S1a (`7bfcd72`). Mappa: [`../map-3.md`](../map-3.md). Verifiche: [`../ricerche/verifiche-23/verifica-campi-layout-selettori.md`](../ricerche/verifiche-23/verifica-campi-layout-selettori.md) §2 e [`verifica-indietro-icone.md`](../ricerche/verifiche-23/verifica-indietro-icone.md) §1-2.
+Tipo: grilling. Stato: **fatto** il 23 novembre 2026 (fetta C2, commit locale su `funzioni/magazzino`; voce in `../../CRONOLOGIA.md`). Deciso il 23 mattina (risposta dell'utente), con il piano. Fetta: **C2**, piccola, prima di S1b. Fatto in più: IND-P3 (ticket 28), perché il solo IND-P1 montava due barre delle schede dopo «Return Home» e «Vedi prodotti». Dipende da S1a (`7bfcd72`). Mappa: [`../map-3.md`](../map-3.md). Verifiche: [`../ricerche/verifiche-23/verifica-campi-layout-selettori.md`](../ricerche/verifiche-23/verifica-campi-layout-selettori.md) §2 e [`verifica-indietro-icone.md`](../ricerche/verifiche-23/verifica-indietro-icone.md) §1-2.
 
 ## Question
 

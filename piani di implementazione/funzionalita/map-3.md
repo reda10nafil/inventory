@@ -52,12 +52,12 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
 
 | # | Fetta | Ticket | Cosa | Dipende da | Prova nuova |
 | --- | --- | --- | --- | --- | --- |
-| 1 | **C2** | 21, 28 | Tipo di pelle da Campi Personalizzati (`OptionsEditor` a id stabili); `linking.ts` con `initialRouteName` e scheda madre; indirizzi `settings/team`, `chat`, `settings/automation-builder` (P29, AU-V11) | S1a | `c2-tipo-pelle.cjs`, `c2-indietro.cjs` + **tutta `prova/`** |
+| 1 | **C2** (fatta, 23/11) | 21, 28 | Tipo di pelle da Campi Personalizzati (`OptionsEditor` a id stabili); `linking.ts` con `initialRouteName` e scheda madre; indirizzi `settings/team`, `chat`, `settings/automation-builder` (P29, AU-V11); in più IND-P3 (`popTo` in `compat.ts`) | S1a | `c2-tipo-pelle.cjs`, `c2-indietro.cjs` + **tutta `prova/`** (`tutte.cjs`) |
 | 2 | **GAL** | 27 | Galleria unica: miniatura → foto, cestino sulla foto scelta (CSV-G1), miniature e frecce nella Scheda (CSV-G2), visore (CSV-G3), principale e riordino (CSV-G6); prezzo 0, note vuote, link rotto nella Scheda (CSV-I6-I8) | C2 | `gal-galleria.cjs` |
 | 3 | **COD** | 22, 29 | Lettore unico `utils/codes.ts` per Scanner e 5 automazioni (NG01, AU-V07, AU-V14, P26), inserimento a mano in `BarcodeScanner`; codici doppi (NG24, NG25); Modifica che non crea né riscrive link (NG02, NG27); resti di S1a e C1 (Scanner a mano, `#666`) | C2 | `cod-lettore.cjs` |
 | 4 | **ESE** | 29 | Esecuzione corretta: AU-V01-V06, AU-V08, AU-V09, AU-V12, AU-N13, AU-N17, P16, P17 | COD | `ese-automazioni.cjs` |
 | 5 | **VAL** | 23 | Valori dei campi: opzioni a id stabili (CAM-F1), numeri (CAM-F2), contatore (CAM-F3), Modifica (CAM-F4, F5), CAM-F11; `FieldInput` unico | C2 | `val-campi.cjs` |
-| 6 | **IND** | 28 | Resto del tasto Indietro: una sola barra delle schede (IND-5), X nello Scanner, Conta col tasto di sistema, «Prodotto non trovato», etichetta della freccia; LokiJS facoltativo | C2 | `ind-indietro.cjs` |
+| 6 | **IND** | 28 | Resto del tasto Indietro (una sola barra delle schede, IND-5, già fatta in C2): X nello Scanner, Conta col tasto di sistema, «Prodotto non trovato», etichetta della freccia; LokiJS facoltativo | C2 | `ind-indietro.cjs` |
 | 7 | **S1b** | 13 | Giacenza sugli scaffali (`map-2.md`) | S1a | (dal ticket 13) |
 | 8 | **S2** | 14 | Misure e tipo dello scaffale, altezza del prodotto, `fitsShelf`, riempimento a colori | S1b | `s2-capacita.cjs` |
 | 9 | **S3** | 15 | Avviso dall'80% e **blocco** quando non entra, con la proposta, in tutti i punti di carico (elenco nel ticket 15); capienza delle posizioni in pezzi (AU-V13) | S2, COD | `s3-avvisi.cjs` |

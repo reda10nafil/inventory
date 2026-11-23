@@ -11,7 +11,6 @@ import ProductEditScreen from '../screens/product/EditScreen';
 import NotFoundScreen from '../screens/NotFoundScreen';
 
 import LocationsScreen from '../screens/settings/LocationsScreen';
-import FurTypesScreen from '../screens/settings/FurTypesScreen';
 import ContactsScreen from '../screens/settings/ContactsScreen';
 import ShelvesScreen from '../screens/settings/ShelvesScreen';
 import FieldsScreen from '../screens/settings/FieldsScreen';
@@ -96,7 +95,9 @@ export default function RootNavigator() {
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProductEdit" component={ProductEditScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsLocations" component={LocationsScreen} options={{ headerShown: true, headerTitle: 'Gestisci Posizioni' }} />
-      <Stack.Screen name="SettingsCategories" component={FurTypesScreen} options={{ headerShown: true, headerTitle: 'Tipi di pelle' }} />
+      {/* C2 (ticket 21): l'indirizzo di Impostazioni › Tipi di pelle (M01) apre Campi Personalizzati con i valori di
+          «Tipo di pelle» aperti (FieldsScreen guarda il nome della schermata); la voce non è più in Impostazioni */}
+      <Stack.Screen name="SettingsCategories" component={FieldsScreen} options={{ headerShown: true, headerTitle: 'Campi Personalizzati' }} />
       <Stack.Screen name="SettingsContacts" component={ContactsScreen} options={{ headerShown: true, headerTitle: 'Fornitori e clienti' }} />
       <Stack.Screen name="SettingsShelves" component={ShelvesScreen} options={{ headerShown: true, headerTitle: 'Scaffali' }} />
       <Stack.Screen name="SettingsFields" component={FieldsScreen} options={{ headerShown: true, headerTitle: 'Campi Personalizzati' }} />

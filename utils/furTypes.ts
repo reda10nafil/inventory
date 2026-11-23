@@ -95,3 +95,53 @@ export function withSystemFieldNames<T extends { id: string; name: string; isSys
     return f;
   });
 }
+
+// ---- C2 (ticket 21): controlli dell'editor dei valori in Campi Personalizzati › Tipo di pelle (OptionsEditor) ----
+
+/** Prodotti che usano un tipo di pelle, cestino compreso (`usage` di `utils/productRules.ts`). */
+export interface FurTypeUsage {
+  active: number;
+  trashed: number;
+}
+
+const prodotti = (n: number) => (n === 1 ? '1 prodotto' : `${n} prodotti`);
+
+/** Testo d'uso accanto al valore: «Nessun prodotto», «3 prodotti», «3 prodotti (1 nel cestino)». */
+export function furTypeUsageText(used: FurTypeUsage): string {
+  const n = used.active + used.trashed;
+  if (!n) return 'Nessun prodotto';
+  if (!used.trashed) return prodotti(n);
+  return used.active ? `${prodotti(n)} (${used.trashed} nel cestino)` : `${prodotti(n)} (nel cestino)`;
+}
+
+/**
+ * Errore per eliminare il tipo `id`, altrimenti null. Deve restarne almeno uno: `parseFurTypes` legge una lista vuota
+ * come i predefiniti, che ricomparirebbero. Un tipo usato da un prodotto, anche venduto o nel cestino, non si elimina
+ * (si può rinominare): il prodotto resterebbe con un id senza nome.
+ */
+export function furTypeDeleteError(furTypes: readonly FurType[], id: string, used: FurTypeUsage): string | null {
+  if (furTypes.length <= 1) return 'Deve restare almeno un tipo di pelle.';
+  if (used.active + used.trashed === 0) return null;
+  const parts = used.active && used.trashed ? `${prodotti(used.active)} e ${used.trashed} nel cestino`
+    : used.active ? prodotti(used.active) : `${prodotti(used.trashed)} nel cestino`;
+  const trash = used.trashed ? ' Quelli nel cestino si possono anche eliminare per sempre dal Cestino.' : '';
+  return `Il tipo di pelle "${furTypeLabel(furTypes, id)}" è usato da ${parts}. Cambia il tipo di pelle di quei prodotti prima di eliminarlo, oppure rinominalo.${trash}`;
+}
+
+/** Nomi dei campi personalizzati attivi con «Sorgente Dati: Tipi di pelle» (`linkTo: 'furType'`). */
+export function furTypeLinkedFields(fields: readonly { name: string; linkTo?: string; deletedAt?: string }[]): string[] {
+  return fields.filter((f) => f.linkTo === 'furType' && !f.deletedAt).map((f) => f.name);
+}
+
+/**
+ * Messaggio dopo il rinomina. I prodotti salvano l'id del tipo, quindi mostrano il nome nuovo; i campi personalizzati
+ * con «Sorgente Dati: Tipi di pelle» salvano invece il nome (`AddScreen`), che lì resta quello vecchio (ticket 23).
+ */
+export function furTypeRenameMessage(oldLabel: string, newLabel: string, used: FurTypeUsage, linkedFields: readonly string[]): string {
+  const n = used.active + used.trashed;
+  const follow = !n ? '' : n === 1 ? ' Il prodotto che lo usa mostra il nome nuovo.' : ` I ${n} prodotti che lo usano mostrano il nome nuovo.`;
+  const list = linkedFields.map((f) => `«${f}»`).join(', ');
+  const note = !linkedFields.length ? ''
+    : `${linkedFields.length === 1 ? ` Il campo ${list} (Sorgente Dati: Tipi di pelle) salva` : ` I campi ${list} (Sorgente Dati: Tipi di pelle) salvano`} il nome, non il tipo: nei prodotti già compilati resta «${oldLabel}».`;
+  return `«${oldLabel}» ora si chiama «${newLabel}».${follow}${note}`;
+}

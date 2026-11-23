@@ -6,10 +6,10 @@ const KEY = 'furinventory_hardware_config:local';
     await h.go('settings/hardware');
     const prima = await h.store(KEY, 0);
     await h.click('Solo NFC');
-    await h.page.getByRole('switch').first().click(); // Scrittura automatica NFC
+    await h.page.getByRole('switch').locator('visible=true').first().click(); // Scrittura automatica NFC
     const dopo = await h.store(KEY);
     await h.go('settings/hardware');
-    const interruttoreDopoRicarica = await h.page.getByRole('switch').first().isChecked();
+    const interruttoreDopoRicarica = await h.page.getByRole('switch').locator('visible=true').first().isChecked();
     return { prima, dopo, interruttoreDopoRicarica };
   });
 

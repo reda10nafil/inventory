@@ -2,9 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Pressable, ScrollView, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRoute } from '@react-navigation/native';
 import { useCustomFields, FieldType, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
+import { useFurTypes } from '../../../contexts/FurTypesContext';
+import { useInventory } from '../../../contexts/InventoryContext';
 import { FieldUIType, CustomField } from '../../../types';
+import { usage } from '../../../utils/productRules';
+import { furTypeDeleteError, furTypeLinkedFields, furTypeNameError, furTypeRenameMessage, furTypeUsageText } from '../../../utils/furTypes';
+import { OptionsEditor } from '../../../components/OptionsEditor';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -27,6 +33,20 @@ export default function CustomFieldsScreen() {
   const insets = useSafeAreaInsets();
   const { customFields, loading, addField, deleteField, updateField } = useCustomFields();
   const { appendToLayout } = useLayout();
+  const { furTypes, loading: furTypesLoading, addFurType, renameFurType, deleteFurType } = useFurTypes();
+  const { products } = useInventory();
+  const route = useRoute();
+
+  // Valori del campo Base «Tipo di pelle» (C2, ticket 21): la sua matita apre solo questo editor (nome, tipo e icona
+  // del campo restano fissi). L'indirizzo `settings/categories` (Impostazioni › Tipi di pelle fino a C1) apre la
+  // schermata con l'editor già aperto. Stessa lista e stessa chiave di prima (`useFurTypes`); i prodotti salvano l'id.
+  const [showFurTypes, setShowFurTypes] = useState(route.name === 'SettingsCategories');
+  const furTypeUsed = (id: string) => usage(products, { furType: id });
+  const handleRenameFurType = async (id: string, label: string) => {
+    const old = furTypes.find((f) => f.id === id)?.label ?? id;
+    await renameFurType(id, label);
+    Alert.alert('Fatto', furTypeRenameMessage(old, label, furTypeUsed(id), furTypeLinkedFields(customFields)));
+  };
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingField, setEditingField] = useState<CustomField | null>(null);
@@ -228,7 +248,26 @@ export default function CustomFieldsScreen() {
                       Valori: {field.dataset.join(', ')}
                     </Text>
                   )}
+                  {field.isSystem && field.id === 'furType' && (
+                    <Text style={styles.fieldOptions} numberOfLines={1}>
+                      Valori: {furTypes.map((v) => v.label).join(', ')}
+                    </Text>
+                  )}
                 </View>
+
+                {/* Campo Base «Tipo di pelle»: la matita apre solo i suoi valori (C2) */}
+                {field.isSystem && field.id === 'furType' && (
+                  <View style={styles.fieldActions}>
+                    <Pressable
+                      style={styles.editButton}
+                      onPress={() => setShowFurTypes(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Modifica i valori di ${field.name}`}
+                    >
+                      <AppIcon name="edit" size={18} color={t.colors.accentInk} />
+                    </Pressable>
+                  </View>
+                )}
 
                 {/* Edit & Delete buttons for non-system fields */}
                 {!field.isSystem && (
@@ -501,6 +540,41 @@ export default function CustomFieldsScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* VALORI DI «TIPO DI PELLE» (C2): id stabili, i prodotti seguono il nome nuovo */}
+      <Modal
+        visible={showFurTypes}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowFurTypes(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Pressable onPress={() => setShowFurTypes(false)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Chiudi i valori di Tipo di pelle">
+              <AppIcon name="close" size={24} color={t.colors.textPrimary} />
+            </Pressable>
+            <Text style={styles.modalTitle}>Tipo di pelle</Text>
+            <View style={styles.modalHeaderSpacer} />
+          </View>
+          <ScrollView style={styles.modalContent} contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 24 }}>
+            <Text style={styles.valuesIntro}>
+              Valori del campo Base, da scegliere in Aggiungi e in Modifica. Nome, tipo e icona del campo restano fissi.
+            </Text>
+            {/* Finché la lista salvata non è letta si aspetta: un valore aggiunto partirebbe dai predefiniti */}
+            {furTypesLoading ? <ActivityIndicator size="large" color={t.colors.accentInk} /> : <OptionsEditor
+              options={furTypes}
+              usedBy={(id) => furTypeUsageText(furTypeUsed(id))}
+              nameError={(label, editingId) => furTypeNameError(label, furTypes, editingId)}
+              deleteError={(id) => furTypeDeleteError(furTypes, id, furTypeUsed(id))}
+              onAdd={async (label) => { await addFurType(label); Alert.alert('Fatto', `«${label}» aggiunto ai tipi di pelle`); }}
+              onRename={handleRenameFurType}
+              onDelete={deleteFurType}
+              placeholder="Es. Lapin, Castoro, Montone"
+              hint="Tocca un valore per rinominarlo: i prodotti che lo usano restano collegati e mostrano il nome nuovo. Un valore usato da un prodotto, anche venduto o nel cestino, non si elimina."
+            />}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -545,6 +619,8 @@ const useStyles = makeStyles((t) => ({
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: t.spacing.screenPadding, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: t.colors.border },
   modalTitle: { ...t.typography.cardTitle, fontSize: 18, fontWeight: t.title.weight, letterSpacing: t.title.tracking },
   saveButton: { color: t.colors.accentInk, fontWeight: '600', fontSize: 16 },
+  modalHeaderSpacer: { width: 24 },
+  valuesIntro: { ...t.typography.caption, fontSize: 13, lineHeight: 18, marginBottom: 16 },
   modalContent: { flex: 1, paddingHorizontal: t.spacing.screenPadding },
   modalSectionTitle: {
     ...t.typography.sectionHeader,

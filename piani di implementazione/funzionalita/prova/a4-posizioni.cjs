@@ -1,17 +1,19 @@
 // a4: Impostazioni › Posizioni - crea, modifica nome/colore, elimina (e cosa succede ai prodotti), nome doppio.
+// C2: gli elementi premibili si contano solo a video e senza la freccia nativa in alto (un <a>): da C2 sotto ogni
+// indirizzo c'è Impostazioni nascosta e la freccia c'è anche aprendo l'indirizzo direttamente.
 const { scenario } = require('./lib.cjs');
 const KEY = 'furinventory_locations:local';
 // riga della posizione e suo cestino (Pressable annidato nella riga)
 const row = (h, label) => h.page.locator('[tabindex="0"]').filter({ hasText: `${label}ID:` }).first();
-const swatch = (h, i) => h.page.locator('[tabindex="0"]').nth(i); // 0..9 colori, dopo il campo Nome
+const swatch = (h, i) => h.page.locator('[tabindex="0"]:visible:not(a)').nth(i); // 0..9 colori, dopo il campo Nome
 (async () => {
   if (process.argv[2]) return; // senza argomento: scenari principali
   await scenario('a4-pos-crea', async (h) => {
     await h.go('settings/locations');
     const prima = await h.store(KEY, 0);
     await h.page.getByPlaceholder('Es. Magazzino A, Scaffale 1').fill('Deposito Nord');
-    await h.page.locator('[tabindex="0"]').nth(2).click(); // terzo colore = verde #10B981
-    await h.page.locator('[tabindex="0"]').nth(11).click(); // genera codice
+    await h.page.locator('[tabindex="0"]:visible:not(a)').nth(2).click(); // terzo colore = verde #10B981
+    await h.page.locator('[tabindex="0"]:visible:not(a)').nth(11).click(); // genera codice
     await h.page.waitForTimeout(300);
     await h.click('Crea Posizione');
     const dopo = await h.store(KEY);
@@ -28,7 +30,7 @@ const swatch = (h, i) => h.page.locator('[tabindex="0"]').nth(i); // 0..9 colori
     await h.click('Vetrina');
     const titolo = await h.has('Modifica posizione');
     await h.page.getByPlaceholder('Es. Magazzino A, Scaffale 1').fill('Vetrina Centrale');
-    await h.page.locator('[tabindex="0"]').nth(3).click(); // viola #8B5CF6
+    await h.page.locator('[tabindex="0"]:visible:not(a)').nth(3).click(); // viola #8B5CF6
     await h.click('Salva Modifiche');
     const vetrina = ((await h.store(KEY)) || []).find((l) => l.id === 'vetrina');
     const vis = (await h.products(0)).find((p) => p.sku === 'VIS-0142');

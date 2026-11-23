@@ -1,9 +1,13 @@
 import {
   DEFAULT_FUR_TYPES,
+  furTypeDeleteError,
   furTypeFromCsv,
   furTypeIdFor,
   furTypeLabel,
+  furTypeLinkedFields,
   furTypeNameError,
+  furTypeRenameMessage,
+  furTypeUsageText,
   parseFurTypes,
   withSystemFieldNames,
 } from '../utils/furTypes';
@@ -94,5 +98,55 @@ describe('withSystemFieldNames (C1)', () => {
   it('un campo già con i nomi nuovi resta lo stesso oggetto', () => {
     const f = { id: 'furType', name: 'Tipo di pelle', isSystem: true, required: false };
     expect(withSystemFieldNames([f])[0]).toBe(f);
+  });
+});
+
+// C2 (ticket 21): controlli dell'editor dei valori in Campi Personalizzati › Tipo di pelle (OptionsEditor)
+describe('furTypeUsageText (C2)', () => {
+  it('conta i prodotti, cestino compreso, e dice quanti sono nel cestino', () => {
+    expect(furTypeUsageText({ active: 0, trashed: 0 })).toBe('Nessun prodotto');
+    expect(furTypeUsageText({ active: 1, trashed: 0 })).toBe('1 prodotto');
+    expect(furTypeUsageText({ active: 3, trashed: 0 })).toBe('3 prodotti');
+    expect(furTypeUsageText({ active: 2, trashed: 1 })).toBe('3 prodotti (1 nel cestino)');
+    expect(furTypeUsageText({ active: 0, trashed: 1 })).toBe('1 prodotto (nel cestino)');
+  });
+});
+
+describe('furTypeDeleteError (C2)', () => {
+  const libero = { active: 0, trashed: 0 };
+  it('un valore libero si elimina', () => expect(furTypeDeleteError(DEFAULT_FUR_TYPES, 'ermellino', libero)).toBeNull());
+  it('l\'ultimo valore non si elimina (una lista vuota tornerebbe ai predefiniti)', () => {
+    expect(furTypeDeleteError([{ id: 'solo', label: 'Solo' }], 'solo', libero)).toBe('Deve restare almeno un tipo di pelle.');
+  });
+  it('un valore usato non si elimina, col conteggio; il cestino conta e si dice', () => {
+    expect(furTypeDeleteError(DEFAULT_FUR_TYPES, 'visone', { active: 2, trashed: 0 }))
+      .toBe('Il tipo di pelle "Visone" è usato da 2 prodotti. Cambia il tipo di pelle di quei prodotti prima di eliminarlo, oppure rinominalo.');
+    expect(furTypeDeleteError(DEFAULT_FUR_TYPES, 'astrakan', { active: 0, trashed: 1 }))
+      .toBe('Il tipo di pelle "Astrakan" è usato da 1 prodotto nel cestino. Cambia il tipo di pelle di quei prodotti prima di eliminarlo, oppure rinominalo. Quelli nel cestino si possono anche eliminare per sempre dal Cestino.');
+    expect(furTypeDeleteError(DEFAULT_FUR_TYPES, 'volpe', { active: 1, trashed: 2 })).toMatch(/usato da 1 prodotto e 2 nel cestino\./);
+  });
+});
+
+describe('furTypeLinkedFields e furTypeRenameMessage (C2)', () => {
+  const fields = [
+    { name: 'Pelle interna', linkTo: 'furType' as const },
+    { name: 'Vecchia pelle', linkTo: 'furType' as const, deletedAt: '2026-11-20T10:00:00.000Z' },
+    { name: 'Reparto', linkTo: 'locations' as const },
+    { name: 'Note' },
+  ];
+  it('campi personalizzati attivi con «Sorgente Dati: Tipi di pelle»', () => {
+    expect(furTypeLinkedFields(fields)).toEqual(['Pelle interna']);
+    expect(furTypeLinkedFields([])).toEqual([]);
+  });
+  it('il messaggio dice che i prodotti seguono il nome nuovo', () => {
+    expect(furTypeRenameMessage('Visone', 'Visone Black', { active: 2, trashed: 1 }, []))
+      .toBe('«Visone» ora si chiama «Visone Black». I 3 prodotti che lo usano mostrano il nome nuovo.');
+    expect(furTypeRenameMessage('Lapin', 'Coniglio', { active: 0, trashed: 0 }, [])).toBe('«Lapin» ora si chiama «Coniglio».');
+    expect(furTypeRenameMessage('Volpe', 'Volpe rossa', { active: 1, trashed: 0 }, [])).toMatch(/Il prodotto che lo usa mostra il nome nuovo\.$/);
+  });
+  it('e avvisa che i campi con «Sorgente Dati: Tipi di pelle» tengono il nome vecchio', () => {
+    expect(furTypeRenameMessage('Visone', 'Visone Black', { active: 0, trashed: 0 }, ['Pelle interna']))
+      .toBe('«Visone» ora si chiama «Visone Black». Il campo «Pelle interna» (Sorgente Dati: Tipi di pelle) salva il nome, non il tipo: nei prodotti già compilati resta «Visone».');
+    expect(furTypeRenameMessage('Visone', 'V', { active: 0, trashed: 0 }, ['A', 'B'])).toMatch(/I campi «A», «B» \(Sorgente Dati: Tipi di pelle\) salvano il nome/);
   });
 });

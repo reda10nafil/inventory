@@ -4,7 +4,7 @@ Piano per controllare, alla fine delle fette di [`map-3.md`](map-3.md), che ogni
 
 ## Come si fa
 
-- **Sul web**, con `prova/collaudo.cjs`: ogni fetta, alla chiusura, **aggiunge i suoi passi** a quel file (uno scenario per passo, nome `CF-…`), con lo stesso aiuto `lib.cjs` delle prove (browser pulito, campionario). Si lancia tutto o un gruppo: `node collaudo.cjs CF-D`. Un passo verde vuol dire: l'azione riesce, i dati salvati sono quelli attesi (letti con `h.store`), 0 errori in console.
+- **Sul web**, con `prova/collaudo.cjs` (nato con C2, che ha scritto CF-A2 per la sua parte e CF-B5; gli altri passi stampano «da fare»): ogni fetta, alla chiusura, **aggiunge i suoi passi** a quel file (uno scenario per passo, nome `CF-…`), con lo stesso aiuto `lib.cjs` delle prove (browser pulito, campionario). Si lancia tutto o un gruppo: `node collaudo.cjs CF-D`. Un passo verde vuol dire: l'azione riesce, i dati salvati sono quelli attesi (letti con `h.store`), 0 errori in console.
 - **Nei 5 stili**: il foglio di ogni fetta (`stili-<fetta>.jpg`); alla fine un foglio unico con le schermate nuove (`stili-collaudo.jpg`).
 - **Sul telefono** (gruppo T): a mano, con l'APK di debug (`adb install -r`, mai disinstallare), seguendo i passi scritti; esito annotato qui sotto con la data. Finché non si fanno restano **«non provato»**.
 - Prima del collaudo finale: `controllo.sh` verde e tutte le prove delle fette verdi.

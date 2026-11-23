@@ -6,7 +6,7 @@ const KEY = 'furinventory_gs1_config:local';
 const URL_IN = 'https://syncroflow.app/id';
 const solo = process.argv[2];
 const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, fn, opts) : null);
-const input = (h) => h.page.locator('input').first();
+const input = (h) => h.page.locator('input:visible').first();
 
 // imposta dominio e seriale progressivo dalla schermata
 async function configura(h) {
@@ -20,7 +20,7 @@ async function configura(h) {
 (async () => {
   await run('a4-gs1-salva', async (h) => {
     await configura(h);
-    await h.page.getByRole('switch').nth(1).click(); // Lotto
+    await h.page.getByRole('switch').locator('visible=true').nth(1).click(); // Lotto
     await h.page.waitForTimeout(500);
     const salvato = await h.store(KEY);
     const anteprima = await h.has('https://id.prova.it/01/8001234567890/21/000042?10=LOTTO-2026A');
@@ -71,7 +71,7 @@ async function configura(h) {
     await h.page.waitForTimeout(800);
     await h.click('Modifica');
     await h.page.waitForTimeout(800);
-    const skuNelCampo = await h.page.locator('input').first().inputValue();
+    const skuNelCampo = await h.page.locator('input:visible').first().inputValue();
     await h.click('Salva Modifiche');
     const dopo = (await h.products()).find((p) => p.sku === 'VIS-0142');
     return { skuNelCampo, linkPrima: prima.gs1DigitalLink, linkDopo: dopo.gs1DigitalLink, uguale: prima.gs1DigitalLink === dopo.gs1DigitalLink };

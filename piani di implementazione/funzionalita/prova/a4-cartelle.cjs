@@ -1,4 +1,6 @@
 // a4: Impostazioni › Cartelle - crea, rinomina, elimina (piena, vuota), e cartella eliminata con prodotti nel cestino.
+// C2: gli elementi premibili si contano solo a video e senza la freccia nativa in alto (un <a>): da C2 sotto ogni
+// indirizzo c'è Impostazioni nascosta e la freccia c'è anche aprendo l'indirizzo direttamente.
 // C1 (ticket 19): le cartelle si chiamano «Categorie» (stesso indirizzo); selettori aggiornati.
 // Uso: node a4-cartelle.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const { scenario } = require('./lib.cjs');
@@ -12,7 +14,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
   await run('a4-cart-crea', async (h) => {
     await h.go('settings/folders');
     await h.page.getByPlaceholder(NOME).fill('Giacche');
-    await h.page.locator('[tabindex="0"]').nth(2).click(); // terza icona = warehouse
+    await h.page.locator('[tabindex="0"]:visible:not(a)').nth(2).click(); // terza icona = warehouse
     await h.page.getByPlaceholder('Scansiona o Genera...').fill('LIB-PROVA-1');
     const avviso = await h.has('Il barcode verrà salvato solo se modifichi');
     await h.click('Crea Categoria');
@@ -72,7 +74,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
     await h.go('settings/trash');
     await h.shot('cestino');
     // primo pulsante dopo «indietro» = ripristina del primo prodotto nel cestino
-    await h.page.locator('[tabindex="0"]').nth(1).click();
+    await h.page.locator('[tabindex="0"]:visible:not(a)').nth(1).click();
     await h.page.waitForTimeout(500);
     const dopo = (await h.products()).find((p) => p.sku === 'AST-0033');
     return {

@@ -27,7 +27,8 @@ const FETTE = {
         await page.getByText('Tipo di pelle', { exact: true }).first().scrollIntoViewIfNeeded(); // C1
       }],
       ['card', async (page) => { await page.goto(APP); await page.getByText('LIN-0021', { exact: true }).first().scrollIntoViewIfNeeded(); }],
-      ['impostazioni', async (page) => { await page.goto(`${APP}/settings`); await page.waitForTimeout(1500); await page.getByText('Tipi di pelle', { exact: true }).first().scrollIntoViewIfNeeded(); }], // C1
+      // C2: la voce «Tipi di pelle» non c'è più (la lista è in Campi Personalizzati); si mostra dove era
+      ['impostazioni', async (page) => { await page.goto(`${APP}/settings`); await page.waitForTimeout(1500); await page.getByText('Fornitori e clienti', { exact: true }).first().scrollIntoViewIfNeeded(); }],
     ],
   },
   // M03: articoli a quantità (card, esaurito, Scheda, Modifica in sola lettura, Magazzino in Aggiungi, Cronologia)
@@ -282,7 +283,7 @@ const FETTE = {
         await page.goto(APP); await page.waitForTimeout(1500);
         await page.getByText('Collezione Inverno', { exact: true }).first().click(); await page.waitForTimeout(600);
       }],
-      ['tipi-di-pelle', async (page) => { await page.goto(`${APP}/settings/categories`); await page.waitForTimeout(1800); }],
+      ['tipi-di-pelle', async (page) => { await page.goto(`${APP}/settings/categories`); await page.waitForTimeout(1800); }], // C2: Campi con l'editor dei valori
     ],
   },
   // S1a: scaffali (Impostazioni › Scaffali per posizione, modulo, Aggiungi e Modifica di un pezzo unico con lo
@@ -339,6 +340,37 @@ const FETTE = {
       }],
       ['card', async (page) => { await page.goto(APP); await page.waitForTimeout(1500); await page.getByText('VIS-0098', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
       ['scanner', async (page) => { await page.goto(`${APP}/scanner-action?type=shelf&id=1732300000000-pel1`); await page.waitForTimeout(1800); }],
+    ],
+  },
+  // C2: «Tipo di pelle» solo in Campi Personalizzati: card del campo Base con la matita e la riga dei valori, editor dei
+  // valori aperto (elenco con l'uso, rinomina), Impostazioni senza la voce. Nomi lunghi apposta, per vedere se vanno a capo.
+  c2: {
+    prepara: () => {
+      const tipi = [['visone', 'Visone'], ['volpe', 'Volpe argentata della Groenlandia, pelle extra lunga'], ['zibellino', 'Zibellino'],
+        ['cincilla', 'Cincillà'], ['ermellino', 'Ermellino'], ['astrakan', 'Astrakan'], ['altro', 'Altro'],
+        ['visone_black', 'Visone Black Glama per cappotti da sera e giacche corte']];
+      localStorage.setItem('furinventory_categories:local', JSON.stringify(tipi.map(([id, label]) => ({ id, label }))));
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      list.find((p) => p.sku === 'VIS-0098').furType = 'visone_black';
+      list.find((p) => p.sku === 'AST-0033').deletedAt = '2026-11-23T08:00:00.000Z'; // Astrakan solo nel cestino
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['campi', async (page) => {
+        await page.goto(`${APP}/settings/fields`); await page.waitForTimeout(1800);
+        await page.getByText('Tipo di pelle', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['valori', async (page) => {
+        await page.locator('[aria-label="Modifica i valori di Tipo di pelle"]').locator('visible=true').first().click(); await page.waitForTimeout(900);
+      }],
+      ['elenco', async (page) => { await page.getByText('Valori (8)', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' })); }],
+      ['fondo', async (page) => { await page.getByText('Tocca un valore per rinominarlo', { exact: false }).first().evaluate((e) => e.scrollIntoView({ block: 'end' })); }],
+      ['rinomina', async (page) => {
+        await page.locator('[aria-label="Rinomina Volpe argentata della Groenlandia, pelle extra lunga"]').first().click(); await page.waitForTimeout(500);
+        await page.getByText('Aggiungi un valore', { exact: false }).or(page.getByText('Rinomina «', { exact: false })).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['impostazioni', async (page) => { await page.goto(`${APP}/settings`); await page.waitForTimeout(1500); await page.getByText('Fornitori e clienti', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
     ],
   },
 };

@@ -3,7 +3,7 @@ const { scenario } = require('./lib.cjs');
 (async () => {
   await scenario('c08-campo-vuoto', async (h) => {
     await h.go('product/edit/cmp-6');
-    await h.page.getByText('PUZ-0012', { exact: false }).first().waitFor().catch(() => {});
+    await h.page.getByText('PUZ-0012', { exact: false }).locator('visible=true').first().waitFor().catch(() => {});
     const inputs = h.page.locator('input:visible');
     const ph = await h.page.evaluate(() => [...document.querySelectorAll('input')].filter((i) => i.offsetParent).map((i) => i.placeholder));
     const forn = ph.find((p) => p === 'Inserisci...');

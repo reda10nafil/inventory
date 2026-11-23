@@ -92,8 +92,9 @@ async function conSottocategoria(h) {
     const modifica = { tipo: await h.has('Tipo di pelle', true), categoria: await h.has('Categoria', true), cartella: await h.has('Cartella', true) };
     await h.go('settings/folders');
     const gestione = { titolo: await h.has('Crea nuova categoria', true), elenco: await h.has('Categorie esistenti (3)', true) };
+    // C2: l'indirizzo apre Campi Personalizzati con l'editor dei valori di «Tipo di pelle» (OptionsEditor)
     await h.go('settings/categories');
-    const tipi = { titolo: await h.has('Aggiungi tipo di pelle', true), elenco: await h.has('Tipi di pelle (7)', true) };
+    const tipi = { titolo: await h.has('Aggiungi un valore', true), elenco: await h.has('Valori (7)', true) };
     await h.go('settings');
     const impostazioni = { categorie: await h.has('Categorie', true), tipi: await h.has('Tipi di pelle', true), cartelle: await h.has('Gestisci Cartelle', true) };
     await h.go('automations/count');

@@ -433,24 +433,7 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
-        <Pressable
-          style={styles.settingRow}
-          onPress={() => router.push('/settings/categories')}
-        >
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
-              <AppIcon name="category" size={24} color={t.colors.onAccent} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Tipi di pelle</Text>
-              <Text style={styles.settingDescription}>
-                Per le pellicce; facoltativo negli altri prodotti
-              </Text>
-            </View>
-          </View>
-          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
-        </Pressable>
-
+        {/* C2 (ticket 21): i valori di «Tipo di pelle» si gestiscono solo da Campi Personalizzati (matita del campo) */}
         <Pressable
           style={styles.settingRow}
           onPress={() => router.push('/settings/contacts')}

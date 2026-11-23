@@ -49,7 +49,7 @@ async function filtroAttenzione(h, sku) {
     const inAttenzione = await filtroAttenzione(h, nuovo.sku);
     await h.shot('attenzione');
     await h.go(`product/${nuovo.id}`);
-    await h.page.getByText('Giacenza', { exact: true }).first().scrollIntoViewIfNeeded();
+    await h.page.getByText('Giacenza', { exact: true }).locator('visible=true').first().scrollIntoViewIfNeeded();
     await h.shot('scheda');
     const scheda = await h.has('Sotto la scorta minima', true);
     return { campoPrimaDellaQuantita: primaDellaQuantita, stock: nuovo.stock, minStock: nuovo.minStock ?? null, avvisi, inAttenzione, scheda };
