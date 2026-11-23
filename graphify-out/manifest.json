@@ -1818,21 +1818,21 @@
     "semantic_hash": ""
   },
   "src/screens/automations/BatchMoveScreen.tsx": {
-    "mtime": 1795424427.1442947,
-    "seen": 1795428043.1667693,
-    "ast_hash": "2c960e198de97ebbf60ab7fe0aef88f9",
+    "mtime": 1795428348.6790502,
+    "seen": 1795428974.2029462,
+    "ast_hash": "9daff80e8ffad5ac7a0abb2086e32b77",
     "semantic_hash": ""
   },
   "src/screens/automations/CustomRunnerScreen.tsx": {
-    "mtime": 1795424427.1453,
-    "seen": 1795428043.1667693,
-    "ast_hash": "d9cd220c629790266b6c907e6b0cddce",
+    "mtime": 1795428348.6800504,
+    "seen": 1795428974.2029462,
+    "ast_hash": "fc4c5b8175fb1cef312af38eb40c4c69",
     "semantic_hash": ""
   },
   "src/screens/automations/QuickTagScreen.tsx": {
-    "mtime": 1795424224.9567506,
-    "seen": 1795428043.1667693,
-    "ast_hash": "a274cd4e876ac688d4aa4109422bcad0",
+    "mtime": 1795428348.6790502,
+    "seen": 1795428974.2029462,
+    "ast_hash": "6b78a051eb06e1ebf20e7bb1dfd6c1c1",
     "semantic_hash": ""
   },
   "src/screens/automations/ScanSellScreen.tsx": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795427872.779694,
-    "seen": 1795428043.1842763,
-    "ast_hash": "98840381c90df9127de6d62d870342c1",
+    "mtime": 1795428960.8114686,
+    "seen": 1795428974.22112,
+    "ast_hash": "ef7aebf47704a4bab44bd356bb356449",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795425745.5247242,
-    "seen": 1795428043.1842763,
-    "ast_hash": "ab9f503e0611b122ca7e26ccbf407371",
+    "mtime": 1795428420.1116512,
+    "seen": 1795428974.22112,
+    "ast_hash": "b658c9af1ba74b3b01bc16b8d04a2170",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795427879.690489,
-    "seen": 1795428043.1842763,
-    "ast_hash": "63520713b3d9ab5445aa48e696465264",
+    "mtime": 1795428415.9942074,
+    "seen": 1795428974.22212,
+    "ast_hash": "5bdbcb57eee12aec0c24973e7ab325cb",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3816,9 +3816,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/s1-scaffali.cjs": {
-    "mtime": 1795403062.9953382,
-    "seen": 1795403667.20167,
-    "ast_hash": "9e1439de64a7c5a0c78a22a0a7f58563",
+    "mtime": 1795428364.3538258,
+    "seen": 1795428974.1939468,
+    "ast_hash": "f6edf282ea069096763d10bf6dac9909",
     "semantic_hash": ""
   },
   "src/screens/settings/ShelvesScreen.tsx": {
@@ -3870,9 +3870,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/collaudo.cjs": {
-    "mtime": 1795426268.2899551,
-    "seen": 1795428043.1572297,
-    "ast_hash": "8ff6a73c1870ee24c9a0d51f6e17319c",
+    "mtime": 1795428283.2575443,
+    "seen": 1795428974.1929474,
+    "ast_hash": "d455fc5ef5a405963cfc312244d591cd",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stato-da-indirizzo.mjs": {
@@ -4050,9 +4050,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/collaudo-finale.md": {
-    "mtime": 1795425574.91842,
-    "seen": 1795428043.1842763,
-    "ast_hash": "13dd7c232b50e3d86bf37e368d59c92e",
+    "mtime": 1795428415.9942074,
+    "seen": 1795428974.22212,
+    "ast_hash": "3957e445be1c89e01e4aa716fb115567",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/21-tipo-di-pelle-nei-campi.md": {
@@ -4218,9 +4218,9 @@
     "semantic_hash": ""
   },
   "__tests__/codes.test.ts": {
-    "mtime": 1795424695.5152893,
-    "seen": 1795428043.1411757,
-    "ast_hash": "0a073da44e63f95f3bb09c73f8538b28",
+    "mtime": 1795428364.3532987,
+    "seen": 1795428974.1755216,
+    "ast_hash": "06e26a3bcd7345b9b9899e8f58ba52f6",
     "semantic_hash": ""
   },
   "hooks/useCodeReader.ts": {
@@ -4242,9 +4242,9 @@
     "semantic_hash": ""
   },
   "utils/codes.ts": {
-    "mtime": 1795424736.3223133,
-    "seen": 1795428043.1787682,
-    "ast_hash": "54d2419bed7b4436487cd1c26eb7d06e",
+    "mtime": 1795428364.352782,
+    "seen": 1795428974.2171133,
+    "ast_hash": "92b69be3b6b6d298af15333f6f50ad2f",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-cod.jpg": {

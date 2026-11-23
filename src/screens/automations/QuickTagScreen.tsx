@@ -1,5 +1,5 @@
 // FurInventory Pro - Quick Tag Automation
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, StyleSheet, Pressable, Vibration, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
@@ -50,9 +50,13 @@ export default function QuickTagScreen() {
 
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
+    // Un solo timer per il messaggio sul lettore (COD): con «Scrivi il codice» due letture arrivano a meno di un
+    // secondo e il timer della prima cancellava il messaggio della seconda (per esempio il rifiuto del cestino)
+    const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const feedback = (text: string, ms = 1000) => {
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
         setFeedbackMessage(text);
-        setTimeout(() => setFeedbackMessage(null), ms);
+        feedbackTimer.current = setTimeout(() => setFeedbackMessage(null), ms);
     };
 
     // Tag sul prodotto letto (o scelto tra più prodotti con lo stesso codice)
@@ -61,8 +65,7 @@ export default function QuickTagScreen() {
         const currentNotes = product.technicalNotes || '';
         // Avoid duplicates
         if (currentNotes.includes(`[${activeTag}]`)) {
-            setFeedbackMessage(`${product.sku} già taggato`);
-            setTimeout(() => setFeedbackMessage(null), 1000);
+            feedback(`${product.sku} già taggato`, 1000);
             return;
         }
 
@@ -75,8 +78,7 @@ export default function QuickTagScreen() {
         soundService.playSuccess();
 
         // Overlay feedback
-        setFeedbackMessage(`${product.sku} Taggato!`);
-        setTimeout(() => setFeedbackMessage(null), 1000);
+        feedback(`${product.sku} Taggato!`, 1000);
     };
 
     const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
@@ -113,8 +115,7 @@ export default function QuickTagScreen() {
         // Debounce error
         const timeout = setTimeout(() => {
             soundService.playBlockingError();
-            setFeedbackMessage(`Non trovato: ${data}`);
-            setTimeout(() => setFeedbackMessage(null), 2000);
+            feedback(`Non trovato: ${data}`, 2000);
         }, 400);
         setErrorTimeoutRef(timeout);
     };

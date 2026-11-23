@@ -1,5 +1,5 @@
 // FurInventory Pro - Custom Automation Runner (Execution Engine)
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -45,6 +45,9 @@ export default function CustomRunnerScreen() {
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [showScanner, setShowScanner] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    // Un solo timer per il messaggio sul lettore (COD): con «Scrivi il codice» due letture arrivano a meno di un
+    // secondo e il timer della prima cancellava il messaggio della seconda (per esempio il rifiuto del cestino)
+    const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [completedCount, setCompletedCount] = useState(0);
 
     // Runtime context (accumulated during execution)
@@ -321,8 +324,9 @@ export default function CustomRunnerScreen() {
 
     // ── Feedback overlay ────────────────────────────────────
     const showFeedback = (msg: string, isError = false) => {
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
         setFeedbackMessage(msg);
-        setTimeout(() => setFeedbackMessage(null), isError ? 2000 : 1200);
+        feedbackTimer.current = setTimeout(() => setFeedbackMessage(null), isError ? 2000 : 1200);
     };
 
     if (!automation) {

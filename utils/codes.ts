@@ -339,12 +339,17 @@ export function shelfAsLocationText(shelf: Pick<Shelf, 'name' | 'locationId'>, s
  * (anche il nome), scaffali e categorie. `self` è la cosa che si sta modificando.
  */
 export function codeOwner(code: string, sources: CodeSources, self?: CodeRef): string | null {
+  const ref = ownerRef(code, sources, self);
+  return ref ? ownerText(ref, sources) : null;
+}
+
+// Chi usa già il codice (prima i prodotti, come nel lettore), altrimenti null
+function ownerRef(code: string, sources: CodeSources, self?: CodeRef): CodeRef | null {
   const c = (code ?? '').trim();
   if (!fold(c)) return null;
   const product = sources.products?.find((p) => !(self?.kind === 'product' && self.id === p.id) && (sameCode(p.sku, c) || fold(p.id) === fold(c)));
-  if (product) return ownerText({ kind: 'product', id: product.id }, sources);
-  const place = placeMatches(c, sources, self)[0];
-  return place ? ownerText(place, sources) : null;
+  if (product) return { kind: 'product', id: product.id };
+  return placeMatches(c, sources, self)[0] ?? null;
 }
 
 /** Errore per un codice già usato, altrimenti null. */
@@ -358,10 +363,13 @@ export function codeError(code: string, sources: CodeSources, self?: CodeRef): s
  * prima e doppio (come dopo NG24) non blocca il salvataggio di un altro campo, ma si segnala (`warning`).
  */
 export function codeCheck(code: string, saved: string | undefined, sources: CodeSources, self?: CodeRef): { error: string | null; warning: string | null } {
-  const owner = codeOwner(code, sources, self);
-  if (!owner) return { error: null, warning: null };
+  const ref = ownerRef(code, sources, self);
+  if (!ref) return { error: null, warning: null };
+  const owner = ownerText(ref, sources);
   if (fold(saved) && fold(saved) === fold(code)) {
-    return { error: null, warning: `Il codice "${code.trim()}" è usato anche ${owner}: lo Scanner chiederà quale aprire. Cambialo in uno dei due per non confonderli.` };
+    // Con un prodotto lo Scanner non chiede: i prodotti vengono prima (`resolveCode`), questa cosa non si apre più dal codice
+    const scanner = ref.kind === 'product' ? 'lo Scanner apre il prodotto' : 'lo Scanner chiederà quale aprire';
+    return { error: null, warning: `Il codice "${code.trim()}" è usato anche ${owner}: ${scanner}. Cambialo in uno dei due per non confonderli.` };
   }
   return { error: `Il codice "${code.trim()}" è già usato ${owner}.`, warning: null };
 }

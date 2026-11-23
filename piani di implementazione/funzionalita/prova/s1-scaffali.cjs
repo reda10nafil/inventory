@@ -390,7 +390,8 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await h.click('Stand C');
     await h.click('Scansiona Prodotto');
     await scan(h, 'S1-QTA-1');
-    // Codice di uno scaffale letto come destinazione: non è una posizione
+    // Codice di uno scaffale letto come destinazione: da COD (AU-V14) vale la sua posizione (Magazzino, con la conferma
+    // «Cambio Destinazione»), lo scaffale non entra nei dati; l'invariante sotto lo controlla
     await scan(h, 'SCAF-MAG-A1', { wait: 1200 });
     // Azione rapida su LIN-0021 (pezzo unico su «Vetrina alta»): Carico 3 dalla finestra Movimenta
     await h.go('scanner');

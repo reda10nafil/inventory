@@ -282,18 +282,17 @@ async function cfE3(h) {
   out.cestino.venditaFlash = visti.some((m) => /nel cestino/.test(m));
   // Tagging
   await h.go('automations/quick-tag'); await h.click('Da Pulire'); await h.click('Scansiona Prodotto');
-  // prima il prodotto nel cestino: il messaggio sul lettore di una lettura si cancella dopo un secondo
+  // il link e subito dopo il prodotto nel cestino (con «Scrivi il codice» non c'è la pausa della fotocamera): il
+  // messaggio del rifiuto deve restare, anche se quello della lettura prima scade nel frattempo
+  await c.leggi(h, link);
   await c.leggi(h, 'PUZ-0012', { wait: 300 });
   out.cestino.tagging = /PUZ-0012 è nel cestino/.test(await c.testo(h));
-  await page.waitForTimeout(2200);
-  await c.leggi(h, link);
   out.riconosciuto.tagging = ((await c.prodotto(h, 'VIS-0142', 500)).technicalNotes || '').includes('[Da Pulire]');
   // Spostamento rapido
   await h.go('automations/batch-move'); await h.click('Magazzino'); await h.click('Scansiona Prodotto');
+  await c.leggi(h, link);
   await c.leggi(h, 'PUZ-0012', { wait: 300 });
   out.cestino.spostamento = /PUZ-0012 è nel cestino/.test(await c.testo(h));
-  await page.waitForTimeout(2200);
-  await c.leggi(h, link);
   out.riconosciuto.spostamento = (await c.prodotto(h, 'VIS-0142', 500)).location === 'magazzino';
   // Audit (Magazzino: VIS-0142 ora è lì)
   await h.go('automations/audit'); await h.click('Magazzino'); await fab();

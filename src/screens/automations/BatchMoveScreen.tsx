@@ -41,6 +41,15 @@ export default function BatchMoveScreen() {
     const [showScanner, setShowScanner] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
+    // Un solo timer per il messaggio sul lettore (COD): con «Scrivi il codice» due letture arrivano a meno di un
+    // secondo e il timer della prima cancellava il messaggio della seconda (per esempio il rifiuto del cestino)
+    const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const feedback = (text: string, ms = 1000) => {
+        if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+        setFeedbackMessage(text);
+        feedbackTimer.current = setTimeout(() => setFeedbackMessage(null), ms);
+    };
+
     // Sound effects - use global service
     async function playSuccessSound() {
         soundService.playSuccess();
@@ -146,16 +155,14 @@ export default function BatchMoveScreen() {
     const moveFlow = (product: Product) => {
         if (!targetLocation) return;
         if (product.location === targetLocation.id) {
-            setFeedbackMessage(`${product.sku} già qui!`);
-            setTimeout(() => setFeedbackMessage(null), 1000);
+            feedback(`${product.sku} già qui!`, 1000);
             return;
         }
 
         // Spostamento vero: in cronologia «spostato», non «modificato» (D15)
         if (!moveProduct(product.id, targetLocation.id)) {
             const refused = moveOf(product, targetLocation.id, '');
-            setFeedbackMessage(refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
-            setTimeout(() => setFeedbackMessage(null), 1500);
+            feedback(refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku), 1500);
             return;
         }
 
@@ -164,8 +171,7 @@ export default function BatchMoveScreen() {
         playSuccessSound();
 
         // Show overlay feedback
-        setFeedbackMessage(`${product.sku} Spostato!`);
-        setTimeout(() => setFeedbackMessage(null), 1000);
+        feedback(`${product.sku} Spostato!`, 1000);
     };
 
     const handleProductScan = async (data: string) => {
@@ -199,8 +205,7 @@ export default function BatchMoveScreen() {
             return;
         }
         if (read.status === 'trashed') {
-            setFeedbackMessage(refusalText('trash', byId(read.id)?.sku));
-            setTimeout(() => setFeedbackMessage(null), 1500);
+            feedback(refusalText('trash', byId(read.id)?.sku), 1500);
             return;
         }
         if (read.status === 'choose') {
@@ -208,16 +213,14 @@ export default function BatchMoveScreen() {
             return;
         }
         if (read.status === 'other') {
-            setFeedbackMessage(`${isText(data, read.ref)} Scansiona un prodotto.`);
-            setTimeout(() => setFeedbackMessage(null), 2000);
+            feedback(`${isText(data, read.ref)} Scansiona un prodotto.`, 2000);
             return;
         }
 
         // Debounce error feedback by 400ms
         const timeout = setTimeout(() => {
             soundService.playBlockingError();
-            setFeedbackMessage(`Prodotto non trovato: ${data}`);
-            setTimeout(() => setFeedbackMessage(null), 2000);
+            feedback(`Prodotto non trovato: ${data}`, 2000);
         }, 400);
         setErrorTimeoutRef(timeout);
     };

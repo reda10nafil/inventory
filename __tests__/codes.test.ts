@@ -215,6 +215,12 @@ describe('codici già usati (NG25)', () => {
     expect(codeCheck('LOC-DOPPIO', 'LOC-UNO', doppi, self)).toEqual({ error: 'Il codice "LOC-DOPPIO" è già usato dalla posizione "Banco Due".', warning: null });
     expect(codeCheck('LOC-DOPPIO', undefined, doppi)).toEqual({ error: 'Il codice "LOC-DOPPIO" è già usato dalla posizione "Banco Uno".', warning: null });
     expect(codeCheck('LOC-LIBERO', 'LOC-DOPPIO', doppi, self)).toEqual({ error: null, warning: null });
+    // doppione di prima con un prodotto: lo Scanner non chiede, apre il prodotto
+    const conSku = { ...sources, locations: [...locations, { id: 'banco_tre', label: 'Banco Tre', barcode: 'VIS-0098' }] };
+    expect(codeCheck('VIS-0098', 'VIS-0098', conSku, { kind: 'location', id: 'banco_tre' })).toEqual({
+      error: null,
+      warning: 'Il codice "VIS-0098" è usato anche dal prodotto VIS-0098: lo Scanner apre il prodotto. Cambialo in uno dei due per non confonderli.',
+    });
     expect(codeCheck('', 'LOC-DOPPIO', doppi, self)).toEqual({ error: null, warning: null });
   });
 });
