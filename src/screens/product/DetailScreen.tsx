@@ -33,6 +33,7 @@ import { formatNumber } from '../../../utils/number';
 import { describeStockEvent, formatQty, isLowStock, isOutOfStock, isStocked, round3, storedStock, totalStock } from '../../../utils/stock';
 import { MovementSheet } from '../../../components/MovementSheet';
 import { canMoveStock as canMoveStockRule } from '../../../utils/productRules';
+import { useShelves } from '../../../contexts/ShelvesContext';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -44,6 +45,7 @@ export default function ProductDetailScreen() {
   const { locations } = useLocations();
   const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
+  const { shelfOf } = useShelves();
   const { customFields } = useCustomFields();
 
   const { layout } = useLayout();
@@ -77,6 +79,8 @@ export default function ProductDetailScreen() {
   const halfTileWidth = (screenWidth - t.spacing.screenPadding * 2 - 10) / 2;
 
   const location = locations.find((l) => l.id === product.location);
+  // Scaffale (S1a): nella scheda della posizione, sotto il nome; solo per un pezzo unico che ci sta davvero
+  const shelf = shelfOf(product);
   // C1: categoria (la cartella, col nome completo) e tipo di pelle, ognuno solo se c'è
   const kind = kindOf(product);
   /** «Categoria · Tipo - testo», senza separatori in più quando mancano. */
@@ -902,6 +906,7 @@ export default function ProductDetailScreen() {
             <View style={styles.locationContent}>
               <Text style={styles.locationLabel}>{stocked ? 'Posizione principale' : 'Posizione attuale'}</Text>
               <Text style={styles.locationValue}>{location?.label || product.location}</Text>
+              {shelf && <Text style={styles.locationShelf}>Scaffale {shelf.name}</Text>}
             </View>
           </View>
 
@@ -1556,6 +1561,13 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 22,
     fontWeight: t.weights.strong,
     color: t.colors.textPrimary,
+  },
+  locationShelf: {
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '500',
+    color: t.colors.textSecondary,
+    marginTop: 2,
   },
   section: {
     gap: 10,

@@ -10,6 +10,8 @@ import * as FileSystem from '../lib/fileSystem';
 import { decodeBarcodeImage } from '../../utils/barcodeDecoder';
 import { useInventory } from '../../contexts/InventoryContext';
 import { useLocations } from '../../contexts/LocationsContext';
+import { useShelves } from '../../contexts/ShelvesContext';
+import { shelfByCode } from '../../utils/shelves';
 import { soundService } from '../../services/SoundService';
 import { useAutomations } from '../../contexts/AutomationsContext';
 import { AppIcon } from '../../components/ui/AppIcon';
@@ -25,6 +27,7 @@ export default function ScannerScreen() {
   const router = useRouter();
   const { products, scanProduct, libraries } = useInventory();
   const { locations } = useLocations();
+  const { shelves } = useShelves();
   const { getAutomationByQR } = useAutomations();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -98,7 +101,20 @@ export default function ScannerScreen() {
       return;
     }
 
-    // 4. Try Custom Automation (AUTO:xxx)
+    // 4. Scaffale (S1a): per codice o per id, come posizioni e categorie
+    const shelf = shelfByCode(shelves, data);
+    if (shelf) {
+      setScanned(true);
+      soundService.playSuccess();
+      router.push({
+        pathname: '/scanner-action',
+        params: { type: 'shelf', id: shelf.id },
+      });
+      setTimeout(() => setScanned(false), 2000);
+      return;
+    }
+
+    // 5. Try Custom Automation (AUTO:xxx)
     if (data.startsWith('AUTO:')) {
       const automation = getAutomationByQR(data);
       if (automation) {
@@ -110,13 +126,13 @@ export default function ScannerScreen() {
       }
     }
 
-    // 5. Not Found - Delay error by 400ms to allow immediate valid scan
+    // 6. Not Found - Delay error by 400ms to allow immediate valid scan
     const timeout = setTimeout(() => {
       setScanned(true);
       soundService.playBlockingError();
       Alert.alert(
         'Codice Non Riconosciuto',
-        `Codice scansionato: ${data}\n\nNessun prodotto, posizione o categoria corrisponde a questo codice.`,
+        `Codice scansionato: ${data}\n\nNessun prodotto, posizione, categoria o scaffale corrisponde a questo codice.`,
         [
           {
             text: 'OK',

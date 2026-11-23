@@ -9,6 +9,8 @@ import { useLocations } from '../../contexts/LocationsContext';
 import { useProductKind } from '../../hooks/useProductKind';
 import { categoryPath } from '../../utils/categories';
 import { useContacts } from '../../contexts/ContactsContext';
+import { useShelves } from '../../contexts/ShelvesContext';
+import { productShelfId, shelfKind } from '../../utils/shelves';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { Text, TextInput } from '../../components/ui/Text';
 import { makeStyles, useTheme } from '../../contexts/ThemeContext';
@@ -36,8 +38,9 @@ export default function ScannerActionScreen() {
   // Support legacy param productId (un solo `useLocalSearchParams`: prima il secondo era chiamato solo a volte)
   const entityId = (id as string) || (params.productId as string);
 
-  const { getProductById, moveProduct, sellProduct, libraries } = useInventory();
+  const { getProductById, moveProduct, sellProduct, libraries, products } = useInventory();
   const { locations } = useLocations();
+  const { shelves } = useShelves();
   const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
 
@@ -51,11 +54,13 @@ export default function ScannerActionScreen() {
   const product = type === 'product' ? getProductById(entityId) : null;
   const location = type === 'location' ? locations.find(l => l.id === entityId) : null;
   const library = type === 'library' ? libraries.find(l => l.id === entityId) : null;
+  const shelf = type === 'shelf' ? shelves.find((s) => s.id === entityId) : null;
 
   // Render NOT FOUND states
   if (type === 'product' && !product) return <NotFoundScreen message="Prodotto non trovato" router={router} />;
   if (type === 'location' && !location) return <NotFoundScreen message="Posizione non trovata" router={router} />;
   if (type === 'library' && !library) return <NotFoundScreen message="Categoria non trovata" router={router} />;
+  if (type === 'shelf' && !shelf) return <NotFoundScreen message="Scaffale non trovato" router={router} />;
 
   // --- HANDLERS ---
   const handleAction = () => {
@@ -171,6 +176,46 @@ export default function ScannerActionScreen() {
             </View>
             <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
           </Pressable>
+
+          <Pressable style={styles.closeButton} onPress={() => router.back()}>
+            <Text style={styles.closeButtonText}>Chiudi</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Scaffale letto dallo Scanner (S1a): dove sta, di che categoria, e i pezzi unici che ci stanno (tocco = Scheda)
+  if (type === 'shelf' && shelf) {
+    const place = locations.find((l) => l.id === shelf.locationId);
+    const onShelf = products.filter((p) => !p.deletedAt && productShelfId(p, shelves) === shelf.id).sort((a, b) => a.sku.localeCompare(b.sku));
+    return (
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <Backdrop />
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={[styles.headerCard, { borderLeftColor: place?.color || t.colors.accent, borderLeftWidth: 6 }]}>
+            <AppIcon name="shelves" size={40} color={place?.color || t.colors.accentInk} />
+            <View style={styles.shelfHeading}>
+              <Text style={styles.headerTitle}>SCAFFALE</Text>
+              <Text style={styles.headerSubtitle}>{shelf.name}</Text>
+              <Text style={styles.headerMeta}>{place?.label ?? shelf.locationId} · {shelfKind(shelf, libraries)}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Prodotti sullo scaffale ({onShelf.length})</Text>
+          {onShelf.length === 0 && <Text style={styles.shelfEmpty}>Nessun prodotto su questo scaffale.</Text>}
+          {onShelf.map((p) => {
+            const kind = kindOf(p);
+            return (
+              <Pressable key={p.id} style={styles.actionButton} onPress={() => router.replace(`/product/${p.id}` as any)} accessibilityLabel={`Apri ${p.sku}`}>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>{p.sku}</Text>
+                  {!!kind.line && <Text style={styles.actionDescription}>{kind.line}</Text>}
+                </View>
+                <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+              </Pressable>
+            );
+          })}
 
           <Pressable style={styles.closeButton} onPress={() => router.back()}>
             <Text style={styles.closeButtonText}>Chiudi</Text>
@@ -455,6 +500,17 @@ const useStyles = makeStyles((t) => ({
   headerMeta: {
     fontSize: 14,
     color: t.colors.textSecondary,
+  },
+  // Scaffale (S1a): il nome lungo va a capo invece di uscire dalla scheda
+  shelfHeading: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 16,
+  },
+  shelfEmpty: {
+    ...t.typography.caption,
+    lineHeight: 18,
+    marginBottom: 16,
   },
   productPreview: {
     ...cardSurface(t),

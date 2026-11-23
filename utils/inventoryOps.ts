@@ -14,9 +14,13 @@ import {
 export type OpRefusal = 'missing' | 'trash' | 'same_place' | 'sold' | 'out_of_stock' | 'over_stock' | 'bad_qty' | 'not_allowed';
 export type OpResult = { ok: true; patch: Partial<Product>; events: NewEvent[] } | { ok: false; reason: OpRefusal };
 
-/** I campi che un movimento cambia: solo questi entrano nello stato, il resto del prodotto non si tocca. */
+/** Toglie lo scaffale a chi lo aveva (S1a): i prodotti senza scaffale non ricevono il campo. */
+const noShelf = (p: Pick<Product, 'shelfId'>): Partial<Product> => (p.shelfId !== undefined ? { shelfId: undefined } : {});
+
+/** I campi che un movimento cambia: solo questi entrano nello stato, il resto del prodotto non si tocca. Un articolo
+ *  a quantità non ha scaffale (S1a, ticket 13): un pezzo unico che diventa articolo a quantità lo perde. */
 const stockPatch = (p: Product): Partial<Product> => ({
-  stock: p.stock, unit: p.unit, location: p.location, updatedAt: p.updatedAt, lastScannedAt: p.lastScannedAt,
+  stock: p.stock, unit: p.unit, location: p.location, updatedAt: p.updatedAt, lastScannedAt: p.lastScannedAt, ...noShelf(p),
 });
 
 /** Sposta il prodotto: un pezzo unico cambia posizione, un articolo a quantità trasferisce tutta la giacenza
@@ -28,7 +32,8 @@ export function moveOf(product: Product | undefined, to: string, now: string): O
   if (!isStocked(product)) {
     return {
       ok: true,
-      patch: { location: to, updatedAt: now, lastScannedAt: now },
+      // Lo scaffale è dentro la posizione di prima: cambiando posizione si toglie (S1a)
+      patch: { location: to, updatedAt: now, lastScannedAt: now, ...noShelf(product) },
       events: [{ productId: product.id, type: 'moved', timestamp: now, details: { from: product.location, to } }],
     };
   }
@@ -83,7 +88,10 @@ export function withStartingStock(product: Product, stock: Readonly<Record<strin
   if (entries.some(([place, qty]) => !place || !Number.isFinite(qty) || qty < 0)) return { ok: false, reason: 'bad_qty' };
   const loads = entries.filter(([, qty]) => round3(qty) > 0);
   loads.sort(([a], [b]) => Number(b === product.location) - Number(a === product.location));
-  let current: Product = { ...product, unit: product.unit || DEFAULT_UNIT, stock: {} };
+  // Articolo a quantità: nessuno scaffale (S1a)
+  const base: Product = { ...product };
+  delete base.shelfId;
+  let current: Product = { ...base, unit: product.unit || DEFAULT_UNIT, stock: {} };
   const events: NewEvent[] = [];
   for (const [to, qty] of loads) {
     const r = applyMovement(current, { kind: 'carico', qty, to, reason: 'iniziale' }, now);
@@ -203,12 +211,13 @@ export function countRefusalText(reason: CountRefusal, unit?: string): string {
   return movementErrorText({ error: reason }, unit);
 }
 
-/** Modifica: per un articolo a quantità posizione e giacenza non si cambiano a mano (solo con i movimenti). */
+/** Modifica: per un articolo a quantità posizione, giacenza e scaffale non si cambiano a mano (solo con i movimenti). */
 export function editableUpdates(product: Pick<Product, 'stock'>, updates: Partial<Product>): Partial<Product> {
   if (!isStocked(product)) return updates;
   const rest = { ...updates };
   delete rest.location;
   delete rest.stock;
+  delete rest.shelfId; // S1a: niente scaffale per gli articoli a quantità
   return rest;
 }
 

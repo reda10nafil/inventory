@@ -32,6 +32,7 @@ function parseHref(href: Href): { name: string; params?: any } {
         '/settings/locations': 'SettingsLocations',
         '/settings/categories': 'SettingsCategories',
         '/settings/contacts': 'SettingsContacts',
+        '/settings/shelves': 'SettingsShelves',
         '/settings/fields': 'SettingsFields',
         '/settings/folders': 'SettingsFolders',
         '/settings/layout-builder': 'SettingsLayoutBuilder',

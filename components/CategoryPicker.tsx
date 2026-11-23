@@ -18,9 +18,11 @@ interface Props {
   onChange: (id: string) => void;
   /** Pillola «Nessuna» per prima (Modifica). Senza, toccare la principale scelta la toglie (Aggiungi). */
   showNone?: boolean;
+  /** Testo della pillola senza categoria (S1a: «Generico» per gli scaffali). */
+  noneLabel?: string;
 }
 
-export function CategoryPicker({ categories, value, onChange, showNone = false }: Props) {
+export function CategoryPicker({ categories, value, onChange, showNone = false, noneLabel }: Props) {
   const styles = useStyles();
   const t = useTheme();
   const roots = rootCategories(categories);
@@ -44,7 +46,7 @@ export function CategoryPicker({ categories, value, onChange, showNone = false }
   return (
     <View>
       <View style={styles.chipWrap}>
-        {showNone && chip('none', 'Nessuna', 'folder-off', !value, () => onChange(''), 'Nessuna categoria')}
+        {showNone && chip('none', noneLabel ?? 'Nessuna', 'folder-off', !value, () => onChange(''), noneLabel ?? 'Nessuna categoria')}
         {roots.length === 0 && !showNone ? (
           <Text style={styles.chipEmpty}>Nessuna categoria</Text>
         ) : (

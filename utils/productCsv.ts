@@ -5,15 +5,17 @@
 // (giacenze e movimenti). Nel CSV dei prodotti le posizioni sono id (l'app lo rilegge), nei report sono nomi.
 // C1 (ticket 19): «Categoria» è la cartella, col nome completo «Pellicce › Visone», e «Tipo di pelle» è `furType`.
 // Le intestazioni sono cambiate tre volte; l'import riconosce il file dall'intestazione (`productCsvFormat`).
+// S1a (ticket 13): colonna «Scaffale» in fondo, col nome dello scaffale (unico dentro la posizione del prodotto).
 import type { Product, TimelineEvent } from '../types';
 import { categoryPath, categoryTree, type CategoryNode } from './categories';
 import { furTypeFromCsv, type FurType } from './furTypes';
 import { parseStoredNumber } from './number';
+import { isShelfPlace, productShelf, shelfIdFromCsv, type Shelf } from './shelves';
 import { DEFAULT_UNIT, isLowStock, isStocked, MOVEMENT_LABELS, REASON_LABELS, round3, stockOf } from './stock';
 
 // Stesse posizioni delle colonne di prima di C1: cambiano solo i nomi della seconda («Categoria» → «Tipo di pelle»)
-// e della sedicesima («Cartella» → «Categoria»).
-export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Categoria', 'Unità', 'Giacenza', 'Scorta minima'];
+// e della sedicesima («Cartella» → «Categoria»). «Scaffale» (S1a) è l'ultima: le altre restano dove erano.
+export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Categoria', 'Unità', 'Giacenza', 'Scorta minima', 'Scaffale'];
 
 /**
  * Giacenza di un articolo a quantità per il CSV: «magazzino:12; vetrina:2.5», con la posizione principale per
@@ -49,8 +51,8 @@ export function parseStockCell(text: string): Record<string, number> | null | un
   return stock;
 }
 
-/** Intestazione più una riga per ogni prodotto non nel cestino. */
-export function productCsvRows(products: readonly Product[], categories: readonly CategoryNode[]): unknown[][] {
+/** Intestazione più una riga per ogni prodotto non nel cestino. «Scaffale»: il nome, se il pezzo unico ci sta davvero. */
+export function productCsvRows(products: readonly Product[], categories: readonly CategoryNode[], shelves: readonly Shelf[] = []): unknown[][] {
   return [
     PRODUCT_CSV_HEADER,
     ...products.filter((p) => !p.deletedAt).map((product) => [
@@ -73,6 +75,7 @@ export function productCsvRows(products: readonly Product[], categories: readonl
       isStocked(product) ? product.unit || DEFAULT_UNIT : '',
       stockCell(product),
       product.minStock,
+      productShelf(product, shelves)?.name ?? '',
     ]),
   ];
 }
@@ -138,6 +141,8 @@ export function productCsvColumns(header: readonly string[]) {
     unit: column('unita', 'unit'),
     stock: column('giacenza', 'stock'),
     minStock: column('scorta minima', 'min stock'),
+    // S1a: scaffale (nome dentro la posizione)
+    shelf: column('scaffale', 'shelf'),
   };
 }
 
@@ -145,13 +150,15 @@ export type ProductCsvColumns = ReturnType<typeof productCsvColumns>;
 
 /**
  * Una riga del CSV → dati del prodotto da aggiungere, con la giacenza per `addProduct(dati, { stock })`.
- * `null` se la riga si salta: SKU vuoto o giacenza scritta ma non valida (lo SKU già presente lo controlla chi
- * importa). Tipo di pelle e categoria si cercano per id o nome; la categoria anche col nome completo.
+ * `null` se la riga si salta: SKU vuoto, giacenza scritta ma non valida, oppure posizione o giacenza su uno scaffale
+ * (S1a: nessuna chiave di `stock` è uno scaffale; lo SKU già presente lo controlla chi importa). Tipo di pelle e
+ * categoria si cercano per id o nome; la categoria anche col nome completo. Lo scaffale si cerca per nome tra quelli
+ * della posizione del prodotto, solo per i pezzi unici; uno sconosciuto si perde, come una categoria.
  */
 export function productFromCsvRow(
   row: readonly string[],
   cols: ProductCsvColumns,
-  lists: { categories: readonly CategoryNode[]; furTypes: readonly FurType[] },
+  lists: { categories: readonly CategoryNode[]; furTypes: readonly FurType[]; shelves?: readonly Shelf[] },
 ): { product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>; stock: Record<string, number> | null } | null {
   const valueAt = (index: number) => (index < 0 ? '' : (row[index] || '').trim());
   const numberAt = (index: number) => parseStoredNumber(valueAt(index)); // «2.125» dell'export = 2,125
@@ -164,6 +171,10 @@ export function productFromCsvRow(
   // Giacenza vuota: pezzo unico come prima; scritta ma non valida: riga saltata (non diventa 1 pezzo)
   const stock = parseStockCell(valueAt(cols.stock));
   if (stock === undefined) return null;
+  const shelves = lists.shelves ?? [];
+  const location = valueAt(cols.location);
+  if (isShelfPlace(shelves, [location, ...Object.keys(stock ?? {})])) return null;
+  const shelfId = stock ? undefined : shelfIdFromCsv(valueAt(cols.shelf), location, shelves);
   const minStock = numberAt(cols.minStock);
 
   const rawStatus = valueAt(cols.status).toLocaleLowerCase();
@@ -184,7 +195,7 @@ export function productFromCsvRow(
     product: {
       sku,
       furType: furTypeFromCsv(valueAt(cols.furType), lists.furTypes),
-      location: valueAt(cols.location),
+      location,
       status,
       images: Array.isArray(images) ? images.filter((image) => !/drive\.google\.com/i.test(image)) : [],
       backupImageLinks,
@@ -202,6 +213,7 @@ export function productFromCsvRow(
       isFragile: false,
       ...(stock && { unit: valueAt(cols.unit) || undefined }),
       ...(stock && minStock != null && minStock >= 0 && { minStock }),
+      ...(shelfId && { shelfId }),
     },
   };
 }

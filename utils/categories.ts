@@ -126,13 +126,14 @@ export function categoryNameError(list: readonly CategoryNode[], name: string, p
 }
 
 /**
- * Perché una categoria non si elimina: ha sottocategorie, oppure prodotti non nel cestino (quelli nel cestino la
- * perdono, come prima di C1). `null` = si può eliminare.
+ * Perché una categoria non si elimina: ha sottocategorie, prodotti non nel cestino (quelli nel cestino la
+ * perdono, come prima di C1) o scaffali di quella categoria (S1a). `null` = si può eliminare.
  */
 export function categoryDeleteError(
   list: readonly CategoryNode[],
   products: readonly { libraryId?: string; deletedAt?: string }[],
   id: string,
+  shelves: readonly { libraryId?: string }[] = [],
 ): string | null {
   const name = categoryName(list, id);
   const subs = childrenOf(list, id).length;
@@ -141,6 +142,11 @@ export function categoryDeleteError(
   }
   const count = products.filter((p) => p.libraryId === id && !p.deletedAt).length;
   if (count > 0) return `La categoria "${name}" contiene ${count} prodott${count === 1 ? 'o' : 'i'}. Spostarli prima di eliminare.`;
+  const onShelves = shelves.filter((s) => s.libraryId === id).length;
+  if (onShelves > 0) {
+    const what = onShelves === 1 ? '1 scaffale: cambia la sua categoria o eliminalo' : `${onShelves} scaffali: cambia la loro categoria o eliminali`;
+    return `La categoria "${name}" è usata da ${what} prima, da Impostazioni › Scaffali.`;
+  }
   return null;
 }
 

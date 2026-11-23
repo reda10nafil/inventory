@@ -267,3 +267,59 @@ describe('Report giacenze e movimenti (M08)', () => {
     expect(rows.slice(1).map((r) => r[col])).toEqual(['Rossi srl', 'sparito', '']);
   });
 });
+
+// S1a (ticket 13): colonna «Scaffale» in fondo, col nome dello scaffale dentro la posizione del prodotto
+describe('Scaffale nel CSV dei prodotti (S1a)', () => {
+  const shelves = [
+    { id: '1700000000000-aaa', name: 'A1', locationId: 'vetrina' },
+    { id: '1700000000000-bbb', name: 'B2', locationId: 'magazzino', barcode: 'SCAF-B2' },
+  ];
+  const lists = { categories: libraries, furTypes: DEFAULT_FUR_TYPES, shelves };
+
+  it('in fondo: le colonne di prima restano dove erano e il formato resta riconosciuto', () => {
+    expect(PRODUCT_CSV_HEADER.indexOf('Scaffale')).toBe(PRODUCT_CSV_HEADER.length - 1);
+    expect(PRODUCT_CSV_HEADER.slice(15, 19)).toEqual(['Categoria', 'Unità', 'Giacenza', 'Scorta minima']);
+    expect(productCsvFormat(PRODUCT_CSV_HEADER)).toBe('c1');
+    expect(productCsvColumns(PRODUCT_CSV_HEADER).shelf).toBe(19);
+    expect(productCsvColumns(['SKU', 'Tipo di pelle', 'Posizione']).shelf).toBe(-1);
+  });
+
+  it('export: il nome per un pezzo unico sul suo scaffale, vuoto altrimenti (scaffale di un\'altra posizione, articolo a quantità)', () => {
+    const rows = productCsvRows([
+      product({ sku: 'A', shelfId: '1700000000000-aaa' }),
+      product({ sku: 'B', shelfId: '1700000000000-bbb' }),
+      product({ sku: 'C', shelfId: '1700000000000-aaa', stock: { vetrina: 2 }, unit: 'pz' }),
+      product({ sku: 'D' }),
+    ], libraries, shelves);
+    const col = PRODUCT_CSV_HEADER.indexOf('Scaffale');
+    expect(rows.slice(1).map((r) => r[col])).toEqual(['A1', '', '', '']);
+    // senza elenco (chi chiama come prima): colonna vuota
+    expect(productCsvRows([product({ shelfId: '1700000000000-aaa' })], libraries)[1][col]).toBe('');
+  });
+
+  it('import: per nome dentro la posizione; senza colonna, nome sconosciuto o con la giacenza nessuno scaffale', () => {
+    const cols = productCsvColumns(['SKU', 'Tipo di pelle', 'Posizione', 'Giacenza', 'Scaffale']);
+    const shelfOf = (row: string[]) => productFromCsvRow(row, cols, lists)?.product.shelfId;
+    expect(shelfOf(['A', 'visone', 'vetrina', '', 'a1'])).toBe('1700000000000-aaa');
+    expect(shelfOf(['A', 'visone', 'magazzino', '', 'A1'])).toBeUndefined();
+    expect(shelfOf(['A', 'visone', 'vetrina', '', 'Z9'])).toBeUndefined();
+    expect(shelfOf(['A', 'visone', 'vetrina', 'vetrina:3', 'A1'])).toBeUndefined();
+    expect('shelfId' in (productFromCsvRow(['A', 'visone', 'vetrina', '', ''], cols, lists)?.product ?? {})).toBe(false);
+  });
+
+  it('import: una riga con la posizione o una chiave della giacenza che è uno scaffale si salta (niente giacenza sugli scaffali in S1a)', () => {
+    const cols = productCsvColumns(['SKU', 'Tipo di pelle', 'Posizione', 'Giacenza']);
+    expect(productFromCsvRow(['A', 'visone', 'vetrina', 'vetrina:1; 1700000000000-bbb:2'], cols, lists)).toBeNull();
+    expect(productFromCsvRow(['A', 'visone', 'vetrina', 'SCAF-B2:2'], cols, lists)).toBeNull();
+    expect(productFromCsvRow(['A', 'visone', '1700000000000-aaa', ''], cols, lists)).toBeNull();
+    expect(productFromCsvRow(['A', 'visone', 'vetrina', 'vetrina:1; magazzino:2'], cols, lists)?.stock).toEqual({ vetrina: 1, magazzino: 2 });
+  });
+
+  it('esporta e reimporta: lo scaffale torna', () => {
+    const originals = [product({ sku: 'A', shelfId: '1700000000000-aaa' }), product({ sku: 'B', location: 'magazzino', shelfId: '1700000000000-bbb' }), product({ sku: 'C' })];
+    const rows = parseCsv(stringifyCsv(productCsvRows(originals, libraries, shelves)));
+    const cols = productCsvColumns(rows[0]);
+    const back = rows.slice(1).map((row) => productFromCsvRow(row, cols, lists)?.product);
+    expect(back.map((p) => [p?.sku, p?.location, p?.shelfId])).toEqual([['A', 'vetrina', '1700000000000-aaa'], ['B', 'magazzino', '1700000000000-bbb'], ['C', 'vetrina', undefined]]);
+  });
+});

@@ -17,8 +17,11 @@ const same = (a: unknown, b: unknown) => JSON.stringify(empty(a)) === JSON.strin
 const num = (v?: number) => (v == null ? '—' : formatNumberInput(v));
 const price = (v?: number) => (v == null ? '—' : formatPrice(v));
 
-/** Righe leggibili per i campi che `updates` cambia davvero rispetto a `before`. */
-export function describeChanges(before: Product, updates: Partial<Product>): string[] {
+/**
+ * Righe leggibili per i campi che `updates` cambia davvero rispetto a `before`. `labels.shelf` dà il nome di uno
+ * scaffale (S1a): il suo id è opaco e non si scrive mai; senza, il cambio di scaffale non ha una riga.
+ */
+export function describeChanges(before: Product, updates: Partial<Product>, labels?: { shelf?: (id: string) => string }): string[] {
   const changed = <K extends keyof Product>(k: K) => k in updates && !same(updates[k], before[k]);
   const out: string[] = [];
   if (changed('sku')) out.push(`SKU: ${show(before.sku)} → ${show(updates.sku)}`);
@@ -26,6 +29,11 @@ export function describeChanges(before: Product, updates: Partial<Product>): str
   if (changed('furType')) out.push(`Tipo di pelle: ${show(before.furType)} → ${show(updates.furType)}`);
   if (changed('location')) out.push(`Posizione: ${show(before.location)} → ${show(updates.location)}`);
   if (changed('libraryId')) out.push(`Categoria: ${show(before.libraryId)} → ${show(updates.libraryId)}`);
+  const shelf = labels?.shelf;
+  if (shelf && changed('shelfId')) {
+    const name = (id?: string) => show(id ? shelf(id) : undefined);
+    out.push(`Scaffale: ${name(before.shelfId)} → ${name(updates.shelfId)}`);
+  }
   if (changed('sellPrice')) out.push(`Prezzo vendita: ${price(before.sellPrice)} → ${price(updates.sellPrice)}`);
   if (changed('purchasePrice')) out.push(`Prezzo acquisto: ${price(before.purchasePrice)} → ${price(updates.purchasePrice)}`);
   if (changed('length')) out.push(`Lunghezza: ${num(before.length)} → ${num(updates.length)}`);

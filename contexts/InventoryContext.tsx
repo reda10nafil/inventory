@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product, TimelineEvent, Alert } from '../types';
 import { isDormant, needsPromotion } from '../services/mockData';
 import { useAuth } from './AuthContext';
+import { useShelves } from './ShelvesContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { usage } from '../utils/productRules';
@@ -11,6 +12,7 @@ import { childrenOf } from '../utils/categories';
 import { describeChanges } from '../utils/productChanges';
 import { countOf, editableUpdates, moveOf, movementOf, saleOf, withInitialStock, withStartingStock, type CountResult } from '../utils/inventoryOps';
 import { lowStockAlert, mergeAlerts } from '../utils/alerts';
+import { shelfPatch, shelvesOfCategory, withKeptShelf } from '../utils/shelves';
 import type { Movement, MovementError } from '../utils/stock';
 
 /** Categoria dei prodotti (C1: la cartella di prima) - ID uses slug format for Google Sheets compatibility */
@@ -125,6 +127,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   // cambia nello stato solo i campi del prodotto toccato (`patchProduct`), così non cancella le altre in coda.
   const productsRef = useRef<Product[]>(products);
   productsRef.current = products;
+  // Scaffali (S1a): ogni scrittura tiene lo scaffale del prodotto dentro la sua posizione (`shelfPatch`)
+  const { shelves } = useShelves();
+  const shelvesRef = useRef(shelves);
+  shelvesRef.current = shelves;
   const loadedOrganization = useRef<string | null>(null);
   const lastRemoteUpdate = useRef<string | null>(null);
   const uploadingMedia = useRef(new Set<string>());
@@ -398,9 +404,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return `LOG-${year}-${String(nextNumber).padStart(3, '0')}`;
   };
 
-  /** Cambia solo i campi `patch` del prodotto `id`, nella copia subito e nello stato in coda. */
+  /** Cambia solo i campi `patch` del prodotto `id`, nella copia subito e nello stato in coda. Lo scaffale resta solo
+   *  se è nella posizione del prodotto (S1a, `keptShelfId`): vale per spostamenti, vendite, movimenti e Modifica. */
   const patchProduct = (id: string, patch: Partial<Product>) => {
-    const apply = (list: Product[]) => list.map((p) => (p.id === id ? { ...p, ...patch } : p));
+    const checked = shelfPatch(productsRef.current.find((p) => p.id === id), patch, shelvesRef.current);
+    const apply = (list: Product[]) => list.map((p) => (p.id === id ? { ...p, ...checked } : p));
     productsRef.current = apply(productsRef.current);
     setProducts(apply);
   };
@@ -427,6 +435,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       newProduct = r.product;
       stockEvents = r.events;
     }
+    // Scaffale (S1a): solo per un pezzo unico e solo se è nella sua posizione
+    newProduct = withKeptShelf(newProduct, shelvesRef.current);
 
     productsRef.current = [newProduct, ...productsRef.current];
     setProducts((prev) => [newProduct, ...prev]);
@@ -444,11 +454,14 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const updateProduct = (id: string, allUpdates: Partial<Product>) => {
     const product = productsRef.current.find((p) => p.id === id);
     if (!product) return;
-    // Articolo a quantità: posizione e giacenza cambiano solo con i movimenti, non da Modifica (M03)
-    const updates = editableUpdates(product, allUpdates);
+    // Articolo a quantità: posizione e giacenza cambiano solo con i movimenti, non da Modifica (M03); lo scaffale
+    // resta solo se è nella posizione scelta (S1a)
+    const updates = shelfPatch(product, editableUpdates(product, allUpdates), shelvesRef.current);
 
-    // Tutto ciò che cambia davvero, compresi peso, misure, SKU, tipo, cartella e campi personalizzati (P13)
-    const changes = describeChanges(product, updates);
+    // Tutto ciò che cambia davvero, compresi peso, misure, SKU, tipo, cartella e campi personalizzati (P13); lo
+    // scaffale col suo nome (l'id è opaco)
+    const shelfName = (shelfId: string) => shelvesRef.current.find((s) => s.id === shelfId)?.name ?? 'sconosciuto';
+    const changes = describeChanges(product, updates, { shelf: shelfName });
     if (updates.images && updates.images.length > product.images.length) {
       const newPhotos = updates.images.length - product.images.length;
       changes.push(`${newPhotos} foto aggiunte`);
@@ -650,8 +663,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteLibrary = (id: string): boolean => {
-    // Una categoria con sottocategorie (C1) o con prodotti non si elimina
-    if (childrenOf(libraries, id).length > 0 || usage(productsRef.current, { libraryId: id }).active > 0) {
+    // Una categoria con sottocategorie (C1), con prodotti o usata da uno scaffale (S1a) non si elimina
+    if (childrenOf(libraries, id).length > 0 || usage(productsRef.current, { libraryId: id }).active > 0 || shelvesOfCategory(shelvesRef.current, id) > 0) {
       return false; // Cannot delete, has products
     }
     // I prodotti nel cestino perdono la cartella: ripristinati, non puntano a una cartella che non c'è più (P09)

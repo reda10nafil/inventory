@@ -15,6 +15,9 @@ import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import { categoryDeleteError, categoryNameError, categoryTree, childrenOf, parentIdOf, parentOptions } from '../../../utils/categories';
+import { useShelves } from '../../../contexts/ShelvesContext';
+import { useLocations } from '../../../contexts/LocationsContext';
+import { codeError } from '../../../utils/shelves';
 
 const ICON_OPTIONS = [
   'folder',
@@ -31,6 +34,8 @@ export default function ManageFoldersScreen() {
   const styles = useStyles();
   const t = useTheme();
   const { libraries, products, addLibrary, updateLibrary, deleteLibrary } = useInventory();
+  const { shelves } = useShelves();
+  const { getLocation } = useLocations();
 
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('folder');
@@ -67,7 +72,8 @@ export default function ManageFoldersScreen() {
   const handleSave = () => {
     // Un genitore che nel frattempo non si può più scegliere vale «nessuno»
     const parent = parents.some((p) => p.id === parentId) ? parentId : undefined;
-    const error = categoryNameError(libraries, name, parent, editingId ?? undefined);
+    // S1a: un codice già usato da uno scaffale non si riusa (lo Scanner aprirebbe la categoria al suo posto)
+    const error = categoryNameError(libraries, name, parent, editingId ?? undefined) ?? codeError(barcode, { shelves, placeLabel: (id) => getLocation(id)?.label ?? id });
     if (error) {
       Alert.alert('Errore', error);
       return;
@@ -101,7 +107,7 @@ export default function ManageFoldersScreen() {
 
   const handleDeleteLibrary = (id: string) => {
     const library = libraries.find((l) => l.id === id);
-    const refusal = categoryDeleteError(libraries, products, id);
+    const refusal = categoryDeleteError(libraries, products, id, shelves);
     if (refusal) {
       Alert.alert('Attenzione', refusal, [{ text: 'OK' }]);
       return;

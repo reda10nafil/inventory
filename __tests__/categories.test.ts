@@ -168,3 +168,11 @@ describe('riga corta e nomi del prodotto', () => {
     expect(productKind({ furType: 'volpe' }, CON_SOTTO, label).line).toBe('Volpe');
   });
 });
+
+describe('categoryDeleteError con gli scaffali (S1a)', () => {
+  it('una categoria usata da uno scaffale non si elimina', () => {
+    expect(categoryDeleteError(CON_SOTTO, [], 'pellicce-volpe', [{ libraryId: 'pellicce-volpe' }])).toBe('La categoria "Volpe" è usata da 1 scaffale: cambia la sua categoria o eliminalo prima, da Impostazioni › Scaffali.');
+    expect(categoryDeleteError(CON_SOTTO, [], 'pellicce-volpe', [{ libraryId: 'pellicce-volpe' }, { libraryId: 'pellicce-volpe' }, {}])).toMatch(/2 scaffali: cambia la loro categoria o eliminali prima/);
+    expect(categoryDeleteError(CON_SOTTO, [], 'pellicce-volpe', [{ libraryId: 'altro' }, {}])).toBeNull();
+  });
+});

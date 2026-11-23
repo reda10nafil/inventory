@@ -13,6 +13,7 @@ import NotFoundScreen from '../screens/NotFoundScreen';
 import LocationsScreen from '../screens/settings/LocationsScreen';
 import FurTypesScreen from '../screens/settings/FurTypesScreen';
 import ContactsScreen from '../screens/settings/ContactsScreen';
+import ShelvesScreen from '../screens/settings/ShelvesScreen';
 import FieldsScreen from '../screens/settings/FieldsScreen';
 import FoldersScreen from '../screens/settings/FoldersScreen';
 import LayoutBuilderScreen from '../screens/settings/LayoutBuilderScreen';
@@ -43,6 +44,7 @@ export type RootStackParamList = {
   SettingsLocations: undefined;
   SettingsCategories: undefined;
   SettingsContacts: undefined;
+  SettingsShelves: undefined;
   SettingsFields: undefined;
   SettingsFolders: undefined;
   SettingsLayoutBuilder: undefined;
@@ -96,6 +98,7 @@ export default function RootNavigator() {
       <Stack.Screen name="SettingsLocations" component={LocationsScreen} options={{ headerShown: true, headerTitle: 'Gestisci Posizioni' }} />
       <Stack.Screen name="SettingsCategories" component={FurTypesScreen} options={{ headerShown: true, headerTitle: 'Tipi di pelle' }} />
       <Stack.Screen name="SettingsContacts" component={ContactsScreen} options={{ headerShown: true, headerTitle: 'Fornitori e clienti' }} />
+      <Stack.Screen name="SettingsShelves" component={ShelvesScreen} options={{ headerShown: true, headerTitle: 'Scaffali' }} />
       <Stack.Screen name="SettingsFields" component={FieldsScreen} options={{ headerShown: true, headerTitle: 'Campi Personalizzati' }} />
       <Stack.Screen name="SettingsFolders" component={FoldersScreen} options={{ headerShown: true, headerTitle: 'Categorie' }} />
       <Stack.Screen name="SettingsLayoutBuilder" component={LayoutBuilderScreen} options={{ headerShown: true, headerTitle: 'Configura Layout Aggiungi' }} />

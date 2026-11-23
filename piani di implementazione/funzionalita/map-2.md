@@ -47,13 +47,13 @@ Un elenco di fette pronte da eseguire, una per task, che porta nell'app React Na
 
 ## Fette da eseguire
 
-Ordine: M10 (**fatta** il 22 sera, `df4f3e5`), C1 (**fatta** il 22 sera, vedi `git log`), poi S1a → S1b → S2 → S3 → N1 → N2 → I1 → L1 → L2 → I2 → I3. L0 e N0 sono ricerche in sola lettura, **chiuse** il 22 sera: resoconti in `ricerche/`, sintesi nei ticket 20 e 17. I difetti rimasti della fase B (elenco in `PASSAGGIO.md`) non sono in nessuna fetta: da proporre all'utente come fetta a sé.
+Ordine: M10 (**fatta** il 22 sera, `df4f3e5`), C1 (**fatta** il 22 sera, vedi `git log`), S1a (**fatta** il 23 novembre, vedi `git log`), poi S1b → S2 → S3 → N1 → N2 → I1 → L1 → L2 → I2 → I3. L0 e N0 sono ricerche in sola lettura, **chiuse** il 22 sera: resoconti in `ricerche/`, sintesi nei ticket 20 e 17. I difetti rimasti della fase B (elenco in `PASSAGGIO.md`) non sono in nessuna fetta: da proporre all'utente come fetta a sé.
 
 | Fetta | Ticket | Cosa | Dipende da | File principali |
 | --- | --- | --- | --- | --- |
 | M10 | 07 | Fornitori e clienti: indicazioni in `PASSAGGIO.md`, punto 1 | M04 | `ContactsContext`, schermata nuova, `MovementSheet` |
 | C1 | 19 | **Fatta.** Categorie = cartelle con sottocategorie; «Tipo di pelle» campo facoltativo; CSV con le due colonne | M10 | `FurTypesContext` (ex `CategoriesContext`), `utils/categories.ts` (albero), `utils/furTypes.ts`, Cartelle, Aggiungi, Modifica, Scheda, Home, CSV, PDF, Audit, Conta, Azione rapida |
-| S1a | 13 | Scaffali: anagrafica (posizione, categoria o generico, codice e tag), Impostazioni › Scaffali, `shelfId` facoltativo **solo nei pezzi unici** (nessuna chiave di `stock` è uno scaffale) | C1 | contesto nuovo `ShelvesContext`, `utils/shelves.ts` + test, schermata nuova, Aggiungi, Modifica, Scheda, Scanner, CSV |
+| S1a | 13 | **Fatta.** Scaffali: anagrafica (posizione, categoria o generico, codice e tag), Impostazioni › Scaffali, `shelfId` facoltativo **solo nei pezzi unici** (nessuna chiave di `stock` è uno scaffale) | C1 | contesto nuovo `ShelvesContext`, `utils/shelves.ts` + test, schermata nuova, Aggiungi, Modifica, Scheda, Scanner, CSV |
 | S1b | 13 | Giacenza degli articoli a quantità sugli scaffali: tutte le letture e scritture di `stock` in un commit; prima la scelta della forma delle chiavi, con test e resoconto, poi le schermate | S1a | `utils/stock.ts`, `utils/inventoryOps.ts`, `InventoryContext`, `MovementSheet`, Conta, Audit |
 | S2 | 14, 15 | Capacità in pezzi, peso e volume; altezza e profondità facoltative nel prodotto; riempimento in % con i colori | S1b | `utils/shelves.ts` + test, Scaffali, Scheda |
 | S3 | 15 | Avviso dall'80% e proposta dello scaffale migliore in Aggiungi, Movimenta e nelle automazioni di carico | S2 | Aggiungi, `MovementSheet`, Azione rapida, Spostamento rapido |

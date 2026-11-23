@@ -11,6 +11,7 @@ import { InventoryProvider } from './contexts/InventoryContext';
 import { LocationsProvider } from './contexts/LocationsContext';
 import { FurTypesProvider } from './contexts/FurTypesContext';
 import { ContactsProvider } from './contexts/ContactsContext';
+import { ShelvesProvider } from './contexts/ShelvesContext';
 import { CustomFieldsProvider } from './contexts/CustomFieldsContext';
 import { LayoutProvider } from './contexts/LayoutContext';
 import { AutomationsProvider } from './contexts/AutomationsContext';
@@ -119,6 +120,8 @@ function SignedInApp() {
       <LocationsProvider>
         <FurTypesProvider>
         <ContactsProvider>
+        {/* Scaffali (S1a) sopra l'inventario: InventoryProvider li legge per tenere lo scaffale nella posizione */}
+        <ShelvesProvider>
         <CustomFieldsProvider>
           <LayoutProvider>
             <HardwareConfigProvider>
@@ -133,6 +136,7 @@ function SignedInApp() {
             </HardwareConfigProvider>
           </LayoutProvider>
         </CustomFieldsProvider>
+        </ShelvesProvider>
         </ContactsProvider>
         </FurTypesProvider>
       </LocationsProvider>

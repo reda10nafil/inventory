@@ -44,6 +44,11 @@ export interface Product {
   stock?: Record<string, number>;
   /** Scorta minima per l'avviso di riordino (ticket 05). */
   minStock?: number;
+  /**
+   * Scaffale dentro la posizione (S1a, ticket 13): id di `utils/shelves.ts`, facoltativo e **solo per i pezzi unici**.
+   * Si legge con `productShelfId` (uno scaffale che non torna si ignora) e si scrive passando da `keptShelfId`.
+   */
+  shelfId?: string;
 }
 
 export interface ProductCustomData {

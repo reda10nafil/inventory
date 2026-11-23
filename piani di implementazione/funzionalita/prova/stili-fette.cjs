@@ -285,6 +285,62 @@ const FETTE = {
       ['tipi-di-pelle', async (page) => { await page.goto(`${APP}/settings/categories`); await page.waitForTimeout(1800); }],
     ],
   },
+  // S1a: scaffali (Impostazioni › Scaffali per posizione, modulo, Aggiungi e Modifica di un pezzo unico con lo
+  // scaffale, Scheda, card, scaffale letto dallo Scanner). Nomi e codici lunghi apposta, per vedere se vanno a capo.
+  s1a: {
+    prepara: () => {
+      const lk = 'inventory:v1:local:libraries';
+      const pk = 'inventory:v1:local:products';
+      const libs = JSON.parse(localStorage.getItem(lk));
+      libs.push({ id: 'visone', name: 'Visone', icon: 'folder', createdAt: '2026-11-22T20:00:00.000Z', parentId: 'pellicce' });
+      localStorage.setItem(lk, JSON.stringify(libs));
+      localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+        { id: '1732300000000-gen1', name: 'A1', locationId: 'magazzino', barcode: 'SCAF-MAGAZZINO-A1' },
+        { id: '1732300000000-pel1', name: 'Ripiano pellicce lunghe', locationId: 'magazzino', libraryId: 'pellicce', barcode: 'SCAF-MAGAZZINO-RIPIANO-PELLICCE-LUNGHE', nfcTag: '04:A2:3B:1C:5D:6E:80' },
+        { id: '1732300000000-vis1', name: 'V1', locationId: 'magazzino', libraryId: 'visone' },
+        { id: '1732300000000-inv1', name: 'Collezione', locationId: 'vetrina', libraryId: 'collezione-inverno' },
+        { id: '1732300000000-vet1', name: 'Vetrina alta', locationId: 'vetrina' },
+      ]));
+      const list = JSON.parse(localStorage.getItem(pk));
+      Object.assign(list.find((p) => p.sku === 'VIS-0098'), { libraryId: 'visone', shelfId: '1732300000000-pel1' });
+      Object.assign(list.find((p) => p.sku === 'VIS-0142'), { shelfId: '1732300000000-inv1' });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['scaffali', async (page) => {
+        await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+        await page.getByText('Scaffali (5)', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['modulo', async (page) => {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.getByLabel('Nuovo scaffale', { exact: true }).first().click(); await page.waitForTimeout(400);
+        await page.getByLabel('Nome', { exact: true }).first().fill('Ripiano giacche da sera');
+        await page.getByLabel('Posizione Magazzino', { exact: true }).first().click();
+        await page.getByLabel('Categoria Pellicce', { exact: true }).first().click();
+        await page.getByLabel('Genera il codice', { exact: true }).first().click(); await page.waitForTimeout(400);
+        await page.getByText('Categoria', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['aggiungi', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByText('Visone', { exact: true }).first().click(); await page.waitForTimeout(200);
+        await page.getByText('Magazzino', { exact: true }).first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('Categoria Pellicce', { exact: true }).first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('Sottocategoria Visone', { exact: true }).first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('Scaffale Ripiano pellicce lunghe', { exact: true }).first().click(); await page.waitForTimeout(300);
+        await page.getByText('Scaffale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['modifica', async (page) => {
+        await page.goto(`${APP}/product/edit/cmp-5`); await page.waitForTimeout(2000);
+        await page.getByText('Scaffale (facoltativo)', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['scheda', async (page) => {
+        await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
+        await page.getByText('Posizione attuale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['card', async (page) => { await page.goto(APP); await page.waitForTimeout(1500); await page.getByText('VIS-0098', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
+      ['scanner', async (page) => { await page.goto(`${APP}/scanner-action?type=shelf&id=1732300000000-pel1`); await page.waitForTimeout(1800); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

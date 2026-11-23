@@ -9,6 +9,8 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useProductKind } from '../../../hooks/useProductKind';
+import { useShelves } from '../../../contexts/ShelvesContext';
+import { placeWithShelf } from '../../../utils/shelves';
 import { categoryPath, categoryPicker, categoryTree, categoryWithDescendants, rootCategories } from '../../../utils/categories';
 import { isDormant, needsPromotion } from '../../../services/mockData';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -36,6 +38,7 @@ export default function HomeScreen() {
   const { locations } = useLocations();
   const { furTypes } = useFurTypes();
   const kindOf = useProductKind();
+  const { shelfOf } = useShelves();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
@@ -170,6 +173,7 @@ export default function HomeScreen() {
     // Posizione con il suo nome e il suo colore (dati dell'utente); se non c'è più resta l'id, come nella Scheda.
     const location = locations.find((l) => l.id === product.location);
     const kind = kindOf(product);
+    const shelf = shelfOf(product);
 
     return (
       <Pressable
@@ -232,10 +236,11 @@ export default function HomeScreen() {
             </Text>
           )}
 
+          {/* S1a: «Magazzino › A1» per un pezzo unico sul suo scaffale, su due righe se serve */}
           <View style={styles.locationRow}>
             <View style={[styles.locationDot, { backgroundColor: location?.color || t.colors.textMuted }]} />
-            <Text style={styles.locationText} numberOfLines={1}>
-              {location?.label || product.location}
+            <Text style={styles.locationText} numberOfLines={shelf ? 2 : 1}>
+              {placeWithShelf(location?.label || product.location, shelf)}
             </Text>
           </View>
 

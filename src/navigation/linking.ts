@@ -18,6 +18,7 @@ export const linking = {
       SettingsLocations: 'settings/locations',
       SettingsCategories: 'settings/categories',
       SettingsContacts: 'settings/contacts',
+      SettingsShelves: 'settings/shelves',
       SettingsFields: 'settings/fields',
       SettingsFolders: 'settings/folders',
       SettingsLayoutBuilder: 'settings/layout-builder',

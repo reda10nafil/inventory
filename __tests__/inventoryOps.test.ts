@@ -365,3 +365,42 @@ describe('Conta (M07, ticket 06)', () => {
     expect(same.unchanged).toEqual(['B-2', 'A-1', 'C-3']);
   });
 });
+
+// S1a (ticket 13): lo scaffale vale solo per i pezzi unici; nessuna chiave di `stock` è uno scaffale
+describe('scaffale (S1a)', () => {
+  const onShelf = (extra: Partial<Product> = {}) => item({ shelfId: 's-1', ...extra });
+  it('spostare un pezzo unico in un\'altra posizione toglie lo scaffale', () => {
+    const r = moveOf(onShelf(), 'magazzino', NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect('shelfId' in r.patch && r.patch.shelfId === undefined).toBe(true);
+    expect({ ...onShelf(), ...r.patch }.shelfId).toBeUndefined();
+  });
+  it('un pezzo unico senza scaffale si sposta come prima (nessun campo in più)', () => {
+    const r = moveOf(item(), 'magazzino', NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect('shelfId' in r.patch).toBe(false);
+  });
+  it('al primo movimento il pezzo unico diventa articolo a quantità e perde lo scaffale; le chiavi di stock sono posizioni', () => {
+    const r = movementOf(onShelf(), { kind: 'carico', qty: 2, to: 'vetrina' }, NOW);
+    if (!r.ok) throw new Error(r.error);
+    const after = { ...onShelf(), ...r.patch };
+    expect(after.shelfId).toBeUndefined();
+    expect(Object.keys(after.stock ?? {})).toEqual(['vetrina']);
+  });
+  it('vendita di un pezzo unico: lo scaffale resta (come la posizione)', () => {
+    const r = saleOf(onShelf(), 100, 1, NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect('shelfId' in r.patch).toBe(false);
+  });
+  it('un prodotto nuovo con quantità (Aggiungi, import) nasce senza scaffale', () => {
+    const r = withInitialStock(onShelf(), 3, NOW);
+    if (!r.ok) throw new Error(r.reason);
+    expect('shelfId' in r.product).toBe(false);
+    const z = withStartingStock(onShelf(), { vetrina: 0 }, NOW);
+    if (!z.ok) throw new Error(z.reason);
+    expect('shelfId' in z.product).toBe(false);
+  });
+  it('Modifica di un articolo a quantità: lo scaffale non si scrive', () => {
+    expect(editableUpdates(stocked({ vetrina: 1 }), { shelfId: 's-1', sellPrice: 5 })).toEqual({ sellPrice: 5 });
+  });
+});

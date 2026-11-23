@@ -30,6 +30,8 @@ Per la regola 7 di `grafo-lavori.md` (nessun commit in cui un prodotto può aver
 
 ### S1a — anagrafica e pezzi unici
 
+Stato: **fatto** il 23 novembre 2026 (vedi `git log` e `../../CRONOLOGIA.md`; decisioni prese al posto dell'utente nelle righe S1a di `../../DECISIONI_DA_RIVEDERE.md`; prova `../prova/s1-scaffali.cjs`). Le eliminazioni contano anche i prodotti venduti e quelli nel cestino, come per le posizioni; la posizione di uno scaffale resta quella della creazione.
+
 - **Nessuna chiave di `stock` è uno scaffale.** Il selettore dello scaffale c'è solo per i pezzi unici: non compare per gli articoli a quantità, né in Movimenta. Un pezzo unico che diventa articolo a quantità (primo movimento) perde `shelfId`.
 - **Id opachi** (`${Date.now()}-${random}`, come prodotti e contatti): gli id di posizioni e categorie sono parole (`magazzino`, `visone`) e un id di scaffale fatto allo stesso modo potrebbe scontrarsi con loro.
 - **Lo scaffale sta sempre dentro la posizione del prodotto.** Una sola funzione pura con test lo garantisce a ogni scrittura (`moveProduct`, Modifica, Spostamento rapido, Audit, import): se la posizione cambia e lo scaffale non è di quella posizione, `shelfId` si toglie. Le letture ignorano uno `shelfId` che non torna (scaffale eliminato o di un'altra posizione).

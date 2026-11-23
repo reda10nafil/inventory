@@ -7,6 +7,7 @@ export type RootStackParamList = {
   'settings/locations': undefined;
   'settings/categories': undefined;
   'settings/contacts': undefined;
+  'settings/shelves': undefined;
   'settings/fields': undefined;
   'settings/folders': undefined;
   'settings/layout-builder': undefined;

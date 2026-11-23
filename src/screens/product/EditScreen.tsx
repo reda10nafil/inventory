@@ -30,6 +30,9 @@ import { GradientFill } from '../../../components/ui/GradientFill';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
+import { useShelves } from '../../../contexts/ShelvesContext';
+import { shelvesFor } from '../../../utils/shelves';
+import { ShelfPicker } from '../../../components/ShelfPicker';
 
 // Il modulo nasce solo quando il prodotto c'è. Aperta dall'indirizzo o ricaricata, la schermata partiva prima
 // che i prodotti fossero letti e il modulo restava vuoto: salvando si sovrascriveva il prodotto (P04).
@@ -93,6 +96,14 @@ function EditProductForm({ product }: { product: Product }) {
     libraryId: product?.libraryId || '',
     minStock: formatNumberInput(product?.minStock),
   });
+
+  // Scaffale (S1a): solo per i pezzi unici, tra quelli della posizione e della categoria scelte (più quello di adesso)
+  const { shelves, loading: shelvesLoading } = useShelves();
+  const [shelfId, setShelfId] = useState(product.shelfId ?? '');
+  const shelfChoices = stocked ? [] : shelvesFor(shelves, libraries, { location: formData.location, libraryId: formData.libraryId || undefined }, product.shelfId);
+  const chosenShelf = shelfChoices.some((s) => s.id === shelfId) ? shelfId : '';
+  // Uno scaffale che questo dispositivo non conosce (o l'elenco non ancora letto) non si tocca da qui: decide il contesto
+  const shelfKnown = !shelvesLoading && (!product.shelfId || shelves.some((s) => s.id === product.shelfId));
 
   const [images, setImages] = useState<string[]>(product?.images || []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -187,8 +198,9 @@ function EditProductForm({ product }: { product: Product }) {
     updateProduct(id as string, {
       sku: formData.sku.trim(),
       furType: formData.furType,
-      // Articolo a quantità: la posizione cambia solo con i movimenti (M03; il contesto la ignora comunque)
-      ...(stocked ? { minStock } : { location: formData.location }),
+      // Articolo a quantità: la posizione cambia solo con i movimenti (M03; il contesto la ignora comunque).
+      // Pezzo unico: lo scaffale scelto, che il contesto tiene solo se è in quella posizione (S1a)
+      ...(stocked ? { minStock } : { location: formData.location, ...(shelfKnown && { shelfId: chosenShelf || undefined }) }),
       images,
       purchasePrice: parseNumber(formData.purchasePrice),
       sellPrice: parseNumber(formData.sellPrice),
@@ -433,6 +445,13 @@ function EditProductForm({ product }: { product: Product }) {
               })}
             </View>
           </View>
+          )}
+
+          {shelfChoices.length > 0 && (
+            <View style={styles.inputGroup}>
+              {renderLabel('Scaffale (facoltativo)')}
+              <ShelfPicker shelves={shelfChoices} categories={libraries} value={chosenShelf} onChange={setShelfId} />
+            </View>
           )}
 
           <View style={styles.inputGroup}>

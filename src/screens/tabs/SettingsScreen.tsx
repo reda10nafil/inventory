@@ -13,6 +13,7 @@ import { categoryPath } from '../../../utils/categories';
 import { useLocations } from '../../../contexts/LocationsContext';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useContacts } from '../../../contexts/ContactsContext';
+import { useShelves } from '../../../contexts/ShelvesContext';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
@@ -32,6 +33,8 @@ export default function SettingsScreen() {
   const { getLocation } = useLocations();
   const { furTypes, labelOf } = useFurTypes();
   const { nameOf: contactName } = useContacts();
+  // S1a: colonna «Scaffale» nel CSV dei prodotti (nome dello scaffale dentro la posizione)
+  const { shelves } = useShelves();
   // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
   // C1: nel report delle giacenze «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo
   const reportLabels = {
@@ -124,7 +127,7 @@ export default function SettingsScreen() {
       Alert.alert('Errore', 'Impossibile esportare i dati');
     }
   };
-  const exportToCSV = () => exportCsv('inventario', productCsvRows(products, libraries));
+  const exportToCSV = () => exportCsv('inventario', productCsvRows(products, libraries, shelves));
   const exportStockCsv = () => exportCsv('giacenze', stockCsvRows(products, reportLabels));
   const exportMovementsCsv = () => exportCsv('movimenti', movementCsvRows(timeline, products, reportLabels));
 
@@ -175,8 +178,8 @@ export default function SettingsScreen() {
     let skipped = 0;
     const seenSkus = new Set(products.map((product) => product.sku.trim().toLocaleLowerCase()));
     rows.slice(1).forEach((row) => {
-      // SKU vuoto o giacenza scritta ma non valida: `null`, la riga si salta (non diventa un pezzo unico)
-      const parsed = productFromCsvRow(row, cols, { categories: libraries, furTypes });
+      // SKU vuoto, giacenza scritta ma non valida o su uno scaffale (S1a): `null`, la riga si salta
+      const parsed = productFromCsvRow(row, cols, { categories: libraries, furTypes, shelves });
       const normalizedSku = parsed ? parsed.product.sku.toLocaleLowerCase() : '';
       if (!parsed || seenSkus.has(normalizedSku) || getProductBySku(parsed.product.sku)) {
         skipped += 1;
@@ -405,6 +408,25 @@ export default function SettingsScreen() {
               <Text style={styles.settingTitle}>Gestisci Posizioni</Text>
               <Text style={styles.settingDescription}>
                 Modifica locazioni disponibili
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
+        {/* Scaffali (S1a): dentro le posizioni, generici o di una categoria */}
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/shelves')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
+              <AppIcon name="shelves" size={24} color={t.colors.onAccent} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Scaffali</Text>
+              <Text style={styles.settingDescription}>
+                Dentro le posizioni, generici o di una categoria
               </Text>
             </View>
           </View>

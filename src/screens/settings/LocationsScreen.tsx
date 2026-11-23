@@ -7,6 +7,8 @@ import QRCode from 'react-native-qrcode-svg';
 import { useLocations, Location } from '../../../contexts/LocationsContext';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { usage } from '../../../utils/productRules';
+import { useShelves } from '../../../contexts/ShelvesContext';
+import { codeError, locationShelvesError } from '../../../utils/shelves';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -36,6 +38,7 @@ export default function ManageLocationsScreen() {
   const insets = useSafeAreaInsets();
   const { locations, loading, addLocation, updateLocation, deleteLocation } = useLocations();
   const { products } = useInventory();
+  const { shelves } = useShelves();
 
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
@@ -62,6 +65,12 @@ export default function ManageLocationsScreen() {
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Errore', 'Inserisci un nome per la posizione');
+      return;
+    }
+    // S1a: un codice già usato da uno scaffale non si riusa (lo Scanner aprirebbe la posizione al suo posto)
+    const shelfCode = codeError(barcode, { shelves, placeLabel: (id) => locations.find((l) => l.id === id)?.label ?? id });
+    if (shelfCode) {
+      Alert.alert('Errore', shelfCode);
       return;
     }
 
@@ -106,6 +115,12 @@ export default function ManageLocationsScreen() {
       const parts = [used.active && `${used.active} prodotti`, used.trashed && `${used.trashed} nel cestino`].filter(Boolean).join(' e ');
       const trash = used.trashed ? ' Quelli nel cestino si possono anche eliminare per sempre dal Cestino.' : '';
       Alert.alert('Attenzione', `La posizione "${label}" contiene ${parts}. Spostali in un'altra posizione prima di eliminarla.${trash}`);
+      return;
+    }
+    // S1a: ogni scaffale sta in una posizione che esiste
+    const withShelves = locationShelvesError(locations.find((l) => l.id === id)?.label ?? id, shelves, id);
+    if (withShelves) {
+      Alert.alert('Attenzione', withShelves);
       return;
     }
     Alert.alert(
