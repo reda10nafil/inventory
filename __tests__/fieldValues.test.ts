@@ -1,7 +1,7 @@
 import type { CustomField } from '../types';
 import {
   choiceLabel, choiceList, choiceOptions, fieldError, fieldOptions, formValue, invalidNumberFields, isSelected, newOptionId, normalizeField,
-  numberOf, optionDeleteError, optionNameError, optionOf, optionUsage, sameValue, savedValue, savesLabel, stepFrom, stepperDefaults,
+  numberOf, optionDeleteError, optionNameError, optionOf, optionUsage, retiredNameError, sameValue, savedValue, savesLabel, stepFrom, stepperDefaults,
   stepperRange, toggleOption, valueText, NO_FLAGS,
 } from '../utils/fieldValues';
 
@@ -31,7 +31,7 @@ describe('opzioni a id stabili (CAM-F1)', () => {
     expect(normalizeField(TAGLIA)).toBe(TAGLIA);
     const soloEtichette = field({ type: 'single_choice', dataset: ['A', 'B'] });
     expect(normalizeField(soloEtichette)).toMatchObject({ options: [{ id: 'opt_0', label: 'A' }, { id: 'opt_1', label: 'B' }], dataset: ['A', 'B'] });
-    const disallineato = { ...TAGLIA_DOPO, dataset: LABELS };
+    const disallineato = { ...TAGLIA_DOPO, dataset: ['XS', 'S', 'Media', 'L'] };
     expect(normalizeField(disallineato).dataset).toEqual(['XS', 'S', 'Media', 'L', 'XL']);
     const collegato = field({ type: 'single_choice', linkTo: 'locations', dataset: null });
     expect(normalizeField(collegato)).toBe(collegato);
@@ -199,5 +199,41 @@ describe('riga sotto il campo dopo un salvataggio rifiutato', () => {
     expect(fieldError(SPESS, '2,5', flagged)).toBeUndefined();
     expect(fieldError(COSTO, 'boh', flagged)).toBeUndefined();
     expect(fieldError(TAGLIA, null, NO_FLAGS)).toBeUndefined();
+  });
+});
+
+describe('dopo il parere del revisore', () => {
+  it('un nome che dei prodotti hanno ancora salvato per un\'altra opzione (rinominata) non si riusa', () => {
+    const products = [
+      { customData: [{ value: 'M', fieldSnapshot: TAGLIA }] },
+      { customData: [{ value: 'M', fieldSnapshot: TAGLIA }] },
+      { customData: [{ value: 'opt_3', fieldSnapshot: TAGLIA_DOPO }] },
+    ];
+    const bozza = fieldOptions(TAGLIA_DOPO);
+    // rinomina già salvata: «M» nuovo rifiutato, «Media» → «M» (la stessa opzione) va bene
+    expect(retiredNameError('M', products, TAGLIA_DOPO, bozza)).toBe('Il nome "M" è ancora salvato in 2 prodotti per il valore "Media": scegline un altro, altrimenti quei prodotti passerebbero al valore nuovo.');
+    expect(retiredNameError('M', products, TAGLIA_DOPO, bozza, 'opt_2')).toBeNull();
+    // rinomina nella stessa bozza, non ancora salvata: il campo salvato ha ancora «M»
+    expect(retiredNameError(' M ', products, TAGLIA, bozza)).toMatch(/per il valore "Media"/);
+    expect(retiredNameError('XXL', products, TAGLIA_DOPO, bozza)).toBeNull();
+    expect(retiredNameError('M', products, undefined, bozza)).toBeNull();
+    // un'etichetta che non porta a nessuna opzione (tolta prima di VAL) si può riprendere
+    expect(retiredNameError('Boh', [{ customData: [{ value: 'Boh', fieldSnapshot: TAGLIA }] }], TAGLIA_DOPO, bozza)).toBeNull();
+  });
+  it('un\'etichetta che c\'è solo in dataset non si perde normalizzando', () => {
+    const f = field({ type: 'single_choice', dataset: ['A', 'B', 'C'], options: [{ id: 'a', label: 'A' }, { id: 'opt_1', label: 'X' }] });
+    expect(normalizeField(f).options).toEqual([{ id: 'a', label: 'A' }, { id: 'opt_1', label: 'X' }, { id: 'opt_1_2', label: 'B' }, { id: 'opt_2', label: 'C' }]);
+    expect(normalizeField(f).dataset).toEqual(['A', 'X', 'B', 'C']);
+  });
+  it('i modelli hanno dataset uguale alle etichette delle opzioni (nessuna scelta persa)', () => {
+    const { SECTOR_TEMPLATES } = require('../constants/sectorTemplates');
+    const { PREDEFINED_TEMPLATES } = require('../lib/templates');
+    const choice = (f: any) => f.type === 'single_choice' || f.type === 'multi_choice';
+    const fields = [...SECTOR_TEMPLATES.flatMap((t: any) => t.fields), ...PREDEFINED_TEMPLATES.flatMap((t: any) => t.customFields)].filter(choice);
+    expect(fields.length).toBeGreaterThan(40);
+    for (const f of fields) {
+      expect((f.options || []).map((o: any) => o.label)).toEqual(f.dataset || []);
+      expect(normalizeField(f)).toBe(f);
+    }
   });
 });

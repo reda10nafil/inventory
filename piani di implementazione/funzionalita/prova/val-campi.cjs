@@ -8,6 +8,9 @@
 // - val-pezzi-modifica (CAM-F5): Pezzi col contatore in Modifica, «–» per chi non l'ha;
 // - val-tipo-pelle-id (punto 7): un campo collegato a Tipi di pelle salva l'id e segue il rinomina; il nome scritto
 //   prima resta e la finestra lo dice.
+// Dopo il parere del revisore:
+// - val-nome-ritirato: dopo «M» → «Media» un valore nuovo «M» è rifiutato (VIS-0142 e VIS-0098 hanno «M» salvato);
+// - val-nome-in-sospeso: un nome scritto e non salvato nell'editor dei valori ferma «Aggiorna» invece di perdersi.
 // Ogni scenario restituisce `ok` e i dettagli. Uso: node val-campi.cjs [nome-scenario]
 const { scenario } = require('./lib.cjs');
 const { press } = require('./a1-util.cjs');
@@ -174,6 +177,43 @@ const eventiDi = async (h, id) => ((await h.store(T, 0)) || []).filter((e) => e.
     };
     const ok = out.salvato === 'visone' && out.schedaNuovo === 'Visone Black' && out.schedaVecchio === 'Visone'
       && out.messaggio === 'Fatto | «Visone» ora si chiama «Visone Black». I 2 prodotti che lo usano mostrano il nome nuovo. Nel campo «Pelle interna» 1 prodotto compilato prima ha il nome scritto: lì resta «Visone».';
+    return { ok, ...out };
+  });
+
+  await run('val-nome-ritirato', async (h) => {
+    const f = finestre(h.page);
+    await v.matita(h, 'Taglia');
+    await v.rinomina(h, 'M', 'Media');
+    await h.click('Aggiorna');
+    await v.matita(h, 'Taglia');
+    await h.page.getByPlaceholder(v.PH_VALORE).locator('visible=true').first().fill('M');
+    await h.click('Aggiungi valore');
+    await h.page.getByPlaceholder(v.PH_VALORE).locator('visible=true').first().fill('');
+    await h.click('Aggiorna');
+    const taglia = (await h.store(v.CF)).find((x) => x.id === TAGLIA);
+    const scheda = (await v.scheda(h, 'cmp-1', [['Taglia', 5]])).Taglia;
+    const out = {
+      opzioni: (taglia.options || []).map((o) => `${o.id}:${o.label}`).join(), scheda,
+      rifiuto: f.find((m) => m.includes('è ancora salvato')) || null,
+    };
+    const ok = out.opzioni === 'opt_0:XS,opt_1:S,opt_2:Media,opt_3:L,opt_4:XL' && out.scheda === 'Media'
+      && out.rifiuto === 'Errore | Il nome "M" è ancora salvato in 2 prodotti per il valore "Media": scegline un altro, altrimenti quei prodotti passerebbero al valore nuovo.';
+    return { ok, ...out };
+  });
+
+  await run('val-nome-in-sospeso', async (h) => {
+    const f = finestre(h.page);
+    await v.matita(h, 'Taglia');
+    await h.page.locator('[aria-label="Rinomina M"]').locator('visible=true').first().click();
+    await h.page.getByPlaceholder(v.PH_VALORE).locator('visible=true').first().fill('Media');
+    await h.click('Aggiorna');
+    const dopoAggiorna = (await h.store(v.CF)).find((x) => x.id === TAGLIA).options.map((o) => o.label).join();
+    const fermato = f.some((m) => m.startsWith('Nome non salvato'));
+    await h.click('Salva nome');
+    await h.click('Aggiorna');
+    const dopo = (await h.store(v.CF)).find((x) => x.id === TAGLIA).options.map((o) => o.label).join();
+    const out = { fermato, dopoAggiorna, dopo };
+    const ok = fermato && dopoAggiorna === 'XS,S,M,L,XL' && dopo === 'XS,S,Media,L,XL';
     return { ok, ...out };
   });
 })();

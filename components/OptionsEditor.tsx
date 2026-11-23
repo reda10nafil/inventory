@@ -4,7 +4,7 @@
 // I controlli (nome vuoto o doppio, valore usato, ultimo valore) li passa chi lo usa: per «Tipo di pelle» sono in
 // `utils/furTypes.ts`. Oggi lo usa Campi Personalizzati › Tipo di pelle; le fette VAL ed EDC lo riuseranno per le
 // opzioni dei campi a scelta. Colore e icona, se ci sono, si mostrano accanto al nome (Tipo di pelle non li ha).
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { AppIcon } from './ui/AppIcon';
 import { GradientFill } from './ui/GradientFill';
@@ -32,14 +32,19 @@ interface Props {
   onDelete: (id: string) => void | Promise<void>;
   placeholder?: string;
   hint?: string;
+  /** Dice a chi lo usa se c'è un nome scritto e non ancora aggiunto o salvato (VAL: la bozza del campo non lo perde). */
+  onPendingChange?: (pending: boolean) => void;
 }
 
-export function OptionsEditor({ options, usedBy, nameError, deleteError, onAdd, onRename, onDelete, placeholder, hint }: Props) {
+export function OptionsEditor({ options, usedBy, nameError, deleteError, onAdd, onRename, onDelete, placeholder, hint, onPendingChange }: Props) {
   const styles = useStyles();
   const t = useTheme();
   const [name, setName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = options.find((o) => o.id === editingId);
+  // In sospeso: un nome nuovo, o diverso da quello del valore che si sta rinominando
+  const pending = name.trim().length > 0 && name.trim() !== editing?.label;
+  useEffect(() => { onPendingChange?.(pending); }, [pending, onPendingChange]);
 
   const reset = () => { setName(''); setEditingId(null); };
 

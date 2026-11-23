@@ -10,7 +10,7 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { FieldUIType, CustomField } from '../../../types';
 import { usage } from '../../../utils/productRules';
 import { furTypeDeleteError, furTypeLegacyNames, furTypeNameError, furTypeRenameMessage, furTypeUsage, furTypeUsageText } from '../../../utils/furTypes';
-import { fieldOptions, newOptionId, optionDeleteError, optionNameError, optionUsage, type FieldOption } from '../../../utils/fieldValues';
+import { fieldOptions, newOptionId, optionDeleteError, optionNameError, optionUsage, retiredNameError, type FieldOption } from '../../../utils/fieldValues';
 import { OptionsEditor } from '../../../components/OptionsEditor';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
@@ -63,6 +63,8 @@ export default function CustomFieldsScreen() {
   const [stepperOptions, setStepperOptions] = useState({ min: '0', max: '100', step: '1' });
   // Valori di un campo a scelta (VAL, CAM-F1): bozza a id stabili, salvata con «Aggiorna» / «Salva Campo»
   const [options, setOptions] = useState<FieldOption[]>([]);
+  // Nome scritto nell'editor dei valori e non ancora aggiunto o salvato: «Aggiorna» non lo deve perdere
+  const [pendingName, setPendingName] = useState(false);
   const [isRequired, setIsRequired] = useState(false);
 
   // Advanced Inteligence Features
@@ -78,6 +80,7 @@ export default function CustomFieldsScreen() {
     setStepperOptions({ min: '0', max: '100', step: '1' });
     setIsRequired(false);
     setOptions([]);
+    setPendingName(false);
     setIsBarcode(false);
     setLinkTo(null);
     setEditingField(null);
@@ -128,6 +131,10 @@ export default function CustomFieldsScreen() {
 
     if (baseType === 'single_choice' || baseType === 'multi_choice') {
       if (!linkTo) {
+        if (pendingName) {
+          Alert.alert('Nome non salvato', 'Nei valori c\'è un nome scritto e non ancora salvato: tocca «Salva nome» (o «Aggiungi valore») per tenerlo, oppure «Annulla».');
+          return;
+        }
         if (options.length === 0) {
           Alert.alert('Errore', 'Aggiungi almeno una opzione nel Dataset oppure seleziona una Sorgente Dati dinamica');
           return;
@@ -473,11 +480,12 @@ export default function CustomFieldsScreen() {
                         <OptionsEditor
                           options={options}
                           usedBy={(id) => furTypeUsageText(optionUsed(id))}
-                          nameError={(label, editingId) => optionNameError(label, options, editingId)}
+                          nameError={(label, editingId) => optionNameError(label, options, editingId) ?? retiredNameError(label, products, editingField, options, editingId)}
                           deleteError={(id) => optionDeleteError(options, id, optionUsed(id))}
                           onAdd={(label) => setOptions((prev) => [...prev, { id: newOptionId(prev), label }])}
                           onRename={(id, label) => setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, label } : o)))}
                           onDelete={(id) => setOptions((prev) => prev.filter((o) => o.id !== id))}
+                          onPendingChange={setPendingName}
                           placeholder="Es. S, M, L"
                           hint="Tocca un valore per rinominarlo: i prodotti che lo usano restano collegati e mostrano il nome nuovo. Un valore usato da un prodotto, anche venduto o nel cestino, non si elimina. Le modifiche valgono con «Aggiorna»."
                         />

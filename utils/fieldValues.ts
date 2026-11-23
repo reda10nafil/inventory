@@ -63,12 +63,24 @@ export function fieldOptions(field: OptionsSource | undefined | null): FieldOpti
 
 /**
  * Campo del registro letto: per un campo a scelta scritto a mano `options` diventa la fonte (con gli id di sempre) e
- * `dataset` resta allineato alle etichette. Stesso oggetto se non c'è nulla da cambiare (il registro si salva solo
- * allora, una volta sola). I campi collegati a una lista dell'app e gli altri tipi restano come sono.
+ * `dataset` resta allineato alle etichette. Un'etichetta che c'è solo in `dataset` (prima di VAL Aggiungi disegnava da
+ * lì) non si perde: si aggiunge in fondo con l'id della sua posizione (`opt_<i>`, reso unico). Stesso oggetto se non
+ * c'è nulla da cambiare (il registro si salva solo allora, una volta sola). I campi collegati e gli altri tipi restano.
  */
 export function normalizeField<F extends CustomField>(field: F): F {
   if (!isChoiceField(field) || field.linkTo) return field;
   const options = fieldOptions(field);
+  if (Array.isArray(field.options) && field.options.length > 0 && Array.isArray(field.dataset)) {
+    const ids = new Set(options.map((o) => o.id));
+    field.dataset.forEach((raw: unknown, i: number) => {
+      const label = String(raw ?? '').trim();
+      if (!label || options.some((o) => o.label === label)) return;
+      let id = `opt_${i}`;
+      for (let n = 2; ids.has(id); n += 1) id = `opt_${i}_${n}`;
+      ids.add(id);
+      options.push({ id, label });
+    });
+  }
   if (!options.length) return field;
   const dataset = options.map((o) => o.label);
   if (JSON.stringify(field.options) === JSON.stringify(options) && JSON.stringify(field.dataset) === JSON.stringify(dataset)) return field;
@@ -189,6 +201,40 @@ export function optionNameError(label: string, options: readonly FieldOption[], 
 }
 
 const prodotti = (n: number) => (n === 1 ? '1 prodotto' : `${n} prodotti`);
+
+/**
+ * Errore per un nome che dei prodotti hanno ancora salvato come etichetta di **un'altra** opzione (rinominata): dopo
+ * «M» → «Media», un valore nuovo «M» porterebbe via quei prodotti, perché l'etichetta di adesso viene prima della copia
+ * (`optionOf`). `field` è il campo salvato (prima delle modifiche della bozza), `draft` le opzioni della bozza (per
+ * dire il nome di adesso), `editingId` l'opzione che si rinomina (riprendere il proprio nome di prima va bene).
+ */
+export function retiredNameError(
+  label: string,
+  products: readonly { customData?: readonly { value: unknown; fieldSnapshot?: Pick<CustomField, 'id' | 'options' | 'dataset'> }[] }[],
+  field: Pick<CustomField, 'id' | 'options' | 'dataset'> | null | undefined,
+  draft: readonly FieldOption[],
+  editingId?: string,
+): string | null {
+  const name = label.trim();
+  if (!field || !name) return null;
+  const options = fieldOptions(field);
+  let count = 0;
+  let owner: FieldOption | undefined;
+  for (const p of products) {
+    const entry = (p.customData || []).find((d) => d.fieldSnapshot?.id === field.id);
+    if (!entry) continue;
+    const hit = choiceList(entry.value)
+      .filter((v) => v === name && !options.some((o) => o.id === v))
+      .map((v) => optionOf(v, options, entry.fieldSnapshot))
+      .find((o) => o && o.id !== editingId);
+    if (!hit) continue;
+    count += 1;
+    owner = owner ?? hit;
+  }
+  if (!count || !owner) return null;
+  const now = draft.find((o) => o.id === owner?.id)?.label ?? owner.label;
+  return `Il nome "${name}" è ancora salvato in ${prodotti(count)} per il valore "${now}": scegline un altro, altrimenti quei prodotti passerebbero al valore nuovo.`;
+}
 
 /** Errore per eliminare un valore, altrimenti null: ne deve restare uno; un valore usato da un prodotto (anche nel
  *  cestino) non si elimina, si rinomina (il prodotto resterebbe con un valore che non è più tra quelli del campo). */
