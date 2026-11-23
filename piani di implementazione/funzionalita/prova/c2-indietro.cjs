@@ -127,8 +127,9 @@ async function torna(h) {
     const azione = await h.has('VEDI PRODOTTI', true);
     await h.click('VEDI PRODOTTI');
     await h.page.waitForTimeout(800);
-    const skus = await h.page.evaluate(() => [...document.querySelectorAll('div')]
+    const visibili = () => h.page.evaluate(() => [...document.querySelectorAll('div')]
       .filter((d) => d.childElementCount === 0 && /^[A-Z]{3}-\d{4}$/.test(d.textContent || '') && d.offsetParent).map((d) => d.textContent).sort());
+    const skus = await visibili();
     const dalloScanner = {
       azione, percorso: u.percorso(h.page), barre: await u.barre(h.page),
       scanner: await u.montate(h.page, 'Scanner QR/Barcode'), azioneRapida: await u.montate(h.page, 'VEDI PRODOTTI'), skus,
@@ -136,10 +137,26 @@ async function torna(h) {
     await h.go('scanner-action?type=library&id=pellicce');
     await h.click('VEDI PRODOTTI');
     await h.page.waitForTimeout(800);
-    const diretto = { percorso: u.percorso(h.page), barre: await u.barre(h.page), azioneRapida: await u.montate(h.page, 'VEDI PRODOTTI') };
+    const diretto = { percorso: u.percorso(h.page), barre: await u.barre(h.page), azioneRapida: await u.montate(h.page, 'VEDI PRODOTTI'), skus: await visibili() };
+    // Seconda volta, senza ricaricare: con `popTo` la Home è la stessa di prima. Si sceglie un'altra categoria, si torna
+    // allo Scanner dall'icona di Automazioni e si rilegge «pellicce»: la Home deve tornare su Pellicce
+    await h.click('Collezione Inverno');
+    const dopoChip = await visibili();
+    await h.tab('Automazioni');
+    await h.page.evaluate(() => {
+      const g = [...document.querySelectorAll('div')].find((d) => d.childElementCount === 0 && d.textContent === String.fromCodePoint(0xf206) && d.offsetParent);
+      g.click();
+    });
+    await h.page.waitForTimeout(1200);
+    await scan(h, 'pellicce', { wait: 1500 });
+    await h.click('VEDI PRODOTTI');
+    await h.page.waitForTimeout(800);
+    const secondaVolta = { chipPrima: dopoChip, skus: await visibili(), barre: await u.barre(h.page), scanner: await u.montate(h.page, 'Scanner QR/Barcode') };
+    const pellicce = JSON.stringify(['PUZ-0012', 'VIS-0098', 'VOL-0087']);
     const ok = dalloScanner.barre === 1 && dalloScanner.scanner === 0 && dalloScanner.azioneRapida === 0
-      && JSON.stringify(skus) === JSON.stringify(['PUZ-0012', 'VIS-0098', 'VOL-0087']) && diretto.barre === 1 && diretto.azioneRapida === 0;
-    return { ok, dalloScanner, diretto };
+      && JSON.stringify(skus) === pellicce && diretto.barre === 1 && diretto.azioneRapida === 0 && JSON.stringify(diretto.skus) === pellicce
+      && JSON.stringify(dopoChip) !== pellicce && JSON.stringify(secondaVolta.skus) === pellicce && secondaVolta.barre === 1 && secondaVolta.scanner === 0;
+    return { ok, dalloScanner, diretto, secondaVolta };
   });
 
   // 7. Indirizzo sconosciuto › «Return Home»: una sola barra delle schede montata, NotFound tolta (IND-P3)

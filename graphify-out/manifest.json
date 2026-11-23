@@ -1926,9 +1926,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/HomeScreen.tsx": {
-    "mtime": 1795382494.1706538,
-    "seen": 1795403667.2081754,
-    "ast_hash": "c293ef42ae39c336cff8222a2d43581a",
+    "mtime": 1795414829.9442227,
+    "seen": 1795416131.978165,
+    "ast_hash": "c99bfdb1ce690d5d35f102e815eb0b8b",
     "semantic_hash": ""
   },
   "src/screens/tabs/SettingsScreen.tsx": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795414526.0902853,
-    "seen": 1795414573.6343915,
-    "ast_hash": "2348713803f41fca72f77caf55bbcac6",
+    "mtime": 1795414910.3567834,
+    "seen": 1795416131.9931657,
+    "ast_hash": "06b452f7488ee84b6c3818cfd05b83e0",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795412193.6333728,
-    "seen": 1795414573.6343915,
-    "ast_hash": "fca94848e2e1a627782f4300965cc1f3",
+    "mtime": 1795414910.357787,
+    "seen": 1795416131.9931657,
+    "ast_hash": "b145f5bdbbe090faa72c117064859dce",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3852,9 +3852,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c2-indietro.cjs": {
-    "mtime": 1795411428.7708263,
-    "seen": 1795414573.6099684,
-    "ast_hash": "2737c4178ade61b0ed4dbe99ba64159a",
+    "mtime": 1795414795.8565571,
+    "seen": 1795416131.966512,
+    "ast_hash": "6b358d93b8d27ee95cf5158cc5de2eda",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c2-tipo-pelle.cjs": {
@@ -4098,9 +4098,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/28-indietro-e-icone.md": {
-    "mtime": 1795412234.7519999,
-    "seen": 1795414573.635396,
-    "ast_hash": "8371973d4401f8b9be33cfe2775e08f8",
+    "mtime": 1795414914.2279043,
+    "seen": 1795416131.9961653,
+    "ast_hash": "2f2614831a42a8076f911aab6c5ee400",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/29-automazioni.md": {

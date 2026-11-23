@@ -42,12 +42,14 @@ export default function HomeScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
-  // React to param changes (e.g. deep link from scanner)
+  // React to param changes (e.g. deep link from scanner). Dipende dall'oggetto dei parametri e non dal solo valore: da
+  // C2 «Vedi prodotti» torna a questa stessa Home (`popTo` in compat.ts) e, per la stessa categoria letta di nuovo,
+  // il filtro va rimesso anche se nel frattempo se n'è scelto un altro
   React.useEffect(() => {
     if (params.library) {
       setActiveLibraryId(params.library as string);
     }
-  }, [params.library]);
+  }, [params]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

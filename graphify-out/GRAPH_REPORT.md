@@ -1,7 +1,7 @@
 # Graph Report - inventory-stili  (2026-11-23)
 
 ## Corpus Check
-- 558 files · ~1,427,921 words
+- 558 files · ~1,428,324 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 104 file(s) not represented in the graph (top: .xml 18, .ttf 16, (none) 11)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4674fbcc`
+- Built from commit: `b4b52a9c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1342,7 +1342,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` connect `Text` to `Cronologia aggiornabile`, `useTheme`, `ThemeContext.tsx`, `RootNavigator.tsx`, `genera_temi.py`?**
   _High betweenness centrality (0.193) - this node is a cross-community bridge._
 - **Why does `shadow()` connect `genera_temi.py` to `chip`, `Text`?**
-  _High betweenness centrality (0.159) - this node is a cross-community bridge._
+  _High betweenness centrality (0.157) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `useTheme()` (e.g. with `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` and `Regole per ogni fetta`) actually correct?**
   _`useTheme()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 87 inferred relationships involving `Cosa fare adesso, in ordine` (e.g. with `CategoryPicker()` and `MovementSheet()`) actually correct?**
