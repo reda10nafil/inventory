@@ -19,7 +19,7 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
   - `IND-1…IND-9` difetti del tasto Indietro, `IND-P1…P9` proposte;
   - `CT01…` Chat e Team.
   Restano come sono D.. e P.. (prova del 22), C01-C15 (correzioni), M01-M10, C1, C2, S1a, S1b, S2, S3, N0-N2, I1-I3, L0-L2.
-- **Nomi delle fette nuove** (nessuna collisione): GAL, FOTO, COD, ESE, VAL, IND, EDC, MOD, MCAT, EXP, IMP, ETI, GS1, FLU1, CON, FLU2, RIO, RES, VOCI, CHAT.
+- **Nomi delle fette nuove** (nessuna collisione): GAL, FOTO, COD, ESE, VAL, IND, EDC, MOD, MCAT, EXP, IMP, ETI, GS1, FLU1, CON, FLU2, RIO, RES, VOCI, CHAT1, RIC1, RIC2, RETE1, RETE2, RIC3.
 - **Vincoli tra le fette** (dai resoconti):
   1. **non alzare `version` del layout**: `LayoutContext.tsx:122-127` sostituirebbe il modulo dell'utente con il predefinito; correggere quel caricamento (fetta MOD) prima di qualunque cambio di forma;
   2. **mai rinumerare gli id delle opzioni né cambiare gli id dei campi** (valori, allegati, lotto GS1, cronologia ci puntano);
@@ -44,11 +44,11 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
 - [Foto](issues/27-foto.md) (proposta): galleria unica; foto che restano sul web e su Android.
 - [Indietro e icone](issues/28-indietro-e-icone.md) (proposta): resto del tasto Indietro; icone non riprodotte, solo collaudo.
 - [Automazioni](issues/29-automazioni.md) (proposta): prima l'esecuzione corretta, poi ricevimento, uscita, trasferimento, conta, passi nuovi, riordino, reso.
-- [Chat e Team](issues/30-chat-e-team.md) (utente, 23; **aperto**): restano, in Home vicino alla ricerca, per inviare, ricevere e gestire prodotti (e automazioni) tra operatori; verifica in corso.
+- [Chat e Team](issues/30-chat-e-team.md) (utente, 23, quattro risposte): restano, con le icone in Home vicino alla ricerca; inventario comune; si manda merce con una **Richiesta «Trasferisci»** eseguita una volta sola da chi la accetta; **rete locale del negozio (modem, nodi in magazzino e negozio) come canale principale anche senza internet, internet quando c'è, con un interruttore**; prima le automazioni che inviano e ricevono merce, poi quelle condivise.
 
 ## Fette da eseguire
 
-**Ordine proposto, da concordare con l'utente.** Le fette di `map-2.md` (S1b, S2, S3, N1, N2, I1, L1, L2, I2, I3) restano con i loro ticket; qui sono rimesse in fila con le nuove.
+**Ordine confermato dall'utente il 23 mattina** («Sì, prima i difetti»): dopo C2 le correzioni dei difetti che rovinano dati (GAL, COD, ESE, VAL, IND), poi gli scaffali, poi il resto. Le fette di `map-2.md` (S1b, S2, S3, N1, N2, I1, L1, L2, I2, I3) restano con i loro ticket; qui sono rimesse in fila con le nuove.
 
 | # | Fetta | Ticket | Cosa | Dipende da | Prova nuova |
 | --- | --- | --- | --- | --- | --- |
@@ -76,15 +76,20 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
 | 22 | **FLU2** | 29 | Passi nuovi del costruttore: carico, scarico, trasferimento, chiedi conferma (AU-A4) | FLU1 | `flu2-passi.cjs` |
 | 23 | **RIO** | 29 | Riordino sotto scorta (AU-A6) | FLU1 | `rio-riordino.cjs` |
 | 24 | **RES** | 29 | Reso (AU-A7) | FLU1 | `res-reso.cjs` |
-| 25 | **CHAT** | 30 | Chat e Team tra operatori (forma dopo la verifica) | C2 | da definire |
-| 26 | **VOCI** | 29 | Voci «Prossimamente» (P30), secondo la risposta | – | da definire |
-| 27-31 | I1, L1, L2, I2, I3 | 11, 12, 20 | Foto WebP, login, dati locali nell'account, link pubblici nel CSV, Drive (`map-2.md`) | come in `map-2.md` (I2 anche FOTO) | come in `map-2.md` |
+| 25 | **CHAT1** | 30 | Icone Team e Chat in Home; Chat e Team onesti (CT01, CT06, CT08, CT09, CT11, CT13, CT14, P28) | C2 | `chat1-chat-team.cjs` |
+| 26 | **RIC1** | 30 | Richiesta «Trasferisci» dalla selezione e dalla Scheda, eseguita una volta sola (prima sullo stesso telefono) | CHAT1, FLU1 | `ric1-richieste.cjs` |
+| 27 | **RIC2** | 30 | Automazioni che inviano e ricevono merce: «Invia a collega», «Ricevi» con il confronto | RIC1 | `ric2-automazioni.cjs` |
+| 28 | **VOCI** | 29 | Voci «Prossimamente» (P30), secondo la risposta | – | da definire |
+| 29 | **RETE1** | 30 | La rete del negozio si collega sul telefono (CT12), messaggi tra telefoni (CT02-CT04) | CHAT1 | due telefoni |
+| 30-34 | I1, L1, L2, I2, I3 | 11, 12, 20 | Foto WebP, login, dati locali nell'account, link pubblici nel CSV, Drive (`map-2.md`) | come in `map-2.md` (I2 anche FOTO) | come in `map-2.md` |
+| 35 | **RETE2** | 30, 10 | Un solo spazio di lavoro su rete locale e internet, con l'interruttore; `utils/merge.ts`, giacenze dagli eventi (CT18, CT19); identità dell'operatore (CT07) | RETE1, L1, L2 | `merge.test.ts` + due telefoni |
+| 36 | **RIC3** | 30 | Automazioni condivise tra operatori | RETE2 | `ric3-condivise.cjs` |
 
 Ogni fetta chiude come in `map-2.md`: `controllo.sh` verde, la sua prova, le regressioni del ticket, il foglio dei 5 stili, commit, `CRONOLOGIA.md`, push. Alla chiusura **aggiunge i suoi passi a `prova/collaudo.cjs`** (vedi `collaudo-finale.md`).
 
 ## Da confermare con l'utente (una domanda quando la fetta è la prossima)
 
-- **Ordine delle fette** qui sopra (prima di partire con GAL).
+- ~~Ordine delle fette~~: **confermato** il 23 («Sì, prima i difetti»).
 - S2: barra appendiabiti in grucce (proposta) o in centimetri di barra.
 - S3: niente blocco in Conta, Audit «Sposta qui» e import (la merce è già lì); posizioni con capienza con la stessa regola degli scaffali.
 - EDC: icone e colori nella card dell'Inventario (1-2 campi) o solo nella Scheda.
@@ -95,12 +100,14 @@ Ogni fetta chiude come in `map-2.md`: `controllo.sh` verde, la sua prova, le reg
 - N1, N2: proposte dei ticket 17 e 18 e le quattro decisioni di N0.
 - FLU1: ordine delle automazioni nuove; quantità chiesta sempre o «tutto» proposto nel trasferimento (AU-V10).
 - VOCI: P30.
-- CHAT: che cosa vuol dire «lo stesso vale per le automazioni» (dopo la verifica).
+- ~~CHAT: «lo stesso vale per le automazioni»~~: **risposto** il 23 («Tutte e due, prima la prima»), con internet (rete locale e interruttore) e merce (stessa merce).
+- RETE1: se l'aggancio non regge su Android, come ripiegare (si chiede con l'esito della prova).
 - Da `map-2.md`: L1 (accesso facoltativo, provider Google da accendere), L2 (dati locali al primo accesso), I3 (Drive).
 
 ## Not yet specified
 
-- **Chat e Team tra operatori** (ticket 30): la forma del flusso dipende dalla verifica.
+- **Identità degli operatori senza login** (ticket 30, RETE2): chi ha fatto che cosa negli eventi e nei messaggi quando si lavora solo sulla rete locale; legame con i ruoli del cloud.
+- **Rete del negozio con più modem o nodi** (magazzino e negozio): come si trovano i telefoni tra reti diverse e quale telefono fa da Host; dopo l'esito di RETE1.
 - **Download delle immagini dai link del CSV** dentro l'app: dopo FOTO, se l'utente lo sceglie (fetta IMP, domanda 2).
 - **Zoom nel visore delle foto** (doppio tocco, pizzico): secondo passo di GAL.
 - **Passi condizionali** nelle automazioni (AU-A9): rifiuti detti e «Chiedi conferma» (FLU2) coprono i casi pratici; da riprendere se servono.
@@ -147,7 +154,10 @@ Le richieste sono quelle di [`richieste-utente-23-novembre.md`](richieste-utente
 | 9 · automazioni che mancano | 29 | FLU1, CON, FLU2, RIO, RES, ETI | `flu1-flussi.cjs` e seguenti | CF-F1-F6 |
 | 9 · passi che mancano | 29 | ESE, FLU2 | `ese-automazioni.cjs`, `flu2-passi.cjs` | CF-F7, CF-F8 |
 | 10 · icone sparite | 28 | nessuna (non riprodotta) | `d-icone.cjs` (verifica) | CF-A1, CF-T1 |
-| 11 · Chat e Team in Home, prodotti e automazioni tra operatori | 30 | CHAT | da definire | CF-H1, CF-T6 |
+| 11 · Chat e Team in Home vicino alla ricerca | 30 | CHAT1 | `chat1-chat-team.cjs` | CF-H1 |
+| 11 · inviare, ricevere, gestire prodotti tra operatori | 30 | RIC1 | `ric1-richieste.cjs` | CF-H2, CF-T6 |
+| 11 · automazioni per mandare e ricevere merce, poi condivise | 30 | RIC2, RIC3 | `ric2-automazioni.cjs`, `ric3-condivise.cjs` | CF-H3, CF-T6 |
+| 11 · rete locale col modem anche senza internet, internet quando c'è, interruttore | 30, 10 | RETE1, RETE2 | due telefoni, `merge.test.ts` | CF-T6 |
 | C2 · «Tipo di pelle» solo nei campi | 21 | C2 | `c2-tipo-pelle.cjs` | CF-B5 |
 | Fase B · D16 (PDF senza campi, codici esterni) | 22, 23 | ETI, EDC | `eti-etichette.cjs` | CF-E4, CF-T4 |
 | Fase B · D19 (Scanner & NFC non letto) | 16, 22 | N1 | sul telefono | CF-E6 |
@@ -157,8 +167,8 @@ Le richieste sono quelle di [`richieste-utente-23-novembre.md`](richieste-utente
 | Fase B · P23 (esito dell'Audit) | 29 | CON | `con-conte.cjs` | CF-F4 |
 | Fase B · P26 (fotocamera senza «scansionato») | 22, 29 | COD | `cod-lettore.cjs` + telefono | CF-E1, CF-T2 |
 | Fase B · P27 (etichetta per i capi con link) | 22 | ETI | `eti-etichette.cjs` | CF-E4 |
-| Fase B · P28 (Chat) | 30 | CHAT | da definire | CF-H1 |
-| Fase B · P29 (Team e Chat NotFound) | 21, 30 | C2, CHAT | `c2-indietro.cjs` | CF-A2 |
+| Fase B · P28 (Chat) | 30 | CHAT1 | `chat1-chat-team.cjs` | CF-H1 |
+| Fase B · P29 (Team e Chat NotFound, Host da solo) | 21, 30 | C2, CHAT1 | `c2-indietro.cjs`, `chat1-chat-team.cjs` | CF-A2, CF-H1 |
 | Fase B · P30 (voci «Prossimamente») | 29 | VOCI | da definire | CF-A3 |
 | Fase B · messaggio di LokiJS | 28 | IND (facoltativo) | `controllo.sh` | CF-A3 |
 | Mappa 2 · import delle foto dal CSV | 26, 27 | IMP, FOTO | `imp-import.cjs` | CF-G2 |
@@ -166,11 +176,11 @@ Le richieste sono quelle di [`richieste-utente-23-novembre.md`](richieste-utente
 | Mappa 2 · scaffali in Conta e Audit | 29 | CON | `con-conte.cjs` | CF-F4 |
 | S1a · codici doppi tra posizioni e categorie, Scanner a mano solo prodotti, `#666` | 22 | COD | `cod-lettore.cjs` | CF-E2 |
 | C1 · Modifica aggiunge un link GS1 | 22 | COD | `cod-lettore.cjs` | CF-C4 |
-| C1 · card della Chat con `furType` grezzo | 30 | CHAT | da definire | CF-H1 |
+| C1 · card della Chat con `furType` grezzo | 30 | CHAT1 | `chat1-chat-team.cjs` | CF-H1 |
 | C1 · `DynamicFieldRenderer` morto | 23 | EDC | `controllo.sh` | – |
 | M10 · vendita rapida senza contatto | 29 | FLU1 | `flu1-flussi.cjs` | CF-F2 |
 | M10 · contatti solo locali | 10, 20 | L2 | come in `map-2.md` | – |
 
 **Già chiusi e riconfermati nelle verifiche del 23** (nessuna fetta): D03, D12, D13, D14, D15, D24, P01 (in parte: il resto è NG27 → COD), P02, P05, P06, P10, P11, P18, P22, P25. P08 è citato solo come esempio (posizione orfana, simile ad AU-V05 → ESE).
 
-Controllo a macchina fatto il 23: ogni sigla dei cinque resoconti (NG, AU-V, AU-N, AU-A, CAM-F, CAM-L, CSV-E, CSV-I, CSV-G, P.., D..) compare in questa mappa o nei ticket; le `IND-…` sono tutte nel ticket 28. Le `CT…` arriveranno con il ticket 30.
+Controllo a macchina fatto il 23: ogni sigla dei cinque resoconti (NG, AU-V, AU-N, AU-A, CAM-F, CAM-L, CSV-E, CSV-I, CSV-G, P.., D..) compare in questa mappa o nei ticket; le `IND-…` sono tutte nel ticket 28. Le `CT01-CT19` sono nel ticket 30.

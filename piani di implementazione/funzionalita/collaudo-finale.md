@@ -82,7 +82,9 @@ Piano per controllare, alla fine delle fette di [`map-3.md`](map-3.md), che ogni
 
 | Passo | Che cosa | Atteso | Fetta |
 | --- | --- | --- | --- |
-| CF-H1 | Home › icona della Chat accanto alla ricerca; mandare un prodotto (o più) a un collega, che lo riceve e lo gestisce | Secondo il ticket 30 (da definire) | CHAT |
+| CF-H1 | Home: icone Team e Chat accanto alla ricerca; Chat senza colleghi; card con dati giusti; «Sposta» verso la destinazione scelta | Si aprono; niente testi di prova; niente messaggi doppi; rifiuti detti | CHAT1 |
+| CF-H2 | Selezione di 2 prodotti › «Invia» a un collega › il collega «Ricevuto, sposta» | Un solo evento di trasferimento per prodotto con `requestId`; giacenze giuste; una seconda accettazione non fa nulla | RIC1 |
+| CF-H3 | Automazione «Invia a collega» a fine lettura; automazione «Ricevi» che confronta i pezzi arrivati; automazione condivisa trovata da un collega | Richiesta creata; confronto trovati/mancanti/in più; esecuzione; automazione visibile e avviabile dal collega | RIC2, RIC3 |
 
 ## Z · La catena intera (un solo scenario lungo)
 
@@ -97,6 +99,6 @@ Categoria «Borse» → Modello di settore applicato a Borse → campo nuovo con
 | CF-T3 | Registrare lo scaffale A1 con un tag NFC e rileggerlo come destinazione | ETI, N1 | non provato |
 | CF-T4 | Stampa di un'etichetta e del PDF in modalità aereo: QR presente, campi personalizzati nel PDF | ETI, EDC | non provato |
 | CF-T5 | Foto da galleria e fotocamera; ancora presenti dopo Impostazioni Android › App › Svuota cache; Scheda con prezzo d'acquisto 0 che non cade | FOTO, GAL | non provato |
-| CF-T6 | Due telefoni sulla stessa rete: Team, Chat, invio e ricezione di prodotti tra operatori | CHAT | non provato |
+| CF-T6 | Due (poi tre) telefoni sullo stesso modem **senza internet**: aggancio, Chat nei due versi e con la Chat chiusa, Richiesta inviata e accettata, stesso inventario e stesse giacenze dopo modifiche offline su entrambi; poi internet acceso e cloud allineato; interruttore Automatico / Solo rete locale / Solo internet | CHAT1, RETE1, RETE2, RIC1, RIC2 | non provato |
 | CF-T7 | Export CSV condiviso e aperto in Excel o Fogli; import di un CSV salvato da Excel sul telefono | EXP, IMP | non provato |
 | CF-T8 | Login Google e passaggio dei dati locali (quando L1 e L2 sono pronti) | L1, L2 | non provato |
