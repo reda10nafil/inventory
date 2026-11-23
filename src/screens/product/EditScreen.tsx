@@ -33,6 +33,8 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { shelvesFor } from '../../../utils/shelves';
 import { ShelfPicker } from '../../../components/ShelfPicker';
+import { PhotoGallery } from '../../../components/PhotoGallery';
+import { addPhotos, photosPatch, type Photos } from '../../../utils/photos';
 
 // Il modulo nasce solo quando il prodotto c'è. Aperta dall'indirizzo o ricaricata, la schermata partiva prima
 // che i prodotti fossero letti e il modulo restava vuoto: salvando si sovrascriveva il prodotto (P04).
@@ -105,7 +107,12 @@ function EditProductForm({ product }: { product: Product }) {
   // Uno scaffale che questo dispositivo non conosce (o l'elenco non ancora letto) non si tocca da qui: decide il contesto
   const shelfKnown = !shelvesLoading && (!product.shelfId || shelves.some((s) => s.id === product.shelfId));
 
-  const [images, setImages] = useState<string[]>(product?.images || []);
+  // Foto con i loro percorsi cloud, se ci sono: ordine ed eliminazioni li spostano insieme (GAL, CSV-G6)
+  const [photos, setPhotos] = useState<Photos>({
+    images: product.images || [],
+    ...(product.storageImagePaths && { storageImagePaths: product.storageImagePaths }),
+  });
+  const images = photos.images;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { width: screenWidth } = useWindowDimensions();
   const imageWidth = Math.max(1, screenWidth - 32);
@@ -132,7 +139,7 @@ function EditProductForm({ product }: { product: Product }) {
 
     if (!result.canceled) {
       const newImages = result.assets.map((asset) => asset.uri);
-      setImages((prev) => [...prev, ...newImages].slice(0, 10));
+      setPhotos((prev) => addPhotos(prev, newImages));
     }
   };
 
@@ -148,12 +155,8 @@ function EditProductForm({ product }: { product: Product }) {
     });
 
     if (!result.canceled) {
-      setImages((prev) => [...prev, result.assets[0].uri].slice(0, 10));
+      setPhotos((prev) => addPhotos(prev, [result.assets[0].uri]));
     }
-  };
-
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const [selectModalConfig, setSelectModalConfig] = useState<{ fieldId: string; name: string; options: any[]; isMulti: boolean } | null>(null);
@@ -201,7 +204,7 @@ function EditProductForm({ product }: { product: Product }) {
       // Articolo a quantità: la posizione cambia solo con i movimenti (M03; il contesto la ignora comunque).
       // Pezzo unico: lo scaffale scelto, che il contesto tiene solo se è in quella posizione (S1a)
       ...(stocked ? { minStock } : { location: formData.location, ...(shelfKnown && { shelfId: chosenShelf || undefined }) }),
-      images,
+      ...photosPatch(product, photos),
       purchasePrice: parseNumber(formData.purchasePrice),
       sellPrice: parseNumber(formData.sellPrice),
       length: parseNumber(formData.length),
@@ -277,89 +280,32 @@ function EditProductForm({ product }: { product: Product }) {
           {/* Images Section - Main Preview */}
           {renderSection(<>Foto prodotto <Text style={styles.labelMuted}>{images.length}/10</Text></>)}
 
-          {images.length > 0 && (
-            <View style={styles.mainImageBox}>
-              <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={(event) => {
-                  const index = Math.round(event.nativeEvent.contentOffset.x / imageWidth);
-                  setCurrentImageIndex(Math.min(index, images.length - 1));
-                }}
-                scrollEventThrottle={16}
-              >
-                {images.map((uri, index) => (
-                  <View key={index}>
-                    <Image
-                      source={{ uri }}
-                      style={[styles.mainImage, { width: imageWidth }]}
-                      contentFit="cover"
-                    />
-                    <Pressable
-                      style={styles.removeMainImage}
-                      onPress={() => removeImage(index)}
-                    >
-                      <AppIcon name="delete" size={20} color={t.colors.onData} />
-                    </Pressable>
-                  </View>
-                ))}
-              </ScrollView>
-
-              {images.length > 1 && (
-                <View style={styles.imageCounter}>
-                  <Text style={styles.imageCounterText}>
-                    {currentImageIndex + 1} / {images.length}
-                  </Text>
-                </View>
+          {/* Galleria (GAL): la miniatura porta alla foto; sotto la foto i comandi per quella scelta (Sposta, principale,
+              Elimina con conferma), al posto del cestino su ogni foto che cancellava quella che si vedeva (CSV-G1) */}
+          <View style={styles.inputGroup}>
+            <PhotoGallery
+              variant="modulo"
+              images={images}
+              index={currentImageIndex}
+              onIndexChange={setCurrentImageIndex}
+              width={imageWidth}
+              height={280}
+              edit={{ paths: photos.storageImagePaths, onChange: (next, index) => { setPhotos(next); setCurrentImageIndex(index); } }}
+              thumbnails
+              thumbnailsExtra={images.length < 10 && (
+                <>
+                  <Pressable style={styles.photoAdd} onPress={pickImages}>
+                    <AppIcon name="add-photo-alternate" size={26} color={t.colors.accentInk} />
+                    <Text style={styles.photoAddText}>Galleria</Text>
+                  </Pressable>
+                  <Pressable style={styles.photoAdd} onPress={takePhoto}>
+                    <AppIcon name="camera-alt" size={26} color={t.colors.accentInk} />
+                    <Text style={styles.photoAddText}>Fotocamera</Text>
+                  </Pressable>
+                </>
               )}
-
-              {images.length > 1 && (
-                <View style={styles.dots}>
-                  {images.map((_, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.dot,
-                        index === currentImageIndex && styles.dotActive,
-                      ]}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Thumbnails */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.inputGroup} contentContainerStyle={styles.photoRow}>
-            {images.map((uri, index) => (
-              <Pressable
-                key={index}
-                onPress={() => setCurrentImageIndex(index)}
-              >
-                <Image
-                  source={{ uri }}
-                  style={[
-                    styles.thumb,
-                    index === currentImageIndex && styles.thumbActive,
-                  ]}
-                  contentFit="cover"
-                />
-              </Pressable>
-            ))}
-            {images.length < 10 && (
-              <>
-                <Pressable style={styles.photoAdd} onPress={pickImages}>
-                  <AppIcon name="add-photo-alternate" size={26} color={t.colors.accentInk} />
-                  <Text style={styles.photoAddText}>Galleria</Text>
-                </Pressable>
-                <Pressable style={styles.photoAdd} onPress={takePhoto}>
-                  <AppIcon name="camera-alt" size={26} color={t.colors.accentInk} />
-                  <Text style={styles.photoAddText}>Fotocamera</Text>
-                </Pressable>
-              </>
-            )}
-          </ScrollView>
+            />
+          </View>
 
           {/* Form Sections */}
           {renderSection(<>Informazioni base <Text style={styles.required}>*</Text></>)}

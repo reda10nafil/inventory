@@ -26,6 +26,7 @@ import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { choiceList, formStyles, isChoiceSelected, toggleChoice } from '../../../components/ui/formStyles';
+import { PhotoGallery } from '../../../components/PhotoGallery';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { DEFAULT_UNIT, parseQty, UNITS } from '../../../utils/stock';
 import { parseMinStock } from '../../../utils/alerts';
@@ -187,9 +188,6 @@ export default function AddProductScreen() {
     }
   };
 
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectModalConfig, setSelectModalConfig] = useState<{ fieldId: string; name: string; options: any[]; isMulti: boolean } | null>(null);
@@ -307,6 +305,7 @@ export default function AddProductScreen() {
                 libraryId: '',
               });
               setImages([]);
+              setCurrentImageIndex(0);
               setQtyText('');
               setUnit(DEFAULT_UNIT);
               setMinText('');
@@ -765,49 +764,24 @@ export default function AddProductScreen() {
             <Text style={styles.label}>
               Foto prodotto <Text style={styles.labelMuted}>{images.length}/10</Text>
             </Text>
-            {images.length > 0 && (
-              <View style={styles.mainImageBox}>
-                <ScrollView
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  onScroll={(event) => {
-                    const index = Math.round(event.nativeEvent.contentOffset.x / imageWidth);
-                    setCurrentImageIndex(Math.min(index, images.length - 1));
-                  }}
-                  scrollEventThrottle={16}
-                >
-                  {images.map((uri, index) => (
-                    <View key={index}>
-                      <Image source={{ uri }} style={[styles.mainImage, { width: imageWidth }]} contentFit="cover" />
-                      <Pressable style={styles.removeMainImage} onPress={() => removeImage(index)}>
-                        <AppIcon name="delete" size={20} color={t.colors.onData} />
-                      </Pressable>
-                    </View>
-                  ))}
-                </ScrollView>
-                {images.length > 1 && (
-                  <View style={styles.dots}>
-                    {images.map((_, index) => (
-                      <View key={index} style={[styles.dot, index === currentImageIndex && styles.dotActive]} />
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-              {images.map((uri, index) => (
-                <Pressable key={index} onPress={() => setCurrentImageIndex(index)}>
-                  <Image source={{ uri }} style={[styles.thumb, index === currentImageIndex && styles.thumbActive]} contentFit="cover" />
-                </Pressable>
-              ))}
-              {images.length < 10 && (
+            {/* Galleria (GAL): la miniatura porta alla foto; Sposta, principale ed Elimina valgono per la foto scelta
+                (prima il cestino su ogni foto cancellava quella che si vedeva, CSV-G1) */}
+            <PhotoGallery
+              variant="modulo"
+              images={images}
+              index={currentImageIndex}
+              onIndexChange={setCurrentImageIndex}
+              width={imageWidth}
+              height={280}
+              edit={{ onChange: (next, index) => { setImages(next.images); setCurrentImageIndex(index); } }}
+              thumbnails
+              thumbnailsExtra={images.length < 10 && (
                 <Pressable style={styles.photoAdd} onPress={showImageSourcePicker}>
                   <AppIcon name="add-a-photo" size={26} color={t.colors.accentInk} />
                   <Text style={styles.photoAddText}>Importa</Text>
                 </Pressable>
               )}
-            </ScrollView>
+            />
           </View>
         );
 

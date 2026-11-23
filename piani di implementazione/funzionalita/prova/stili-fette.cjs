@@ -373,6 +373,43 @@ const FETTE = {
       ['impostazioni', async (page) => { await page.goto(`${APP}/settings`); await page.waitForTimeout(1500); await page.getByText('Fornitori e clienti', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); }],
     ],
   },
+  // GAL: galleria della Scheda con miniature e frecce (foto 2 scelta, così si vedono le due frecce), Modifica con i
+  // comandi della foto scelta, visore, foto che non si carica, prezzo d'acquisto 0
+  gal: {
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      const vol = list.find((p) => p.sku === 'VOL-0087');
+      vol.images = ['data:image/jpeg;base64,QUJDRA==', vol.images[0]];
+      list.find((p) => p.sku === 'VIS-0098').purchasePrice = 0;
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['scheda', async (page) => {
+        await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800);
+        await page.locator('[aria-label="Mostra la foto 2"]').locator('visible=true').first().click(); await page.waitForTimeout(600);
+      }],
+      ['modifica', async (page) => {
+        await page.locator('[tabindex="0"]').filter({ hasText: /^.?\s*Modifica$/ }).locator('visible=true').first().click(); await page.waitForTimeout(1500);
+        await page.locator('[aria-label="Mostra la foto 2"]').locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByText('Metti come principale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['modifica-prima', async (page) => {
+        await page.locator('[aria-label="Mostra la foto 1"]').locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByText('Foto principale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['visore', async (page) => {
+        await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800);
+        await page.locator('[aria-label="Apri la foto 1 a tutto schermo"]').locator('visible=true').first().click(); await page.waitForTimeout(800);
+        await page.locator('[aria-label="Foto successiva"]').locator('visible=true').last().click(); await page.waitForTimeout(600);
+      }],
+      ['rotta', async (page) => { await page.goto(`${APP}/product/cmp-2`); await page.waitForTimeout(1800); }],
+      ['prezzo-zero', async (page) => {
+        await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
+        await page.getByText('Prezzi', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

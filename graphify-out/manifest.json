@@ -1842,15 +1842,15 @@
     "semantic_hash": ""
   },
   "src/screens/product/DetailScreen.tsx": {
-    "mtime": 1795382470.6875153,
-    "seen": 1795403667.2066674,
-    "ast_hash": "59532977469a4a9c92f4fcf7862850c9",
+    "mtime": 1795417964.7258792,
+    "seen": 1795420378.699892,
+    "ast_hash": "7a11a2e92f801b6a1005afb8b41b6dd8",
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
-    "mtime": 1795382436.0183442,
-    "seen": 1795403667.2066674,
-    "ast_hash": "13db48aa54eb25271e7980ab6cdfc10e",
+    "mtime": 1795418007.7566106,
+    "seen": 1795420378.699892,
+    "ast_hash": "e029f6b3cc10b7f6fe78ee0e75ac35f8",
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
@@ -1914,9 +1914,9 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/AddScreen.tsx": {
-    "mtime": 1795382380.759812,
-    "seen": 1795403667.2081754,
-    "ast_hash": "56b771f5844329ce23912e22dd4a5db3",
+    "mtime": 1795418026.8353162,
+    "seen": 1795420378.7008724,
+    "ast_hash": "90987304444b3657bcb104a48044ad07",
     "semantic_hash": ""
   },
   "src/screens/tabs/AutomationsScreen.tsx": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795414910.3567834,
-    "seen": 1795416131.9931657,
-    "ast_hash": "06b452f7488ee84b6c3818cfd05b83e0",
+    "mtime": 1795420352.6050298,
+    "seen": 1795420378.741923,
+    "ast_hash": "1b54d3b0a82125d03a824f3dd7ccdd9b",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2472,9 +2472,9 @@
     "semantic_hash": ""
   },
   "components/ui/formStyles.ts": {
-    "mtime": 1795321208.7260358,
-    "seen": 1795323475.1485813,
-    "ast_hash": "9e695001d14afdd41f6a9d4c3b7a62a8",
+    "mtime": 1795418034.4776099,
+    "seen": 1795420378.6433127,
+    "ast_hash": "5a4889ebd5ffb44321d5a5468fad6601",
     "semantic_hash": ""
   },
   "components/ui/surfaces.ts": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795414910.357787,
-    "seen": 1795416131.9931657,
-    "ast_hash": "b145f5bdbbe090faa72c117064859dce",
+    "mtime": 1795419060.3546872,
+    "seen": 1795420378.741923,
+    "ast_hash": "79c49956ec8b61c73a8b98f215ba5b2f",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3084,9 +3084,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a1-scheda.cjs": {
-    "mtime": 1795328056.2946963,
-    "seen": 1795329137.7993882,
-    "ast_hash": "a0db3db76a65fb8d18a01e92645e2e56",
+    "mtime": 1795417439.643476,
+    "seen": 1795420378.6561983,
+    "ast_hash": "c393f5f134e6292c489e48749689c9a7",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a1-util.cjs": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795414543.0917022,
-    "seen": 1795414573.6343915,
-    "ast_hash": "ee80525e076ea652a09d79fecd95c1fd",
+    "mtime": 1795420352.6050298,
+    "seen": 1795420378.741923,
+    "ast_hash": "bf4dc993d40204ee300e8334aa7dff14",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3438,9 +3438,9 @@
     "semantic_hash": ""
   },
   "utils/productChanges.ts": {
-    "mtime": 1795382068.4688292,
-    "seen": 1795403667.2268708,
-    "ast_hash": "5c30073639ce0ed29193f2657147c87a",
+    "mtime": 1795417875.3580167,
+    "seen": 1795420378.7373571,
+    "ast_hash": "d6310435552a22449962fab4102c84ff",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c11-lettore.cjs": {
@@ -3498,9 +3498,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-fette.cjs": {
-    "mtime": 1795412053.690376,
-    "seen": 1795414573.6109738,
-    "ast_hash": "67ff2b46c2bddc55d787908c0d20f49b",
+    "mtime": 1795418760.3443866,
+    "seen": 1795420378.6712074,
+    "ast_hash": "a89ee739a073d37bacbded5d4a9f72a0",
     "semantic_hash": ""
   },
   "utils/categories.ts": {
@@ -3870,9 +3870,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/collaudo.cjs": {
-    "mtime": 1795410673.6340673,
-    "seen": 1795414573.6099684,
-    "ast_hash": "b1a6326d87b549460d9d7e5e1ab358a2",
+    "mtime": 1795418722.8548186,
+    "seen": 1795420378.6672394,
+    "ast_hash": "e9b14c6dbff123a5c9681c8ff094ec4c",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stato-da-indirizzo.mjs": {
@@ -4050,9 +4050,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/collaudo-finale.md": {
-    "mtime": 1795413132.212682,
-    "seen": 1795414573.6343915,
-    "ast_hash": "597055858a5803c5acf4798d58d398d3",
+    "mtime": 1795419095.676709,
+    "seen": 1795420378.741923,
+    "ast_hash": "3bbf5047608973d5ca37acea414ee8cd",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/21-tipo-di-pelle-nei-campi.md": {
@@ -4092,9 +4092,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/27-foto.md": {
-    "mtime": 1795407414.352914,
-    "seen": 1795414573.635396,
-    "ast_hash": "4fda1b6a80d0363f457c91fdabc7952c",
+    "mtime": 1795420099.303804,
+    "seen": 1795420378.7449203,
+    "ast_hash": "f27773af3e1d84bdc96529a6e15bc616",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/28-indietro-e-icone.md": {
@@ -4116,9 +4116,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-3.md": {
-    "mtime": 1795412215.6896715,
-    "seen": 1795414573.635396,
-    "ast_hash": "617059efd106d121ddb6adc6b717d9e3",
+    "mtime": 1795420099.358972,
+    "seen": 1795420378.7449203,
+    "ast_hash": "4d2c8cc8c888b1cb43ee4f03e3c0c55a",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/ricerche/verifiche-23/script/indietro/modali.txt": {
@@ -4173,6 +4173,48 @@
     "mtime": 1795414303.1874926,
     "seen": 1795414573.6419015,
     "ast_hash": "b7e70b2c9ba5bb4272185c738cb25ad0",
+    "semantic_hash": ""
+  },
+  "__tests__/photos.test.ts": {
+    "mtime": 1795417872.7256184,
+    "seen": 1795420378.6348817,
+    "ast_hash": "b0f95ee738108de58c8fa4a27a856303",
+    "semantic_hash": ""
+  },
+  "components/PhotoGallery.tsx": {
+    "mtime": 1795418898.5780716,
+    "seen": 1795420378.6427083,
+    "ast_hash": "946084bc30b167ccc17dce34d0df1348",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/gal-galleria.cjs": {
+    "mtime": 1795418624.1589286,
+    "seen": 1795420378.6682284,
+    "ast_hash": "fe45154ab0b4b9a559558221c7988285",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/gal-util.cjs": {
+    "mtime": 1795418624.1579528,
+    "seen": 1795420378.6682284,
+    "ast_hash": "a5704d3b7aeb8f71702ba1e6beb1d583",
+    "semantic_hash": ""
+  },
+  "utils/photos.ts": {
+    "mtime": 1795417872.699334,
+    "seen": 1795420378.7373571,
+    "ast_hash": "90049800829a7259ddbff72c69be86a0",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/mandato-utente-23-notte.md": {
+    "mtime": 1795416469.4678173,
+    "seen": 1795420378.746923,
+    "ast_hash": "748ec4cdb0f2d426dfa7ca274c1a235a",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-gal.jpg": {
+    "mtime": 1795419016.271896,
+    "seen": 1795420378.7531219,
+    "ast_hash": "ce2673280e758bfe8f14290223b744bc",
     "semantic_hash": ""
   }
 }

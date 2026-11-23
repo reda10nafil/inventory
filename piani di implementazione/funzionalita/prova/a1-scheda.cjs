@@ -23,6 +23,12 @@ const stubs = (page) => page.evaluate(() => {
   window.print = () => { window.__prints += 1; };
 });
 const openDetail = async (h, sku) => { await h.click(sku); await h.page.waitForTimeout(800); };
+// Pulsante Condividi della Scheda: per nome (da GAL, che mette le miniature sotto la foto e lo fa scendere); prima di
+// GAL non aveva nome e stava in (337, 362)
+const share = async (page) => {
+  const l = page.locator('[aria-label="Condividi"]').locator('visible=true');
+  if (await l.count()) { await l.first().click(); await page.waitForTimeout(1000); } else await clickAt(page, 337, 362, 1000);
+};
 
 (async () => {
   // 1. Pesi e visore delle foto (VIS-0142 ha 3 foto): la foto mostrata nel visore è quella del contatore?
@@ -55,10 +61,10 @@ const openDetail = async (h, sku) => { await h.click(sku); await h.page.waitForT
   await scenario('a1-scheda-condividi', async (h) => {
     const { page } = h;
     await openDetail(h, 'VIS-0142');
-    await clickAt(page, 337, 362, 1000); // senza navigator.share
+    await share(page); // senza navigator.share
     await stubs(page);
-    await clickAt(page, 337, 362, 1000); // Cliente
-    await clickAt(page, 337, 362, 1000); // Professionista
+    await share(page); // Cliente
+    await share(page); // Professionista
     const sh = await page.evaluate(() => window.__shared.map((d) => ({ title: d.title, text: d.text, url: (d.url || '').slice(0, 40), urlLen: (d.url || '').length })));
     return { condivisioni: sh };
   }, { dialogs: ['1', '1', '2'] });

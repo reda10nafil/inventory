@@ -1,11 +1,12 @@
 // FurInventory Pro - Product Detail Screen
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Pressable, ScrollView, Alert, useWindowDimensions, Share, Modal, StatusBar, Linking } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as Print from '../../lib/print';
 import * as FileSystem from '../../lib/fileSystem';
 import * as ImageManipulator from '../../lib/imageManipulator';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import * as Clipboard from '../../lib/clipboard';
 import * as Sharing from '../../lib/sharing';
@@ -28,7 +29,7 @@ import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
-import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
+import { PhotoGallery } from '../../../components/PhotoGallery';
 import { formatNumber } from '../../../utils/number';
 import { describeStockEvent, formatQty, isLowStock, isOutOfStock, isStocked, round3, storedStock, totalStock } from '../../../utils/stock';
 import { MovementSheet } from '../../../components/MovementSheet';
@@ -55,9 +56,12 @@ export default function ProductDetailScreen() {
 
   // D17: tutti gli hook prima del ritorno anticipato «Prodotto non trovato» (regole degli hook)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isModalVisible, setModalVisible] = useState(false);
-  const viewerRef = useRef<ScrollView>(null); // visore delle foto a tutto schermo
-  const { width: screenWidth } = useWindowDimensions();
+  // Visore a tutto schermo (GAL): le foto del prodotto (stesso indice della galleria in alto, così chiudendo la
+  // Scheda resta sulla foto vista per ultima) o quelle di un campo «immagini» (`field`, indice suo)
+  const [viewer, setViewer] = useState<{ images: string[]; field?: string } | null>(null);
+  const [fieldImageIndex, setFieldImageIndex] = useState(0);
+  const focused = useIsFocused(); // ←/→ solo con la Scheda in primo piano (sotto Modifica resta montata)
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showMovement, setShowMovement] = useState(false);
@@ -75,6 +79,10 @@ export default function ProductDetailScreen() {
   }
 
   const heroWidth = Math.max(1, screenWidth);
+  // Visore: con le foto del prodotto si muove insieme alla galleria in alto; con quelle di un campo ha il suo indice
+  const viewerIndex = viewer?.field ? fieldImageIndex : currentImageIndex;
+  const setViewerIndex = viewer?.field ? setFieldImageIndex : setCurrentImageIndex;
+  const closeViewer = () => setViewer(null);
   // Riquadro a metà dei campi strutturati: due per riga con 10 px in mezzo (come la tela), anche se resta da solo
   const halfTileWidth = (screenWidth - t.spacing.screenPadding * 2 - 10) / 2;
 
@@ -817,54 +825,18 @@ export default function ProductDetailScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Image Gallery */}
-        <View style={styles.imageGalleryContainer}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={(event) => {
-              const index = Math.round(event.nativeEvent.contentOffset.x / heroWidth);
-              setCurrentImageIndex(index);
-            }}
-            scrollEventThrottle={16}
-          >
-            {product.images.map((uri, index) => (
-              <Pressable key={index} onPress={() => setModalVisible(true)}>
-                <Image
-                  source={{ uri }}
-                  style={[styles.heroImage, { width: heroWidth }]}
-                  contentFit="contain"
-                />
-              </Pressable>
-            ))}
-            {product.images.length === 0 && <PhotoPlaceholder size={56} style={[styles.heroImage, { width: heroWidth }]} />}
-          </ScrollView>
-
-          {/* Image Counter */}
-          {product.images.length > 1 && (
-            <View style={styles.imageCounter}>
-              <Text style={styles.imageCounterText}>
-                {currentImageIndex + 1}/{product.images.length}
-              </Text>
-            </View>
-          )}
-
-          {/* Pagination Dots */}
-          {product.images.length > 1 && (
-            <View style={styles.paginationDots}>
-              {product.images.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.dot,
-                    index === currentImageIndex && styles.dotActive,
-                  ]}
-                />
-              ))}
-            </View>
-          )}
-        </View>
+        {/* Galleria (GAL): miniature, frecce, puntini e ←/→; il tocco sulla foto apre il visore */}
+        <PhotoGallery
+          variant="scheda"
+          images={product.images}
+          index={currentImageIndex}
+          onIndexChange={setCurrentImageIndex}
+          width={heroWidth}
+          height={320}
+          onOpen={(index) => { setCurrentImageIndex(index); setViewer({ images: product.images }); }}
+          keyboard={focused && !viewer}
+          thumbnails
+        />
 
         {/* Status Badge */}
         {product.status === 'sold' && (
@@ -888,7 +860,7 @@ export default function ProductDetailScreen() {
               {!!kind.path && <Text style={styles.furType}>{kind.path}</Text>}
               {!!kind.furType && <Text style={styles.kindDetail}>Tipo di pelle: {kind.furType}</Text>}
             </View>
-            <Pressable style={styles.shareButton} onPress={handleShare}>
+            <Pressable style={styles.shareButton} onPress={handleShare} accessibilityRole="button" accessibilityLabel="Condividi">
               <AppIcon name="share" size={20} color={t.colors.accentInk} />
             </Pressable>
           </View>
@@ -958,18 +930,18 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* Prices */}
-          {(product.purchasePrice || product.sellPrice) && (
+          {/* Prezzi: anche 0 è un prezzo (CSV-I6: con `&&` sul numero restava uno «0» isolato, e a 0 e 0 la sezione spariva) */}
+          {(product.purchasePrice != null || product.sellPrice != null) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Prezzi</Text>
               <View style={styles.priceRow}>
-                {product.purchasePrice && (
+                {product.purchasePrice != null && (
                   <View style={styles.priceCard}>
                     <Text style={styles.priceLabel}>Acquisto</Text>
                     <Text style={styles.priceValue}>{formatPrice(product.purchasePrice)}</Text>
                   </View>
                 )}
-                {product.sellPrice && (
+                {product.sellPrice != null && (
                   <View style={styles.priceCard}>
                     <Text style={styles.priceLabel}>Vendita</Text>
                     <Text style={[styles.priceValue, { color: t.colors.accentInk }]}>
@@ -1011,8 +983,8 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* Technical Notes */}
-          {product.technicalNotes && (
+          {/* Note tecniche: vuote non si mostrano (CSV-I7: '' dall'import finiva come testo dentro un View) */}
+          {!!product.technicalNotes?.trim() && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Note tecniche</Text>
               <View style={styles.notesCard}>
@@ -1104,11 +1076,18 @@ export default function ProductDetailScreen() {
                           <AppIcon name={field.icon as any || 'image'} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
+                        {/* GAL: si aprono nel visore delle foto, partendo da quella toccata */}
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.customImagesRow}>
                           {imgs.map((imgUri, i) => (
-                            <View key={i} style={styles.customNestedImageWrap}>
+                            <Pressable
+                              key={i}
+                              style={styles.customNestedImageWrap}
+                              onPress={() => { setFieldImageIndex(i); setViewer({ images: imgs, field: field.name }); }}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Apri la foto ${i + 1} di ${field.name}`}
+                            >
                               <Image source={{ uri: imgUri }} style={styles.customNestedImage} contentFit="cover" />
-                            </View>
+                            </Pressable>
                           ))}
                         </ScrollView>
                       </View>
@@ -1361,61 +1340,39 @@ export default function ProductDetailScreen() {
         </View>
       </Modal>
 
-      {/* Full Screen Image Viewer Modal */}
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <StatusBar hidden={true} />
+      {/* Visore a tutto schermo (GAL, CSV-G3): stessa galleria con frecce, ←/→ ed Esc; X e tasto Indietro del telefono */}
+      {viewer && (
+        <Modal visible transparent animationType="fade" onRequestClose={closeViewer}>
+          <View style={styles.modalContainer}>
+            <StatusBar hidden={true} />
+            <PhotoGallery
+              variant="visore"
+              images={viewer.images}
+              index={viewerIndex}
+              onIndexChange={setViewerIndex}
+              width={screenWidth}
+              height={screenHeight}
+              keyboard
+              onEscape={closeViewer}
+            />
 
-          {/* Close Button */}
-          <Pressable
-            style={[styles.closeButton, { top: insets.top + 10 }]}
-            onPress={() => setModalVisible(false)}
-          >
-            <AppIcon name="close" size={30} color={t.colors.onData} />
-          </Pressable>
-
-          {/* Image Counter */}
-          <View style={[styles.modalCounter, { top: insets.top + 20 }]}>
-            <Text style={styles.modalCounterText}>
-              {currentImageIndex + 1} / {product.images.length}
-            </Text>
+            {/* Contatore e X dopo la galleria, così stanno sopra */}
+            <View style={[styles.modalCounter, { top: insets.top + 20 }]} pointerEvents="none">
+              <Text style={styles.modalCounterText}>
+                {viewerIndex + 1} / {viewer.images.length}
+              </Text>
+            </View>
+            <Pressable
+              style={[styles.closeButton, { top: insets.top + 10 }]}
+              onPress={closeViewer}
+              accessibilityRole="button"
+              accessibilityLabel="Chiudi il visore"
+            >
+              <AppIcon name="close" size={30} color={t.colors.onData} />
+            </Pressable>
           </View>
-
-          {/* Larghezza dello schermo: senza, sul web lo scorrevole diventava largo quanto tutte le foto e veniva
-              centrato, mostrando sempre la seconda (P21). La foto di partenza si imposta anche al montaggio,
-              perché `contentOffset` vale solo sul telefono. */}
-          <ScrollView
-            ref={viewerRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            style={{ width: screenWidth, flex: 1 }}
-            contentContainerStyle={{ flexGrow: 1 }}
-            onContentSizeChange={() => viewerRef.current?.scrollTo({ x: currentImageIndex * screenWidth, y: 0, animated: false })}
-            onScroll={(event) => {
-              const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-              setCurrentImageIndex(index);
-            }}
-            scrollEventThrottle={16}
-            contentOffset={{ x: currentImageIndex * screenWidth, y: 0 }}
-          >
-            {product.images.map((uri, index) => (
-              <View key={index} style={{ width: screenWidth, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-                <Image
-                  source={{ uri }}
-                  style={{ width: '100%', height: '100%' }}
-                  contentFit="contain"
-                />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -1426,48 +1383,6 @@ const useStyles = makeStyles((t) => ({
   container: {
     flex: 1,
     backgroundColor: t.colors.background,
-  },
-  imageGalleryContainer: {
-    position: 'relative',
-  },
-  heroImage: {
-    height: 320,
-    backgroundColor: t.colors.backgroundSecondary,
-  },
-  // Contatore e pallini stanno sopra la foto: bianchi fissi su velo nero, uguali in tutti gli stili
-  imageCounter: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    backgroundColor: withAlpha(t.colors.shadow, 0.55),
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: t.radius.full,
-  },
-  imageCounterText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
-    color: t.colors.onData,
-  },
-  paginationDots: {
-    position: 'absolute',
-    bottom: 14,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: withAlpha(t.colors.onData, 0.55),
-  },
-  dotActive: {
-    backgroundColor: t.colors.onData,
-    width: 18,
   },
   soldBadge: {
     position: 'absolute',

@@ -8,6 +8,8 @@
 //   node collaudo.cjs CF-A CF-B5   solo i passi che cominciano con uno dei prefissi
 const { scenario } = require('./lib.cjs');
 const u = require('./c2-util.cjs');
+const g = require('./gal-util.cjs');
+const { textOf } = require('./a1-util.cjs');
 
 const goBacks = (page) => { const l = []; page.on('console', (m) => { if (/GO_BACK/.test(m.text())) l.push(m.text()); }); return l; };
 const IN_BASSO = ['Indietro', 'Annulla', 'Torna Indietro', 'Chiudi'];
@@ -91,6 +93,91 @@ async function cfB5(h) {
   return { ok, voceInImpostazioni: voce, valori: salvata && salvata.map((c) => `${c.id}:${c.label}`), prodottiUguali: JSON.stringify(prodDopo) === JSON.stringify(prodPrima), scheda };
 }
 
+// CF-C1 (parte GAL): Aggiungi con 3 foto (scelta file del browser), salvare, aprire la Scheda dalla Home (senza
+// ricaricare: sul web le foto aggiunte sono `blob:` e una ricarica le perde, P20 = fetta FOTO): miniature, frecce,
+// puntini; la miniatura 3 mostra la foto 3; visore con frecce ed Esc. Resta a MCAT la categoria in testa ad Aggiungi.
+async function cfC1(h) {
+  const { page } = h;
+  const seed = await (await fetch('http://localhost:8765/seed.json')).json();
+  const foto = seed['inventory:v1:{org}:products'].find((p) => p.sku === 'VIS-0142').images;
+  await h.go('add');
+  const chooser = page.waitForEvent('filechooser', { timeout: 6000 }).catch(() => null);
+  await h.click('Importa');
+  const fc = await chooser;
+  if (!fc) return { ok: false, filechooser: false };
+  await fc.setFiles(foto.map((x, i) => ({ name: `foto${i + 1}.jpg`, mimeType: 'image/jpeg', buffer: Buffer.from(x.split(',')[1], 'base64') })));
+  await page.waitForTimeout(1500);
+  await h.click('Visone'); await h.click('Vetrina'); await h.click('M');
+  await h.click("Aggiungi all'Inventario");
+  const p = (await h.products())[0];
+  const imgs = p.images || [];
+  await h.tab('Home');
+  await h.click(p.sku); await page.waitForTimeout(1200);
+  const c = await g.centro(page);
+  const vista = async () => `${await textOf(page, /^\d\/3$/)} ${g.quale(await g.fotoIn(page, c.x, c.y), imgs)}`;
+  const out = { salvate: imgs.length, miniature: 0, puntini: 0 };
+  for (let i = 1; i <= 3; i += 1) { out.miniature += await g.conta(page, `Mostra la foto ${i}`); out.puntini += await g.conta(page, `Vai alla foto ${i}`); }
+  out.frecciaAvanti = await g.conta(page, 'Foto successiva');
+  await g.tocca(page, 'Mostra la foto 3');
+  out.miniatura3 = await vista();
+  await g.tocca(page, 'Foto precedente');
+  out.freccia = await vista();
+  await page.mouse.click(c.x, c.y); await page.waitForTimeout(1300);
+  const cv = await g.centro(page, true);
+  out.visore = `${await textOf(page, /^\d \/ 3$/)} ${g.quale(await g.fotoIn(page, cv.x, cv.y), imgs)}`;
+  await g.tocca(page, 'Foto successiva', true);
+  out.visoreFreccia = `${await textOf(page, /^\d \/ 3$/)} ${g.quale(await g.fotoIn(page, cv.x, cv.y), imgs)}`;
+  await page.keyboard.press('Escape'); await page.waitForTimeout(900);
+  out.chiuso = !(await textOf(page, /^\d \/ 3$/));
+  const ok = out.salvate === 3 && out.miniature === 3 && out.puntini === 3 && out.frecciaAvanti === 1 && out.miniatura3 === '3/3 foto 3'
+    && out.freccia === '2/3 foto 2' && out.visore === '2 / 3 foto 2' && out.visoreFreccia === '3 / 3 foto 3' && out.chiuso;
+  return { ok, ...out, daFare: 'MCAT: categoria «Borse» in testa ad Aggiungi, con i suoi campi' };
+}
+
+// CF-C3: Modifica di VIS-0142 (con percorsi cloud finti; le richieste a Supabase non escono dal browser): scegliere la
+// foto 2, «Metti come principale», eliminare la foto 3 → principale la 2, restano 2 e 1, percorsi allineati
+async function cfC3(h) {
+  const { page } = h;
+  const prima = (await h.products(0)).find((p) => p.id === 'cmp-1').images;
+  const bloccate = await g.prepara(h, g.CON_PERCORSI, g.PERCORSI, { cloud: true });
+  await g.openEdit(h);
+  const passi = [await g.tocca(page, 'Mostra la foto 2')];
+  await h.click('Metti come principale');
+  passi.push(await g.tocca(page, 'Mostra la foto 3'), await g.tocca(page, 'Elimina la foto 3'));
+  await h.click('Salva Modifiche', false);
+  const p = (await h.products()).find((x) => x.id === 'cmp-1');
+  const foto = p.images.map((x) => g.quale(x, prima));
+  await h.go('product/cmp-1');
+  const c = await g.centro(page);
+  const scheda = `${await textOf(page, /^\d\/2$/)} ${g.quale(await g.fotoIn(page, c.x, c.y), prima)}`;
+  const ok = passi.every(Boolean) && foto.join() === 'foto 2,foto 1' && JSON.stringify(p.storageImagePaths) === JSON.stringify([g.PERCORSI[1], g.PERCORSI[0]])
+    && scheda === '1/2 foto 2';
+  return { ok, foto, percorsi: p.storageImagePaths, scheda, richiesteSupabaseBloccate: bloccate.n };
+}
+
+// CF-C4 (parte GAL): prezzo d'acquisto 0 (VIS-0098) mostrato bene nella Scheda, prima e dopo una Modifica senza
+// cambiare nulla (resta 0, nessuna riga «Prezzo acquisto» in Cronologia). Restano a COD il codice e il link, a VAL gli
+// obbligatori.
+async function cfC4(h) {
+  const { page } = h;
+  await g.prepara(h, "list.find((p) => p.id === 'cmp-5').purchasePrice = 0;");
+  const prezzi = () => g.prezziScheda(page);
+  await h.click('VIS-0098'); await page.waitForTimeout(1200);
+  const out = { prima: await prezzi() };
+  await h.page.goBack(); await page.waitForTimeout(800);
+  await g.openEdit(h, 'VIS-0098');
+  out.campo = await page.getByPlaceholder('2500').locator('visible=true').first().inputValue();
+  await h.click('Salva Modifiche', false);
+  const p = (await h.products()).find((x) => x.id === 'cmp-5');
+  out.salvato = p.purchasePrice;
+  out.righe = (await h.timeline(0)).filter((e) => e.productId === 'cmp-5' && e.type === 'modified').map((e) => e.details.changes.join(' | '));
+  await h.go('product/cmp-5');
+  out.dopo = await prezzi();
+  const zero = 'Prezzi Acquisto 0 € Vendita 3.800 €';
+  const ok = out.prima === zero && out.dopo === zero && out.campo === '0' && out.salvato === 0 && !out.righe.some((r) => /Prezzo acquisto/.test(r));
+  return { ok, ...out, daFare: 'COD: codice e link del prodotto invariati; VAL: obbligatori controllati' };
+}
+
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
@@ -101,10 +188,10 @@ const PASSI = [
   ['CF-B3', 'Campo «Colore» (pillole, colori, icona) e «Larghezza» (ruota); rinomina di un\'opzione usata', 'VAL, EDC'],
   ['CF-B4', 'Modulo di «Borse»: nascondere, sezione, uscire senza salvare, salvare', 'MOD, MCAT'],
   ['CF-B5', 'Campi › «Tipo di pelle»: aggiungere e rinominare un valore; voce assente da Impostazioni; valore usato non eliminabile', 'C2', cfB5],
-  ['CF-C1', 'Aggiungi con categoria in testa e 3 foto; Scheda con galleria e visore', 'MCAT, GAL'],
+  ['CF-C1', 'Aggiungi con categoria in testa e 3 foto; Scheda con galleria e visore', 'MCAT, GAL', cfC1],
   ['CF-C2', 'Ricaricare la pagina: le 3 foto ci sono ancora', 'FOTO'],
-  ['CF-C3', 'Modifica: foto principale, eliminare la foto 3', 'GAL'],
-  ['CF-C4', 'Modifica senza cambiare nulla, poi cambio di un campo', 'COD, VAL, GAL'],
+  ['CF-C3', 'Modifica: foto principale, eliminare la foto 3', 'GAL', cfC3],
+  ['CF-C4', 'Modifica senza cambiare nulla, poi cambio di un campo', 'COD, VAL, GAL', cfC4],
   ['CF-D1', 'Ripiano «A1» con misure, peso e pezzi', 'S1a, S2, ETI'],
   ['CF-D2', 'Riempimento al 50%, 80%, 100%', 'S2'],
   ['CF-D3', 'Prodotto troppo grande, troppo pesante, pezzo in più: blocco e proposta', 'S3'],

@@ -145,7 +145,7 @@ export const formStyles = (t: AppTheme) => {
     tileText: { fontSize: 14, lineHeight: 17, fontWeight: '500', color: t.colors.textPrimary, textAlign: 'center' },
     tileTextSelected: { fontWeight: '600', color: t.colors.tileSelectedText },
 
-    // Foto
+    // Foto (la galleria del prodotto è `components/PhotoGallery.tsx`; qui i pulsanti per aggiungere)
     photoRow: { flexDirection: 'row', gap: 12 },
     photoAdd: {
       width: 88,
@@ -160,34 +160,6 @@ export const formStyles = (t: AppTheme) => {
       borderRadius: t.radius.tile,
     },
     photoAddText: { fontSize: 12, fontWeight: '600', color: t.colors.accentInk },
-    thumb: { width: 88, height: 88, borderRadius: t.radius.tile, backgroundColor: t.colors.surface, borderWidth: 2, borderColor: 'transparent' },
-    thumbActive: { borderColor: t.colors.accent },
-    mainImage: { height: 280, borderRadius: t.radius.card, backgroundColor: t.colors.surface },
-    mainImageBox: { position: 'relative', marginBottom: 12 },
-    removeMainImage: {
-      position: 'absolute',
-      top: 12,
-      right: 12,
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: t.colors.scrimStrong,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    imageCounter: {
-      position: 'absolute',
-      top: 12,
-      left: 12,
-      backgroundColor: t.colors.scrimStrong,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: t.radius.badge,
-    },
-    imageCounterText: { fontSize: 13, fontWeight: '600', color: t.colors.onData },
-    dots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-    dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: withAlpha(t.colors.onData, 0.5) },
-    dotActive: { width: 24, backgroundColor: t.colors.accent },
     // Foto di un campo personalizzato: miniature 80 px
     smallPhoto: { width: 80, height: 80, borderRadius: t.radius.tile },
     smallPhotoAdd: {

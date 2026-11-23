@@ -4,6 +4,7 @@
 import type { Product, ProductCustomData } from '../types';
 import { formatNumberInput } from './number';
 import { formatPrice } from './price';
+import { isReorder } from './photos';
 
 const show = (value: unknown): string => {
   if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return '—';
@@ -45,6 +46,9 @@ export function describeChanges(before: Product, updates: Partial<Product>, labe
   if (updates.images && updates.images.length < (before.images || []).length) {
     out.push(`${before.images.length - updates.images.length} foto tolte`);
   }
+  // GAL: «Metti come principale» e «Sposta» cambiano solo l'ordine (la prima è la foto della card, del PDF e della
+  // condivisione)
+  if (updates.images && isReorder(before.images || [], updates.images)) out.push('Foto riordinate');
   if (updates.customData) out.push(...describeCustomChanges(before.customData || [], updates.customData));
   return out;
 }
