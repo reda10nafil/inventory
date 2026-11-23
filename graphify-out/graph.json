@@ -18526,7 +18526,7 @@
       "file_type": "code",
       "norm_label": "usestyles",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L280"
+      "source_location": "L285"
     },
     {
       "id": "src_screens_chatscreen",
@@ -18813,7 +18813,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c13: dominio gs1, numeri della scheda, svuota cestino, visore delle foto (p10, p19, p24, p21)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L288"
+      "source_location": "L290"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_bagliori_con_la_trasparenza_giusta_sul_telefono_dopo_l9",
@@ -18825,7 +18825,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux: bagliori con la trasparenza giusta sul telefono (dopo l9)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L413"
+      "source_location": "L415"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l1_fornitore_del_tema_e_aiuti",
@@ -18837,7 +18837,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l1: fornitore del tema e aiuti",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L530"
+      "source_location": "L532"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l2_e_controllo_g1_schermate_sul_tema_attivo",
@@ -18849,7 +18849,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l2 e controllo g1: schermate sul tema attivo",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L520"
+      "source_location": "L522"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l6a_e_l6b_inventario_e_scheda_capo_sulla_tela",
@@ -18861,7 +18861,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l6a e l6b: inventario e scheda capo sulla tela",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L458"
+      "source_location": "L460"
     },
     {
       "id": "piani_di_implementazione_ui_ux_grafo_lavori_l1_fornitore_del_tema_e_aiuti_nessun_cambio_visivo",
@@ -19603,7 +19603,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c06: export csv con la cartella e senza cestino, import col pulsante sul web (p07, p18)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L344"
+      "source_location": "L346"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_m08_csv_con_giacenza_report_giacenze_e_movimenti_ticket_09",
@@ -19615,7 +19615,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m08: csv con giacenza, report giacenze e movimenti (ticket 09)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L214"
+      "source_location": "L216"
     },
     {
       "id": "piani_di_implementazione_decisioni_da_rivedere",
@@ -23405,7 +23405,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c01: numeri in formato italiano (p03)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L387"
+      "source_location": "L389"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_23_campi_personalizzati_fetta_val_valori_corretti_e_disegnatore_unico_dopo_c2_fatta_il_23_11",
@@ -25062,7 +25062,7 @@
       "node_kind": "heading",
       "norm_label": "23 novembre 2026 \u2014 terza mappa, c2: \u00abtipo di pelle\u00bb solo nei campi, freccia indietro dopo un ricaricamento (ticket 21)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L76"
+      "source_location": "L78"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_21_tipo_di_pelle_nei_campi_piano_di_implementazione_fetta_c2",
@@ -25302,7 +25302,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 sera \u2014 fase b, m10: fornitori e clienti (ticket 07)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L147"
+      "source_location": "L149"
     },
     {
       "id": "piani_di_implementazione_funzionalita_prova_c1_categorie",
@@ -26286,7 +26286,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m06: scorta minima e avviso di riordino (ticket 05)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L203"
+      "source_location": "L205"
     },
     {
       "id": "docs_implementation_plan_master_analisi_app_attuale",
@@ -29887,7 +29887,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l5a: caratteri e attuale rifinito predefinito",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L504"
+      "source_location": "L506"
     },
     {
       "id": "piani_di_implementazione_passaggio_ui_ux_aggiornamento_del_22_novembre_2026_quinta_parte_esecuzione_l0_l1_l2_e_g1_fatti",
@@ -30437,7 +30437,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l6c-f: aggiungi, modifica, impostazioni, cronologia, automazioni, scanner, chat",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L446"
+      "source_location": "L448"
     },
     {
       "id": "customautomation",
@@ -30845,7 +30845,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c10: la cronologia registra tutte le modifiche (p13)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L312"
+      "source_location": "L314"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_rilettura_finale_delle_correzioni_numeri_del_csv_note_vuote_prove",
@@ -30857,7 +30857,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b: rilettura finale delle correzioni (numeri del csv, note vuote, prove)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L271"
+      "source_location": "L273"
     },
     {
       "id": "piani_di_implementazione_funzionalita_prova_c2_util",
@@ -31821,7 +31821,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m02: logica della giacenza (ticket 01-03)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L251"
+      "source_location": "L253"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_m04_movimenta_nella_scheda_e_filtro_movimenti_ticket_02",
@@ -31833,7 +31833,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m04: \u00abmovimenta\u00bb nella scheda e filtro movimenti (ticket 02)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L227"
+      "source_location": "L229"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_m07_conta_di_magazzino_ticket_06",
@@ -31845,7 +31845,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m07: conta di magazzino (ticket 06)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L191"
+      "source_location": "L193"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_punto_1_prova_di_tutte_le_funzioni_sul_web_mappa_del_gestionale_bozza",
@@ -31857,7 +31857,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, punto 1: prova di tutte le funzioni sul web, mappa del gestionale (bozza)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L395"
+      "source_location": "L397"
     },
     {
       "id": "piani_di_implementazione_funzionalita_grafo_lavori",
@@ -32785,7 +32785,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c08: modifica mostra i campi del modulo, anche vuoti (d03)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L328"
+      "source_location": "L330"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_24_modulo_come_si_torna_indietro",
@@ -35911,7 +35911,7 @@
       "node_kind": "heading",
       "norm_label": "23 novembre 2026 \u2014 terza mappa, ese: esecuzione corretta delle automazioni (ticket 29)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L33"
+      "source_location": "L35"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_29_automazioni_fetta_ese_esecuzione_corretta_dopo_cod_fatta_il_23",
@@ -36237,7 +36237,7 @@
       "node_kind": "heading",
       "norm_label": "23 novembre 2026 \u2014 terza mappa, gal: galleria delle foto (ticket 27)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L59"
+      "source_location": "L61"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_27_foto_fetta_gal_fatta_23_novembre_notte",
@@ -43224,7 +43224,7 @@
       "node_kind": "heading",
       "norm_label": "23 novembre 2026 \u2014 terza mappa, val: valori dei campi personalizzati corretti e disegnatore unico (ticket 23)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L20"
+      "source_location": "L22"
     },
     {
       "id": "piani_di_implementazione_funzionalita_prova_m06_scorta",
@@ -45083,7 +45083,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c02: modifica salva i dati giusti (p01, p02, p04)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L378"
+      "source_location": "L380"
     },
     {
       "id": "backend_auth_google_auth",
@@ -48548,7 +48548,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c04: spostamento rapido e audit registrano \u00abspostato\u00bb (d15, p22)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L361"
+      "source_location": "L363"
     },
     {
       "id": "piani_di_implementazione_funzionalita_prova_esito_a3",
@@ -53405,7 +53405,7 @@
       "node_kind": "heading",
       "norm_label": "23 novembre 2026 \u2014 seconda mappa, s1a: scaffali, anagrafica e pezzi unici (ticket 13)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L105"
+      "source_location": "L107"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_14_scaffale_capacita_piano_di_implementazione_fetta_s2_dopo_s1b",
@@ -57805,7 +57805,7 @@
       "node_kind": "heading",
       "norm_label": "23 novembre 2026 \u2014 terza mappa, cod: lettore unico dei codici e codici che non si rovinano (ticket 22 e 29)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L46"
+      "source_location": "L48"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_22_codici_qr_etichette_nfc_fetta_cod_lettore_unico_e_codici_che_non_si_rovinano_dopo_c2_blocca_s3_n1_eti_ese_fatta_il_23_11",
@@ -58942,7 +58942,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 sera \u2014 seconda mappa, c1: categorie = cartelle, \u00abtipo di pelle\u00bb campo facoltativo (ticket 19)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L121"
+      "source_location": "L123"
     },
     {
       "id": "piani_di_implementazione_funzionalita_passaggio_cosa_fare_adesso_in_ordine",
@@ -59776,7 +59776,7 @@
       "node_kind": "heading",
       "norm_label": "20 ottobre 2026 \u2014 analisi e decisioni saas/backup",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L630"
+      "source_location": "L632"
     },
     {
       "id": "piani_di_implementazione_cronologia_20_ottobre_2026_documenti_creati_e_pubblicati",
@@ -59788,7 +59788,7 @@
       "node_kind": "heading",
       "norm_label": "20 ottobre 2026 \u2014 documenti creati e pubblicati",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L623"
+      "source_location": "L625"
     },
     {
       "id": "piani_di_implementazione_cronologia_20_ottobre_2026_pubblicazione_richiesta_su_main",
@@ -59800,7 +59800,7 @@
       "node_kind": "heading",
       "norm_label": "20 ottobre 2026 \u2014 pubblicazione richiesta su main",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L614"
+      "source_location": "L616"
     },
     {
       "id": "piani_di_implementazione_cronologia_21_novembre_2026_allineamento_locale_verifica_rn_e_avvio_web",
@@ -59812,7 +59812,7 @@
       "node_kind": "heading",
       "norm_label": "21 novembre 2026 \u2014 allineamento locale, verifica rn e avvio web",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L598"
+      "source_location": "L600"
     },
     {
       "id": "piani_di_implementazione_cronologia_21_novembre_2026_proposte_di_stile_fermate_passaggio_a_nuova_sessione",
@@ -59824,7 +59824,7 @@
       "node_kind": "heading",
       "norm_label": "21 novembre 2026 \u2014 proposte di stile fermate, passaggio a nuova sessione",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L590"
+      "source_location": "L592"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c03_niente_vendite_doppie_n\u00e9_dal_cestino_p05_p06_p25",
@@ -59836,7 +59836,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c03: niente vendite doppie ne dal cestino (p05, p06, p25)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L369"
+      "source_location": "L371"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c05_posizioni_e_cartelle_eliminate_senza_prodotti_orfani_p08_p09",
@@ -59848,7 +59848,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c05: posizioni e cartelle eliminate senza prodotti orfani (p08, p09)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L352"
+      "source_location": "L354"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c07_modelli_e_campi_nuovi_nel_modulo_aggiungi_modelli_di_settore_raggiungibili_d12_d13_p11",
@@ -59860,7 +59860,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c07: modelli e campi nuovi nel modulo aggiungi, modelli di settore raggiungibili (d12, d13, p11)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L335"
+      "source_location": "L337"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c09_ricerca_attenzione_e_filtro_della_cartella_nell_inventario_p14_p15_d14",
@@ -59872,7 +59872,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c09: ricerca, attenzione e filtro della cartella nell'inventario (p14, p15, d14)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L319"
+      "source_location": "L321"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c11_il_pulsante_qr_dei_campi_apre_il_lettore_vero_d02",
@@ -59884,7 +59884,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c11: il pulsante qr dei campi apre il lettore vero (d02)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L305"
+      "source_location": "L307"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c12_prodotti_senza_foto_senza_immagine_d_esempio_d18",
@@ -59896,7 +59896,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c12: prodotti senza foto senza immagine d'esempio (d18)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L298"
+      "source_location": "L300"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c14_una_sola_copia_delle_posizioni_predefinite_d21",
@@ -59908,7 +59908,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c14: una sola copia delle posizioni predefinite (d21)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L281"
+      "source_location": "L283"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_c15_pagina_web_in_italiano_e_senza_traduzione_automatica_p31",
@@ -59920,7 +59920,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, c15: pagina web in italiano e senza traduzione automatica (p31)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L172"
+      "source_location": "L174"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_f00_conferme_e_avvisi_funzionanti_sul_web",
@@ -59932,7 +59932,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, f00: conferme e avvisi funzionanti sul web",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L404"
+      "source_location": "L406"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_m01_categorie_modificabili_ticket_04",
@@ -59944,7 +59944,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m01: categorie modificabili (ticket 04)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L260"
+      "source_location": "L262"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_m03_articoli_a_quantit\u00e0_ticket_01_e_03",
@@ -59956,7 +59956,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m03: articoli a quantita (ticket 01 e 03)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L238"
+      "source_location": "L240"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_fase_b_m09_carico_e_scarico_dall_azione_rapida_ticket_08",
@@ -59968,7 +59968,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 fase b, m09: carico e scarico dall'azione rapida (ticket 08)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L180"
+      "source_location": "L182"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_sera_ricerche_l0_login_e_n0_nfc_supabase_riattivato_solo_documenti",
@@ -59980,7 +59980,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 sera \u2014 ricerche l0 (login) e n0 (nfc), supabase riattivato (solo documenti)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L138"
+      "source_location": "L140"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_sera_seconda_mappa_categorie_scaffali_nfc_foto_nel_csv_login_solo_documenti",
@@ -59992,7 +59992,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 sera \u2014 seconda mappa: categorie, scaffali, nfc, foto nel csv, login (solo documenti)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L163"
+      "source_location": "L165"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_app_capita_e_lavoro_pianificato_fasi_1_e_2",
@@ -60004,7 +60004,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux: app capita e lavoro pianificato (fasi 1 e 2)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L578"
+      "source_location": "L580"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_campionario_ricerche_e_5_prototipi_ticket_03_06",
@@ -60016,7 +60016,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux: campionario, ricerche e 5 prototipi (ticket 03-06)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L566"
+      "source_location": "L568"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l0_punto_di_partenza",
@@ -60028,7 +60028,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l0: punto di partenza",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L539"
+      "source_location": "L541"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l3_impostazioni_aspetto",
@@ -60040,7 +60040,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l3: impostazioni \u203a aspetto",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L497"
+      "source_location": "L499"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l4_icone_nuove",
@@ -60052,7 +60052,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l4: icone nuove",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L513"
+      "source_location": "L515"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l5b_babilonia_vetro",
@@ -60064,7 +60064,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l5b: babilonia vetro",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L490"
+      "source_location": "L492"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l5c_ardesia_e_rame",
@@ -60076,7 +60076,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l5c: ardesia e rame",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L483"
+      "source_location": "L485"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l5d_ishtar_lab",
@@ -60088,7 +60088,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l5d: ishtar lab",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L476"
+      "source_location": "L478"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l5e_minimal_i_5_stili_ci_sono_tutti",
@@ -60100,7 +60100,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l5e: minimal (i 5 stili ci sono tutti)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L468"
+      "source_location": "L470"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l7_difetti_del_ticket_09",
@@ -60112,7 +60112,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l7: difetti del ticket 09",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L429"
+      "source_location": "L431"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_l9_verifica_finale_nei_5_stili_tema_chiuso",
@@ -60124,7 +60124,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux l9: verifica finale nei 5 stili (tema chiuso)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L421"
+      "source_location": "L423"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_mappa_chiusa_branch_ui_ux_stili",
@@ -60136,7 +60136,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux: mappa chiusa, branch `ui-ux/stili`",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L547"
+      "source_location": "L549"
     },
     {
       "id": "piani_di_implementazione_cronologia_22_novembre_2026_ui_ux_tutti_e_5_gli_stili_scelti_in_impostazioni",
@@ -60148,7 +60148,7 @@
       "node_kind": "heading",
       "norm_label": "22 novembre 2026 \u2014 ui/ux: tutti e 5 gli stili, scelti in impostazioni",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L555"
+      "source_location": "L557"
     },
     {
       "id": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_richieste_dell_utente_del_23_verifiche_piani_e_collaudo_solo_documenti",
@@ -60160,7 +60160,7 @@
       "node_kind": "heading",
       "norm_label": "23 novembre 2026 \u2014 terza mappa: richieste dell'utente del 23, verifiche, piani e collaudo (solo documenti)",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L96"
+      "source_location": "L98"
     },
     {
       "id": "piani_di_implementazione_cronologia_aaaa_mm_gg_attivit\u00e0",
@@ -60172,7 +60172,7 @@
       "node_kind": "heading",
       "norm_label": "aaaa-mm-gg \u2014 attivita",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L665"
+      "source_location": "L667"
     },
     {
       "id": "piani_di_implementazione_cronologia_ancora_da_fare",
@@ -60184,7 +60184,7 @@
       "node_kind": "heading",
       "norm_label": "ancora da fare",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L652"
+      "source_location": "L654"
     },
     {
       "id": "piani_di_implementazione_cronologia_attivit\u00e0_documentali_completate",
@@ -60196,7 +60196,7 @@
       "node_kind": "heading",
       "norm_label": "attivita documentali completate",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L632"
+      "source_location": "L634"
     },
     {
       "id": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
@@ -60220,7 +60220,7 @@
       "node_kind": "heading",
       "norm_label": "decisioni dell'utente registrate",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L644"
+      "source_location": "L646"
     },
     {
       "id": "piani_di_implementazione_cronologia_modello_per_le_prossime_voci",
@@ -60232,7 +60232,7 @@
       "node_kind": "heading",
       "norm_label": "modello per le prossime voci",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L661"
+      "source_location": "L663"
     },
     {
       "id": "piani_di_implementazione_funzionalita_issues_29_automazioni_fetta_flu1_ingresso_e_uscita_dopo_s3_ed_ese",
@@ -67267,7 +67267,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L109",
+      "source_location": "L114",
       "weight": 1.0
     },
     {
@@ -67279,7 +67279,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L111",
+      "source_location": "L116",
       "weight": 1.0
     },
     {
@@ -67291,7 +67291,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L176",
+      "source_location": "L181",
       "weight": 1.0
     },
     {
@@ -67303,7 +67303,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L225",
+      "source_location": "L230",
       "weight": 1.0
     },
     {
@@ -67315,7 +67315,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L261",
+      "source_location": "L266",
       "weight": 1.0
     },
     {
@@ -67452,7 +67452,7 @@
     },
     {
       "source": "src_screens_automations_countscreen_countscreen",
-      "target": "utils_countback_countleave",
+      "target": "utils_countback_haswrittencounts",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -67464,14 +67464,14 @@
     },
     {
       "source": "src_screens_automations_countscreen_countscreen",
-      "target": "utils_countback_haswrittencounts",
+      "target": "utils_countback_countleave",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L74",
+      "source_location": "L75",
       "weight": 1.0
     },
     {
@@ -67495,7 +67495,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L281",
+      "source_location": "L286",
       "weight": 1.0
     },
     {
@@ -67507,7 +67507,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L312",
+      "source_location": "L317",
       "weight": 1.0
     },
     {
@@ -80923,7 +80923,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L80",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -142917,7 +142917,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L632",
+      "source_location": "L634",
       "weight": 1.0
     },
     {
@@ -142928,7 +142928,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L644",
+      "source_location": "L646",
       "weight": 1.0
     },
     {
@@ -142939,7 +142939,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L652",
+      "source_location": "L654",
       "weight": 1.0
     },
     {
@@ -142950,7 +142950,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L105",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -142961,7 +142961,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L121",
+      "source_location": "L123",
       "weight": 1.0
     },
     {
@@ -142972,7 +142972,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L138",
+      "source_location": "L140",
       "weight": 1.0
     },
     {
@@ -142983,7 +142983,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L147",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -142994,7 +142994,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L163",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -143005,7 +143005,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L172",
+      "source_location": "L174",
       "weight": 1.0
     },
     {
@@ -143016,7 +143016,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L180",
+      "source_location": "L182",
       "weight": 1.0
     },
     {
@@ -143027,18 +143027,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L191",
-      "weight": 1.0
-    },
-    {
-      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
-      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_val_valori_dei_campi_personalizzati_corretti_e_disegnatore_unico_ticket_23",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L20",
+      "source_location": "L193",
       "weight": 1.0
     },
     {
@@ -143049,7 +143038,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L203",
+      "source_location": "L205",
       "weight": 1.0
     },
     {
@@ -143060,7 +143049,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L214",
+      "source_location": "L216",
+      "weight": 1.0
+    },
+    {
+      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
+      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_val_valori_dei_campi_personalizzati_corretti_e_disegnatore_unico_ticket_23",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "piani di implementazione/CRONOLOGIA.md",
+      "source_location": "L22",
       "weight": 1.0
     },
     {
@@ -143071,7 +143071,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L227",
+      "source_location": "L229",
       "weight": 1.0
     },
     {
@@ -143082,7 +143082,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L238",
+      "source_location": "L240",
       "weight": 1.0
     },
     {
@@ -143093,7 +143093,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L251",
+      "source_location": "L253",
       "weight": 1.0
     },
     {
@@ -143104,7 +143104,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L260",
+      "source_location": "L262",
       "weight": 1.0
     },
     {
@@ -143115,7 +143115,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L271",
+      "source_location": "L273",
       "weight": 1.0
     },
     {
@@ -143126,7 +143126,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L281",
+      "source_location": "L283",
       "weight": 1.0
     },
     {
@@ -143137,7 +143137,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L288",
+      "source_location": "L290",
       "weight": 1.0
     },
     {
@@ -143148,7 +143148,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L298",
+      "source_location": "L300",
       "weight": 1.0
     },
     {
@@ -143159,7 +143159,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L305",
+      "source_location": "L307",
       "weight": 1.0
     },
     {
@@ -143170,7 +143170,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L312",
+      "source_location": "L314",
       "weight": 1.0
     },
     {
@@ -143181,7 +143181,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L319",
+      "source_location": "L321",
       "weight": 1.0
     },
     {
@@ -143192,18 +143192,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L328",
-      "weight": 1.0
-    },
-    {
-      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
-      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_ese_esecuzione_corretta_delle_automazioni_ticket_29",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L33",
+      "source_location": "L330",
       "weight": 1.0
     },
     {
@@ -143214,7 +143203,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L335",
+      "source_location": "L337",
       "weight": 1.0
     },
     {
@@ -143225,7 +143214,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L344",
+      "source_location": "L346",
+      "weight": 1.0
+    },
+    {
+      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
+      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_ese_esecuzione_corretta_delle_automazioni_ticket_29",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "piani di implementazione/CRONOLOGIA.md",
+      "source_location": "L35",
       "weight": 1.0
     },
     {
@@ -143236,7 +143236,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L352",
+      "source_location": "L354",
       "weight": 1.0
     },
     {
@@ -143247,7 +143247,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L361",
+      "source_location": "L363",
       "weight": 1.0
     },
     {
@@ -143258,7 +143258,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L369",
+      "source_location": "L371",
       "weight": 1.0
     },
     {
@@ -143269,7 +143269,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L378",
+      "source_location": "L380",
       "weight": 1.0
     },
     {
@@ -143280,7 +143280,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L387",
+      "source_location": "L389",
       "weight": 1.0
     },
     {
@@ -143291,7 +143291,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L395",
+      "source_location": "L397",
       "weight": 1.0
     },
     {
@@ -143302,7 +143302,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L404",
+      "source_location": "L406",
       "weight": 1.0
     },
     {
@@ -143313,7 +143313,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L413",
+      "source_location": "L415",
       "weight": 1.0
     },
     {
@@ -143324,7 +143324,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L421",
+      "source_location": "L423",
       "weight": 1.0
     },
     {
@@ -143335,7 +143335,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L429",
+      "source_location": "L431",
       "weight": 1.0
     },
     {
@@ -143346,7 +143346,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L446",
+      "source_location": "L448",
       "weight": 1.0
     },
     {
@@ -143357,18 +143357,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L458",
-      "weight": 1.0
-    },
-    {
-      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
-      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_cod_lettore_unico_dei_codici_e_codici_che_non_si_rovinano_ticket_22_e_29",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L46",
+      "source_location": "L460",
       "weight": 1.0
     },
     {
@@ -143379,7 +143368,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L468",
+      "source_location": "L470",
       "weight": 1.0
     },
     {
@@ -143390,7 +143379,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L476",
+      "source_location": "L478",
+      "weight": 1.0
+    },
+    {
+      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
+      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_cod_lettore_unico_dei_codici_e_codici_che_non_si_rovinano_ticket_22_e_29",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "piani di implementazione/CRONOLOGIA.md",
+      "source_location": "L48",
       "weight": 1.0
     },
     {
@@ -143401,7 +143401,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L483",
+      "source_location": "L485",
       "weight": 1.0
     },
     {
@@ -143412,7 +143412,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L490",
+      "source_location": "L492",
       "weight": 1.0
     },
     {
@@ -143423,7 +143423,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L497",
+      "source_location": "L499",
       "weight": 1.0
     },
     {
@@ -143445,7 +143445,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L504",
+      "source_location": "L506",
       "weight": 1.0
     },
     {
@@ -143456,7 +143456,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L513",
+      "source_location": "L515",
       "weight": 1.0
     },
     {
@@ -143467,7 +143467,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L520",
+      "source_location": "L522",
       "weight": 1.0
     },
     {
@@ -143478,7 +143478,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L530",
+      "source_location": "L532",
       "weight": 1.0
     },
     {
@@ -143489,7 +143489,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L539",
+      "source_location": "L541",
       "weight": 1.0
     },
     {
@@ -143500,7 +143500,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L547",
+      "source_location": "L549",
       "weight": 1.0
     },
     {
@@ -143511,7 +143511,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L555",
+      "source_location": "L557",
       "weight": 1.0
     },
     {
@@ -143522,7 +143522,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L566",
+      "source_location": "L568",
       "weight": 1.0
     },
     {
@@ -143533,18 +143533,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L578",
-      "weight": 1.0
-    },
-    {
-      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
-      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_gal_galleria_delle_foto_ticket_27",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L59",
+      "source_location": "L580",
       "weight": 1.0
     },
     {
@@ -143555,7 +143544,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L590",
+      "source_location": "L592",
       "weight": 1.0
     },
     {
@@ -143566,7 +143555,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L598",
+      "source_location": "L600",
+      "weight": 1.0
+    },
+    {
+      "source": "piani_di_implementazione_cronologia_cronologia_aggiornabile",
+      "target": "piani_di_implementazione_cronologia_23_novembre_2026_terza_mappa_gal_galleria_delle_foto_ticket_27",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "piani di implementazione/CRONOLOGIA.md",
+      "source_location": "L61",
       "weight": 1.0
     },
     {
@@ -143577,7 +143577,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L614",
+      "source_location": "L616",
       "weight": 1.0
     },
     {
@@ -143588,7 +143588,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L623",
+      "source_location": "L625",
       "weight": 1.0
     },
     {
@@ -143599,7 +143599,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L630",
+      "source_location": "L632",
       "weight": 1.0
     },
     {
@@ -143610,7 +143610,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L661",
+      "source_location": "L663",
       "weight": 1.0
     },
     {
@@ -143621,7 +143621,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L76",
+      "source_location": "L78",
       "weight": 1.0
     },
     {
@@ -143632,7 +143632,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L96",
+      "source_location": "L98",
       "weight": 1.0
     },
     {
@@ -143643,7 +143643,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L665",
+      "source_location": "L667",
       "weight": 1.0
     },
     {
@@ -156117,7 +156117,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/screens/automations/CountScreen.tsx",
-      "source_location": "L280",
+      "source_location": "L285",
       "weight": 1.0
     },
     {
@@ -184592,7 +184592,7 @@
       "confidence_score": 0.95,
       "context": "AppIcon",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L523",
+      "source_location": "L525",
       "weight": 1.0
     },
     {
@@ -184676,7 +184676,7 @@
       "confidence_score": 0.95,
       "context": "AppTheme",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -184748,7 +184748,7 @@
       "confidence_score": 0.95,
       "context": "Backdrop",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L416",
+      "source_location": "L418",
       "weight": 1.0
     },
     {
@@ -184760,7 +184760,7 @@
       "confidence_score": 0.95,
       "context": "Backdrop",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L460",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -184940,7 +184940,7 @@
       "confidence_score": 0.95,
       "context": "CategoryPicker",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L127",
+      "source_location": "L129",
       "weight": 1.0
     },
     {
@@ -184952,7 +184952,7 @@
       "confidence_score": 0.95,
       "context": "CategoryPicker",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L110",
+      "source_location": "L112",
       "weight": 1.0
     },
     {
@@ -185288,7 +185288,7 @@
       "confidence_score": 0.95,
       "context": "DynamicFieldRenderer",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L524",
+      "source_location": "L526",
       "weight": 1.0
     },
     {
@@ -185336,7 +185336,7 @@
       "confidence_score": 0.95,
       "context": "EditProductForm",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L383",
+      "source_location": "L385",
       "weight": 1.0
     },
     {
@@ -185348,7 +185348,7 @@
       "confidence_score": 0.95,
       "context": "FieldInput",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L31",
+      "source_location": "L33",
       "weight": 1.0
     },
     {
@@ -185516,7 +185516,7 @@
       "confidence_score": 0.95,
       "context": "FurTypesProvider",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L126",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -185564,7 +185564,7 @@
       "confidence_score": 0.95,
       "context": "Glass",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L460",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -185576,7 +185576,7 @@
       "confidence_score": 0.95,
       "context": "Glass",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L450",
+      "source_location": "L452",
       "weight": 1.0
     },
     {
@@ -185588,7 +185588,7 @@
       "confidence_score": 0.95,
       "context": "GradientFill",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L460",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -185660,7 +185660,7 @@
       "confidence_score": 0.95,
       "context": "InventoryProvider",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L108",
+      "source_location": "L110",
       "weight": 1.0
     },
     {
@@ -185852,7 +185852,7 @@
       "confidence_score": 0.95,
       "context": "MovementKind",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L254",
+      "source_location": "L256",
       "weight": 1.0
     },
     {
@@ -185864,7 +185864,7 @@
       "confidence_score": 0.95,
       "context": "MovementReason",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L254",
+      "source_location": "L256",
       "weight": 1.0
     },
     {
@@ -185888,7 +185888,7 @@
       "confidence_score": 0.95,
       "context": "MovementSheet",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L183",
+      "source_location": "L185",
       "weight": 1.0
     },
     {
@@ -185900,7 +185900,7 @@
       "confidence_score": 0.95,
       "context": "MovementSheet",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -186056,7 +186056,7 @@
       "confidence_score": 0.95,
       "context": "OptionsEditor",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L25",
+      "source_location": "L27",
       "weight": 1.0
     },
     {
@@ -186152,7 +186152,7 @@
       "confidence_score": 0.95,
       "context": "PhotoGallery",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L73",
+      "source_location": "L75",
       "weight": 1.0
     },
     {
@@ -186212,7 +186212,7 @@
       "confidence_score": 0.95,
       "context": "RootNavigator",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L151",
+      "source_location": "L153",
       "weight": 1.0
     },
     {
@@ -186224,7 +186224,7 @@
       "confidence_score": 0.95,
       "context": "RootNavigator",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L452",
+      "source_location": "L454",
       "weight": 1.0
     },
     {
@@ -186536,7 +186536,7 @@
       "confidence_score": 0.95,
       "context": "TabsNavigator",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L516",
+      "source_location": "L518",
       "weight": 1.0
     },
     {
@@ -186620,7 +186620,7 @@
       "confidence_score": 0.95,
       "context": "Text",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L292",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -186632,7 +186632,7 @@
       "confidence_score": 0.95,
       "context": "Text",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L572",
+      "source_location": "L574",
       "weight": 1.0
     },
     {
@@ -186644,7 +186644,7 @@
       "confidence_score": 0.95,
       "context": "Text",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -186656,7 +186656,7 @@
       "confidence_score": 0.95,
       "context": "Text",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L523",
+      "source_location": "L525",
       "weight": 1.0
     },
     {
@@ -186836,7 +186836,7 @@
       "confidence_score": 0.95,
       "context": "TextInput",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -186848,7 +186848,7 @@
       "confidence_score": 0.95,
       "context": "TextInput",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L523",
+      "source_location": "L525",
       "weight": 1.0
     },
     {
@@ -186908,7 +186908,7 @@
       "confidence_score": 0.95,
       "context": "ThemeProvider",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L507",
+      "source_location": "L509",
       "weight": 1.0
     },
     {
@@ -186944,7 +186944,7 @@
       "confidence_score": 0.95,
       "context": "addPhotos",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -187004,7 +187004,7 @@
       "confidence_score": 0.95,
       "context": "applyMovement",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -187016,7 +187016,7 @@
       "confidence_score": 0.95,
       "context": "applyMovement",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L230",
+      "source_location": "L232",
       "weight": 1.0
     },
     {
@@ -187028,7 +187028,7 @@
       "confidence_score": 0.95,
       "context": "applyMovement",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -187040,7 +187040,7 @@
       "confidence_score": 0.95,
       "context": "applyMovement",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L216",
+      "source_location": "L218",
       "weight": 1.0
     },
     {
@@ -187052,7 +187052,7 @@
       "confidence_score": 0.95,
       "context": "applyMovement",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L152",
+      "source_location": "L154",
       "weight": 1.0
     },
     {
@@ -187160,7 +187160,7 @@
       "confidence_score": 0.95,
       "context": "automationsUsing",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -187232,7 +187232,7 @@
       "confidence_score": 0.95,
       "context": "bloccaSupabase",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L67",
+      "source_location": "L69",
       "weight": 1.0
     },
     {
@@ -187304,7 +187304,7 @@
       "confidence_score": 0.95,
       "context": "canMove",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L373",
+      "source_location": "L375",
       "weight": 1.0
     },
     {
@@ -187352,7 +187352,7 @@
       "confidence_score": 0.95,
       "context": "canMoveStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L183",
+      "source_location": "L185",
       "weight": 1.0
     },
     {
@@ -187412,7 +187412,7 @@
       "confidence_score": 0.95,
       "context": "canSell",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L373",
+      "source_location": "L375",
       "weight": 1.0
     },
     {
@@ -187436,7 +187436,7 @@
       "confidence_score": 0.95,
       "context": "canUseScannedLocation",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -187508,7 +187508,7 @@
       "confidence_score": 0.95,
       "context": "cardSurface",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L461",
+      "source_location": "L463",
       "weight": 1.0
     },
     {
@@ -187520,7 +187520,7 @@
       "confidence_score": 0.95,
       "context": "cardSurface",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L451",
+      "source_location": "L453",
       "weight": 1.0
     },
     {
@@ -187532,7 +187532,7 @@
       "confidence_score": 0.95,
       "context": "categoryAncestors",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187556,7 +187556,7 @@
       "confidence_score": 0.95,
       "context": "categoryDeleteError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187568,7 +187568,7 @@
       "confidence_score": 0.95,
       "context": "categoryDeleteError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -187616,7 +187616,7 @@
       "confidence_score": 0.95,
       "context": "categoryName",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187640,7 +187640,7 @@
       "confidence_score": 0.95,
       "context": "categoryNameError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187676,7 +187676,7 @@
       "confidence_score": 0.95,
       "context": "categoryPath",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187700,7 +187700,7 @@
       "confidence_score": 0.95,
       "context": "categoryPicker",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187736,7 +187736,7 @@
       "confidence_score": 0.95,
       "context": "categoryTree",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187760,7 +187760,7 @@
       "confidence_score": 0.95,
       "context": "categoryWithDescendants",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187820,7 +187820,7 @@
       "confidence_score": 0.95,
       "context": "childrenOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -187868,7 +187868,7 @@
       "confidence_score": 0.95,
       "context": "chip",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L462",
+      "source_location": "L464",
       "weight": 1.0
     },
     {
@@ -187904,7 +187904,7 @@
       "confidence_score": 0.95,
       "context": "choiceLabel",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -187928,7 +187928,7 @@
       "confidence_score": 0.95,
       "context": "choiceOptions",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -187952,7 +187952,7 @@
       "confidence_score": 0.95,
       "context": "clampPhotoIndex",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -188072,7 +188072,7 @@
       "confidence_score": 0.95,
       "context": "codeCheck",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -188144,7 +188144,7 @@
       "confidence_score": 0.95,
       "context": "codeChoiceLabel",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -188168,7 +188168,7 @@
       "confidence_score": 0.95,
       "context": "codeError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -188180,7 +188180,7 @@
       "confidence_score": 0.95,
       "context": "codeError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -188228,7 +188228,7 @@
       "confidence_score": 0.95,
       "context": "codeIsText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -188252,7 +188252,7 @@
       "confidence_score": 0.95,
       "context": "codeName",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -188276,7 +188276,7 @@
       "confidence_score": 0.95,
       "context": "codeOwner",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -188288,7 +188288,7 @@
       "confidence_score": 0.95,
       "context": "codeOwner",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -188396,7 +188396,7 @@
       "confidence_score": 0.95,
       "context": "contactDeleteError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -188420,7 +188420,7 @@
       "confidence_score": 0.95,
       "context": "contactEvents",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -188504,7 +188504,7 @@
       "confidence_score": 0.95,
       "context": "contactLabel",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -188528,7 +188528,7 @@
       "confidence_score": 0.95,
       "context": "contactName",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -188540,7 +188540,7 @@
       "confidence_score": 0.95,
       "context": "contactNameError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -188564,7 +188564,7 @@
       "confidence_score": 0.95,
       "context": "contactUsage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -188600,7 +188600,7 @@
       "confidence_score": 0.95,
       "context": "contactsForMovement",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -188672,7 +188672,7 @@
       "confidence_score": 0.95,
       "context": "countDiffs",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -188756,7 +188756,7 @@
       "confidence_score": 0.95,
       "context": "countOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -188816,7 +188816,7 @@
       "confidence_score": 0.95,
       "context": "countRefusalText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -188840,7 +188840,7 @@
       "confidence_score": 0.95,
       "context": "countRows",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -188984,7 +188984,7 @@
       "confidence_score": 0.95,
       "context": "describeChanges",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L315",
+      "source_location": "L317",
       "weight": 1.0
     },
     {
@@ -188996,7 +188996,7 @@
       "confidence_score": 0.95,
       "context": "describeChanges",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L207",
+      "source_location": "L209",
       "weight": 1.0
     },
     {
@@ -189008,7 +189008,7 @@
       "confidence_score": 0.95,
       "context": "describeChanges",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L275",
+      "source_location": "L277",
       "weight": 1.0
     },
     {
@@ -189020,7 +189020,7 @@
       "confidence_score": 0.95,
       "context": "describeChanges",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -189032,7 +189032,7 @@
       "confidence_score": 0.95,
       "context": "describeChanges",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L25",
+      "source_location": "L27",
       "weight": 1.0
     },
     {
@@ -189068,7 +189068,7 @@
       "confidence_score": 0.95,
       "context": "describeStockEvent",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L241",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -189080,7 +189080,7 @@
       "confidence_score": 0.95,
       "context": "describeStockEvent",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L155",
+      "source_location": "L157",
       "weight": 1.0
     },
     {
@@ -189140,7 +189140,7 @@
       "confidence_score": 0.95,
       "context": "editableFields",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L331",
+      "source_location": "L333",
       "weight": 1.0
     },
     {
@@ -189188,7 +189188,7 @@
       "confidence_score": 0.95,
       "context": "editableUpdates",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L241",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -189200,7 +189200,7 @@
       "confidence_score": 0.95,
       "context": "editableUpdates",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -189260,7 +189260,7 @@
       "confidence_score": 0.95,
       "context": "fieldChoices",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -189296,7 +189296,7 @@
       "confidence_score": 0.95,
       "context": "fieldError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -189344,7 +189344,7 @@
       "confidence_score": 0.95,
       "context": "fieldOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -189380,7 +189380,7 @@
       "confidence_score": 0.95,
       "context": "fieldOptions",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -189404,7 +189404,7 @@
       "confidence_score": 0.95,
       "context": "fieldValueOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -189452,7 +189452,7 @@
       "confidence_score": 0.95,
       "context": "filterContacts",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -189464,7 +189464,7 @@
       "confidence_score": 0.95,
       "context": "flowErrors",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -189548,7 +189548,7 @@
       "confidence_score": 0.95,
       "context": "formStyles",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L450",
+      "source_location": "L452",
       "weight": 1.0
     },
     {
@@ -189560,7 +189560,7 @@
       "confidence_score": 0.95,
       "context": "formStyles",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L65",
+      "source_location": "L67",
       "weight": 1.0
     },
     {
@@ -189572,7 +189572,7 @@
       "confidence_score": 0.95,
       "context": "formValue",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -189596,7 +189596,7 @@
       "confidence_score": 0.95,
       "context": "formatNumber",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L292",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -189620,7 +189620,7 @@
       "confidence_score": 0.95,
       "context": "formatNumberInput",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L391",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -189656,7 +189656,7 @@
       "confidence_score": 0.95,
       "context": "formatPrice",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L292",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -189668,7 +189668,7 @@
       "confidence_score": 0.95,
       "context": "formatPrice",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L460",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -189692,7 +189692,7 @@
       "confidence_score": 0.95,
       "context": "formatQty",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -189752,7 +189752,7 @@
       "confidence_score": 0.95,
       "context": "furTypeDeleteError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -189776,7 +189776,7 @@
       "confidence_score": 0.95,
       "context": "furTypeFromCsv",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -189824,7 +189824,7 @@
       "confidence_score": 0.95,
       "context": "furTypeLegacyNames",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -189860,7 +189860,7 @@
       "confidence_score": 0.95,
       "context": "furTypeLinkedFields",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -189884,7 +189884,7 @@
       "confidence_score": 0.95,
       "context": "furTypeNameError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -189920,7 +189920,7 @@
       "confidence_score": 0.95,
       "context": "furTypeRenameMessage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -189956,7 +189956,7 @@
       "confidence_score": 0.95,
       "context": "furTypeUsageText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -190136,7 +190136,7 @@
       "confidence_score": 0.95,
       "context": "getStateFromPath",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L83",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -190244,7 +190244,7 @@
       "confidence_score": 0.95,
       "context": "gs1ElementParts",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -190280,7 +190280,7 @@
       "confidence_score": 0.95,
       "context": "gs1LinkParts",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -190376,7 +190376,7 @@
       "confidence_score": 0.95,
       "context": "indexAfterRemove",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -190472,7 +190472,7 @@
       "confidence_score": 0.95,
       "context": "invalidNumberFields",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -190496,7 +190496,7 @@
       "confidence_score": 0.95,
       "context": "invariante",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L113",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -190544,7 +190544,7 @@
       "confidence_score": 0.95,
       "context": "isAt",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -190556,7 +190556,7 @@
       "confidence_score": 0.95,
       "context": "isAt",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -190568,7 +190568,7 @@
       "confidence_score": 0.95,
       "context": "isAt",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L401",
+      "source_location": "L403",
       "weight": 1.0
     },
     {
@@ -190700,7 +190700,7 @@
       "confidence_score": 0.95,
       "context": "isLowStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L206",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -190712,7 +190712,7 @@
       "confidence_score": 0.95,
       "context": "isLowStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L219",
+      "source_location": "L221",
       "weight": 1.0
     },
     {
@@ -190820,7 +190820,7 @@
       "confidence_score": 0.95,
       "context": "isOutOfStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -190844,7 +190844,7 @@
       "confidence_score": 0.95,
       "context": "isReorder",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -190892,7 +190892,7 @@
       "confidence_score": 0.95,
       "context": "isSelected",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -190916,7 +190916,7 @@
       "confidence_score": 0.95,
       "context": "isShelfPlace",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -190952,7 +190952,7 @@
       "confidence_score": 0.95,
       "context": "isStocked",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -191000,7 +191000,7 @@
       "confidence_score": 0.95,
       "context": "keptShelfId",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -191048,7 +191048,7 @@
       "confidence_score": 0.95,
       "context": "key",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L383",
+      "source_location": "L385",
       "weight": 1.0
     },
     {
@@ -191060,7 +191060,7 @@
       "confidence_score": 0.95,
       "context": "kindLine",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -191120,7 +191120,7 @@
       "confidence_score": 0.95,
       "context": "libraryIdFromCsv",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L347",
+      "source_location": "L349",
       "weight": 1.0
     },
     {
@@ -191132,7 +191132,7 @@
       "confidence_score": 0.95,
       "context": "libraryIdFromCsv",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -191192,7 +191192,7 @@
       "confidence_score": 0.95,
       "context": "loadDb",
       "source_file": "piani di implementazione/DECISIONI_DA_RIVEDERE.md",
-      "source_location": "L156",
+      "source_location": "L157",
       "weight": 1.0
     },
     {
@@ -191204,7 +191204,7 @@
       "confidence_score": 0.95,
       "context": "locationInUseText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -191240,7 +191240,7 @@
       "confidence_score": 0.95,
       "context": "locationShelvesError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -191264,7 +191264,7 @@
       "confidence_score": 0.95,
       "context": "loopIndex",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -191300,7 +191300,7 @@
       "confidence_score": 0.95,
       "context": "lowStockAlert",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L206",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -191336,7 +191336,7 @@
       "confidence_score": 0.95,
       "context": "mainLocation",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -191372,7 +191372,7 @@
       "confidence_score": 0.95,
       "context": "makeMainPhoto",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -191408,7 +191408,7 @@
       "confidence_score": 0.95,
       "context": "makeStyles",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -191420,7 +191420,7 @@
       "confidence_score": 0.95,
       "context": "makeStyles",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L523",
+      "source_location": "L525",
       "weight": 1.0
     },
     {
@@ -191432,7 +191432,7 @@
       "confidence_score": 0.95,
       "context": "makeStyles",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L562",
+      "source_location": "L564",
       "weight": 1.0
     },
     {
@@ -191504,7 +191504,7 @@
       "confidence_score": 0.95,
       "context": "matchesFilter",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L322",
+      "source_location": "L324",
       "weight": 1.0
     },
     {
@@ -191516,7 +191516,7 @@
       "confidence_score": 0.95,
       "context": "matchesSearch",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L322",
+      "source_location": "L324",
       "weight": 1.0
     },
     {
@@ -191540,7 +191540,7 @@
       "confidence_score": 0.95,
       "context": "mergeAlerts",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L206",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -191624,7 +191624,7 @@
       "confidence_score": 0.95,
       "context": "moveOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L241",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -191636,7 +191636,7 @@
       "confidence_score": 0.95,
       "context": "moveOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -191768,7 +191768,7 @@
       "confidence_score": 0.95,
       "context": "movePhoto",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -191804,7 +191804,7 @@
       "confidence_score": 0.95,
       "context": "moveStepBy",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -191864,7 +191864,7 @@
       "confidence_score": 0.95,
       "context": "moved",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L364",
+      "source_location": "L366",
       "weight": 1.0
     },
     {
@@ -191972,7 +191972,7 @@
       "confidence_score": 0.95,
       "context": "movementCsvRows",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L153",
+      "source_location": "L155",
       "weight": 1.0
     },
     {
@@ -192008,7 +192008,7 @@
       "confidence_score": 0.95,
       "context": "movementErrorText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -192032,7 +192032,7 @@
       "confidence_score": 0.95,
       "context": "movementOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L231",
+      "source_location": "L233",
       "weight": 1.0
     },
     {
@@ -192116,7 +192116,7 @@
       "confidence_score": 0.95,
       "context": "newContactId",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -192128,7 +192128,7 @@
       "confidence_score": 0.95,
       "context": "newOptionId",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -192152,7 +192152,7 @@
       "confidence_score": 0.95,
       "context": "newShelfId",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -192296,7 +192296,7 @@
       "confidence_score": 0.95,
       "context": "normalizeField",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -192332,7 +192332,7 @@
       "confidence_score": 0.95,
       "context": "notesWithTag",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -192440,7 +192440,7 @@
       "confidence_score": 0.95,
       "context": "numberOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -192512,7 +192512,7 @@
       "confidence_score": 0.95,
       "context": "optionDeleteError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -192560,7 +192560,7 @@
       "confidence_score": 0.95,
       "context": "optionNameError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -192584,7 +192584,7 @@
       "confidence_score": 0.95,
       "context": "optionOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -192632,7 +192632,7 @@
       "confidence_score": 0.95,
       "context": "optionUsage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -192716,7 +192716,7 @@
       "confidence_score": 0.95,
       "context": "parentIdOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -192764,7 +192764,7 @@
       "confidence_score": 0.95,
       "context": "parentOptions",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -192800,7 +192800,7 @@
       "confidence_score": 0.95,
       "context": "parseContacts",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L150",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -192812,7 +192812,7 @@
       "confidence_score": 0.95,
       "context": "parseFurTypes",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L80",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -192884,7 +192884,7 @@
       "confidence_score": 0.95,
       "context": "parseMinStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L206",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -192920,7 +192920,7 @@
       "confidence_score": 0.95,
       "context": "parseNumber",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L391",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -192932,7 +192932,7 @@
       "confidence_score": 0.95,
       "context": "parseNumber",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L373",
+      "source_location": "L375",
       "weight": 1.0
     },
     {
@@ -192944,7 +192944,7 @@
       "confidence_score": 0.95,
       "context": "parseNumber",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L274",
+      "source_location": "L276",
       "weight": 1.0
     },
     {
@@ -192956,7 +192956,7 @@
       "confidence_score": 0.95,
       "context": "parseNumber",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -193076,7 +193076,7 @@
       "confidence_score": 0.95,
       "context": "parseQty",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -193112,7 +193112,7 @@
       "confidence_score": 0.95,
       "context": "parseSalePrice",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L152",
+      "source_location": "L154",
       "weight": 1.0
     },
     {
@@ -193124,7 +193124,7 @@
       "confidence_score": 0.95,
       "context": "parseSalePrice",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -193196,7 +193196,7 @@
       "confidence_score": 0.95,
       "context": "parseShelves",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -193244,7 +193244,7 @@
       "confidence_score": 0.95,
       "context": "parseStockCell",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L220",
+      "source_location": "L222",
       "weight": 1.0
     },
     {
@@ -193292,7 +193292,7 @@
       "confidence_score": 0.95,
       "context": "parseStoredNumber",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L274",
+      "source_location": "L276",
       "weight": 1.0
     },
     {
@@ -193340,7 +193340,7 @@
       "confidence_score": 0.95,
       "context": "patchProduct",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L242",
+      "source_location": "L244",
       "weight": 1.0
     },
     {
@@ -193352,7 +193352,7 @@
       "confidence_score": 0.95,
       "context": "patchProduct",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -193376,7 +193376,7 @@
       "confidence_score": 0.95,
       "context": "photosPatch",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -193448,7 +193448,7 @@
       "confidence_score": 0.95,
       "context": "placeWithShelf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -193616,7 +193616,7 @@
       "confidence_score": 0.95,
       "context": "positionsOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -193628,7 +193628,7 @@
       "confidence_score": 0.95,
       "context": "positionsOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L243",
+      "source_location": "L245",
       "weight": 1.0
     },
     {
@@ -193748,7 +193748,7 @@
       "confidence_score": 0.95,
       "context": "productCsvColumns",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -193784,7 +193784,7 @@
       "confidence_score": 0.95,
       "context": "productCsvRows",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L347",
+      "source_location": "L349",
       "weight": 1.0
     },
     {
@@ -193796,7 +193796,7 @@
       "confidence_score": 0.95,
       "context": "productCsvRows",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L217",
+      "source_location": "L219",
       "weight": 1.0
     },
     {
@@ -193856,7 +193856,7 @@
       "confidence_score": 0.95,
       "context": "productFromCsvRow",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -193928,7 +193928,7 @@
       "confidence_score": 0.95,
       "context": "productKind",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -193976,7 +193976,7 @@
       "confidence_score": 0.95,
       "context": "productShelf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -194000,7 +194000,7 @@
       "confidence_score": 0.95,
       "context": "productShelfId",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -194036,7 +194036,7 @@
       "confidence_score": 0.95,
       "context": "qtyAt",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L241",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -194108,7 +194108,7 @@
       "confidence_score": 0.95,
       "context": "readAsStringAsync",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L348",
+      "source_location": "L350",
       "weight": 1.0
     },
     {
@@ -194204,7 +194204,7 @@
       "confidence_score": 0.95,
       "context": "refusalText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L241",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -194300,7 +194300,7 @@
       "confidence_score": 0.95,
       "context": "removePhoto",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0
     },
     {
@@ -194348,7 +194348,7 @@
       "confidence_score": 0.95,
       "context": "replayStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -194480,7 +194480,7 @@
       "confidence_score": 0.95,
       "context": "resumeIndex",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -194528,7 +194528,7 @@
       "confidence_score": 0.95,
       "context": "retiredNameError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L30",
+      "source_location": "L32",
       "weight": 1.0
     },
     {
@@ -194564,7 +194564,7 @@
       "confidence_score": 0.95,
       "context": "rgba()",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -194600,7 +194600,7 @@
       "confidence_score": 0.95,
       "context": "rootCategories",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -194624,7 +194624,7 @@
       "confidence_score": 0.95,
       "context": "round3",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -194636,7 +194636,7 @@
       "confidence_score": 0.95,
       "context": "saleOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L241",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -194648,7 +194648,7 @@
       "confidence_score": 0.95,
       "context": "saleOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L152",
+      "source_location": "L154",
       "weight": 1.0
     },
     {
@@ -194732,7 +194732,7 @@
       "confidence_score": 0.95,
       "context": "salePrice",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L152",
+      "source_location": "L154",
       "weight": 1.0
     },
     {
@@ -194780,7 +194780,7 @@
       "confidence_score": 0.95,
       "context": "salePriceInput",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -194816,7 +194816,7 @@
       "confidence_score": 0.95,
       "context": "sameValue",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -194840,7 +194840,7 @@
       "confidence_score": 0.95,
       "context": "savedValue",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -194888,7 +194888,7 @@
       "confidence_score": 0.95,
       "context": "savesLabel",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -195020,7 +195020,7 @@
       "confidence_score": 0.95,
       "context": "sectionLabel",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L460",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -195032,7 +195032,7 @@
       "confidence_score": 0.95,
       "context": "sectionLabel",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L449",
+      "source_location": "L451",
       "weight": 1.0
     },
     {
@@ -195164,7 +195164,7 @@
       "confidence_score": 0.95,
       "context": "shelfAsLocationText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0
     },
     {
@@ -195188,7 +195188,7 @@
       "confidence_score": 0.95,
       "context": "shelfData",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195212,7 +195212,7 @@
       "confidence_score": 0.95,
       "context": "shelfDeleteError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195248,7 +195248,7 @@
       "confidence_score": 0.95,
       "context": "shelfIdFromCsv",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195284,7 +195284,7 @@
       "confidence_score": 0.95,
       "context": "shelfKind",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195308,7 +195308,7 @@
       "confidence_score": 0.95,
       "context": "shelfNameError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195344,7 +195344,7 @@
       "confidence_score": 0.95,
       "context": "shelfPatch",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195380,7 +195380,7 @@
       "confidence_score": 0.95,
       "context": "shelfUsage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195428,7 +195428,7 @@
       "confidence_score": 0.95,
       "context": "shelvesByLocation",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195452,7 +195452,7 @@
       "confidence_score": 0.95,
       "context": "shelvesFor",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195488,7 +195488,7 @@
       "confidence_score": 0.95,
       "context": "shelvesOfCategory",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -195572,7 +195572,7 @@
       "confidence_score": 0.95,
       "context": "splitAlpha",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L416",
+      "source_location": "L418",
       "weight": 1.0
     },
     {
@@ -195584,7 +195584,7 @@
       "confidence_score": 0.95,
       "context": "startError",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -195656,7 +195656,7 @@
       "confidence_score": 0.95,
       "context": "stepFrom",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -195680,7 +195680,7 @@
       "confidence_score": 0.95,
       "context": "stepMeta",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L35",
+      "source_location": "L37",
       "weight": 1.0
     },
     {
@@ -195716,7 +195716,7 @@
       "confidence_score": 0.95,
       "context": "stepperDefaults",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -195752,7 +195752,7 @@
       "confidence_score": 0.95,
       "context": "stockCell",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L217",
+      "source_location": "L219",
       "weight": 1.0
     },
     {
@@ -195824,7 +195824,7 @@
       "confidence_score": 0.95,
       "context": "stockOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -195836,7 +195836,7 @@
       "confidence_score": 0.95,
       "context": "stockOf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L401",
+      "source_location": "L403",
       "weight": 1.0
     },
     {
@@ -195920,7 +195920,7 @@
       "confidence_score": 0.95,
       "context": "stockPatch",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -196016,7 +196016,7 @@
       "confidence_score": 0.95,
       "context": "storedStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L233",
+      "source_location": "L235",
       "weight": 1.0
     },
     {
@@ -196052,7 +196052,7 @@
       "confidence_score": 0.95,
       "context": "storedTotal",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L233",
+      "source_location": "L235",
       "weight": 1.0
     },
     {
@@ -196088,7 +196088,7 @@
       "confidence_score": 0.95,
       "context": "suggestShelfCode",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -196184,7 +196184,7 @@
       "confidence_score": 0.95,
       "context": "takesContact",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L152",
+      "source_location": "L154",
       "weight": 1.0
     },
     {
@@ -196232,7 +196232,7 @@
       "confidence_score": 0.95,
       "context": "takesPrice",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L152",
+      "source_location": "L154",
       "weight": 1.0
     },
     {
@@ -196292,7 +196292,7 @@
       "confidence_score": 0.95,
       "context": "tileSurface",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L462",
+      "source_location": "L464",
       "weight": 1.0
     },
     {
@@ -196304,7 +196304,7 @@
       "confidence_score": 0.95,
       "context": "tileSurface",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L449",
+      "source_location": "L451",
       "weight": 1.0
     },
     {
@@ -196352,7 +196352,7 @@
       "confidence_score": 0.95,
       "context": "toggleOption",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -196376,7 +196376,7 @@
       "confidence_score": 0.95,
       "context": "totalStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -196484,7 +196484,7 @@
       "confidence_score": 0.95,
       "context": "uniqueAt",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L195",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -196520,7 +196520,7 @@
       "confidence_score": 0.95,
       "context": "usage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L357",
+      "source_location": "L359",
       "weight": 1.0
     },
     {
@@ -196532,7 +196532,7 @@
       "confidence_score": 0.95,
       "context": "usage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L264",
+      "source_location": "L266",
       "weight": 1.0
     },
     {
@@ -196544,7 +196544,7 @@
       "confidence_score": 0.95,
       "context": "usage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -196556,7 +196556,7 @@
       "confidence_score": 0.95,
       "context": "usage",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L243",
+      "source_location": "L245",
       "weight": 1.0
     },
     {
@@ -196616,7 +196616,7 @@
       "confidence_score": 0.95,
       "context": "useFurTypes",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L126",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -196676,7 +196676,7 @@
       "confidence_score": 0.95,
       "context": "useInstallFields",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L338",
+      "source_location": "L340",
       "weight": 1.0
     },
     {
@@ -196772,7 +196772,7 @@
       "confidence_score": 0.95,
       "context": "useLocalSearchParams",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L526",
+      "source_location": "L528",
       "weight": 1.0
     },
     {
@@ -196844,7 +196844,7 @@
       "confidence_score": 0.95,
       "context": "useStyleChoice",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -196892,7 +196892,7 @@
       "confidence_score": 0.95,
       "context": "useTheme",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -196976,7 +196976,7 @@
       "confidence_score": 0.95,
       "context": "valueText",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L24",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -197024,7 +197024,7 @@
       "confidence_score": 0.95,
       "context": "withAlpha",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L533",
+      "source_location": "L535",
       "weight": 1.0
     },
     {
@@ -197036,7 +197036,7 @@
       "confidence_score": 0.95,
       "context": "withInitialStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L241",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -197048,7 +197048,7 @@
       "confidence_score": 0.95,
       "context": "withInitialStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L218",
+      "source_location": "L220",
       "weight": 1.0
     },
     {
@@ -197084,7 +197084,7 @@
       "confidence_score": 0.95,
       "context": "withKeptShelf",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -197108,7 +197108,7 @@
       "confidence_score": 0.95,
       "context": "withStartingStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L218",
+      "source_location": "L220",
       "weight": 1.0
     },
     {
@@ -197120,7 +197120,7 @@
       "confidence_score": 0.95,
       "context": "withStartingStock",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L109",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -197168,7 +197168,7 @@
       "confidence_score": 0.95,
       "context": "withSystemFieldNames",
       "source_file": "piani di implementazione/CRONOLOGIA.md",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -197257,5 +197257,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "89d47cfbf690a3ce17156c7ff79fa73a90be0acc"
+  "built_at_commit": "f8748560398c2b2102eaa82a6dd425580e07ea6a"
 }

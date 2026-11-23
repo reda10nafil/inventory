@@ -71,12 +71,17 @@ export default function CountScreen() {
   };
 
   // Uscita dalla schermata (tasto di sistema, tasto del browser, X a video): un passo indietro, o la domanda
-  const leave = countLeave(step, hasWrittenCounts(texts));
+  const written = hasWrittenCounts(texts);
+  const leave = countLeave(step, written);
   usePreventRemove(leave !== 'leave', ({ data }) => {
     // Sul web il tasto del browser ha già spostato l'indirizzo quando React Navigation chiede il permesso (azione
     // RESET della storia): se si resta nella Conta lo si rimette avanti, così indirizzo e storia tornano giusti
     const stay = () => { if (Platform.OS === 'web' && data.action.type === 'RESET') window.history.forward(); };
-    if (leave === 'step') { stay(); back(); return; }
+    // Il passo indietro vale solo con la Conta in primo piano. Tolta da sotto un'altra schermata (Audit aperto
+    // dall'avviso, poi un salto indietro di più voci del browser o un link) non si torna di un passo di nascosto:
+    // con quantità scritte si chiede, altrimenti si lascia andare
+    if (leave === 'step' && navigation.isFocused()) { stay(); back(); return; }
+    if (!written) { navigation.dispatch(data.action); return; }
     Alert.alert('Uscire dalla conta?', 'Le quantità scritte si perdono.', [
       { text: 'Annulla', style: 'cancel', onPress: stay },
       { text: 'Esci', style: 'destructive', onPress: () => navigation.dispatch(data.action) },

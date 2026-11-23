@@ -80,7 +80,7 @@ export default function RootNavigator() {
         headerTintColor: t.colors.accentInk,
         headerTitleStyle: { color: t.colors.textPrimary },
         // IND-P7 (ticket 28): la freccia nativa non prende più il nome della schermata sotto («(tabs), back»,
-        // «Scanner, back»); sul web cambia l'etichetta accessibile, il testo non si vede
+        // «Scanner, back»); sul web cambia l'etichetta accessibile e il testo non si vede, su iOS si legge «Indietro»
         headerBackTitle: 'Indietro',
       }}
     >

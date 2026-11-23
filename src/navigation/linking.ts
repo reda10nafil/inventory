@@ -103,7 +103,7 @@ export function getStateFromPath(path: string, options?: Parameters<typeof defau
  * `AuthContext`, non è una schermata; senza il filtro React Navigation lo aprirebbe come «Page Not Found». Vale solo su
  * Android e iOS (React Navigation non usa `filter` sul web, dove il ritorno è la radice del sito).
  */
-export const isNavigationLink = (url: string) => !/^[a-z][\w+.-]*:\/\/auth\/callback\b/i.test(url);
+export const isNavigationLink = (url: string) => !/^[a-z][\w+.-]*:\/\/\/?auth\/callback\b/i.test(url);
 
 export const linking = {
   prefixes: ['syncroflow://', 'exp+syncro-flow://'],

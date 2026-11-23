@@ -194,4 +194,69 @@ const stato = async (h) => ({ passo: await passo(h), percorso: u.percorso(h.page
       && chatConCard.basi.includes('syncroflow') && chatConCard.card;
     return { ok, dopoAvvio, dopoSchede, ricarica, chatSoloTesto, chatConCard };
   });
+
+  // 7. Il modo più comune di uscire sul web: tasto del browser fino alla scelta della posizione, poi ancora, «OK» alla
+  // domanda → Automazioni, Conta smontata, una finestra sola, niente scritto; l'indirizzo non torna alla Conta
+  await run('ind-conta-browser-esci', async (h) => {
+    const fin = finestre(h.page);
+    await prepara(h);
+    const prima = JSON.stringify(await h.products(0));
+    await h.tab('Automazioni');
+    await h.click('Conta Magazzino');
+    await label(h, 'Conta Magazzino').click(); await h.page.waitForTimeout(500);
+    await label(h, 'Contata VIS-0098').fill('3');
+    await h.page.goBack(); await h.page.waitForTimeout(1500);
+    const posizione = await stato(h);
+    await h.page.goBack(); await h.page.waitForTimeout(1500);
+    const uscita = { ...(await stato(h)), finestre: [...fin] };
+    await h.page.waitForTimeout(1500);
+    uscita.percorsoDopo = u.percorso(h.page);
+    const nienteScritto = JSON.stringify(await h.products(0)) === prima;
+    const ok = posizione.passo === 'posizione' && posizione.percorso === '/automations/count' && uscita.passo === 'fuori'
+      && uscita.percorso === '/automations' && uscita.percorsoDopo === '/automations' && uscita.conta === 0 && uscita.finestre.length === 1 && nienteScritto;
+    return { ok, posizione, uscita, nienteScritto };
+  }, { dialogs: ['ok'] });
+
+  // 8. Conta non in primo piano (Audit aperto dall'avviso dei pezzi unici) tolta da un salto indietro di due voci del
+  // browser (`history.go(-2)`, come il menu del tasto Indietro): con quantità scritte si chiede (OK esce, Annulla resta
+  // nella Conta con la quantità); senza quantità si esce senza domanda. Mai un passo indietro nascosto che blocca.
+  const sottoAudit = async (h, scrivi) => {
+    const fin = finestre(h.page);
+    // VIS-0142 (pezzo unico) in Magazzino: nell'elenco compare l'avviso che apre l'Audit (una ricarica sola, in prepara)
+    await h.page.evaluate(() => {
+      const list = JSON.parse(localStorage.getItem('inventory:v1:local:products'));
+      list.find((x) => x.sku === 'VIS-0142').location = 'magazzino';
+      localStorage.setItem('inventory:v1:local:products', JSON.stringify(list));
+    });
+    await prepara(h);
+    await h.tab('Automazioni');
+    await h.click('Conta Magazzino');
+    await label(h, 'Conta Magazzino').click(); await h.page.waitForTimeout(500);
+    if (scrivi) await label(h, 'Contata VIS-0098').fill('3');
+    await label(h, 'Apri Audit Posizione').click(); await h.page.waitForTimeout(1200);
+    const audit = { percorso: u.percorso(h.page), visibile: await h.has('Inizia Inventario', true) };
+    await h.page.evaluate(() => window.history.go(-2)); await h.page.waitForTimeout(2500);
+    const dopo = {
+      ...(await stato(h)), audit: await u.montate(h.page, 'Inizia Inventario'), finestre: [...fin],
+      scritto: await label(h, 'Contata VIS-0098').inputValue().catch(() => null),
+    };
+    return { audit, dopo };
+  };
+  await run('ind-conta-sotto-esci', async (h) => {
+    const r = await sottoAudit(h, true);
+    const ok = r.audit.visibile && r.dopo.finestre.length === 1 && /Uscire dalla conta/.test(r.dopo.finestre[0])
+      && r.dopo.passo === 'fuori' && r.dopo.percorso === '/automations' && r.dopo.conta === 0 && r.dopo.audit === 0;
+    return { ok, ...r };
+  }, { dialogs: ['ok'] });
+  await run('ind-conta-sotto-annulla', async (h) => {
+    const r = await sottoAudit(h, true);
+    const ok = r.audit.visibile && r.dopo.finestre.length === 1 && r.dopo.passo === 'elenco' && r.dopo.scritto === '3'
+      && r.dopo.percorso === '/automations/count' && r.dopo.audit === 0;
+    return { ok, ...r };
+  }, { dialogs: ['cancel'] });
+  await run('ind-conta-sotto-vuota', async (h) => {
+    const r = await sottoAudit(h, false);
+    const ok = r.audit.visibile && r.dopo.finestre.length === 0 && r.dopo.passo === 'fuori' && r.dopo.percorso === '/automations' && r.dopo.conta === 0 && r.dopo.audit === 0;
+    return { ok, ...r };
+  });
 })();

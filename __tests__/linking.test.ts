@@ -52,6 +52,7 @@ describe('linking (C2)', () => {
     expect(linking.filter('syncroflow://auth/callback?code=abc')).toBe(false);
     expect(linking.filter('syncroflow://auth/callback#access_token=x')).toBe(false);
     expect(linking.filter('exp+syncro-flow://auth/callback?code=abc')).toBe(false);
+    expect(linking.filter('syncroflow:///auth/callback?code=abc')).toBe(false); // tre barre: React Navigation legge lo stesso indirizzo
     expect(linking.filter('syncroflow://settings/folders')).toBe(true);
     expect(linking.filter('syncroflow://product/cmp-1')).toBe(true);
     expect(linking.filter('syncroflow://auth/callbackx')).toBe(true);
