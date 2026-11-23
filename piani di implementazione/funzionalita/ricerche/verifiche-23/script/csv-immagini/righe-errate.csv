@@ -1,0 +1,11 @@
+SKU,Tipo di pelle,Posizione,Status,Prezzo Vendita,Categoria,Unità,Giacenza,Scorta minima
+ERR-OK,visone,vetrina,,1500,Pellicce,,,
+VIS-0142,visone,vetrina,,999,,,,
+vis-0142,visone,vetrina,,999,,,,
+,visone,vetrina,,100,,,,
+ERR-GIAC,,magazzino,,10,,pz,abc,
+ERR-PREZZO,volpe,vetrina,,abc,,,,
+ERR-NOPOS,volpe,,,100,,,,
+ERR-POSX,volpe,Magazzino Centrale,,100,Borse,,,
+ERR-OK,visone,vetrina,,1500,,,,
+ERR-STATO,visone,vetrina,boh,,,,,

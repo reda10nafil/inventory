@@ -12,7 +12,7 @@ Che cosa fa l'app quando legge un tag?
   - Fuori dalle automazioni apre la **Scheda** del prodotto (o l'Azione rapida, come una lettura del codice).
   - In Vendita flash mostra il prodotto e **chiede conferma**.
   - Nelle altre automazioni vale come la lettura di un codice: stesse regole, stessi rifiuti.
-- Il tag continua a contenere il **link GS1 di oggi**; un tag di posizione o di scaffale porta il loro codice.
+- ~~Il tag continua a contenere il **link GS1 di oggi**~~. **Superato il 23 novembre mattina** (risposta dell'utente: QR e tag servono «solo all'app»): il tag porta **il codice** del prodotto, come quelli di posizione, scaffale e categoria; il lettore unico (fetta COD, ticket 22) riconosce anche i link GS1 già scritti sui tag. Oggi nessun lettore riconosce il link GS1 (NG01, AU-V07, provato sul web).
 - Il manifest resta **senza `NDEF_DISCOVERED`**: un tag non apre l'app da chiusa.
 - Un tag sconosciuto dà un messaggio chiaro e nessuna scrittura.
 

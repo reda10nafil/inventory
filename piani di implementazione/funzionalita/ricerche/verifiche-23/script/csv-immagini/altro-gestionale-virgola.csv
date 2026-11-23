@@ -1,0 +1,3 @@
+SKU,Nome,Categoria,Prezzo,Quantità,Taglia,Colore,Materiale,Immagine,Immagini
+ALT-001,Giacca in montone,Pellicce,"1.250,00",2,M,Nero,Montone,https://img.prova.test/a1.png,https://img.prova.test/a2.png;https://img.prova.test/a3.png
+ALT-002,Sciarpa,Accessori,49,10,,Rosso,Lana,https://img.prova.test/s1.png,

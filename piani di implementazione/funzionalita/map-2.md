@@ -38,7 +38,7 @@ Un elenco di fette pronte da eseguire, una per task, che porta nell'app React Na
 - [Formato WebP](issues/12-immagini-webp.md) (ricerca, si chiude nella fetta I1): larghezza massima, qualità e peso su web e Android.
 - [Scaffale: cos'è e dove sta](issues/13-scaffale.md) (utente): entità a sé dentro una posizione, generico o di una categoria, con codice e tag NFC; nel prodotto è facoltativo.
 - [Scaffale: capacità](issues/14-scaffale-capacita.md) (utente): pezzi, peso e volume, ognuno facoltativo; il riempimento è il più alto dei tre.
-- [Scaffale: riempimento e avvisi](issues/15-scaffale-riempimento.md) (utente; soglie da confermare): colore e percentuale, avviso dall'80% con la proposta di un altro scaffale, mai un blocco.
+- [Scaffale: riempimento e avvisi](issues/15-scaffale-riempimento.md) (utente; **aggiornato il 23**): colore e percentuale con le soglie 50/80 confermate, avviso dall'80% con la proposta di un altro scaffale, **blocco quando il prodotto non entra** (supera «mai un blocco» del 22; vedi `map-3.md`).
 - [NFC: quando si ascolta](issues/16-nfc-quando-si-ascolta.md) (utente): solo su richiesta, mai ascolto continuo; Scanner & NFC sceglie davvero tra QR, NFC o entrambi.
 - [NFC: pause e ritardi](issues/17-nfc-pause-e-ritardi.md) (proposta, da confermare; contiene la ricerca N0): una pressione = una lettura; «Leggi più tag» con ritardo e pausa regolabili.
 - [NFC: cosa succede alla lettura](issues/18-nfc-alla-lettura.md) (proposta, da confermare): una lettura non vende mai da sola.
@@ -46,6 +46,8 @@ Un elenco di fette pronte da eseguire, una per task, che porta nell'app React Na
 - [Login Google](issues/20-login-google.md) (utente: sì «a patto che funzioni»; contiene le ricerche L0 e L2): prima la prova che funziona su web e Android, poi il passaggio dei dati locali.
 
 ## Fette da eseguire
+
+**Dal 23 novembre l'ordine complessivo, con le fette nuove delle richieste del 23, è in [`map-3.md`](map-3.md)** (tabella «Fette da eseguire»); questa tabella resta il riferimento per le fette di questa mappa.
 
 Ordine: M10 (**fatta** il 22 sera, `df4f3e5`), C1 (**fatta** il 22 sera, vedi `git log`), S1a (**fatta** il 23 novembre, vedi `git log`), poi S1b → S2 → S3 → N1 → N2 → I1 → L1 → L2 → I2 → I3. L0 e N0 sono ricerche in sola lettura, **chiuse** il 22 sera: resoconti in `ricerche/`, sintesi nei ticket 20 e 17. I difetti rimasti della fase B (elenco in `PASSAGGIO.md`) non sono in nessuna fetta: da proporre all'utente come fetta a sé.
 
@@ -55,10 +57,10 @@ Ordine: M10 (**fatta** il 22 sera, `df4f3e5`), C1 (**fatta** il 22 sera, vedi `g
 | C1 | 19 | **Fatta.** Categorie = cartelle con sottocategorie; «Tipo di pelle» campo facoltativo; CSV con le due colonne | M10 | `FurTypesContext` (ex `CategoriesContext`), `utils/categories.ts` (albero), `utils/furTypes.ts`, Cartelle, Aggiungi, Modifica, Scheda, Home, CSV, PDF, Audit, Conta, Azione rapida |
 | S1a | 13 | **Fatta.** Scaffali: anagrafica (posizione, categoria o generico, codice e tag), Impostazioni › Scaffali, `shelfId` facoltativo **solo nei pezzi unici** (nessuna chiave di `stock` è uno scaffale) | C1 | contesto nuovo `ShelvesContext`, `utils/shelves.ts` + test, schermata nuova, Aggiungi, Modifica, Scheda, Scanner, CSV |
 | S1b | 13 | Giacenza degli articoli a quantità sugli scaffali: tutte le letture e scritture di `stock` in un commit; prima la scelta della forma delle chiavi, con test e resoconto, poi le schermate | S1a | `utils/stock.ts`, `utils/inventoryOps.ts`, `InventoryContext`, `MovementSheet`, Conta, Audit |
-| S2 | 14, 15 | Capacità in pezzi, peso e volume; altezza e profondità facoltative nel prodotto; riempimento in % con i colori | S1b | `utils/shelves.ts` + test, Scaffali, Scheda |
-| S3 | 15 | Avviso dall'80% e proposta dello scaffale migliore in Aggiungi, Movimenta e nelle automazioni di carico | S2 | Aggiungi, `MovementSheet`, Azione rapida, Spostamento rapido |
+| S2 | 14, 15 | Capacità in pezzi, peso e volume; ripiano o barra appendiabiti; controllo del singolo prodotto (`fitsShelf`); altezza facoltativa nel prodotto; riempimento in % con i colori (aggiornato il 23: ticket 14) | S1b | `utils/shelves.ts` + test, Scaffali, Scheda |
+| S3 | 15 | Avviso dall'80% e **blocco quando il prodotto non entra**, con la proposta dello scaffale migliore, in tutti i punti di carico (elenco nel ticket 15, aggiornato il 23) | S2, COD (`map-3.md`) | Aggiungi, Modifica, `MovementSheet`, Azione rapida, Spostamento rapido, esecuzione delle automazioni |
 | N0 | 17 | Ricerca: zittire Android sui tag con l'app aperta senza un ascolto continuo | – | nessuno (sola lettura) |
-| N1 | 16, 18 | NFC su richiesta: «Leggi tag NFC» in Scanner e automazioni; Scanner & NFC rispettato (D19) | N0 | `utils/nfcService.ts`, `HardwareConfigContext`, Scanner, automazioni |
+| N1 | 16, 18 | NFC su richiesta: «Leggi tag NFC» in Scanner e automazioni; Scanner & NFC rispettato (D19). **Dal 23**: il tag porta il codice (non il link), lettura dal lettore unico, schermata «Scanner e NFC» semplice (ticket 22) | N0, COD, ETI (`map-3.md`) | `utils/nfcService.ts`, `HardwareConfigContext`, Scanner, automazioni |
 | N2 | 17 | «Leggi più tag» con ritardo e pausa regolabili; pausa dopo la scrittura | N1 | come N1, `HardwareScreen` |
 | I1 | 12 | Foto in WebP (conversione su web e Android, larghezza massima, qualità) | – | `utils/webp.ts` nuovo + test |
 | L0 | 20 | Ricerca: perché il login è stato spento in `cfcdecb`, quale configurazione OAuth e Supabase esiste | – | nessuno (sola lettura) |
@@ -71,7 +73,7 @@ Prova sul telefono, quando l'utente lo collega: L1 su Android, N1 e N2 (l'NFC si
 
 ## Da confermare con l'utente (una domanda quando la fetta è la prossima)
 
-- S2: soglie del riempimento (verde sotto il 50%, blu dal 50 all'80%, rosso dall'80%).
+- ~~S2: soglie del riempimento~~: **confermate** il 23 (verde fino al 50%, blu fino all'80%, rosso oltre). Le domande nuove sono in `map-3.md`.
 - N1 e N2: le proposte dei ticket 17 e 18 e le quattro decisioni uscite dalla ricerca N0 (ticket 17): il «silenziatore» tiene il lettore NFC all'app mentre è aperta, e in quel tempo il telefono non paga con Wallet.
 - L1: accesso facoltativo da Impostazioni, con lo spazio `local` usabile senza account (ticket 20). Prima di L1 l'utente deve accendere il provider Google in Supabase.
 - L2: come passano i dati locali allo spazio dell'account.
@@ -79,9 +81,9 @@ Prova sul telefono, quando l'utente lo collega: L1 su Android, N1 e N2 (l'NFC si
 
 ## Not yet specified
 
-- Import delle foto dal CSV (riportare prodotti e immagini da un file esportato).
-- Passi NFC nel costruttore di automazioni (CustomRunner, AutomationFlow); scrittura di più tag di seguito.
-- Scaffali in Conta e Audit.
+- ~~Import delle foto dal CSV~~ → passato in `map-3.md` (fette IMP e FOTO, ticket 26 e 27).
+- ~~Passi NFC nel costruttore di automazioni~~ → `map-3.md`: non passi a sé, il lettore di ogni passo «Scansiona» accetta l'NFC (fetta N1, ticket 22); scrittura di più tag di seguito con N2 ed ETI.
+- ~~Scaffali in Conta e Audit~~ → `map-3.md`, fetta CON (ticket 29).
 - Restano dalla prima mappa: lotti e scadenze, ordini e documenti di trasporto, valore di magazzino, sincronizzazione delle giacenze tra telefoni.
 
 ## Out of scope

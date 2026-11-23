@@ -1,0 +1,5 @@
+SKU,Tipo di pelle,Posizione,Immagini URL
+IMG-JSON,visone,vetrina,"[""https://img.prova.test/f1.png"",""https://img.prova.test/f2.png"",""https://drive.google.com/file/d/abc/view""]"
+IMG-PV,volpe,vetrina,https://img.prova.test/f3.png; https://img.prova.test/f4.png
+IMG-ROTTO,volpe,vetrina,https://img.prova.test/manca.png
+IMG-LOCALE,volpe,vetrina,"[""file:///storage/emulated/0/DCIM/x.jpg"",""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==""]"

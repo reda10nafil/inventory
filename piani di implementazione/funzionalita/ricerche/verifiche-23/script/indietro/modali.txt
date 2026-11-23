@@ -1,0 +1,21 @@
+components/MovementSheet.tsx:145:    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+src/screens/ScannerScreen.tsx:338:      <Modal
+src/screens/ScannerScreen.tsx:355:      <Modal
+src/screens/automations/CustomRunnerScreen.tsx:429:            <Modal visible={showPriceModal} transparent animationType="slide" onRequestClose={() => setShowPriceModal(false)}>
+src/screens/automations/ScanSellScreen.tsx:162:            <Modal
+src/screens/product/DetailScreen.tsx:1298:      <Modal
+src/screens/product/DetailScreen.tsx:1360:      <Modal
+src/screens/product/EditScreen.tsx:812:        <Modal visible={true} animationType="slide" onRequestClose={() => setScanFieldId(null)}>
+src/screens/product/EditScreen.tsx:822:        <Modal visible={true} transparent={true} animationType="slide" onRequestClose={() => setSelectModalConfig(null)}>
+src/screens/settings/AutomationBuilderScreen.tsx:292:            <Modal visible={showStepPicker} transparent animationType="slide" onRequestClose={() => setShowStepPicker(false)}>
+src/screens/settings/AutomationBuilderScreen.tsx:315:            <Modal visible={showConfigModal} transparent animationType="slide" onRequestClose={() => setShowConfigModal(false)}>
+src/screens/settings/ContactsScreen.tsx:223:      <Modal visible={!!open} transparent animationType="fade" onRequestClose={() => setOpenId(null)}>
+src/screens/settings/FieldsScreen.tsx:275:      <Modal
+src/screens/settings/FoldersScreen.tsx:303:      <Modal visible={showQRModal} transparent animationType="fade" onRequestClose={() => setShowQRModal(false)}>
+src/screens/settings/LayoutBuilderScreen.tsx:422:            <Modal visible={showTemplatesModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowTemplatesModal(false)}>
+src/screens/settings/LayoutBuilderScreen.tsx:457:            <Modal visible={showAddFieldModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddFieldModal(false)}>
+src/screens/settings/LocationsScreen.tsx:263:      <Modal visible={showQRModal} transparent animationType="fade" onRequestClose={() => setShowQRModal(false)}>
+src/screens/settings/SectorTemplatesScreen.tsx:205:            <Modal
+src/screens/tabs/AddScreen.tsx:1087:        <Modal visible={true} animationType="slide" onRequestClose={() => setScanFieldId(null)}>
+src/screens/tabs/AddScreen.tsx:1097:        <Modal visible={true} transparent={true} animationType="slide" onRequestClose={() => setSelectModalConfig(null)}>
+src/screens/tabs/HomeScreen.tsx:486:      <Modal
