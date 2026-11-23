@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
+import { ProductNotFound } from '../../components/ProductNotFound';
 import * as ImagePicker from '../../lib/imagePicker';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { formatNumberInput, parseNumber } from '../../../utils/number';
@@ -34,21 +35,12 @@ import { addPhotos, photosPatch, type Photos } from '../../../utils/photos';
 // Il modulo nasce solo quando il prodotto c'è. Aperta dall'indirizzo o ricaricata, la schermata partiva prima
 // che i prodotti fossero letti e il modulo restava vuoto: salvando si sovrascriveva il prodotto (P04).
 export default function EditProductScreen() {
-  const styles = useStyles();
   const { id } = useLocalSearchParams();
   const { getProductById } = useInventory();
   const product = getProductById(id as string);
 
-  if (!product) {
-    return (
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <Backdrop />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Prodotto non trovato</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // IND-P6 (ticket 28): con «Torna all'inventario», non più una pagina senza uscita
+  if (!product) return <ProductNotFound />;
   return <EditProductForm key={product.id} product={product} />;
 }
 
@@ -603,14 +595,5 @@ const useStyles = makeStyles((t) => ({
   actionButtonPrimary: {
     flex: 2,
     paddingVertical: 14,
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorText: {
-    ...t.typography.cardTitle,
-    fontSize: 18,
   },
 }));

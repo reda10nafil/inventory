@@ -31,25 +31,17 @@ async function torna(h) {
 
 (async () => {
   // 1. Ogni indirizzo interno aperto direttamente: freccia presente, il tocco porta alla scheda madre, 0 GO_BACK.
-  // Lo Scanner non ha freccia (IND-3, fetta IND): si controlla solo che sotto ci sia Automazioni.
+  // Lo Scanner ha la X da IND (IND-P4, ticket 28) e si prova come gli altri.
   await run('c2-ind-diretto', async (h) => {
     const gb = goBacks(h.page);
     const righe = [];
     const rosse = [];
-    for (const { nome, indirizzo } of u.indirizzi()) {
+    for (const { indirizzo } of u.indirizzi()) {
       const madre = u.MADRE[indirizzo];
       const atteso = u.PERCORSO_MADRE[madre];
       const g0 = gb.length;
       await h.go(apri(indirizzo));
       const f = await u.frecce(h.page);
-      if (nome === 'Scanner') {
-        // «Centro Automazioni» è nel documento (scheda montata) ma non a video (nascosta sotto lo Scanner)
-        const sotto = await h.page.evaluate(() => document.body.textContent.includes('Centro Automazioni') && !document.body.innerText.includes('Centro Automazioni'));
-        const riga = `${indirizzo}: senza freccia (IND-P4), Automazioni montata sotto ${sotto}`;
-        righe.push(riga);
-        if (!sotto) rosse.push(riga);
-        continue;
-      }
       const tocco = await torna(h);
       const dopo = u.percorso(h.page);
       const riga = `${indirizzo}: ${tocco || 'nessuna freccia'} → ${dopo} (madre ${atteso})${gb.length - g0 ? ` GO_BACK ${gb.length - g0}` : ''}${f.notFound ? ' NotFound' : ''}`;

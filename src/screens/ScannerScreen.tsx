@@ -227,7 +227,11 @@ export default function ScannerScreen() {
     <SafeAreaView edges={['top']} style={styles.container}>
       <Backdrop />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Scanner QR/Barcode</Text>
+        {/* IND-P4 (ticket 28): X che torna da dove si era (Automazioni; da un indirizzo la scheda madre di C2) */}
+        <Pressable style={styles.closeButton} onPress={() => router.back()} accessibilityLabel="Chiudi" hitSlop={8}>
+          <AppIcon name="close" size={24} color={t.colors.textPrimary} />
+        </Pressable>
+        <Text style={styles.headerTitle} numberOfLines={1}>Scanner QR/Barcode</Text>
         <Pressable
           style={styles.flashButton}
           onPress={() => setFlashOn(!flashOn)}
@@ -375,8 +379,12 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  closeButton: {
+    marginRight: 16,
+  },
   headerTitle: {
     ...t.typography.cardTitle,
+    flex: 1,
     fontSize: 20,
   },
   flashButton: {

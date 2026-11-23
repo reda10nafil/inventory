@@ -98,8 +98,16 @@ export function getStateFromPath(path: string, options?: Parameters<typeof defau
   return { ...state, routes: [{ ...routes[0], state: { routes: [{ name: tab }] } }, routes[1]] } as LinkingState;
 }
 
+/**
+ * IND-P8 (ticket 28, per il login di L1): il ritorno dal login Google (`syncroflow://auth/callback?code=…`) lo legge
+ * `AuthContext`, non è una schermata; senza il filtro React Navigation lo aprirebbe come «Page Not Found». Vale solo su
+ * Android e iOS (React Navigation non usa `filter` sul web, dove il ritorno è la radice del sito).
+ */
+export const isNavigationLink = (url: string) => !/^[a-z][\w+.-]*:\/\/auth\/callback\b/i.test(url);
+
 export const linking = {
   prefixes: ['syncroflow://', 'exp+syncro-flow://'],
   config,
   getStateFromPath,
+  filter: isNavigationLink,
 };

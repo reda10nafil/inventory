@@ -42,7 +42,7 @@ Da fare nel codice in L1:
 
 - **accesso facoltativo** da Impostazioni: lo spazio `local` resta usabile senza account, così un login rotto non blocca più l'app (proposta dell'orchestratore, da confermare);
 - mostrare gli errori di ritorno (`error_description`) e l'accesso annullato;
-- tenere `syncroflow://auth/callback` fuori dalla navigazione su Android;
+- tenere `syncroflow://auth/callback` fuori dalla navigazione su Android (**fatto in IND il 23/11**, IND-P8 del ticket 28: `isNavigationLink` è il `filter` di `linking` in `src/navigation/linking.ts`, con il test in `__tests__/linking.test.ts`; vale su Android e iOS, sul web il ritorno è la radice del sito; da provare col login vero in L1, che il ritorno arrivi ad `AuthContext` e non apra «Page Not Found»);
 - schema nel repository e `types.ts` rigenerato; documenti aggiornati alla porta 8082.
 
 Avvisi per le fette dopo:

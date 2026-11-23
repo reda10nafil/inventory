@@ -1758,15 +1758,15 @@
     "semantic_hash": ""
   },
   "src/navigation/RootNavigator.tsx": {
-    "mtime": 1795411496.8487241,
-    "seen": 1795414573.61571,
-    "ast_hash": "6171a80b95714212fa5e02166e87cac9",
+    "mtime": 1795446514.1748655,
+    "seen": 1795449659.859326,
+    "ast_hash": "bd01db22ffeb4d2447ba7dcd7efaefc6",
     "semantic_hash": ""
   },
   "src/navigation/linking.ts": {
-    "mtime": 1795411489.4100122,
-    "seen": 1795414573.61571,
-    "ast_hash": "773c739a96fd23aca9f635c6d16f51f3",
+    "mtime": 1795446517.2872539,
+    "seen": 1795449659.859326,
+    "ast_hash": "6ca58ecf56e9b50fe61d8a97212a6398",
     "semantic_hash": ""
   },
   "src/navigation/types.ts": {
@@ -1800,9 +1800,9 @@
     "semantic_hash": ""
   },
   "src/screens/ScannerScreen.tsx": {
-    "mtime": 1795424127.107458,
-    "seen": 1795428043.1667693,
-    "ast_hash": "6964dff7217130f233e95a567c6acdf6",
+    "mtime": 1795446486.839561,
+    "seen": 1795449659.8603249,
+    "ast_hash": "86865b829ada3da0f4978659d2e1a193",
     "semantic_hash": ""
   },
   "src/screens/automations/AuditScreen.tsx": {
@@ -1842,15 +1842,15 @@
     "semantic_hash": ""
   },
   "src/screens/product/DetailScreen.tsx": {
-    "mtime": 1795439356.472838,
-    "seen": 1795442992.4670165,
-    "ast_hash": "03df0eb86ad3c29c7927c8b294f46b91",
+    "mtime": 1795446502.90887,
+    "seen": 1795449659.8623283,
+    "ast_hash": "63bc02b87bdc10347bb86ed4576e46b5",
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
-    "mtime": 1795441374.9248595,
-    "seen": 1795442992.4670165,
-    "ast_hash": "0e42fe855f603bd038e789332a61b151",
+    "mtime": 1795446508.8124042,
+    "seen": 1795449659.8623283,
+    "ast_hash": "a5d11b004638a7454cf4af2eb1e63ff3",
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
@@ -2058,9 +2058,9 @@
     "semantic_hash": ""
   },
   "src/components/chat/HydratedProductCard.tsx": {
-    "mtime": 1795321168.8373175,
-    "seen": 1795323475.1485813,
-    "ast_hash": "06bdd9a79953b5c4744e4b40cafcd8a3",
+    "mtime": 1795446536.185363,
+    "seen": 1795449659.854314,
+    "ast_hash": "6fce3c85da1dcff1970af4aa47df7793",
     "semantic_hash": ""
   },
   "src/db/index.ts": {
@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795443896.8543217,
-    "seen": 1795444036.261311,
-    "ast_hash": "64bddd03100193d8e19bc434330b0e55",
+    "mtime": 1795449400.608649,
+    "seen": 1795449659.8948534,
+    "ast_hash": "23cbe766ec11db8f7f368f37e3557478",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795443896.853324,
-    "seen": 1795444036.261311,
-    "ast_hash": "259344f4bd6ccbabb1d04d68ba242b3b",
+    "mtime": 1795447109.3765945,
+    "seen": 1795449659.8948534,
+    "ast_hash": "d80e4d825d5c599a5322770778cdf87c",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795443896.8553255,
-    "seen": 1795444036.2623105,
-    "ast_hash": "ce403ba1511bdf262d698818071d2819",
+    "mtime": 1795447185.5725708,
+    "seen": 1795449659.8948534,
+    "ast_hash": "bed0a92d0c018d89ac4efa785b7c0dfb",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3498,9 +3498,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-fette.cjs": {
-    "mtime": 1795440163.039253,
-    "seen": 1795442992.4584858,
-    "ast_hash": "9d2169475caf5d0569833db718ac5299",
+    "mtime": 1795446977.633423,
+    "seen": 1795449659.8454044,
+    "ast_hash": "a613fa13571c26368ba9272d1425e09f",
     "semantic_hash": ""
   },
   "utils/categories.ts": {
@@ -3612,9 +3612,9 @@
     "semantic_hash": ""
   },
   "src/screens/automations/CountScreen.tsx": {
-    "mtime": 1795376264.4690228,
-    "seen": 1795379115.5510387,
-    "ast_hash": "7cf1b6d34685a081c19c1383e681af38",
+    "mtime": 1795446465.412571,
+    "seen": 1795449659.8613245,
+    "ast_hash": "b843ef2d9caeb7502fbb4b386443cbaf",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-m07.jpg": {
@@ -3726,9 +3726,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/20-login-google.md": {
-    "mtime": 1795380231.4585226,
-    "seen": 1795403667.2333877,
-    "ast_hash": "24e5e8954ec137def1391d6ccc8c2a8c",
+    "mtime": 1795447077.5518737,
+    "seen": 1795449659.8989048,
+    "ast_hash": "0051890b2196ab894d72fa80626b1c81",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-2.md": {
@@ -3840,9 +3840,9 @@
     "semantic_hash": ""
   },
   "__tests__/linking.test.ts": {
-    "mtime": 1795412132.754895,
-    "seen": 1795414573.5987515,
-    "ast_hash": "e54508f5b390294c8a30fe31e474cca9",
+    "mtime": 1795446527.0478177,
+    "seen": 1795449659.810837,
+    "ast_hash": "b7627b7e2f6227c9a795d83885668491",
     "semantic_hash": ""
   },
   "components/OptionsEditor.tsx": {
@@ -3852,9 +3852,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c2-indietro.cjs": {
-    "mtime": 1795414795.8565571,
-    "seen": 1795416131.966512,
-    "ast_hash": "6b358d93b8d27ee95cf5158cc5de2eda",
+    "mtime": 1795446729.714741,
+    "seen": 1795449659.8413203,
+    "ast_hash": "82ce7a3c5a4f4c96e6e37c2873026cf9",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c2-tipo-pelle.cjs": {
@@ -3870,9 +3870,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/collaudo.cjs": {
-    "mtime": 1795440136.5345714,
-    "seen": 1795442992.4574842,
-    "ast_hash": "5780a27238fcef5ba51eabb137f813b7",
+    "mtime": 1795446773.1472323,
+    "seen": 1795449659.8423345,
+    "ast_hash": "83e917c7443a4818716788930aaf7276",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stato-da-indirizzo.mjs": {
@@ -4050,9 +4050,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/collaudo-finale.md": {
-    "mtime": 1795440722.9487803,
-    "seen": 1795442992.486851,
-    "ast_hash": "6b9d6bff58d9653b887421daee9665a9",
+    "mtime": 1795447126.8364694,
+    "seen": 1795449659.8948534,
+    "ast_hash": "65a2c466b3003e7270b18882cc805f67",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/21-tipo-di-pelle-nei-campi.md": {
@@ -4098,9 +4098,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/28-indietro-e-icone.md": {
-    "mtime": 1795414914.2279043,
-    "seen": 1795416131.9961653,
-    "ast_hash": "2f2614831a42a8076f911aab6c5ee400",
+    "mtime": 1795447065.479969,
+    "seen": 1795449659.8998556,
+    "ast_hash": "4f47efbbdf1e87fe9ebd22180b70de64",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/29-automazioni.md": {
@@ -4116,9 +4116,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-3.md": {
-    "mtime": 1795443896.856326,
-    "seen": 1795444036.2638144,
-    "ast_hash": "8039e9cb76143d9d2c7f19e7d960495c",
+    "mtime": 1795447139.4133065,
+    "seen": 1795449659.8998556,
+    "ast_hash": "bf0ed49d474a4592e775f9b8312f3a7f",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/ricerche/verifiche-23/script/indietro/modali.txt": {
@@ -4317,6 +4317,36 @@
     "mtime": 1795442823.5608442,
     "seen": 1795442992.4969485,
     "ast_hash": "b58ffe22414fde715d1898a3f322ce70",
+    "semantic_hash": ""
+  },
+  "__tests__/countBack.test.ts": {
+    "mtime": 1795446449.6161332,
+    "seen": 1795449659.8067322,
+    "ast_hash": "295130a86905bf3857830c11392eef30",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/ind-indietro.cjs": {
+    "mtime": 1795446697.9352655,
+    "seen": 1795449659.843323,
+    "ast_hash": "f98abf37c4eb04f0661c027e7937b661",
+    "semantic_hash": ""
+  },
+  "src/components/ProductNotFound.tsx": {
+    "mtime": 1795446449.6431367,
+    "seen": 1795449659.854314,
+    "ast_hash": "da64cb07daaf9d3c7881ebfc84778b0d",
+    "semantic_hash": ""
+  },
+  "utils/countBack.ts": {
+    "mtime": 1795446449.583498,
+    "seen": 1795449659.8865116,
+    "ast_hash": "f7e674f78c6edf1cf9cb1c890461d393",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-ind.jpg": {
+    "mtime": 1795449374.7389543,
+    "seen": 1795449659.9108803,
+    "ast_hash": "e05cf94aa69296071fc5eee8e3801b75",
     "semantic_hash": ""
   }
 }

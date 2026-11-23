@@ -6,7 +6,7 @@
 // Uso (dalla cartella prova/, app su :8082 e campionario su :8765):
 //   node collaudo.cjs              tutti i passi
 //   node collaudo.cjs CF-A CF-B5   solo i passi che cominciano con uno dei prefissi
-const { scenario } = require('./lib.cjs');
+const { scenario, APP } = require('./lib.cjs');
 const u = require('./c2-util.cjs');
 const g = require('./gal-util.cjs');
 const { textOf, press } = require('./a1-util.cjs');
@@ -28,15 +28,15 @@ const apri = (i) => (i === 'scanner-action' ? 'scanner-action?type=product&id=cm
 
 // ---- Passi scritti dalle fette ----
 
-// CF-A2 (parte C2): ogni indirizzo di linking.ts aperto direttamente (= ricaricato) ha la freccia che porta alla scheda
-// madre senza GO_BACK; tre voci del menu aperte e poi ricaricate; Team, Chat, Crea automazione senza NotFound.
-// Restano alla fetta IND: la X dello Scanner (IND-P4) e la Conta col tasto di sistema (IND-P5).
+// CF-A2 (parti C2 e IND): ogni indirizzo di linking.ts aperto direttamente (= ricaricato) ha la freccia (o la X) che
+// porta alla scheda madre senza GO_BACK, anche lo Scanner (IND-P4); tre voci del menu aperte e poi ricaricate; Team,
+// Chat, Crea automazione senza NotFound; la Conta col tasto Indietro di sistema (sul web quello del browser, IND-P5):
+// un passo indietro, poi la domanda e l'uscita.
 async function cfA2(h) {
   const gb = goBacks(h.page);
   const rosse = [];
   let n = 0;
-  for (const { nome, indirizzo } of u.indirizzi()) {
-    if (nome === 'Scanner') continue; // IND-P4
+  for (const { indirizzo } of u.indirizzi()) {
     const atteso = u.PERCORSO_MADRE[u.MADRE[indirizzo]];
     const g0 = gb.length;
     await h.go(apri(indirizzo));
@@ -63,7 +63,58 @@ async function cfA2(h) {
     n += 1;
     if (await h.has('Page Not Found', true)) rosse.push(`${indirizzo}: Page Not Found`);
   }
-  return { ok: rosse.length === 0, controlli: n, goBack: gb.length, rosse, daFare: 'IND: X dello Scanner (IND-P4), Conta col tasto di sistema (IND-P5)' };
+  // Scanner dai menu: la X torna ad Automazioni
+  await h.go('');
+  await h.tab('Automazioni');
+  await h.page.evaluate((g) => [...document.querySelectorAll('div')].find((d) => d.childElementCount === 0 && d.textContent === g && d.offsetParent).click(), String.fromCodePoint(0xf206));
+  await h.page.waitForTimeout(1200);
+  const scanner = { aperto: u.percorso(h.page), tocco: await u.toccaIndietro(h.page) };
+  await h.page.waitForTimeout(1200);
+  scanner.dopo = u.percorso(h.page);
+  n += 1;
+  if (scanner.aperto !== '/scanner' || scanner.tocco !== 'X' || scanner.dopo !== '/automations') rosse.push(`Scanner dai menu: ${JSON.stringify(scanner)}`);
+  // Conta dai menu con 3 pz scritti: il tasto del browser torna alla scelta della posizione (indirizzo uguale), la X
+  // chiede «Uscire dalla conta?» e con OK esce ad Automazioni; nessuna rettifica scritta
+  await h.page.evaluate(() => {
+    const list = JSON.parse(localStorage.getItem('inventory:v1:local:products'));
+    Object.assign(list.find((p) => p.sku === 'VIS-0098'), { unit: 'pz', stock: { magazzino: 5 }, location: 'magazzino' });
+    localStorage.setItem('inventory:v1:local:products', JSON.stringify(list));
+  });
+  await h.go('');
+  const domande = [];
+  h.page.on('dialog', (d) => { if (/Uscire dalla conta/.test(d.message())) domande.push(d.message()); });
+  await h.tab('Automazioni');
+  await h.click('Conta Magazzino');
+  await h.page.getByLabel('Conta Magazzino', { exact: true }).locator('visible=true').first().click(); await h.page.waitForTimeout(500);
+  await h.page.getByLabel('Contata VIS-0098', { exact: true }).locator('visible=true').first().fill('3');
+  await h.page.goBack(); await h.page.waitForTimeout(1500);
+  const conta = { dopoIndietro: u.percorso(h.page), posizione: await h.page.getByLabel('Conta Magazzino', { exact: true }).locator('visible=true').count() };
+  conta.tocco = await u.toccaIndietro(h.page); await h.page.waitForTimeout(1500);
+  conta.dopo = u.percorso(h.page);
+  conta.domande = domande.length;
+  conta.rettifiche = (await h.timeline(0)).filter((e) => e.type === 'stock' && e.details.movement === 'rettifica').length;
+  n += 1;
+  if (conta.dopoIndietro !== '/automations/count' || conta.posizione !== 1 || conta.tocco !== 'X' || conta.dopo !== '/automations' || conta.domande !== 1 || conta.rettifiche)
+    rosse.push(`Conta: ${JSON.stringify(conta)}`);
+  return { ok: rosse.length === 0, controlli: n, goBack: gb.length, rosse, scanner, conta };
+}
+
+// CF-A3 (parte IND): avvio a freddo (database del browser vuoto, ricarica durante il primo avvio, come g2-loki.cjs) e
+// giro delle 5 schede e di ogni indirizzo di linking.ts: 0 errori in console, **contando anche** «Deleting database
+// failed» di LokiJS (lib.cjs lo filtra; da IND-P9 il database nasce solo alla prima card di prodotti della Chat).
+async function cfA3(h) {
+  const errori = [];
+  h.page.on('console', (m) => { if (m.type() === 'error') errori.push(`${u.percorso(h.page)} ${m.text().slice(0, 140)}`); });
+  h.page.on('pageerror', (e) => errori.push(`${u.percorso(h.page)} pageerror ${e.message.slice(0, 140)}`));
+  await h.page.evaluate(() => Promise.all(['syncroflow', 'WatermelonIDBChecker'].map((nome) => new Promise((r) => {
+    const q = indexedDB.deleteDatabase(nome); q.onsuccess = q.onerror = q.onblocked = () => r();
+  }))));
+  await h.page.goto(APP); await h.page.waitForTimeout(300);
+  await h.page.reload(); await h.page.waitForTimeout(3000);
+  const indirizzi = ['', 'timeline', 'automations', 'add', 'settings', ...u.indirizzi().map((r) => apri(r.indirizzo))];
+  for (const i of indirizzi) await h.go(i);
+  const loki = errori.filter((e) => /Deleting database failed/.test(e)).length;
+  return { ok: errori.length === 0, schermate: indirizzi.length, errori: errori.slice(0, 5), loki, daFare: 'VOCI: voci «Prossimamente» rimaste senza decisione' };
 }
 
 // CF-B5: Campi › «Tipo di pelle»: aggiungere e rinominare un valore; voce «Tipi di pelle» assente da Impostazioni; i
@@ -440,7 +491,7 @@ async function cfB3(h) {
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
   ['CF-A2', 'Ogni indirizzo di linking.ts dal menu, ricaricato, aperto direttamente: freccia, scheda madre, 0 GO_BACK; Team, Chat, Crea automazione senza NotFound', 'C2, IND', cfA2],
-  ['CF-A3', 'Avvio a freddo e giro di tutte le schermate: 0 errori in console; nessuna voce «Prossimamente» senza decisione', 'IND, VOCI'],
+  ['CF-A3', 'Avvio a freddo e giro di tutte le schermate: 0 errori in console; nessuna voce «Prossimamente» senza decisione', 'IND, VOCI', cfA3],
   ['CF-B1', 'Categoria «Borse» con la sottocategoria «Borse › Zaini»', 'C1 (fatta, passo da scrivere)'],
   ['CF-B2', 'Modulo di «Borse» da un Modello di settore', 'MCAT'],
   ['CF-B3', 'Campo «Colore» (pillole, colori, icona) e «Larghezza» (ruota); rinomina di un\'opzione usata', 'VAL, EDC', cfB3],

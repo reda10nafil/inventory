@@ -32,22 +32,29 @@ import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 // ---------------------------------------------------------------------------
 // WatermelonDB reactive — JSI sync read, fallback InventoryContext
 // ---------------------------------------------------------------------------
-let DB: any = null;
-let Q: any = null;
-try {
-  const wm = require('@nozbe/watermelondb');
-  Q = wm.Q;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const dbMod = require('../../db');
-  DB = dbMod.database ?? dbMod.default?.database ?? dbMod;
-} catch {
-  DB = null;
-  Q = null;
+// IND-P9 (ticket 28): il database nasce alla prima card che lo chiede (Chat), non all'avvio dell'app. Prima il
+// `require` stava qui fuori e, attraverso RootNavigator › ChatScreen › ChatMessageItem, creava il database a ogni
+// avvio: sul web, ricaricando durante la prima preparazione, LokiJS scriveva «Deleting database failed… blocked».
+let DB: any;
+let Q: any;
+function loadDb() {
+  if (DB !== undefined) return;
+  try {
+    const wm = require('@nozbe/watermelondb');
+    Q = wm.Q;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const dbMod = require('../../db');
+    DB = dbMod.database ?? dbMod.default?.database ?? dbMod;
+  } catch {
+    DB = null;
+    Q = null;
+  }
 }
 
 function useObservedProducts(skus: string[]): any[] {
   const [observed, setObserved] = useState<any[]>([]);
   useEffect(() => {
+    if (skus.length) loadDb();
     if (!DB || !Q || !skus.length) {
       setObserved([]);
       return;

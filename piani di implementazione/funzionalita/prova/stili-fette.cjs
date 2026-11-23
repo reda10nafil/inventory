@@ -534,6 +534,39 @@ const FETTE = {
       }],
     ],
   },
+  // IND (ticket 28): Scanner con la X; Conta dai menu con una quantità scritta, poi il tasto del browser (si resta in
+  // Conta, al passo prima) e la domanda all'uscita (finestra del browser, che non entra nella schermata: il testo si
+  // stampa con gli errori, la risposta è «Annulla» e la schermata mostra la Conta rimasta); «Prodotto non trovato» con
+  // «Torna all'inventario» in Scheda e Modifica
+  ind: {
+    rifiuta: true,
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      Object.assign(list.find((p) => p.sku === 'VIS-0098'), { unit: 'pz', stock: { magazzino: 5 }, location: 'magazzino' });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['scanner', async (page) => {
+        await page.getByText('Automazioni', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(1200);
+        await page.evaluate(() => {
+          const g = String.fromCodePoint(0xf206);
+          [...document.querySelectorAll('div')].find((d) => d.childElementCount === 0 && d.textContent === g && d.offsetParent).click();
+        });
+        await page.waitForTimeout(1500);
+      }],
+      ['conta-elenco', async (page) => {
+        await page.goBack(); await page.waitForTimeout(1200); // X o tasto del browser: torna ad Automazioni
+        await page.getByText('Conta Magazzino', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(800);
+        await page.getByLabel('Conta Magazzino', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByLabel('Contata VIS-0098', { exact: true }).locator('visible=true').first().fill('3');
+      }],
+      ['conta-tasto-indietro', async (page) => { await page.goBack(); await page.waitForTimeout(1500); }],
+      ['conta-domanda-annullata', async (page) => { await page.goBack(); await page.waitForTimeout(1500); }],
+      ['scheda-non-trovata', async (page) => { await page.goto(`${APP}/product/inesistente`); await page.waitForTimeout(1800); }],
+      ['modifica-non-trovata', async (page) => { await page.goto(`${APP}/product/edit/inesistente`); await page.waitForTimeout(1800); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;
@@ -548,7 +581,9 @@ FETTE.m04.prima = FETTE.m03.prepara;
     const errors = [];
     page.on('console', (m) => { if (m.type() === 'error' && !/Deleting database failed/.test(m.text())) errors.push(m.text().slice(0, 120)); });
     page.on('pageerror', (e) => errors.push(`pageerror ${e.message.slice(0, 120)}`));
-    page.on('dialog', (d) => d.accept());
+    // `rifiuta`: le finestre del browser si chiudono con «Annulla» (IND: la domanda della Conta lascia la Conta a video)
+    const finestre = [];
+    page.on('dialog', (d) => { finestre.push(d.message().replace(/\n+/g, ' | ').slice(0, 120)); return fetta.rifiuta ? d.dismiss() : d.accept(); });
     await page.goto(APP); await page.waitForTimeout(2500);
     await page.evaluate(async (stile) => {
       localStorage.setItem('@syncro/stile', stile);
@@ -567,7 +602,7 @@ FETTE.m04.prima = FETTE.m03.prepara;
       await page.screenshot({ path: path.join(OUT, `${stile}-${n}-${nome}.png`) });
       n += 1;
     }
-    console.log(stile, 'errori console:', errors.length ? errors : 0);
+    console.log(stile, 'errori console:', errors.length ? errors : 0, ...(finestre.length ? ['| finestre:', JSON.stringify(finestre)] : []));
     await ctx.close();
   }
   await browser.close();

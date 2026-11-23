@@ -8,6 +8,7 @@ import * as ImageManipulator from '../../lib/imageManipulator';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
+import { ProductNotFound } from '../../components/ProductNotFound';
 import * as Clipboard from '../../lib/clipboard';
 import * as Sharing from '../../lib/sharing';
 import { Image } from '../../lib/ExpoImage';
@@ -71,16 +72,8 @@ export default function ProductDetailScreen() {
   const [showMovement, setShowMovement] = useState(false);
   const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
 
-  if (!product) {
-    return (
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <Backdrop />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Prodotto non trovato</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // IND-P6 (ticket 28): con «Torna all'inventario», non più una pagina senza uscita
+  if (!product) return <ProductNotFound />;
 
   const heroWidth = Math.max(1, screenWidth);
   // Visore: con le foto del prodotto si muove insieme alla galleria in alto; con quelle di un campo ha il suo indice
@@ -1729,16 +1722,6 @@ const useStyles = makeStyles((t) => ({
     fontSize: 15,
     fontWeight: '600',
     color: t.colors.onButton,
-  },
-  errorContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorText: {
-    ...t.typography.cardTitle,
-    fontSize: 18,
-    color: t.colors.textSecondary,
   },
   modalOverlay: {
     flex: 1,

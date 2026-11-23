@@ -79,6 +79,9 @@ export default function RootNavigator() {
         headerStyle: { backgroundColor: t.colors.background },
         headerTintColor: t.colors.accentInk,
         headerTitleStyle: { color: t.colors.textPrimary },
+        // IND-P7 (ticket 28): la freccia nativa non prende più il nome della schermata sotto («(tabs), back»,
+        // «Scanner, back»); sul web cambia l'etichetta accessibile, il testo non si vede
+        headerBackTitle: 'Indietro',
       }}
     >
       <Stack.Screen name="(tabs)" component={TabsNavigator} options={{ headerShown: false }} />

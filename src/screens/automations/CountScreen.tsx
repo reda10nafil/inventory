@@ -2,9 +2,12 @@
 // quantità che si aspetta lì, riepilogo delle differenze, conferma. La conferma è una sola chiamata al contesto
 // (`countStock`), che scrive una rettifica con causale «conta» per ogni differenza. Calcoli in utils/inventoryOps.ts.
 // Una quantità lasciata vuota vuol dire «non contato»: quell'articolo resta com'è (mai letto come 0).
+// IND-P5 (ticket 28): il tasto Indietro di sistema (Android, tasto del browser) fa come la freccia a video, un passo
+// indietro; dalla scelta della posizione, con quantità scritte e non registrate, chiede prima di uscire.
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, usePreventRemove } from '@react-navigation/native';
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
@@ -19,8 +22,8 @@ import { formStyles } from '../../../components/ui/formStyles';
 import { formatNumber } from '../../../utils/number';
 import { formatQty, parseQty, round3 } from '../../../utils/stock';
 import { countDiffs, countRefusalText, countRows, uniqueAt, type CountResult } from '../../../utils/inventoryOps';
+import { countLeave, hasWrittenCounts, previousCountStep, type CountStep as Step } from '../../../utils/countBack';
 
-type Step = 'place' | 'count' | 'summary' | 'done';
 type Outcome = Pick<CountResult, 'adjusted' | 'unchanged' | 'refused'>;
 
 const signed = (delta: number, unit: string) => `${delta > 0 ? '+' : '−'}${formatQty(Math.abs(delta), unit)}`;
@@ -30,6 +33,7 @@ export default function CountScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const navigation = useNavigation();
   const { products, countStock } = useInventory();
   const { locations } = useLocations();
   const kindOf = useProductKind();
@@ -58,12 +62,26 @@ export default function CountScreen() {
   const diffs = useMemo(() => countDiffs(rows, counts), [rows, counts]);
   const countedN = Object.keys(counts).length;
 
-  const choose = (id: string) => { setAt(id); setTexts({}); setOutcome(null); setStep('count'); };
+  // Tornando alla stessa posizione le quantità scritte restano; un'altra posizione ricomincia da vuoto
+  const choose = (id: string) => { if (id !== at) setTexts({}); setAt(id); setOutcome(null); setStep('count'); };
   const back = () => {
-    if (step === 'summary') setStep('count');
-    else if (step === 'count') setStep('place');
+    const previous = previousCountStep(step);
+    if (previous) setStep(previous);
     else router.back();
   };
+
+  // Uscita dalla schermata (tasto di sistema, tasto del browser, X a video): un passo indietro, o la domanda
+  const leave = countLeave(step, hasWrittenCounts(texts));
+  usePreventRemove(leave !== 'leave', ({ data }) => {
+    // Sul web il tasto del browser ha già spostato l'indirizzo quando React Navigation chiede il permesso (azione
+    // RESET della storia): se si resta nella Conta lo si rimette avanti, così indirizzo e storia tornano giusti
+    const stay = () => { if (Platform.OS === 'web' && data.action.type === 'RESET') window.history.forward(); };
+    if (leave === 'step') { stay(); back(); return; }
+    Alert.alert('Uscire dalla conta?', 'Le quantità scritte si perdono.', [
+      { text: 'Annulla', style: 'cancel', onPress: stay },
+      { text: 'Esci', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+    ]);
+  });
 
   const toSummary = () => {
     if (invalid.length) {
@@ -79,6 +97,7 @@ export default function CountScreen() {
 
   const confirm = () => {
     setOutcome(countStock(at, counts));
+    setTexts({}); // registrate: uscendo non si perde nulla, «Nuova conta» riparte da vuoto
     setStep('done');
   };
 
