@@ -14,6 +14,8 @@ import { cardSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { PermissionNote } from '../../../components/PermissionNote';
+import { usePermission } from '../../../contexts/ProfileContext';
 
 export default function TrashScreen() {
     const styles = useStyles();
@@ -26,6 +28,8 @@ export default function TrashScreen() {
     const kindOf = useProductKind();
     const trashProducts = getTrashProducts();
     const deletedFields = getDeletedFields();
+    // ACC1 (ticket 32): eliminare per sempre e svuotare spenti col motivo per un ruolo che non elimina
+    const deletePerm = usePermission('eliminare');
 
     const handleRestoreProduct = (id: string) => {
         Alert.alert(
@@ -39,6 +43,7 @@ export default function TrashScreen() {
     };
 
     const handleDeleteProductForever = (id: string) => {
+        if (!deletePerm.allowed) return;
         Alert.alert(
             'Elimina Definitivamente',
             'Questa azione è irreversibile. Sei sicuro?',
@@ -54,6 +59,7 @@ export default function TrashScreen() {
     };
 
     const handleEmptyTrash = () => {
+        if (!deletePerm.allowed) return;
         Alert.alert(
             'Svuota Cestino',
             `Eliminare per sempre ${trashProducts.length} prodotti? Questa azione è irreversibile.`,
@@ -80,6 +86,7 @@ export default function TrashScreen() {
     };
 
     const handleDeleteFieldForever = (id: string) => {
+        if (!deletePerm.allowed) return;
         Alert.alert(
             'Elimina Campo Definitivamente',
             'Il campo verrà eliminato per sempre. I prodotti già salvati manterranno i dati grazie all\'immutabilità storica.',
@@ -118,6 +125,7 @@ export default function TrashScreen() {
                 <FlatList
                     ListHeaderComponent={() => (
                         <>
+                            <PermissionNote text={deletePerm.reason} />
                             {/* Deleted Fields Section */}
                             {deletedFields.length > 0 && (
                                 <View style={styles.section}>
@@ -153,7 +161,7 @@ export default function TrashScreen() {
                                                     <AppIcon name="restore" size={18} color={t.colors.accentInk} />
                                                 </Pressable>
                                                 <Pressable
-                                                    style={[styles.actionButton, styles.deleteButton]}
+                                                    style={[styles.actionButton, styles.deleteButton, !deletePerm.allowed && styles.off]}
                                                     onPress={() => handleDeleteFieldForever(field.id)}
                                                 >
                                                     <AppIcon name="delete-forever" size={18} color={t.colors.error} />
@@ -171,7 +179,7 @@ export default function TrashScreen() {
                                         Prodotti eliminati ({trashProducts.length})
                                     </Text>
                                     {/* Svuota il cestino dei prodotti (P24): prima si eliminavano solo uno per uno */}
-                                    <Pressable onPress={handleEmptyTrash} style={styles.emptyButton} accessibilityRole="button">
+                                    <Pressable onPress={handleEmptyTrash} style={[styles.emptyButton, !deletePerm.allowed && styles.off]} accessibilityRole="button">
                                         <Text style={styles.emptyButtonText}>Svuota</Text>
                                     </Pressable>
                                 </View>
@@ -209,7 +217,7 @@ export default function TrashScreen() {
                                     <AppIcon name="restore" size={20} color={t.colors.accentInk} />
                                 </Pressable>
                                 <Pressable
-                                    style={[styles.actionButton, styles.deleteButton]}
+                                    style={[styles.actionButton, styles.deleteButton, !deletePerm.allowed && styles.off]}
                                     onPress={() => handleDeleteProductForever(item.id)}
                                 >
                                     <AppIcon name="delete-forever" size={20} color={t.colors.error} />
@@ -257,6 +265,7 @@ const useStyles = makeStyles((t) => ({
         alignItems: 'center',
         gap: 12,
     },
+    off: { opacity: 0.4 },
     emptyButton: {
         paddingHorizontal: 12,
         paddingVertical: 6,

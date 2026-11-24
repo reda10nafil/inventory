@@ -25,7 +25,12 @@ import { canMoveStock } from '../../utils/productRules';
 import { describeStockEvent, formatQty, isOutOfStock, isStocked, qtyAt, stockKey, totalStock, type Movement } from '../../utils/stock';
 import { usePlaceLabel } from '../../hooks/usePlaceLabel';
 import { MovementSheet } from '../../components/MovementSheet';
+import { useLoadCheck } from '../../hooks/useLoadCheck';
+import { useLoadBlock } from '../../components/LoadBlockSheet';
+import { LoadNotice } from '../../components/LoadNotice';
+import { loadWarningText } from '../../utils/shelves';
 import type { MovementKind } from '../../types';
+import { usePermission } from '../../contexts/ProfileContext';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
@@ -46,12 +51,18 @@ export default function ScannerActionScreen() {
   const placeName = usePlaceLabel();
   const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
+  // ACC1 (ticket 32): «Venduto» spento col motivo per un ruolo che non vende
+  const sellPerm = usePermission('vendere');
 
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [finalPrice, setFinalPrice] = useState('');
   // Carico o Scarico (M09): la finestra «Movimenta» della Scheda aperta con il tipo già scelto
   const [sheetKind, setSheetKind] = useState<MovementKind | null>(null);
+  // S3 (ticket 15): «Spostato» verso una posizione con capienza (in pezzi, AU-V13): avviso in linea e blocco con la
+  // proposta; il Carico passa da «Movimenta», che ha lo stesso controllo
+  const { checkMove } = useLoadCheck();
+  const load = useLoadBlock();
 
   // Resolve entity based on type
   const product = type === 'product' ? getProductById(entityId) : null;
@@ -71,13 +82,25 @@ export default function ScannerActionScreen() {
       // Existing Product Logic
       if (selectedAction === 'moved') {
         if (!selectedLocation) { Alert.alert('Errore', 'Seleziona una posizione'); return; }
-        if (!moveProduct(product.id, selectedLocation)) {
-          const refused = moveOf(product, selectedLocation, '');
-          Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
+        const move = (to: string) => {
+          const result = checkMove(product, to);
+          if (!moveProduct(product.id, to)) {
+            const refused = moveOf(product, to, '');
+            Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
+            return;
+          }
+          const note = result.level === 'avviso' ? ` ${loadWarningText(result)}.` : '';
+          Alert.alert('Spostamento Registrato', `${product.sku} spostato.${note}`, [{ text: 'OK', onPress: () => router.back() }]);
+        };
+        const tried = moveOf(product, selectedLocation, '');
+        const result = tried.ok ? checkMove(product, selectedLocation) : null;
+        if (result?.level === 'blocco') {
+          load.show({ check: result, onUse: (p) => move(p.key) });
           return;
         }
-        Alert.alert('Spostamento Registrato', `${product.sku} spostato.`, [{ text: 'OK', onPress: () => router.back() }]);
+        move(selectedLocation);
       } else if (selectedAction === 'sold') {
+        if (!sellPerm.allowed) return;
         if (!sellProduct(product.id, parseNumber(finalPrice))) {
           const refused = saleOf(product, parseNumber(finalPrice), 1, '');
           Alert.alert('Non venduto', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
@@ -334,6 +357,10 @@ export default function ScannerActionScreen() {
                   </Text>
                 </Pressable>
               ))}
+              {/* S3: avviso in linea per una posizione con capienza */}
+              {selectedLocation && moveOf(product, selectedLocation, '').ok ? (
+                <LoadNotice check={checkMove(product, selectedLocation)} onUseProposal={(p) => setSelectedLocation(p.locationId)} />
+              ) : null}
             </View>
           )}
 
@@ -341,8 +368,9 @@ export default function ScannerActionScreen() {
             style={[
               styles.actionButton,
               selectedAction === 'sold' && styles.actionButtonActive,
+              !sellPerm.allowed && styles.actionButtonOff,
             ]}
-            onPress={() => setSelectedAction('sold')}
+            onPress={() => { if (sellPerm.allowed) setSelectedAction('sold'); }}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#10B981' }]}>
               <AppIcon name="sell" size={24} color={t.colors.onData} />
@@ -350,7 +378,7 @@ export default function ScannerActionScreen() {
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>VENDUTO</Text>
               <Text style={styles.actionDescription}>
-                {stocked ? `Scarica 1 ${unit} con causale vendita` : 'Segna come venduto e archivia'}
+                {!sellPerm.allowed ? sellPerm.reason : stocked ? `Scarica 1 ${unit} con causale vendita` : 'Segna come venduto e archivia'}
               </Text>
             </View>
             <AppIcon
@@ -448,6 +476,7 @@ export default function ScannerActionScreen() {
           onClose={() => setSheetKind(null)}
           onDone={movementDone}
         />
+        {load.sheet}
       </SafeAreaView>
     );
   }
@@ -563,6 +592,7 @@ const useStyles = makeStyles((t) => ({
     padding: 16,
     marginBottom: 12,
   },
+  actionButtonOff: { opacity: 0.5 },
   actionButtonActive: {
     backgroundColor: t.colors.tileSelected,
     borderColor: t.colors.tileSelectedBorder,

@@ -668,6 +668,196 @@ async function cfD5(h) {
   return { ok, salvata: { ...salvata, id: undefined, createdAt: undefined }, senzaLati, barra: b, riga, scheda, daFare: 'il 16° capo bloccato con la proposta di un altro scaffale (S3)' };
 }
 
+// ---- CF-D (parti S3, corsia B, 24/11): blocco e proposta, stesso carico da tutti i punti, il 16° capo ----
+// Aiuti in `s3-util.cjs` (gli stessi di `s3-avvisi.cjs`).
+const s3 = require('./s3-util.cjs');
+
+// CF-D3: A1 (Borse, 50×50×30 cm, 10 kg, 20 pezzi, già 20 pezzi di AST-0033); B2 di Borse 40×40×40 cm e 20 kg; G1
+// generico. Su A1 con Movimenta: un prodotto 60×40×20 (Borse) → blocco «Un lato di 60 cm…», B2 non basta (lato) e la
+// proposta è il generico G1; uno da 12 kg → blocco «Pesa 12 kg…», proposta B2 (prima Borse); il 21° pezzo → blocco
+// «21 pezzi, il massimo è 20», proposta B2. Finché la finestra è aperta nessun evento; il tocco lo posa lì.
+async function cfD3(h) {
+  const b2 = { ...s3.B2, length: 40, depth: 40, height: 40, maxWeight: 20 };
+  await s3.prepara(h, {
+    shelves: [s3.A1, b2, s3.G1],
+    campi: {
+      'VIS-0098': { ...s3.SENZA, length: 60, width: 40, height: 20, libraryId: 'borse' },
+      'PUZ-0012': { ...s3.SENZA, length: 10, width: 10, height: 10, weight: 12, libraryId: 'borse' },
+      'AST-0033': { ...s3.SENZA, libraryId: 'borse' },
+    },
+    giacenze: { 'VIS-0098': { magazzino: 1 }, 'PUZ-0012': { magazzino: 1 }, 'AST-0033': { [s3.k(s3.A1)]: 20 } },
+  });
+  const passo = async (sku) => {
+    await s3.apri(h, sku);
+    const prima = await s3.quantiEventi(h);
+    await s3.movimenta(h, { pillole: ['In Magazzino', 'In Magazzino › A1'], qty: '1' });
+    const finestra = await s3.blocco(h);
+    const eventiConFinestra = (await s3.quantiEventi(h)) - prima;
+    await s3.proposta(h);
+    return { finestra, eventiConFinestra, dopo: await s3.stato(h, sku) };
+  };
+  const lato = await passo('VIS-0098');
+  const peso = await passo('PUZ-0012');
+  const pezzo = await passo('AST-0033');
+  const ok = !!lato.finestra && lato.finestra.righe.includes('Un lato di 60 cm è più grande di 50 cm') && lato.finestra.primario === 'Metti in G1 (libero al 90%)'
+    && lato.dopo.stock['magazzino/G1'] === 1
+    && !!peso.finestra && peso.finestra.righe.includes('Pesa 12 kg, lo scaffale ne regge 10') && /^Metti in B2 /.test(peso.finestra.primario) && peso.dopo.stock['magazzino/B2'] === 1
+    && !!pezzo.finestra && pezzo.finestra.righe.includes('21 pezzi, il massimo è 20') && /^Metti in B2 /.test(pezzo.finestra.primario) && pezzo.dopo.stock['magazzino/A1'] === 20
+    && pezzo.dopo.stock['magazzino/B2'] === 1 && [lato, peso, pezzo].every((p) => p.eventiConFinestra === 0 && p.dopo.coincide);
+  return { ok, lato, peso, pezzo };
+}
+
+// CF-D4: lo stesso carico su R2 (2 pezzi, già VIS-0142) da Aggiungi, Movimenta, Azione rapida, Spostamento rapido ed
+// esecuzione di un'automazione: il 2° pezzo dà l'avviso «R2 sarà pieno», il 3° la stessa finestra («3 pezzi, il
+// massimo è 2», «Metti in G1 (libero al 90%)») ovunque; «Annulla» non scrive nulla. In Conta e Audit (Vetrina con
+// capienza 2) solo l'informazione «oltre il limite», niente finestra.
+async function cfD4(h) {
+  const campi = { 'VIS-0142': { ...s3.SENZA, location: 'magazzino', shelfId: s3.R2.id }, 'AST-0033': s3.SENZA, 'LIN-0021': { ...s3.SENZA, libraryId: null } };
+  const punti = {};
+  const blocco = async () => {
+    const prima = await s3.quantiEventi(h);
+    const finestra = await s3.blocco(h);
+    await s3.annulla(h);
+    return { finestra, eventi: (await s3.quantiEventi(h)) - prima };
+  };
+  // Aggiungi
+  await s3.prepara(h, { campi, daCapo: true });
+  const aggiungi = async (sku) => {
+    await h.go('add');
+    await h.click('Magazzino');
+    await s3.label(h, 'Scaffale R2').click();
+    await h.click('M'); // Taglia, obbligatoria nel campionario
+    await h.page.getByPlaceholder('Auto: LOG-2026-001').fill(sku);
+    await h.page.waitForTimeout(300);
+    const letto = await s3.avviso(h);
+    await h.click("Aggiungi all'Inventario"); await h.page.waitForTimeout(800);
+    return letto;
+  };
+  punti.aggiungi = { avviso: await aggiungi('CF-D4-1') };
+  await aggiungi('CF-D4-2');
+  Object.assign(punti.aggiungi, await blocco(), { creato: !!(await s3.stato(h, 'CF-D4-2', 0)) });
+  // Movimenta (dalla Scheda) e Azione rapida (stessa finestra), Carico di 1 pezzo su R2
+  const carico = async (aprire) => {
+    await s3.prepara(h, { campi, daCapo: true });
+    await aprire('AST-0033');
+    const avviso = await s3.movimenta(h, { pillole: ['In Magazzino', 'In Magazzino › R2'], qty: '1', apri: false });
+    await aprire('LIN-0021');
+    await s3.movimenta(h, { pillole: ['In Magazzino', 'In Magazzino › R2'], qty: '1', apri: false });
+    return { avviso, ...(await blocco()) };
+  };
+  punti.movimenta = await carico(async (sku) => { await s3.apri(h, sku); await s3.label(h, 'Movimenta').click(); await h.page.waitForTimeout(500); });
+  punti.azioneRapida = await carico(async (sku) => {
+    await h.go(`scanner-action?type=product&id=${sku === 'AST-0033' ? 'cmp-4' : 'cmp-3'}`);
+    await s3.label(h, 'Carico').click(); await h.page.waitForTimeout(500);
+  });
+  // Spostamento rapido: destinazione letta col codice di R2
+  await s3.prepara(h, { campi, daCapo: true });
+  await h.go('automations/batch-move'); await h.click('Scansiona Posizione');
+  await c.leggi(h, 'SCAF-MAG-R2');
+  await s3.leggiQui(h, 'AST-0033', 'Scansiona Prodotto', 300);
+  const rapido = (await s3.testo(h)).match(/AST-0033 Spostato! [^|]*?\./)?.[0] ?? null;
+  await s3.leggiQui(h, 'LIN-0021', 'Scansiona Prodotto');
+  punti.spostamentoRapido = { avviso: rapido, ...(await blocco()) };
+  // Esecuzione: «Scansiona Posizione» su R2, poi «Sposta nella posizione letta»
+  await s3.prepara(h, { campi, daCapo: true });
+  await h.go('automations/custom-runner/auto_scaf'); await c.ultima(h, 'Scansiona Posizione');
+  await c.leggi(h, 'SCAF-MAG-R2', { wait: 1100 });
+  await s3.leggiQui(h, 'AST-0033', 'Scansiona Prodotto', 500);
+  const fatto = (await s3.testo(h)).match(/✅ Fatto! [^|]*?\./)?.[0] ?? null;
+  await h.page.waitForTimeout(1200);
+  await s3.leggiQui(h, 'LIN-0021', 'Scansiona Prodotto', 1200);
+  punti.esecuzione = { avviso: fatto, ...(await blocco()) };
+  // Conta e Audit: solo informazione
+  await s3.prepara(h, { locations: s3.conVetrina(2), giacenze: { 'VIS-0098': { vetrina: 1 } }, daCapo: true });
+  const visti = s3.finestre(h);
+  await h.go('automations/count');
+  await s3.label(h, 'Conta Vetrina').click(); await h.page.waitForTimeout(500);
+  await s3.label(h, 'Contata VIS-0098').fill('3');
+  await s3.label(h, 'Riepilogo della conta').click(); await h.page.waitForTimeout(500);
+  const conta = { etichette: await s3.etichette(h), finestra: await s3.blocco(h) };
+  await s3.label(h, 'Registra rettifiche').click(); await h.page.waitForTimeout(800);
+  conta.registrata = (await s3.stato(h, 'VIS-0098', 600)).stock.vetrina === 3;
+  await h.go('automations/audit'); await h.click('Vetrina');
+  const lista = await iconAt(h);
+  const fab = lista.sort((a, b) => b.y - a.y)[0];
+  await h.page.mouse.click(fab.x, fab.y); await h.page.waitForTimeout(700);
+  // La scelta dell'intruso è una finestra a più voci (window.prompt sul web): qui «2. Sposta Qui & Aggiungi"
+  await h.page.evaluate(() => { window.prompt = () => '2'; });
+  await c.leggi(h, 'PUZ-0012', { wait: 1500 });
+  const audit = { spostato: (await s3.stato(h, 'PUZ-0012', 600)).location === 'vetrina', informazione: visti.find((m) => m.includes('oltre il limite')) ?? null };
+  const stessaFinestra = JSON.stringify(punti.aggiungi.finestra);
+  const ok = Object.values(punti).every((p) => p.finestra && JSON.stringify(p.finestra) === stessaFinestra && p.eventi === 0)
+    && punti.aggiungi.finestra.righe.includes('3 pezzi, il massimo è 2') && punti.aggiungi.finestra.primario === 'Metti in G1 (libero al 90%)'
+    && !punti.aggiungi.creato
+    && [punti.aggiungi.avviso, punti.movimenta.avviso, punti.azioneRapida.avviso].every((a) => a === 'R2 sarà pieno')
+    && punti.spostamentoRapido.avviso === 'AST-0033 Spostato! R2 sarà pieno.' && punti.esecuzione.avviso === '✅ Fatto! R2 sarà pieno.'
+    && conta.etichette.length === 1 && conta.finestra === null && conta.registrata && audit.spostato && !!audit.informazione;
+  return { ok, punti, conta, audit };
+}
+
+// CF-D5 (parte S3): dopo la parte S2 (barra «Barra giacche» da 15 grucce con 15 capi), dal modulo una seconda barra
+// «Barra cappotti»; il 16° capo su «Barra giacche» è bloccato «16 grucce, il massimo è 15» con la proposta della
+// seconda barra, e il tocco lo appende lì
+async function cfD5Tutto(h) {
+  const s2 = await cfD5(h);
+  await h.go('settings/shelves');
+  // Con uno scaffale già creato il modulo è chiuso: si apre con «Nuovo scaffale»
+  if (!(await h.page.getByLabel('Nome', { exact: true }).locator('visible=true').count())) await s2Label(h, 'Nuovo scaffale').click();
+  await h.page.waitForTimeout(400);
+  await s2Label(h, 'Nome').fill('Barra cappotti');
+  await s2Label(h, 'Posizione Magazzino').click();
+  await s2Label(h, 'Tipo Barra appendiabiti').click(); await h.page.waitForTimeout(300);
+  await s2Label(h, 'Grucce massime').fill('15');
+  await s2Label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(800);
+  await s2Carico(h, 'VIS-0098', 'Barra giacche', 1);
+  const finestra = await s3.blocco(h);
+  await s3.proposta(h);
+  const shelves = (await h.store(S2_SHELVES, 0)) || [];
+  const cappotti = shelves.find((s) => s.name === 'Barra cappotti');
+  const stock = ((await h.products(800)).find((p) => p.sku === 'VIS-0098') || {}).stock || {};
+  const ok = s2.ok && !!finestra && finestra.righe.includes('16 grucce, il massimo è 15') && finestra.primario === 'Metti in Barra cappotti (libero al 94%)'
+    && !!cappotti && stock[`magazzino/${cappotti.id}`] === 1;
+  return { ...s2, ok, s3: { finestra, sullaSeconda: cappotti ? stock[`magazzino/${cappotti.id}`] : null }, daFare: undefined };
+}
+
+// CF-H4 (ACC1, ticket 32): Impostazioni › Persone e telefoni › Accesso; nome e nome del telefono scritti e riletti dopo
+// una ricarica; un Operatore vede le voci di Impostazioni spente col motivo (il tocco non apre nulla); di nuovo Titolare;
+// un evento nuovo porta l'autore «Mario · Banco 1» in Cronologia, i vecchi «—»; nessuna richiesta a supabase.co
+async function cfH4(h) {
+  const sb = [];
+  h.page.on('request', (r) => { if (/supabase\.co/.test(r.url())) sb.push(r.url().slice(0, 50)); });
+  const scrivi = async (label, valore) => { await h.page.getByLabel(label, { exact: true }).fill(valore); await h.page.waitForTimeout(300); };
+  const ruolo = async (nome) => { await h.go('settings/access'); await h.page.getByRole('radio', { name: `Ruolo ${nome}` }).click(); await h.page.waitForTimeout(500); };
+  const vecchi = (await h.timeline(0)).length;
+  await h.go('settings');
+  await h.click('Accesso');
+  const indirizzo = new URL(h.page.url()).pathname;
+  await scrivi("Nome dell'operatore", 'Mario');
+  await scrivi('Nome del telefono', 'Banco 1');
+  await h.page.reload(); await h.page.waitForTimeout(2500);
+  const riletti = [await h.page.getByLabel("Nome dell'operatore", { exact: true }).inputValue(), await h.page.getByLabel('Nome del telefono', { exact: true }).inputValue()];
+  await ruolo('Operatore');
+  await h.go('settings');
+  const motivi = await h.page.getByText('Il ruolo Operatore non può cambiare le impostazioni. Lo decide il Titolare in Accesso.', { exact: true }).locator('visible=true').count();
+  await h.click('Campi Personalizzati');
+  const restaInImpostazioni = new URL(h.page.url()).pathname === '/settings';
+  await ruolo('Titolare');
+  // evento nuovo: VIS-0142 nel cestino dalla Home
+  await h.go('');
+  await h.longPress('VIS-0142');
+  await h.page.locator('[aria-label="Elimina"]').locator('visible=true').first().click(); await h.page.waitForTimeout(800);
+  const tl = await h.timeline();
+  await h.tab('Cronologia');
+  const righe = {
+    mario: await h.page.getByText(/^Mario · Banco 1 · /).locator('visible=true').count(),
+    trattini: await h.page.getByText(/^— · /).locator('visible=true').count(),
+  };
+  const autore = tl[0] && tl[0].author ? `${tl[0].author.name}|${tl[0].author.device}` : null;
+  const ok = indirizzo === '/settings/access' && riletti.join('|') === 'Mario|Banco 1' && motivi === 3 && restaInImpostazioni
+    && autore === 'Mario|Banco 1' && tl.length === vecchi + 1 && righe.mario === 1 && righe.trattini === vecchi && sb.length === 0;
+  return { ok, indirizzo, riletti, motivi, restaInImpostazioni, autore, righe, supabase: sb.length };
+}
+
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
@@ -684,9 +874,9 @@ const PASSI = [
   ['CF-C4', 'Modifica senza cambiare nulla, poi cambio di un campo', 'COD, VAL, GAL', cfC4],
   ['CF-D1', 'Ripiano «A1» con misure, peso e pezzi', 'S1a, S2, ETI', cfD1],
   ['CF-D2', 'Riempimento al 50%, 80%, 100%', 'S2', cfD2],
-  ['CF-D3', 'Prodotto troppo grande, troppo pesante, pezzo in più: blocco e proposta', 'S3'],
-  ['CF-D4', 'Stesso carico da tutti i punti di carico', 'S3'],
-  ['CF-D5', 'Barra appendiabiti da 15 grucce, 16° capo', 'S2, S3', cfD5],
+  ['CF-D3', 'Prodotto troppo grande, troppo pesante, pezzo in più: blocco e proposta', 'S3', cfD3],
+  ['CF-D4', 'Stesso carico da tutti i punti di carico', 'S3', cfD4],
+  ['CF-D5', 'Barra appendiabiti da 15 grucce, 16° capo', 'S2, S3', cfD5Tutto],
   ['CF-E1', 'Scanner con SKU, SKU minuscolo, vecchio link GS1', 'COD', cfE1],
   ['CF-E2', 'Scanner con i codici di posizione, scaffale, categoria; nessun codice doppio', 'COD', cfE2],
   ['CF-E3', 'Le 5 automazioni con lo stesso codice di prodotto', 'COD, ESE', cfE3],
@@ -708,6 +898,8 @@ const PASSI = [
   ['CF-H2', 'Selezione › «Invia» a un collega › «Ricevuto, sposta»', 'RIC1'],
   ['CF-H3', 'Automazioni «Invia a collega», «Ricevi», condivise', 'RIC2, RIC3'],
   ['CF-Z', 'La catena intera (Borse, modello, campo, foto, scaffale, etichetta, codice, export, import)', 'MCAT, EDC, GAL, FOTO, S3, ETI, COD, ESE, EXP, IMP'],
+  // ACC1 (corsia B): passo nuovo, in fondo alla tabella per non scontrarsi con le altre corsie
+  ['CF-H4', 'Accesso: profilo riletto, Operatore con le voci spente col motivo, autore in Cronologia', 'ACC1', cfH4],
 ];
 const TELEFONO = [
   ['CF-T1', 'Tasto Indietro di sistema, link syncroflow:// ad app chiusa, icone su APK in modalità aereo', 'C2, IND'],

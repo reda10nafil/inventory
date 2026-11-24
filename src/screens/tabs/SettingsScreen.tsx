@@ -1,8 +1,9 @@
 // FurInventory Pro - Settings Screen
 import React, { useState } from 'react';
-import { View, Pressable, ScrollView, Alert, Platform, Linking, Share } from 'react-native';
+import { View, Pressable, ScrollView, Alert, Platform, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
+import { useIsFocused } from '@react-navigation/native';
 import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -14,14 +15,19 @@ import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { overLimitText } from '../../../utils/shelves';
+import { placeOfKey, stockKey } from '../../../utils/stock';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
-import { supabase } from '../../../backend-auth/supabase/client';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
-import { GradientFill } from '../../../components/ui/GradientFill';
-import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
-import { Text, TextInput, fontStyle } from '../../../components/ui/Text';
+import { cardSurface } from '../../../components/ui/surfaces';
+import { Text, fontStyle } from '../../../components/ui/Text';
+import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
+import { usePermission, useProfile } from '../../../contexts/ProfileContext';
+import { profileSubtitle } from '../../../utils/profile';
+import { getActiveRole, getActiveSocket } from '../../services/meshSync';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
 export default function SettingsScreen() {
@@ -36,6 +42,8 @@ export default function SettingsScreen() {
   const { nameOf: contactName } = useContacts();
   // S1a: colonna «Scaffale» nel CSV dei prodotti (nome dello scaffale dentro la posizione)
   const { shelves } = useShelves();
+  // S3 (ticket 15): l'import registra merce che è già lì: niente blocco, solo l'informazione «oltre il limite»
+  const { check: checkLoad } = useLoadCheck();
   // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
   // C1: nel report delle giacenze «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo
   const reportLabels = {
@@ -44,54 +52,19 @@ export default function SettingsScreen() {
     furType: labelOf,
     contact: contactName,
   };
-  const { session, organizationId, organizations, user, signOut, switchOrganization } = useAuth();
+  const { session, organizationId, user, signOut } = useAuth();
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteToken, setInviteToken] = useState('');
-  const [inviteBusy, setInviteBusy] = useState(false);
-  const activeOrganization = organizations.find((organization) => organization.id === organizationId);
-
-  const createOperatorInvite = async () => {
-    if (!organizationId || !inviteEmail.trim()) {
-      Alert.alert('Email mancante', 'Inserisci l’email Google dell’operatore.');
-      return;
-    }
-    setInviteBusy(true);
-    try {
-      const { data, error } = await (supabase as any).rpc('create_organization_invitation', {
-        target_organization_id: organizationId, invitee_email: inviteEmail.trim(),
-      });
-      if (error) throw error;
-      setInviteToken(data);
-      const message = `Sei stato invitato come operatore. Accedi con ${inviteEmail.trim()} e inserisci questo codice in Impostazioni → Team e accesso: ${data}. Il codice scade tra 7 giorni.`;
-      if (Platform.OS === 'web') Alert.alert('Invito creato', message);
-      else await Share.share({ title: 'Invito Syncro Flow', message });
-    } catch (error) {
-      Alert.alert('Invito non riuscito', error instanceof Error ? error.message : 'Impossibile creare l’invito.');
-    } finally {
-      setInviteBusy(false);
-    }
-  };
-
-  const acceptOperatorInvite = async () => {
-    const token = inviteToken.trim();
-    if (!token) {
-      Alert.alert('Codice mancante', 'Incolla il codice di invito ricevuto.');
-      return;
-    }
-    setInviteBusy(true);
-    try {
-      const { data, error } = await (supabase as any).rpc('accept_organization_invitation', { invitation_token: token });
-      if (error) throw error;
-      await switchOrganization(data);
-      setInviteToken('');
-      Alert.alert('Team collegato', 'Ora stai usando l’inventario condiviso del team.');
-    } catch (error) {
-      Alert.alert('Invito non valido', error instanceof Error ? error.message : 'Controlla codice e account Google.');
-    } finally {
-      setInviteBusy(false);
-    }
-  };
+  // ACC1 (ticket 32): profilo e permessi di questo telefono. Le voci che cambiano le impostazioni e l'import restano
+  // visibili, attenuate e senza effetto, con il motivo sopra il blocco, quando il ruolo non le permette
+  const { profile } = useProfile();
+  const settingsPerm = usePermission('impostazioni');
+  const addPerm = usePermission('aggiungere');
+  const openSetting = (path: string) => { if (settingsPerm.allowed) router.push(path); };
+  // Rete del negozio: lo stato di oggi in una riga, riletto a ogni ritorno su Impostazioni (la schermata la rifà
+  // RETE0). Sul web un centro non può esistere (niente server): mai «Fa da centro»
+  useIsFocused();
+  const networkState = Platform.OS !== 'web' && getActiveRole() === 'host' ? 'Fa da centro'
+    : getActiveSocket()?.readyState === 1 ? 'Collegato a un centro' : 'Non collegato';
 
   const showComingSoon = (feature: string) => {
     Alert.alert('Prossimamente', `${feature} sarà disponibile nella prossima versione`);
@@ -177,6 +150,7 @@ export default function SettingsScreen() {
 
     let imported = 0;
     let skipped = 0;
+    const over = new Map<string, string>(); // S3: nome del posto → «A1 è oltre il limite: …» (l'ultima riga vince)
     const seenSkus = new Set(products.map((product) => product.sku.trim().toLocaleLowerCase()));
     rows.slice(1).forEach((row) => {
       // SKU vuoto, giacenza scritta ma non valida o su uno scaffale (S1a): `null`, la riga si salta
@@ -187,15 +161,35 @@ export default function SettingsScreen() {
         return;
       }
       seenSkus.add(normalizedSku);
+      // S3: posti che questa riga porta oltre il limite, prima di scrivere: ogni scaffale con la sua quantità, ogni
+      // posizione con capienza con la somma della riga (revisore: «X: 5; X/A1: 5» sono 10 pezzi in X)
+      const { product } = parsed;
+      const entries: [string, number][] = parsed.stock
+        ? Object.entries(parsed.stock).filter(([, qty]) => qty > 0)
+        : product.status === 'available' ? [[stockKey(product.location, product.shelfId), 1]] : [];
+      const perPlace = new Map<string, number>();
+      for (const [key, qty] of entries) perPlace.set(placeOfKey(key), (perPlace.get(placeOfKey(key)) ?? 0) + qty);
+      const loads = [
+        ...entries.filter(([key]) => key !== placeOfKey(key)).map(([key, qty]) => checkLoad(product, key, [{ qty }], { soloScaffale: true })),
+        ...[...perPlace].map(([place, qty]) => checkLoad(product, place, [{ qty }])),
+      ];
       const added = addProduct(parsed.product, parsed.stock ? { stock: parsed.stock } : undefined);
-      if (added) imported += 1;
-      else skipped += 1;
+      if (added) {
+        imported += 1;
+        for (const l of loads) if (l.level === 'blocco') over.set(l.name, overLimitText(l));
+      } else skipped += 1;
     });
 
-    return { imported, skipped };
+    return { imported, skipped, over: [...over.values()] };
   };
 
+  /** Messaggio finale dell'import (S3: con i posti oltre il limite, se ce ne sono; altrimenti quello di prima). */
+  const importText = (outcome: { imported: number; skipped: number; over: string[] }) =>
+    `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`
+    + (outcome.over.length ? ` ${outcome.over.join('. ')}.` : '');
+
   const importFromCSV = async () => {
+    if (!addPerm.allowed) return;
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['text/csv', 'text/comma-separated-values', 'application/vnd.ms-excel'],
@@ -205,7 +199,7 @@ export default function SettingsScreen() {
       if (result.canceled || !result.assets[0]) return;
       const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
       const outcome = importCsvContent(content);
-      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`);
+      Alert.alert('Importazione completata', importText(outcome));
     } catch (error) {
       Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
     }
@@ -213,6 +207,7 @@ export default function SettingsScreen() {
 
   const handleCsvDrop = async (event: any) => {
     event.preventDefault();
+    if (!addPerm.allowed) return;
     const file = event.dataTransfer?.files?.[0];
     if (!file || !/\.csv$/i.test(file.name || '')) {
       Alert.alert('Formato non supportato', 'Trascina un file .csv.');
@@ -220,7 +215,7 @@ export default function SettingsScreen() {
     }
     try {
       const outcome = importCsvContent(await file.text());
-      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`);
+      Alert.alert('Importazione completata', importText(outcome));
     } catch (error) {
       Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
     }
@@ -266,10 +261,12 @@ export default function SettingsScreen() {
 
         {/* CONFIGURAZIONE HARDWARE E GS1 - NEW */}
         <Text style={styles.sectionTitle}>Configurazione hardware</Text>
+        <PermissionNote text={settingsPerm.reason} />
+        <Dimmed off={!settingsPerm.allowed}>
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/gs1-config')}
+          onPress={() => openSetting('/settings/gs1-config')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
@@ -287,7 +284,7 @@ export default function SettingsScreen() {
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/hardware')}
+          onPress={() => openSetting('/settings/hardware')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
@@ -303,12 +300,16 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
+        </Dimmed>
+
         {/* GESTIONE INVENTARIO */}
         <Text style={styles.sectionTitle}>Gestione inventario</Text>
+        <PermissionNote text={settingsPerm.reason} />
+        <Dimmed off={!settingsPerm.allowed}>
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/folders')}
+          onPress={() => openSetting('/settings/folders')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
@@ -326,7 +327,7 @@ export default function SettingsScreen() {
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/fields')}
+          onPress={() => openSetting('/settings/fields')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#10B981' }]}>
@@ -344,7 +345,7 @@ export default function SettingsScreen() {
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/layout-builder')}
+          onPress={() => openSetting('/settings/layout-builder')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
@@ -363,7 +364,7 @@ export default function SettingsScreen() {
         {/* Modelli di settore: campi pronti per abbigliamento, elettronica, alimentari… (D13) */}
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/sector-templates')}
+          onPress={() => openSetting('/settings/sector-templates')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
@@ -381,7 +382,7 @@ export default function SettingsScreen() {
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/trash')}
+          onPress={() => openSetting('/settings/trash')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#EF4444' }]}>
@@ -399,7 +400,7 @@ export default function SettingsScreen() {
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/locations')}
+          onPress={() => openSetting('/settings/locations')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
@@ -418,7 +419,7 @@ export default function SettingsScreen() {
         {/* Scaffali (S1a): dentro le posizioni, generici o di una categoria */}
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/shelves')}
+          onPress={() => openSetting('/settings/shelves')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
@@ -437,7 +438,7 @@ export default function SettingsScreen() {
         {/* C2 (ticket 21): i valori di «Tipo di pelle» si gestiscono solo da Campi Personalizzati (matita del campo) */}
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/contacts')}
+          onPress={() => openSetting('/settings/contacts')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
@@ -454,12 +455,16 @@ export default function SettingsScreen() {
         </Pressable>
 
 
+        </Dimmed>
+
         {/* CONDIVISIONE */}
         <Text style={styles.sectionTitle}>Condivisione</Text>
+        <PermissionNote text={settingsPerm.reason} />
+        <Dimmed off={!settingsPerm.allowed}>
 
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/share')}
+          onPress={() => openSetting('/settings/share')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#06B6D4' }]}>
@@ -474,6 +479,8 @@ export default function SettingsScreen() {
           </View>
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
+
+        </Dimmed>
 
         {/* ALERT E NOTIFICHE */}
         <Text style={styles.sectionTitle}>Alert e notifiche</Text>
@@ -513,55 +520,6 @@ export default function SettingsScreen() {
           </View>
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
-
-        {/* DATI E BACKUP */}
-        <Text style={styles.sectionTitle}>Team e spazi di lavoro</Text>
-        <View style={styles.teamPanel}>
-          <Text style={styles.settingTitle}>Organizzazione attiva</Text>
-          <Text style={styles.settingDescription}>{activeOrganization?.name || 'Workspace'}</Text>
-          {organizations.map((organization) => (
-            <Pressable
-              key={organization.id}
-              style={[styles.workspaceChoice, organization.id === organizationId && styles.workspaceChoiceActive]}
-              onPress={() => void switchOrganization(organization.id).catch((error) => Alert.alert('Cambio workspace non riuscito', error.message))}
-            >
-              <Text style={styles.settingTitle}>{organization.name}</Text>
-              <Text style={styles.settingDescription}>{organization.role}{organization.id === organizationId ? ' · attiva' : ''}</Text>
-            </Pressable>
-          ))}
-          {LOGIN_ENABLED ? <>
-          {(activeOrganization?.role === 'owner' || activeOrganization?.role === 'admin') && <>
-            <TextInput
-              value={inviteEmail}
-              onChangeText={setInviteEmail}
-              placeholder="Email Google dell’operatore"
-              placeholderTextColor={t.colors.placeholder}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.teamInput}
-            />
-            <Pressable disabled={inviteBusy} style={styles.teamButton} onPress={() => void createOperatorInvite()}>
-              <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-              <Text style={styles.teamButtonText}>{inviteBusy ? 'Attendi…' : 'Crea e condividi invito'}</Text>
-            </Pressable>
-          </>}
-          <TextInput
-            value={inviteToken}
-            onChangeText={setInviteToken}
-            placeholder="Codice invito ricevuto"
-            placeholderTextColor={t.colors.placeholder}
-            autoCapitalize="none"
-            style={styles.teamInput}
-          />
-          <Pressable disabled={inviteBusy} style={styles.teamButton} onPress={() => void acceptOperatorInvite()}>
-            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-            <Text style={styles.teamButtonText}>{inviteBusy ? 'Attendi…' : 'Unisciti a un team'}</Text>
-          </Pressable>
-          <Text style={styles.settingDescription}>Gli inviti sono legati all’email indicata e scadono dopo 7 giorni.</Text>
-          </> : (
-            <Text style={styles.settingDescription}>Accesso con Google disattivato: i dati restano su questo dispositivo. Team e inviti tornano disponibili quando l’accesso verrà riattivato.</Text>
-          )}
-        </View>
 
         {/* DATI E BACKUP */}
         <Text style={styles.sectionTitle}>Dati e backup</Text>
@@ -614,6 +572,8 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
+        <PermissionNote text={addPerm.reason} />
+        <Dimmed off={!addPerm.allowed}>
         <Pressable style={styles.settingRow} onPress={importFromCSV}>
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
@@ -648,11 +608,12 @@ export default function SettingsScreen() {
           },
           children: 'Trascina qui un file CSV per importare prodotti. Per esportare usa “Esporta Inventario”.',
         })}
+        </Dimmed>
 
+        {/* ACC1 (AR12): col login spento la voce resta, attenuata e senza effetto, con il motivo */}
         <Pressable
-          style={styles.settingRow}
-          onPress={() => void backupToDrive()}
-          disabled={cloudBackupBusy}
+          style={[styles.settingRow, !LOGIN_ENABLED && styles.settingRowOff]}
+          onPress={() => { if (LOGIN_ENABLED && !cloudBackupBusy) void backupToDrive(); }}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
@@ -661,7 +622,7 @@ export default function SettingsScreen() {
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>{cloudBackupBusy ? 'Backup in corso…' : 'Backup Google Drive'}</Text>
               <Text style={styles.settingDescription}>
-                Copia privata di CSV, fogli, foto e allegati
+                {LOGIN_ENABLED ? 'Copia privata di CSV, fogli, foto e allegati' : 'Spento: serve l’accesso con Google, che oggi non c’è'}
               </Text>
             </View>
           </View>
@@ -687,21 +648,40 @@ export default function SettingsScreen() {
           <AppIcon name="logout" size={22} color={t.colors.textSecondary} />
         </Pressable>}
 
-        {/* TEAM E ACCESSO */}
-        <Text style={styles.sectionTitle}>Team e accesso</Text>
+        {/* PERSONE E TELEFONI (ACC1, ticket 32): due voci, lo stato nel sottotitolo (AR09, AR13) */}
+        <Text style={styles.sectionTitle}>Persone e telefoni</Text>
 
+        <Pressable
+          style={styles.settingRow}
+          onPress={() => router.push('/settings/access')}
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
+              <AppIcon name="badge" size={24} color={t.colors.onData} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Accesso</Text>
+              <Text style={styles.settingDescription}>
+                {profileSubtitle(profile)}
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+
+        {/* La schermata di oggi resta all'indirizzo `settings/team`: la rifà RETE0 */}
         <Pressable
           style={styles.settingRow}
           onPress={() => router.push('/settings/team')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
-              <AppIcon name="people" size={24} color={t.colors.onData} />
+              <AppIcon name="wifi" size={24} color={t.colors.onData} />
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Accesso Multi-Utente</Text>
+              <Text style={styles.settingTitle}>Rete del negozio</Text>
               <Text style={styles.settingDescription}>
-                Mesh LAN • QR Host/Client • Sync 100%
+                {networkState}
               </Text>
             </View>
           </View>
@@ -718,9 +698,11 @@ export default function SettingsScreen() {
             Sistema di gestione inventario professionale per pellicce di lusso
           </Text>
           <View style={styles.infoDivider} />
-          <Text style={styles.infoLabel}>Spazio di lavoro sicuro</Text>
+          <Text style={styles.infoLabel}>{LOGIN_ENABLED ? 'Spazio di lavoro sicuro' : 'Dove stanno i dati'}</Text>
           <Text style={styles.infoText}>
-            Prodotti e impostazioni inventario sono separati per organizzazione. La cache locale permette di continuare offline; la sincronizzazione avviene con Supabase.
+            {LOGIN_ENABLED
+              ? 'Prodotti e impostazioni inventario sono separati per organizzazione. La cache locale permette di continuare offline; la sincronizzazione avviene con Supabase.'
+              : 'Prodotti e impostazioni restano su questo telefono (o in questo browser). La copia nel cloud arriverà con gli account.'}
           </Text>
         </View>
       </ScrollView>
@@ -822,39 +804,5 @@ const useStyles = makeStyles((t) => ({
     fontSize: 13,
     lineHeight: 18,
   },
-  teamPanel: {
-    ...cardSurface(t),
-    padding: 16,
-    marginBottom: 12,
-  },
-  workspaceChoice: {
-    ...tileSurface(t),
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginTop: 8,
-  },
-  workspaceChoiceActive: { backgroundColor: t.colors.tileSelected, borderColor: t.colors.tileSelectedBorder },
-  teamInput: {
-    minHeight: t.input.height,
-    color: t.colors.inputText,
-    backgroundColor: t.colors.input,
-    borderRadius: t.radius.input,
-    borderWidth: 1,
-    borderColor: t.colors.inputBorder,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    marginTop: 12,
-  },
-  teamButton: {
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: t.colors.button,
-    borderRadius: t.radius.button,
-    ...t.shadows.button,
-    overflow: 'hidden',
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  teamButtonText: { ...t.typography.buttonPrimary, fontSize: 15, color: t.colors.onButton },
+  settingRowOff: { opacity: 0.55 },
 }));

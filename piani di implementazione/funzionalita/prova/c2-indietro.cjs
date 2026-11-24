@@ -67,7 +67,8 @@ async function torna(h) {
 
   // 3. Team, Chat e Crea automazione ricaricati: niente «Page Not Found» (P29, AU-V11)
   await run('c2-ind-p29', async (h) => {
-    const titoli = { 'settings/team': 'Team & Accesso', chat: 'Chat Operativa', 'settings/automation-builder': 'Nuova Automazione' };
+    // ACC1: la schermata di `settings/team` si chiama «Rete del negozio» (prima «Team & Accesso»)
+    const titoli = { 'settings/team': 'Rete del negozio', chat: 'Chat Operativa', 'settings/automation-builder': 'Nuova Automazione' };
     const esiti = {};
     for (const [indirizzo, titolo] of Object.entries(titoli)) {
       await h.go(indirizzo);

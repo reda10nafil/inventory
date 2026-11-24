@@ -22,6 +22,8 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
+import { PermissionNote } from '../../../components/PermissionNote';
+import { usePermission } from '../../../contexts/ProfileContext';
 import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
 import { formatQty, isOutOfStock, isStocked, storedTotal } from '../../../utils/stock';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
@@ -41,6 +43,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); // Read params
   const { products, alerts, filterProducts, deleteProduct, updateProduct, libraries } = useInventory();
+  // ACC1 (ticket 32): Elimina della selezione spento col motivo per un ruolo che non elimina
+  const deletePerm = usePermission('eliminare');
   const { locations } = useLocations();
   const { furTypes } = useFurTypes();
   const kindOf = useProductKind();
@@ -157,7 +161,7 @@ export default function HomeScreen() {
   };
 
   const CONFIRM_DELETE_PRODUCT = () => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0 || !deletePerm.allowed) return;
 
     Alert.alert(
       'Conferma Eliminazione',
@@ -500,6 +504,7 @@ export default function HomeScreen() {
       {/* Selection Bottom Bar */}
       {selectedIds.length > 0 && (
         <View style={styles.bottomActionBar}>
+          <PermissionNote text={deletePerm.reason} floating />
           <View style={styles.selectionInfo}>
             <Text style={styles.selectionCount}>{selectedIds.length}</Text>
           </View>
@@ -508,7 +513,7 @@ export default function HomeScreen() {
               <GradientFill gradient={t.gradients.button} style={styles.actionButtonFill} />
               <AppIcon name="folder-open" size={24} color={t.colors.onButton} />
             </Pressable>
-            <Pressable style={[styles.actionButton, styles.actionButtonDestructive]} onPress={CONFIRM_DELETE_PRODUCT}>
+            <Pressable style={[styles.actionButton, styles.actionButtonDestructive, !deletePerm.allowed && styles.actionButtonOff]} onPress={CONFIRM_DELETE_PRODUCT} accessibilityLabel="Elimina">
               <AppIcon name="delete" size={24} color={t.colors.onData} />
             </Pressable>
             <Pressable style={styles.closeSelectionButton} onPress={exitSelectionMode}>
@@ -1086,6 +1091,7 @@ const useStyles = makeStyles((t) => ({
   actionButtonDestructive: {
     backgroundColor: t.colors.error,
   },
+  actionButtonOff: { opacity: 0.4 },
   actionButtonText: {
     ...t.typography.caption,
     fontWeight: '700',

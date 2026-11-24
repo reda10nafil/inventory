@@ -16,26 +16,37 @@ import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
-import { qtyAt } from '../../../utils/stock';
+import { stockKey } from '../../../utils/stock';
 import { moveOf, refusalText } from '../../../utils/inventoryOps';
+import { useShelves } from '../../../contexts/ShelvesContext';
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { useLoadBlock } from '../../../components/LoadBlockSheet';
+import { ShelfFill } from '../../../components/ShelfFill';
+import { fillLevel, freeText, loadWarningText, placeLoad, placeWithShelf, shelfLoad, type LoadProposal, type Shelf } from '../../../utils/shelves';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
 
 type Step = 'scan_location' | 'scan_products';
+/** Destinazione (S3): una posizione, oppure uno scaffale letto col suo codice (il prodotto va su quello scaffale). */
+type Target = { location: Location; shelfId?: string; key: string; label: string };
 
 export default function BatchMoveScreen() {
     const styles = useStyles();
     const t = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { products, moveProduct } = useInventory();
-    const { readProduct, readPlace, placeOf, choose, isText, shelfNote } = useCodeReader();
-    const { locations, getLocation, getNextLocation } = useLocations();
+    const { products, moveProduct, latestProduct, latestProducts } = useInventory();
+    const { readProduct, readPlace, placeOf, choose, isText } = useCodeReader();
+    const { locations } = useLocations();
+    const { shelves } = useShelves();
     const kindOf = useProductKind();
+    // S3 (ticket 15): avviso e blocco a ogni articolo, in pezzi, peso e volume; capienza delle posizioni in pezzi (AU-V13)
+    const { check, checkMove } = useLoadCheck();
+    const load = useLoadBlock();
 
     const [step, setStep] = useState<Step>('scan_location');
-    const [targetLocation, setTargetLocation] = useState<Location | null>(null);
+    const [targetLocation, setTarget] = useState<Target | null>(null);
     const [scannedCount, setScannedCount] = useState(0);
     const [lastScannedProduct, setLastScannedProduct] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState(false);
@@ -66,7 +77,7 @@ export default function BatchMoveScreen() {
         }
     };
 
-    // Lettore unico (COD): codice, id o nome di una posizione; uno scaffale vale la sua posizione, con l'avviso (AU-V14)
+    // Lettore unico (COD): codice, id o nome di una posizione o di uno scaffale (S3: lo scaffale è la destinazione)
     const handleLocationScan = (data: string) => {
         const place = readPlace(data);
         if (place.status === 'choose') {
@@ -82,47 +93,34 @@ export default function BatchMoveScreen() {
             Alert.alert('Errore', 'Posizione non trovata nel database.');
             return;
         }
-        if (place.status === 'location' && place.shelfId) {
-            Alert.alert('Scaffale', shelfNote(place.shelfId), [{ text: 'OK', onPress: () => checkCapacityAndSetLocation(loc) }]);
+        checkCapacityAndSetLocation(loc, place.status === 'location' ? place.shelfId : undefined);
+    };
+
+    const targetOf = (loc: Location, shelfId?: string): Target => {
+        const shelf = shelfId ? shelves.find((s) => s.id === shelfId && s.locationId === loc.id) : undefined;
+        return { location: loc, shelfId: shelf?.id, key: stockKey(loc.id, shelf?.id), label: placeWithShelf(loc.label, shelf) };
+    };
+
+    // Il controllo di prima diventa la prima chiamata (ticket 15): una destinazione già piena (non c'entra nemmeno un
+    // pezzo) si blocca con la proposta, senza «Usa comunque» (scartato dall'utente); si contano i pezzi (AU-V13)
+    const checkCapacityAndSetLocation = (loc: Location, shelfId?: string) => {
+        const target = targetOf(loc, shelfId);
+        const full = check({}, target.key, [{ qty: 1 }]);
+        if (full.level === 'blocco') {
+            load.show({
+                check: full,
+                onUse: (p: LoadProposal) => {
+                    const other = locations.find((l) => l.id === p.locationId);
+                    if (other) confirmLocation(targetOf(other, p.shelfId));
+                },
+            });
             return;
         }
-        checkCapacityAndSetLocation(loc);
+        confirmLocation(target);
     };
 
-    const checkCapacityAndSetLocation = (loc: Location) => {
-        // Calculate current occupancy
-        // Prodotti che occupano davvero la posizione: pezzi unici disponibili, articoli a quantità con giacenza (M03)
-        const currentItems = products.filter(p => qtyAt(p, loc.id) > 0).length;
-        const capacity = loc.capacity || 9999; // Default infinite if not set
-
-        if (currentItems >= capacity) {
-            // Logic for Smart Suggestion
-            const nextLoc = getNextLocation(loc.id);
-
-            Alert.alert(
-                '⚠️ Posizione Piena!',
-                `La posizione "${loc.label}" ha raggiunto la capacità (${currentItems}/${capacity}).\n\nVuoi usare invece "${nextLoc?.label}" che è la più vicina?`,
-                [
-                    {
-                        text: `Usa ${loc.label} comunque`,
-                        style: 'cancel',
-                        onPress: () => confirmLocation(loc)
-                    },
-                    nextLoc ? {
-                        text: `Sì, usa ${nextLoc.label}`,
-                        onPress: () => {
-                            confirmLocation(nextLoc);
-                        }
-                    } : { text: 'OK', style: 'cancel' }
-                ]
-            );
-        } else {
-            confirmLocation(loc);
-        }
-    };
-
-    const confirmLocation = (loc: Location) => {
-        setTargetLocation(loc);
+    const confirmLocation = (target: Target) => {
+        setTarget(target);
         setStep('scan_products');
         playSuccessSound();
     };
@@ -141,49 +139,67 @@ export default function BatchMoveScreen() {
 
     const [errorTimeoutRef, setErrorTimeoutRef] = useState<number | null>(null);
 
-    // Cambio di destinazione dalla lettura di una posizione (o di uno scaffale, che vale la sua posizione)
+    // Cambio di destinazione dalla lettura di una posizione o di uno scaffale (S3: lo scaffale è la destinazione)
     const askChange = (place: PlaceRead) => {
         const potentialLoc = place.status === 'location' ? locations.find((l) => l.id === place.id) : undefined;
         if (!potentialLoc) return;
         setShowScanner(false); // Pause scanner immediately to avoid spam
         Vibration.vibrate(100);
-        const note = place.status === 'location' && place.shelfId ? `\n\n${shelfNote(place.shelfId)}` : '';
+        const shelfId = place.status === 'location' ? place.shelfId : undefined;
         Alert.alert(
             'Cambio Destinazione',
-            `Vuoi cambiare la destinazione a "${potentialLoc.label}"?${note}`,
+            `Vuoi cambiare la destinazione a "${targetOf(potentialLoc, shelfId).label}"?`,
             [
                 { text: 'No', style: 'cancel', onPress: () => setShowScanner(true) },
                 {
                     text: 'Sì',
                     onPress: () => {
-                        checkCapacityAndSetLocation(potentialLoc);
+                        checkCapacityAndSetLocation(potentialLoc, shelfId);
                     }
                 }
             ]
         );
     };
 
-    // Sposta il prodotto letto (o scelto tra più prodotti con lo stesso codice) nella destinazione
-    const moveFlow = (product: Product) => {
-        if (!targetLocation) return;
-        if (product.location === targetLocation.id) {
-            feedback(`${product.sku} già qui!`, 1000);
-            return;
-        }
-
+    /** Sposta davvero in `key` (la destinazione o il posto proposto) e lo conta. */
+    const doMove = (product: Product, key: string, note?: string): boolean => {
         // Spostamento vero: in cronologia «spostato», non «modificato» (D15)
-        if (!moveProduct(product.id, targetLocation.id)) {
-            const refused = moveOf(product, targetLocation.id, '');
+        if (!moveProduct(product.id, key)) {
+            const refused = moveOf(product, key, '');
             feedback(refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku), 1500);
-            return;
+            return false;
         }
-
         setScannedCount(c => c + 1);
         setLastScannedProduct(kindOf(product).line ? `${product.sku} (${kindOf(product).line})` : product.sku);
         playSuccessSound();
+        // Show overlay feedback (S3: con l'avviso del carico, se c'è)
+        feedback(note ? `${product.sku} Spostato! ${note}` : `${product.sku} Spostato!`, note ? 2000 : 1000);
+        return true;
+    };
 
-        // Show overlay feedback
-        feedback(`${product.sku} Spostato!`, 1000);
+    // Sposta il prodotto letto (o scelto tra più prodotti con lo stesso codice) nella destinazione. S3: il controllo
+    // del carico sulla copia più recente (il conto si aggiorna a ogni articolo); col blocco si ferma solo questo
+    // articolo, nulla è scritto, e la finestra propone un altro posto (il tocco sposta lì solo questo articolo)
+    const moveFlow = (read: Product) => {
+        if (!targetLocation) return;
+        const product = latestProduct(read.id) ?? read;
+        const tried = moveOf(product, targetLocation.key, '');
+        if (!tried.ok && tried.reason === 'same_place') {
+            feedback(`${product.sku} già qui!`, 1000);
+            return;
+        }
+        const result = tried.ok ? checkMove(product, targetLocation.key) : null;
+        if (result?.level === 'blocco') {
+            soundService.playBlockingError();
+            setShowScanner(false);
+            load.show({
+                check: result,
+                onUse: (p) => { doMove(product, p.key); setShowScanner(true); },
+                onCancel: () => setShowScanner(true),
+            });
+            return;
+        }
+        doMove(product, targetLocation.key, result?.level === 'avviso' ? `${loadWarningText(result)}.` : undefined);
     };
 
     const handleProductScan = async (data: string) => {
@@ -239,7 +255,7 @@ export default function BatchMoveScreen() {
 
     const resetFlow = () => {
         setStep('scan_location');
-        setTargetLocation(null);
+        setTarget(null);
         setScannedCount(0);
         setLastScannedProduct(null);
     };
@@ -290,6 +306,7 @@ export default function BatchMoveScreen() {
                         <View style={styles.targetCard}>
                             <Text style={styles.targetLabel}>Destinazione Attuale:</Text>
                             <Text style={styles.targetValue}>{targetLocation?.label}</Text>
+                            {targetLocation ? <TargetFill target={targetLocation} products={latestProducts()} shelves={shelves} /> : null}
                             <Pressable onPress={resetFlow} style={styles.changeTargetButton}>
                                 <Text style={styles.changeTargetText}>Cambia</Text>
                             </Pressable>
@@ -321,6 +338,7 @@ export default function BatchMoveScreen() {
 
             </ScrollView>
 
+            {load.sheet}
             {/* Code Scanner Modal */}
             {showScanner && (
                 <View style={StyleSheet.absoluteFill}>
@@ -345,7 +363,38 @@ export default function BatchMoveScreen() {
     );
 }
 
+/** Riempimento della destinazione (S3): la barra e lo spazio libero di uno scaffale con limiti, i pezzi di una
+ *  posizione con capienza; si aggiorna a ogni articolo. Niente se la destinazione non ha limiti. */
+function TargetFill({ target, products, shelves }: { target: Target; products: Product[]; shelves: readonly Shelf[] }) {
+    const styles = useStyles();
+    const shelf = target.shelfId ? shelves.find((s) => s.id === target.shelfId) : undefined;
+    if (shelf) {
+        const now = shelfLoad(shelf, products);
+        const fill = fillLevel(shelf, now);
+        if (!fill) return null;
+        return (
+            <View style={styles.fillBox}>
+                <ShelfFill fill={fill} name={shelf.name} />
+                <Text style={styles.fillText}>{freeText(shelf, now)}</Text>
+            </View>
+        );
+    }
+    const cap = target.location.capacity;
+    const max = cap && cap > 0 ? Math.floor(cap) : 0;
+    const fill = max > 0 ? fillLevel({ maxPieces: max }, placeLoad(target.location.id, products)) : null;
+    return fill ? <View style={styles.fillBox}><ShelfFill fill={fill} name={target.location.label} /></View> : null;
+}
+
 const useStyles = makeStyles((t) => ({
+    fillBox: {
+        alignSelf: 'stretch',
+        marginBottom: 8,
+    },
+    fillText: {
+        ...t.typography.caption,
+        marginTop: 4,
+        textAlign: 'center',
+    },
     container: {
         flex: 1,
         backgroundColor: t.colors.background,

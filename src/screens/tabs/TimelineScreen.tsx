@@ -7,6 +7,7 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { describeStockEvent } from '../../../utils/stock';
+import { authorText } from '../../../utils/profile';
 import { TimelineEvent } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text } from '../../../components/ui/Text';
@@ -229,8 +230,9 @@ export default function TimelineScreen() {
               {getEventDescription(event) !== '' && (
                 <Text style={styles.eventDescription}>{getEventDescription(event)}</Text>
               )}
+              {/* ACC1 (ticket 32): chi l'ha fatto e quando («Mario · Banco 1 · 24 nov 2026, 10:42»); i vecchi «—» */}
               <Text style={styles.eventDate}>
-                {new Date(event.timestamp).toLocaleDateString('it-IT', {
+                {authorText(event.author)} · {new Date(event.timestamp).toLocaleDateString('it-IT', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric',

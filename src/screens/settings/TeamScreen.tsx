@@ -240,7 +240,8 @@ export default function TeamScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
           <AppIcon name="arrow-back" size={24} color={t.colors.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Team & Accesso</Text>
+        {/* ACC1 (AR09): un nome per funzione; la schermata la rifà RETE0 */}
+        <Text style={styles.headerTitle}>Rete del negozio</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -250,7 +251,7 @@ export default function TeamScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* TEAM E ACCESSO */}
-        <Text style={styles.sectionTitle}>Team e accesso</Text>
+        <Text style={styles.sectionTitle}>Rete locale</Text>
         <Text style={styles.sectionDesc}>
           Condividi i dati supportati sulla rete locale tramite pairing temporaneo. Host genera un QR e il client lo scansiona per avviare la sincronizzazione.
         </Text>

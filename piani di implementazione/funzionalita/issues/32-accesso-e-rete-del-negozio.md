@@ -51,6 +51,56 @@ Testo dell'utente in [`richieste-utente-24-b-novembre.md`](../richieste-utente-2
 - **Cronologia con l'autore**: ogni evento nuovo porta **chi** l'ha fatto (profilo del telefono, poi l'account) e la Cronologia lo mostra («Mario · Banco 1 · 10:42»); gli eventi vecchi restano senza autore («—»). Fetta ACC1 (campo facoltativo negli eventi, nessuna riscrittura), RETE2a per gli eventi arrivati da un altro telefono.
 - **Ordine** (dal secondo messaggio): dopo le corsie A (campi), B (scaffali), C (codici e NFC): **ACC1 → RETE0 → CHAT1**, poi le automazioni (FLU1, CON, FLU2, RIO, RES), poi RIC1, RIC2, VOCI, RETE1, RETE2a e il branch di L1.
 
+## ACC1: confine e decisioni (24 novembre, corsia B)
+
+Fatta su `funzioni/scaffali` (worktree `inventory-scaffali`), dopo S3. Le parole dell'utente del secondo messaggio del 24: profilo con foto, nome e dati dell'operatore; un amministratore che gestisce i permessi; nella Cronologia chi ha fatto che cosa e quando.
+
+**Dentro (fatto):**
+1. **Impostazioni › «Persone e telefoni»** con due voci e lo stato nel sottotitolo: «Accesso» («Mario Rossi · Titolare», oppure «Titolare · nome da scrivere») e «Rete del negozio» («Non collegato», «Collegato a un centro», «Fa da centro»; riletto a ogni ritorno su Impostazioni, e sul web mai «Fa da centro», perché lì un centro non può esistere). Vanno via «Team e spazi di lavoro», «owner · attiva», «Accesso Multi-Utente» e «Mesh LAN • QR Host/Client • Sync 100%» (AR09, AR13). «Rete del negozio» apre la schermata di oggi (`settings/team`), che prende il titolo «Rete del negozio»: il resto lo rifà RETE0.
+2. **`AccessScreen`** (`settings/access`, freccia verso Impostazioni, `linking.ts`, `PARENT_TAB`, `compat.ts`):
+   - il profilo dell'operatore: foto in un cerchio da 56, nome, telefono e ruolo;
+   - il nome di questo telefono («Banco 1»);
+   - l'account detto com'è: «Spazio locale», «Accesso con Google» spento, «Backup Google Drive» spento col motivo;
+   - il ruolo di questo telefono, con i quattro ruoli spiegati;
+   - la tabella dei permessi.
+   Tutto si salva da solo e si rilegge dopo una ricarica.
+3. **`utils/roles.ts`** (jest `roles.test.ts`):
+   - ruoli Titolare, Responsabile, Operatore, Solo lettura;
+   - azioni: aggiungere, modificare e movimentare, vendere, eliminare, cambiare le impostazioni, gestire i ruoli;
+   - `can(ruolo, azione, tabella)`, `deniedReason`, `normalizePermissions`.
+   **`utils/profile.ts`** (jest `profile.test.ts`) ha profilo, autore e riga «chi». Le chiavi sono per telefono: `device:v1:profile` e `device:v1:permissions` (`contexts/ProfileContext.tsx`).
+4. **Testi veri** (AR12):
+   - «Backup Google Drive» spento col motivo anche in Impostazioni › Dati e backup, senza la finestra «Accedi di nuovo con Google…»;
+   - in Info «Dove stanno i dati» al posto di «la sincronizzazione avviene con Supabase».
+5. **Autore nella Cronologia**: ogni evento nuovo porta `author: { id, name?, device? }`. La Cronologia lo mostra come «Mario · Banco 1 · 24 nov 2026, 10:42»; gli eventi di prima mostrano «—».
+
+**Permessi applicati oggi** (azione spenta col motivo, mai nascosta). La riga del motivo, col lucchetto, sta sopra il blocco: per esempio «Il ruolo Operatore non può eliminare. Lo decide il Titolare in Accesso.».
+- Aggiungere: «Aggiungi all'Inventario» in Aggiungi; «Importa prodotti CSV» e il riquadro di trascinamento in Impostazioni.
+- Modificare: «Modifica» e «Movimenta» della Scheda.
+- Vendere: «Venduto» dell'Azione rapida; causale «Vendita» di Movimenta (Scheda e Azione rapida).
+- Eliminare: Elimina della selezione in Home; «Elimina per sempre», «Svuota» e l'eliminazione dei campi nel Cestino.
+- Impostazioni: le voci di Configurazione hardware, Gestione inventario (Cestino compreso) e Condivisione.
+- Gestire i ruoli: la tabella dei permessi in Accesso.
+
+**Fuori** (con chi le prende):
+- Permessi non applicati: automazioni (Audit, Spostamento rapido, Vendita col lettore, Nota a più prodotti, Conta, esecuzione delle automazioni personali); «Spostato», «Carico» e «Scarico» dell'Azione rapida; «Sposta in categoria» della selezione in Home; Chat (Vendi, Approva spostamento); «Ripristina» del Cestino. Restano fuori anche le schermate aperte scrivendo l'indirizzo (`product/edit/…`, `settings/fields`…), perché la porta d'ingresso è spenta ma la schermata no.
+  Arrivano con gli account (ACC3), quando i ruoli saranno veri; la schermata lo dice («Nel resto dell'app i permessi arriveranno con gli account»).
+- La Rete del negozio rifatta, chi è online, da quanto e l'ultima volta: RETE0.
+- La Chat in Home: CHAT1.
+- Account, inviti e ruoli veri col cloud: L1 e ACC3.
+- Gli eventi arrivati da un altro telefono: RETE2a.
+- L'autore nella «Cronologia dettagliata» della Scheda: `DetailScreen`, file della corsia A, toccato solo per Modifica e Movimenta.
+- Il resto delle Impostazioni in 6 gruppi: UX1-1.
+
+**Decisioni** (decise dall'orchestratore al posto dell'utente, 24/11):
+1. **Il ruolo del telefono si cambia sempre da Accesso.** Senza login non c'è un'altra via d'uscita: un telefono messo «Operatore» non tornerebbe più Titolare. La tabella dei permessi la cambia solo chi può «gestire i ruoli», cioè il Titolare: la sua riga e la colonna «gestire i ruoli» sono fisse. La schermata lo dice: «I ruoli diventano sicuri con gli account: oggi valgono su questo telefono e si cambiano da qui.». I ruoli locali proteggono dagli errori, non da chi vuole aggirarli (anche lo storage del browser si cambia a mano).
+2. **Autore senza migrazione.** La Cronologia è un elenco JSON in `inventory:v1:local:timeline` e ogni evento nuovo passa da `addTimelineEvent`. Il campo facoltativo `author` sta in cima all'evento, non dentro `details`. È un'istantanea: id, nome e nome del telefono di quel momento. Nessun evento si riscrive. La tabella `timeline` di WatermelonDB (che ha già `created_by`) non è su questo percorso.
+3. **Nessuna scrittura all'apertura.** L'id del profilo nasce alla prima modifica in Accesso o al primo evento. Senza nomi scritti l'autore è «Questo telefono».
+4. **Foto locale piccola**: `data:image/jpeg`, sul web un quadrato centrale 160×160 (circa 5 KB), sul telefono larga 160 con le proporzioni (non provato), con un limite di 150.000 caratteri. Un `blob:` non sopravvive a una ricarica, e lo storage del browser ha la stessa quota dell'inventario.
+5. **Azioni spente toccabili e inerti.** Restano attenuate e il tocco non fa nulla; il motivo sta nella riga sopra. Niente `disabled`, che sul web diventa `aria-disabled`.
+6. **Inviti e cambio di spazio tolti da Impostazioni.** Con `LOGIN_ENABLED = false` erano codice morto. ACC3 li rifà in Accesso con i ruoli; il codice di prima è a `1db2c12`, `SettingsScreen.tsx:59-99` e `:543-589`.
+7. **L'autore è dichiarato, non verificato** (parere del revisore): senza account chiunque scrive «Mario», e anche la Cronologia si cambia dallo storage. Dice chi ha fatto che cosa, non lo prova; diventa affidabile con gli account (ACC3) e gli eventi firmati dal telefono che li manda (RETE2a).
+
 ## Verifica
 
 - **ACC1**: Impostazioni con «Accesso» e «Rete del negozio» e senza «Team e spazi di lavoro»; nome del telefono salvato e riletto dopo una ricarica; «Spazio locale» e «Titolare»; «Backup Google Drive» spento col motivo; nessuna richiesta a `supabase.co`; `settings/access` dall'indirizzo, freccia verso Impostazioni.

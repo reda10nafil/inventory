@@ -1,5 +1,7 @@
 // a4: Impostazioni - ogni voce: dove porta (indirizzo e titolo della pagina) e quali finestre apre.
-// Poi Condivisione (cosa si può fare) e Team (Accesso Multi-Utente) sul web.
+// Poi Condivisione (cosa si può fare) e Team (Rete del negozio, prima Accesso Multi-Utente) sul web.
+// ACC1: «Spazio locale» e «Accesso Multi-Utente» diventano «Accesso» e «Rete del negozio»; «Backup Google Drive» è
+// spento col motivo (nessuna finestra).
 // Uso: node a4-impostazioni.cjs [nome-scenario]
 const { scenario } = require('./lib.cjs');
 const solo = process.argv[2];
@@ -8,7 +10,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
 const VOCI = [
   ['Stile:', false], ['GS1 Digital Link'], ['Scanner & NFC'], ['Categorie'], ['Campi Personalizzati'], // C1: «Gestisci Cartelle» → «Categorie»
   ['Configura Layout Aggiungi'], ['Cestino'], ['Gestisci Posizioni'], ['Configurazione Condivisione'],
-  ['Alert Prodotti Dormienti'], ['Suggerimenti AI'], ['Spazio locale'], ['Backup Google Drive'], ['Accesso Multi-Utente'],
+  ['Alert Prodotti Dormienti'], ['Suggerimenti AI'], ['Backup Google Drive'], ['Accesso'], ['Rete del negozio'],
 ];
 
 (async () => {
@@ -41,7 +43,7 @@ const VOCI = [
 
   await run('a4-imp-team', async (h) => {
     await h.go('settings');
-    await h.click('Accesso Multi-Utente');
+    await h.click('Rete del negozio');
     await h.page.waitForTimeout(5000); // la schermata prova subito a creare la stanza Host
     const url = h.page.url();
     await h.shot('team');

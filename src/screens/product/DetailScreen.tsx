@@ -42,12 +42,16 @@ import { useShelves } from '../../../contexts/ShelvesContext';
 import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { UNKNOWN_SHELF } from '../../../utils/shelves';
 import { ShelfSpace } from '../../../components/ShelfSpace';
+import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
+import { usePermission } from '../../../contexts/ProfileContext';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  // ACC1 (ticket 32): «Modifica» e «Movimenta» spenti col motivo per un ruolo che non modifica (blocco a sé)
+  const editPerm = usePermission('modificare');
   const { id } = useLocalSearchParams();
   const { getProductById, getTimelineForProduct } = useInventory();
   const { locations } = useLocations();
@@ -930,10 +934,12 @@ export default function ProductDetailScreen() {
                   </View>
                 )}
                 {canMoveStock && (
-                  <Pressable style={styles.moveStockButton} onPress={() => setShowMovement(true)} accessibilityLabel="Movimenta">
+                  <Dimmed off={!editPerm.allowed}>
+                  <Pressable style={styles.moveStockButton} onPress={() => { if (editPerm.allowed) setShowMovement(true); }} accessibilityLabel="Movimenta">
                     <AppIcon name="swap-vert" size={18} color={t.colors.onButtonSecondary} />
                     <Text style={styles.moveStockText}>Movimenta</Text>
                   </Pressable>
+                  </Dimmed>
                 )}
               </View>
               {!stocked && canMoveStock && (
@@ -1291,23 +1297,28 @@ export default function ProductDetailScreen() {
             <Text style={[styles.qrButtonText, styles.pdfButtonText]}>Stampa scheda PDF</Text>
           </Pressable>
         </View>
+        {/* ACC1: la riga del motivo sopra la barra non copre l'ultimo pulsante */}
+        {!editPerm.allowed && <View style={{ height: 80 }} />}
       </ScrollView>
 
       {/* Bottom Actions */}
       <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 12 }]}>
         <Glass />
+        <PermissionNote text={editPerm.reason} floating style={{ left: t.spacing.screenPadding, right: t.spacing.screenPadding }} />
         <Pressable style={styles.actionButtonSecondary} onPress={() => router.back()}>
           <AppIcon name="arrow-back" size={20} color={t.colors.onButtonSecondary} />
           <Text style={styles.actionButtonTextSecondary}>Indietro</Text>
         </Pressable>
+        <Dimmed off={!editPerm.allowed} style={{ flex: 1 }}>
         <Pressable
           style={styles.actionButtonPrimary}
-          onPress={() => router.push(`/product/edit/${product.id}`)}
+          onPress={() => { if (editPerm.allowed) router.push(`/product/edit/${product.id}`); }}
         >
           <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
           <AppIcon name="edit" size={20} color={t.colors.onButton} />
           <Text style={styles.actionButtonTextPrimary}>Modifica</Text>
         </Pressable>
+        </Dimmed>
       </View>
       <MovementSheet product={product} visible={showMovement} onClose={() => setShowMovement(false)} />
 

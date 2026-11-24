@@ -17,7 +17,10 @@ import {
   MOVEMENT_LABELS, REASON_LABELS, formatQty, keysAt, movementErrorText, parseQty, parseSalePrice, placeOfKey, qtyAt, qtyIn,
   splitStockKey, stockKey, takesContact, takesPrice, type Movement,
 } from '../utils/stock';
-import { UNKNOWN_SHELF, withShelfRead } from '../utils/shelves';
+import { UNKNOWN_SHELF, withShelfRead, type LoadProposal } from '../utils/shelves';
+import { useLoadCheck } from '../hooks/useLoadCheck';
+import { useLoadBlock } from './LoadBlockSheet';
+import { LoadNotice, OverLimitTag } from './LoadNotice';
 import { salePrice } from '../utils/inventoryOps';
 import { CONTACT_KIND_ICONS, CONTACT_KIND_LABELS, contactsForMovement } from '../utils/contacts';
 import { formatNumber } from '../utils/number';
@@ -25,6 +28,8 @@ import { formStyles } from './ui/formStyles';
 import { GradientFill } from './ui/GradientFill';
 import { AppIcon } from './ui/AppIcon';
 import { Text, TextInput } from './ui/Text';
+import { PermissionNote } from './PermissionNote';
+import { usePermission } from '../contexts/ProfileContext';
 
 const KINDS: MovementKind[] = ['carico', 'scarico', 'trasferimento', 'rettifica'];
 /** Contatti proposti subito (poche pillole: la finestra resta corta); gli altri con «Altri N». */
@@ -55,6 +60,8 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
   const { locations } = useLocations();
   const { contacts } = useContacts();
   const { shelves } = useShelves();
+  // ACC1 (revisore): la causale «Vendita» è una vendita: spenta col motivo per un ruolo che non vende
+  const sellPerm = usePermission('vendere');
   // Un pezzo unico con uno scaffale che non torna si muove dalla sua posizione (come lo legge la Scheda, S1b)
   const product = withShelfRead(saved, shelves);
 
@@ -135,7 +142,30 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
   // Nella stessa posizione partendo dalla parte senza scaffale, la destinazione proposta è il primo scaffale
   const pickTo = (id: string) => { setTo(id); setToShelf(id === place && !placeShelf ? (shelvesAt(id)[0]?.id ?? '') : ''); };
 
-  const submit = () => {
+  // S3 (ticket 15): avviso e blocco per il carico e il trasferimento (verso uno scaffale con limiti o una posizione con
+  // capienza); la rettifica in aumento registra merce che è già lì, quindi solo l'informazione «oltre il limite»
+  const { check: checkLoad } = useLoadCheck();
+  const load = useLoadBlock();
+  const loadCheck = (() => {
+    const qty = parseQty(qtyText);
+    if (qty == null || (!(qty > 0) && kind !== 'rettifica')) return null;
+    if (kind === 'carico') return checkLoad(product, fromKey, [{ qty }]);
+    if (kind === 'trasferimento') return to ? checkLoad(product, toKey, [{ from: fromKey, qty }]) : null;
+    if (kind === 'rettifica') {
+      const more = qty - qtyIn(product, fromKey);
+      return more > 0 ? checkLoad(product, fromKey, [{ qty: more }]) : null;
+    }
+    return null;
+  })();
+  const takeProposal = (p: LoadProposal) => {
+    if (kind === 'trasferimento') { setTo(p.locationId); setToShelf(p.shelfId ?? ''); return; }
+    setPlace(p.locationId);
+    setPlaceShelf(p.shelfId ?? '');
+  };
+
+  /** `overrideTo`: la chiave proposta dalla finestra del blocco (il tocco su «Metti in A2»). */
+  const submit = (overrideTo?: string) => {
+    if (reason === 'vendita' && !sellPerm.allowed) return;
     const qty = parseQty(qtyText);
     const common = {
       ...(reason && { reason }),
@@ -155,9 +185,14 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
         if (written === null) { Alert.alert('Movimento non registrato', 'Scrivi un prezzo valido (es. 120 o 12,50) oppure lascia il campo vuoto.'); return; }
         price = salePrice(product, written);
       }
-      movement = kind === 'carico' ? { kind, qty, to: fromKey, ...common }
+      // S3: col blocco nulla è registrato; la finestra propone un altro posto e il tocco registra lì
+      if (!overrideTo && (kind === 'carico' || kind === 'trasferimento') && loadCheck?.level === 'blocco') {
+        load.show({ check: loadCheck, onUse: (p) => submit(p.key) });
+        return;
+      }
+      movement = kind === 'carico' ? { kind, qty, to: overrideTo ?? fromKey, ...common }
         : kind === 'scarico' ? { kind, qty, from: fromKey, ...common, ...(price != null && { finalPrice: price }) }
-          : { kind, qty, from: fromKey, to: to ? toKey : '', ...common };
+          : { kind, qty, from: fromKey, to: overrideTo ?? (to ? toKey : ''), ...common };
     }
     const result = moveStock(product.id, movement);
     if (!result.ok) {
@@ -250,12 +285,14 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
             <Text style={styles.label}>{placeTitle}</Text>
             {placeChips(placeTitle, place, pickPlace)}
             {shelfChips(placeTitle, place, placeShelf, pickPlaceShelf)}
+            {kind === 'carico' && <LoadNotice check={loadCheck} onUseProposal={takeProposal} />}
 
             {kind === 'trasferimento' && (
               <>
                 <Text style={styles.label}>A</Text>
                 {placeChips('A', to, pickTo, placeHasShelves ? undefined : place)}
                 {shelfChips('A', to, toShelf, setToShelf, fromKey)}
+                <LoadNotice check={loadCheck} onUseProposal={takeProposal} />
               </>
             )}
 
@@ -271,6 +308,7 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
               />
               <Text style={styles.unit}>{unit}</Text>
             </View>
+            {kind === 'rettifica' && <OverLimitTag check={loadCheck} />}
 
             {REASONS_BY_KIND[kind].length > 0 && (
               <>
@@ -278,14 +316,16 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
                 <View style={styles.chipWrap}>
                   {REASONS_BY_KIND[kind].map((r) => {
                     const active = reason === r;
+                    const off = r === 'vendita' && !sellPerm.allowed;
                     return (
-                      <Pressable key={r} style={[styles.chip, styles.chipSmall, active && styles.chipActive]} onPress={() => setReason(active ? undefined : r)} accessibilityLabel={`Causale ${REASON_LABELS[r]}`}>
+                      <Pressable key={r} style={[styles.chip, styles.chipSmall, active && styles.chipActive, off && styles.chipOff]} onPress={() => { if (!off) setReason(active ? undefined : r); }} accessibilityLabel={`Causale ${REASON_LABELS[r]}`}>
                         {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
                         <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]}>{REASON_LABELS[r]}</Text>
                       </Pressable>
                     );
                   })}
                 </View>
+                {REASONS_BY_KIND[kind].includes('vendita') && <PermissionNote text={sellPerm.reason} style={{ marginTop: 8, marginBottom: 0 }} />}
               </>
             )}
 
@@ -351,18 +391,20 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
             <Pressable style={styles.secondary} onPress={onClose}>
               <Text style={styles.secondaryText}>Annulla</Text>
             </Pressable>
-            <Pressable style={styles.primary} onPress={submit} accessibilityLabel="Registra movimento">
+            <Pressable style={styles.primary} onPress={() => submit()} accessibilityLabel="Registra movimento">
               <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
               <Text style={styles.primaryText}>Registra</Text>
             </Pressable>
           </View>
         </View>
+        {load.sheet}
       </View>
     </Modal>
   );
 }
 
 const useStyles = makeStyles((t) => ({
+  chipOff: { opacity: 0.4 },
   ...formStyles(t),
   overlay: {
     flex: 1,

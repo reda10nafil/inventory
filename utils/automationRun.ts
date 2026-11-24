@@ -14,7 +14,8 @@ import type { CustomField, Product, ProductCustomData } from '../types';
 import { moveOf, refusalText, saleOf } from './inventoryOps';
 import { formatNumberInput, parseNumber } from './number';
 import { fieldOptions, sameValue } from './fieldValues';
-import { parseSalePrice } from './stock';
+import { parseSalePrice, stockKey } from './stock';
+import { placeWithShelf } from './shelves';
 
 export interface RunStepConfig {
   locationId?: string;
@@ -100,6 +101,9 @@ function withFieldValue(list: readonly ProductCustomData[], field: CustomField, 
 export interface RunContext {
   /** Ultima posizione letta in questa esecuzione («Scansiona Posizione»). */
   locationId: string | null;
+  /** S3 (scaffale come destinazione, da FLU1): lo scaffale letto con «Scansiona Posizione», se era uno scaffale; un
+   *  «Sposta in» con la spunta «Usa l'ultima posizione» porta il prodotto su quello scaffale. */
+  shelf?: { id: string; name: string } | null;
   /** Posizioni che esistono adesso. */
   locations: readonly { id: string; label: string }[];
   /** Campi personalizzati attivi (`useCustomFields().customFields`). */
@@ -110,7 +114,7 @@ export interface RunContext {
 export type StepOutcome =
   /** Note o campi: la schermata scrive `patch` con `updateProduct` (vuota se c'era già). */
   | { ok: true; op: 'patch'; patch: Partial<Product>; text: string }
-  /** Spostamento possibile: la schermata chiama `moveProduct(id, to)`. */
+  /** Spostamento possibile: la schermata chiama `moveProduct(id, to)` (`to` può essere `posizione/idScaffale`, S3). */
   | { ok: true; op: 'move'; to: string; text: string }
   /** Vendita al prezzo di listino: `sellProduct(id)`. */
   | { ok: true; op: 'sell'; text: string }
@@ -172,11 +176,15 @@ export function runStep(product: Product | undefined, step: RunStep, ctx: RunCon
       if (!to) return refuse(scanned ? 'Nessuna posizione letta: serve prima «Scansiona Posizione».' : `Il passo non ha una posizione: ${EDIT}`);
       const place = ctx.locations.find((l) => l.id === to);
       if (!place) return refuse(scanned ? 'Posizione non trovata.' : `La posizione di questo passo non esiste più: ${EDIT}`);
-      const r = moveOf(product, to, ctx.now);
+      // S3: lo scaffale letto prima è la destinazione («Magazzino › A1»)
+      const shelf = scanned ? ctx.shelf ?? undefined : undefined;
+      const key = stockKey(to, shelf?.id);
+      const where = placeWithShelf(place.label, shelf);
+      const r = moveOf(product, key, ctx.now);
       // Già lì: niente da spostare e la catena continua, come prima di ESE (il prodotto è dove il passo lo vuole)
-      if (!r.ok && r.reason === 'same_place') return { ok: true, op: 'patch', patch: {}, text: `📦 ${product.sku} è già in ${place.label}` };
+      if (!r.ok && r.reason === 'same_place') return { ok: true, op: 'patch', patch: {}, text: `📦 ${product.sku} è già in ${where}` };
       if (!r.ok) return refuse(refusalText(r.reason, product.sku));
-      return { ok: true, op: 'move', to, text: `📦 Spostato in ${place.label}` };
+      return { ok: true, op: 'move', to: key, text: `📦 Spostato in ${where}` };
     }
     case 'mark_sold': {
       // Prima della finestra del prezzo: un capo già venduto o nel cestino non la apre (AU-V03)

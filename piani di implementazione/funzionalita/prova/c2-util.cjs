@@ -25,7 +25,8 @@ const MADRE = {
   'settings/share': 'settings', // SettingsScreen.tsx:478
   'settings/appearance': 'settings', // SettingsScreen.tsx:250
   'settings/sector-templates': 'settings', // SettingsScreen.tsx:365
-  'settings/team': 'settings', // SettingsScreen.tsx:711 (Accesso Multi-Utente)
+  'settings/team': 'settings', // SettingsScreen.tsx (Persone e telefoni › Rete del negozio, da ACC1; prima Accesso Multi-Utente)
+  'settings/access': 'settings', // SettingsScreen.tsx (Persone e telefoni › Accesso, ACC1)
   chat: 'settings', // TeamScreen.tsx:261 (Team sta in Impostazioni)
   'settings/automation-builder': 'automations', // AutomationsScreen.tsx:103, :115; AutomationFlowScreen.tsx:77
   'automations/audit': 'automations', // AutomationsScreen.tsx:38 e :67 (modelli); CountScreen.tsx:137

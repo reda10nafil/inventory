@@ -17,6 +17,7 @@ import { LayoutProvider } from './contexts/LayoutContext';
 import { AutomationsProvider } from './contexts/AutomationsContext';
 import { GS1ConfigProvider } from './contexts/GS1ConfigContext';
 import { HardwareConfigProvider } from './contexts/HardwareConfigContext';
+import { ProfileProvider } from './contexts/ProfileContext';
 import { soundService } from './services/SoundService';
 import RootNavigator from './src/navigation/RootNavigator';
 import { linking } from './src/navigation/linking';
@@ -126,12 +127,15 @@ function SignedInApp() {
           <LayoutProvider>
             <HardwareConfigProvider>
               <GS1ConfigProvider>
+                {/* ACC1: profilo e permessi di questo telefono; l'inventario ne prende l'autore degli eventi */}
+                <ProfileProvider>
                 <InventoryProvider>
                   <BatteryMonitor />
                   <NavigationContainer linking={linking as any} fallback={null} theme={navTheme}>
                     <RootNavigator />
                   </NavigationContainer>
                 </InventoryProvider>
+                </ProfileProvider>
               </GS1ConfigProvider>
             </HardwareConfigProvider>
           </LayoutProvider>
