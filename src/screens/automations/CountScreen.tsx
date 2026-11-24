@@ -23,6 +23,9 @@ import { formatNumber } from '../../../utils/number';
 import { formatQty, parseQty, round3 } from '../../../utils/stock';
 import { countDiffs, countRefusalText, countRows, uniqueAt, type CountResult } from '../../../utils/inventoryOps';
 import { countLeave, hasWrittenCounts, previousCountStep, type CountStep as Step } from '../../../utils/countBack';
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { OverLimitTag } from '../../../components/LoadNotice';
+import { overLimitText } from '../../../utils/shelves';
 
 type Outcome = Pick<CountResult, 'adjusted' | 'unchanged' | 'refused'>;
 
@@ -61,6 +64,10 @@ export default function CountScreen() {
   }, [rows, texts]);
   const diffs = useMemo(() => countDiffs(rows, counts), [rows, counts]);
   const countedN = Object.keys(counts).length;
+  // S3 (ticket 15): la Conta registra merce che è già lì: niente blocco, solo l'informazione «oltre il limite» sulle
+  // righe che aumentano, se la posizione ha una capienza (in pezzi, AU-V13) e la supera
+  const { checkCount } = useLoadCheck();
+  const countLoad = step === 'summary' && at ? checkCount(at, counts) : null;
 
   // Tornando alla stessa posizione le quantità scritte restano; un'altra posizione ricomincia da vuoto
   const choose = (id: string) => { if (id !== at) setTexts({}); setAt(id); setOutcome(null); setStep('count'); };
@@ -223,11 +230,13 @@ export default function CountScreen() {
             ) : (
               <>
                 <Text style={styles.sectionLabel}>Rettifiche da registrare</Text>
+                {countLoad?.level === 'blocco' && <Text style={styles.rowSub}>{overLimitText(countLoad)}.</Text>}
                 {diffs.map((d) => (
                   <View key={d.id} style={styles.row}>
                     <View style={styles.rowInfo}>
                       <Text style={styles.rowSku}>{d.sku}</Text>
                       <Text style={styles.rowSub}>{formatNumber(d.expected)} → {formatQty(d.counted, d.unit)}</Text>
+                      {d.delta > 0 && <OverLimitTag check={countLoad} />}
                     </View>
                     <Text style={[styles.rowDeltaBig, { color: d.delta > 0 ? t.colors.success : t.colors.error }]}>{signed(d.delta, d.unit)}</Text>
                   </View>

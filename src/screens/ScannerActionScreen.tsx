@@ -25,6 +25,10 @@ import { canMoveStock } from '../../utils/productRules';
 import { describeStockEvent, formatQty, isOutOfStock, isStocked, qtyAt, stockKey, totalStock, type Movement } from '../../utils/stock';
 import { usePlaceLabel } from '../../hooks/usePlaceLabel';
 import { MovementSheet } from '../../components/MovementSheet';
+import { useLoadCheck } from '../../hooks/useLoadCheck';
+import { useLoadBlock } from '../../components/LoadBlockSheet';
+import { LoadNotice } from '../../components/LoadNotice';
+import { loadWarningText } from '../../utils/shelves';
 import type { MovementKind } from '../../types';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
@@ -52,6 +56,10 @@ export default function ScannerActionScreen() {
   const [finalPrice, setFinalPrice] = useState('');
   // Carico o Scarico (M09): la finestra «Movimenta» della Scheda aperta con il tipo già scelto
   const [sheetKind, setSheetKind] = useState<MovementKind | null>(null);
+  // S3 (ticket 15): «Spostato» verso una posizione con capienza (in pezzi, AU-V13): avviso in linea e blocco con la
+  // proposta; il Carico passa da «Movimenta», che ha lo stesso controllo
+  const { checkMove } = useLoadCheck();
+  const load = useLoadBlock();
 
   // Resolve entity based on type
   const product = type === 'product' ? getProductById(entityId) : null;
@@ -71,12 +79,23 @@ export default function ScannerActionScreen() {
       // Existing Product Logic
       if (selectedAction === 'moved') {
         if (!selectedLocation) { Alert.alert('Errore', 'Seleziona una posizione'); return; }
-        if (!moveProduct(product.id, selectedLocation)) {
-          const refused = moveOf(product, selectedLocation, '');
-          Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
+        const move = (to: string) => {
+          const result = checkMove(product, to);
+          if (!moveProduct(product.id, to)) {
+            const refused = moveOf(product, to, '');
+            Alert.alert('Non spostato', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));
+            return;
+          }
+          const note = result.level === 'avviso' ? ` ${loadWarningText(result)}.` : '';
+          Alert.alert('Spostamento Registrato', `${product.sku} spostato.${note}`, [{ text: 'OK', onPress: () => router.back() }]);
+        };
+        const tried = moveOf(product, selectedLocation, '');
+        const result = tried.ok ? checkMove(product, selectedLocation) : null;
+        if (result?.level === 'blocco') {
+          load.show({ check: result, onUse: (p) => move(p.key) });
           return;
         }
-        Alert.alert('Spostamento Registrato', `${product.sku} spostato.`, [{ text: 'OK', onPress: () => router.back() }]);
+        move(selectedLocation);
       } else if (selectedAction === 'sold') {
         if (!sellProduct(product.id, parseNumber(finalPrice))) {
           const refused = saleOf(product, parseNumber(finalPrice), 1, '');
@@ -334,6 +353,10 @@ export default function ScannerActionScreen() {
                   </Text>
                 </Pressable>
               ))}
+              {/* S3: avviso in linea per una posizione con capienza */}
+              {selectedLocation && moveOf(product, selectedLocation, '').ok ? (
+                <LoadNotice check={checkMove(product, selectedLocation)} onUseProposal={(p) => setSelectedLocation(p.locationId)} />
+              ) : null}
             </View>
           )}
 
@@ -448,6 +471,7 @@ export default function ScannerActionScreen() {
           onClose={() => setSheetKind(null)}
           onDone={movementDone}
         />
+        {load.sheet}
       </SafeAreaView>
     );
   }

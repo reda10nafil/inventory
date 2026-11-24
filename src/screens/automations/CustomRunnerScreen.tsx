@@ -24,6 +24,9 @@ import {
     isScanStep, loopIndex, resumeIndex, runStep, salePriceInput, startError, type StepOutcome,
 } from '../../../utils/automationRun';
 import { moveOf, refusalText, saleOf } from '../../../utils/inventoryOps';
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { useLoadBlock } from '../../../components/LoadBlockSheet';
+import { loadBlockTitle, loadWarningText, placeWithShelf } from '../../../utils/shelves';
 import { soundService } from '../../../services/SoundService';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Text, TextInput } from '../../../components/ui/Text';
@@ -58,12 +61,18 @@ export default function CustomRunnerScreen() {
     // Runtime context (accumulated during execution)
     const [scannedProductId, setScannedProductId] = useState<string | null>(null);
     const [scannedLocationId, setScannedLocationId] = useState<string | null>(null);
+    // S3 (scaffale come destinazione, da FLU1): lo scaffale letto con «Scansiona Posizione», per «Sposta in»
+    type ScannedShelf = { id: string; name: string } | null;
+    const [scannedShelf, setScannedShelf] = useState<ScannedShelf>(null);
+    // S3 (ticket 15): avviso e blocco prima di ogni «Sposta in»
+    const { checkMove } = useLoadCheck();
+    const load = useLoadBlock();
 
     // Vendita con conferma del prezzo: il passo, il prodotto e la posizione letta che la aspettano
     const [showPriceModal, setShowPriceModal] = useState(false);
     const [priceInput, setPriceInput] = useState('');
     const [priceError, setPriceError] = useState<string | null>(null);
-    const pendingSale = useRef<{ index: number; productId: string; locationId: string | null } | null>(null);
+    const pendingSale = useRef<{ index: number; productId: string; locationId: string | null; shelf: ScannedShelf } | null>(null);
 
     // Uso contato una volta per apertura, quando l'automazione è caricata (AU-N13: aperta dall'indirizzo o ricaricando,
     // prima si contava al montaggio, quando l'elenco non era ancora letto, e l'uso restava 0)
@@ -105,7 +114,7 @@ export default function CustomRunnerScreen() {
 
                 // Auto-execute subsequent auto-steps
                 setTimeout(() => {
-                    runFrom(currentStepIndex + 1, product.id, scannedLocationId);
+                    runFrom(currentStepIndex + 1, product.id, scannedLocationId, scannedShelf);
                 }, 300);
             };
             if (read.status === 'product') {
@@ -126,7 +135,7 @@ export default function CustomRunnerScreen() {
                 setErrorTimeoutRef(timeout);
             }
         } else if (currentStep.type === 'scan_location') {
-            // Uno scaffale vale la sua posizione (AU-V14): il prodotto va lì, senza scaffale
+            // S3 (da FLU1): uno scaffale letto è la destinazione dei «Sposta in» con l'ultima posizione letta
             const pickLocation = (place: PlaceRead) => {
                 const loc = place.status === 'location' ? locations.find((l) => l.id === place.id) : undefined;
                 if (!loc) {
@@ -135,12 +144,14 @@ export default function CustomRunnerScreen() {
                 }
                 soundService.playSuccess();
                 setScannedLocationId(loc.id);
-                const shelf = place.status === 'location' && place.shelfId ? sources.shelves?.find((x) => x.id === place.shelfId)?.name : undefined;
-                showFeedback(shelf ? `📍 ${loc.label} (scaffale ${shelf})` : `📍 ${loc.label}`);
+                const found = place.status === 'location' && place.shelfId ? sources.shelves?.find((x) => x.id === place.shelfId && x.locationId === loc.id) : undefined;
+                const shelf: ScannedShelf = found ? { id: found.id, name: found.name } : null;
+                setScannedShelf(shelf);
+                showFeedback(`📍 ${placeWithShelf(loc.label, shelf ?? undefined)}`);
                 setShowScanner(false);
 
                 setTimeout(() => {
-                    runFrom(currentStepIndex + 1, scannedProductId, loc.id);
+                    runFrom(currentStepIndex + 1, scannedProductId, loc.id, shelf);
                 }, 300);
             };
             const place = readPlace(data);
@@ -187,7 +198,8 @@ export default function CustomRunnerScreen() {
     };
 
     // ── Passi d'azione in fila fino alla lettura dopo (o alla fine) ───
-    const runFrom = (fromIndex: number, productId: string | null, locationId: string | null) => {
+    const runFrom = (fromIndex: number, productId: string | null, locationId: string | null, shelf: ScannedShelf = null) => {
+        let warning: string | null = null;
         for (let idx = fromIndex; idx < steps.length; idx += 1) {
             const step = steps[idx];
             if (isScanStep(step)) {
@@ -196,13 +208,37 @@ export default function CustomRunnerScreen() {
                 return;
             }
             const product = productId ? latestProduct(productId) : undefined;
-            const out = runStep(product, step, { locationId, locations, fields: customFields, now: new Date().toISOString() });
+            const out = runStep(product, step, { locationId, shelf, locations, fields: customFields, now: new Date().toISOString() });
             if (!out.ok) {
                 refuse(out.refusal, idx);
                 return;
             }
+            // S3 (ticket 15): prima di spostare, il controllo del carico; col blocco nulla è scritto e la catena si
+            // ferma sulla finestra: la proposta sposta lì e continua, «Annulla» è un rifiuto come gli altri
+            if (out.op === 'move' && product) {
+                const result = checkMove(product, out.to);
+                if (result.level === 'blocco') {
+                    setCurrentStepIndex(idx);
+                    soundService.playBlockingError();
+                    load.show({
+                        check: result,
+                        onUse: (p) => {
+                            if (!moveProduct(product.id, p.key)) {
+                                const r = moveOf(latestProduct(product.id), p.key, '');
+                                refuse(refusalText(r.ok ? 'not_allowed' : r.reason, product.sku), idx);
+                                return;
+                            }
+                            setCompletedCount((c) => c + 1);
+                            runFrom(idx + 1, productId, locationId, shelf);
+                        },
+                        onCancel: () => refuse(`${loadBlockTitle(result)}${result.reason ? `: ${result.reason}` : ''}`, idx),
+                    });
+                    return;
+                }
+                if (result.level === 'avviso') warning = loadWarningText(result);
+            }
             if (out.op === 'ask_price') {
-                pendingSale.current = { index: idx, productId: productId as string, locationId };
+                pendingSale.current = { index: idx, productId: productId as string, locationId, shelf };
                 setCurrentStepIndex(idx);
                 setPriceInput(out.proposal);
                 setPriceError(null);
@@ -222,7 +258,7 @@ export default function CustomRunnerScreen() {
         if (loop !== -1) {
             setCurrentStepIndex(loop);
             soundService.playSuccess();
-            showFeedback(`✅ Fatto! Scansiona il prossimo...`);
+            showFeedback(warning ? `✅ Fatto! ${warning}.` : `✅ Fatto! Scansiona il prossimo...`);
         } else {
             setCurrentStepIndex(steps.length); // Complete
         }
@@ -256,7 +292,7 @@ export default function CustomRunnerScreen() {
 
         // Continue advancing
         setTimeout(() => {
-            runFrom(pending.index + 1, pending.productId, pending.locationId);
+            runFrom(pending.index + 1, pending.productId, pending.locationId, pending.shelf);
         }, 300);
     };
 
@@ -398,6 +434,7 @@ export default function CustomRunnerScreen() {
                 </View>
             )}
 
+            {load.sheet}
             {/* ── Scanner Overlay ── */}
             {showScanner && (
                 <View style={StyleSheet.absoluteFill}>

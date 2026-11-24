@@ -84,6 +84,7 @@ interface InventoryContextType {
   deleteProduct: (id: string) => void;
   restoreProduct: (id: string) => void;
   permanentlyDeleteProduct: (id: string) => void;
+  /** `newLocation`: una posizione, oppure `posizione/idScaffale` (S3: il prodotto va su quello scaffale). */
   moveProduct: (id: string, newLocation: string) => boolean;
   /** Pezzo unico: «venduto». Articolo a quantità: scarico di `qty` (predefinita 1) con causale vendita. */
   sellProduct: (id: string, finalPrice?: number, qty?: number) => boolean;
@@ -97,6 +98,9 @@ interface InventoryContextType {
   /** La copia più recente, con le scritture appena fatte (ESE): per chi scrive più volte di fila sullo stesso prodotto
    *  nello stesso istante, come i passi in fila di un'automazione (due note non si cancellano, AU-V02). */
   latestProduct: (id: string) => Product | undefined;
+  /** Tutti i prodotti nella copia più recente (S3): il carico di uno scaffale contato a ogni articolo, anche con due
+   *  letture nello stesso istante. */
+  latestProducts: () => Product[];
   getTimelineForProduct: (productId: string) => TimelineEvent[];
   filterProducts: (filter: 'all' | 'available' | 'sold' | 'alert' | 'trash') => Product[];
   getTrashProducts: () => Product[];
@@ -532,8 +536,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   // Restituisce false se non sposta: prodotto inesistente o nel cestino, già in quella posizione, oppure
   // articolo a quantità esaurito. Pezzo unico: evento «spostato»; articolo a quantità: trasferimento di tutta la
   // giacenza della posizione principale, scaffali compresi (S1b), eventi `stock` (M03, `utils/inventoryOps.ts`).
+  // S3: `newLocation` può essere `posizione/idScaffale` (lo scaffale come destinazione, `moveOf`)
   const moveProduct = (id: string, newLocation: string): boolean => {
-    const result = moveOf(productsRef.current.find((p) => p.id === id), newLocation, new Date().toISOString());
+    const shelfName = (shelfId: string) => shelvesRef.current.find((s) => s.id === shelfId)?.name ?? 'sconosciuto';
+    const result = moveOf(productsRef.current.find((p) => p.id === id), newLocation, new Date().toISOString(), shelfName);
     if (!result.ok) return false;
     patchProduct(id, result.patch);
     result.events.forEach(addTimelineEvent);
@@ -606,6 +612,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const latestProduct = (id: string) => productsRef.current.find((p) => p.id === id);
+  const latestProducts = () => productsRef.current;
 
   const getProductBySku = (sku: string) => {
     return products.find((p) => p.sku === sku);
@@ -710,6 +717,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         dismissAlert,
         getProductById,
         latestProduct,
+        latestProducts,
         getProductBySku,
         getTimelineForProduct,
         filterProducts,

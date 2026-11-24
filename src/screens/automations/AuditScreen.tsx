@@ -21,6 +21,8 @@ import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
 import { qtyAt } from '../../../utils/stock';
 import { moveOf, refusalText } from '../../../utils/inventoryOps';
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { overLimitText } from '../../../utils/shelves';
 
 type AuditStatus = 'missing' | 'found' | 'intruder';
 
@@ -44,6 +46,8 @@ export default function AuditScreen() {
     const { products, moveProduct } = useInventory();
     const { readProduct, readPlace, placeOf, choose, isText, shelfNote } = useCodeReader();
     const { locations } = useLocations();
+    // S3 (ticket 15): «Sposta qui» registra merce che è già lì: niente blocco, solo l'informazione nella conferma
+    const { checkMove } = useLoadCheck();
     const kindOf = useProductKind();
 
     const [step, setStep] = useState<'scan_location' | 'audit_loop'>('scan_location');
@@ -174,6 +178,7 @@ export default function AuditScreen() {
                         text: 'Sposta Qui & Aggiungi',
                         onPress: () => {
                             if (targetLocation) {
+                                const load = checkMove(product, targetLocation.id); // S3: prima dello spostamento
                                 // «spostato» in cronologia (D15); un rifiuto (es. articolo esaurito) si dice (M04)
                                 if (!moveProduct(product.id, targetLocation.id)) {
                                     const refused = moveOf(product, targetLocation.id, '');
@@ -181,7 +186,7 @@ export default function AuditScreen() {
                                     return;
                                 }
                                 addIntruder(product);
-                                Alert.alert('Spostato', 'Posizione aggiornata.');
+                                Alert.alert('Spostato', load.level === 'blocco' ? `Posizione aggiornata. ${overLimitText(load)}.` : 'Posizione aggiornata.');
                             }
                         }
                     }

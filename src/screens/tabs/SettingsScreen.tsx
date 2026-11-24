@@ -14,6 +14,9 @@ import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { overLimitText } from '../../../utils/shelves';
+import { stockKey } from '../../../utils/stock';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
@@ -36,6 +39,8 @@ export default function SettingsScreen() {
   const { nameOf: contactName } = useContacts();
   // S1a: colonna «Scaffale» nel CSV dei prodotti (nome dello scaffale dentro la posizione)
   const { shelves } = useShelves();
+  // S3 (ticket 15): l'import registra merce che è già lì: niente blocco, solo l'informazione «oltre il limite»
+  const { check: checkLoad } = useLoadCheck();
   // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
   // C1: nel report delle giacenze «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo
   const reportLabels = {
@@ -177,6 +182,7 @@ export default function SettingsScreen() {
 
     let imported = 0;
     let skipped = 0;
+    const over = new Map<string, string>(); // S3: nome del posto → «A1 è oltre il limite: …» (l'ultima riga vince)
     const seenSkus = new Set(products.map((product) => product.sku.trim().toLocaleLowerCase()));
     rows.slice(1).forEach((row) => {
       // SKU vuoto, giacenza scritta ma non valida o su uno scaffale (S1a): `null`, la riga si salta
@@ -187,13 +193,25 @@ export default function SettingsScreen() {
         return;
       }
       seenSkus.add(normalizedSku);
+      // S3: posti che questa riga porta oltre il limite (scaffali con limiti, posizioni con capienza), prima di scrivere
+      const { product } = parsed;
+      const loads = parsed.stock
+        ? Object.entries(parsed.stock).filter(([, qty]) => qty > 0).map(([key, qty]) => checkLoad(product, key, [{ qty }]))
+        : product.status === 'available' ? [checkLoad(product, stockKey(product.location, product.shelfId), [{ qty: 1 }])] : [];
       const added = addProduct(parsed.product, parsed.stock ? { stock: parsed.stock } : undefined);
-      if (added) imported += 1;
-      else skipped += 1;
+      if (added) {
+        imported += 1;
+        for (const l of loads) if (l.level === 'blocco') over.set(l.name, overLimitText(l));
+      } else skipped += 1;
     });
 
-    return { imported, skipped };
+    return { imported, skipped, over: [...over.values()] };
   };
+
+  /** Messaggio finale dell'import (S3: con i posti oltre il limite, se ce ne sono; altrimenti quello di prima). */
+  const importText = (outcome: { imported: number; skipped: number; over: string[] }) =>
+    `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`
+    + (outcome.over.length ? ` ${outcome.over.join('. ')}.` : '');
 
   const importFromCSV = async () => {
     try {
@@ -205,7 +223,7 @@ export default function SettingsScreen() {
       if (result.canceled || !result.assets[0]) return;
       const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
       const outcome = importCsvContent(content);
-      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`);
+      Alert.alert('Importazione completata', importText(outcome));
     } catch (error) {
       Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
     }
@@ -220,7 +238,7 @@ export default function SettingsScreen() {
     }
     try {
       const outcome = importCsvContent(await file.text());
-      Alert.alert('Importazione completata', `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`);
+      Alert.alert('Importazione completata', importText(outcome));
     } catch (error) {
       Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
     }

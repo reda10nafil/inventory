@@ -663,6 +663,59 @@ FETTE.s2 = {
   ],
 };
 
+// S3 (corsia B, 24/11): avviso in linea in Movimenta («R2 sarà pieno»), finestra del blocco con la proposta, la
+// destinazione «Magazzino › R2» dello Spostamento rapido col riempimento, l'informazione «oltre il limite» in Conta.
+// Aggiunta qui sotto (non dentro l'oggetto) per non scontrarsi con le altre corsie.
+FETTE.s3 = {
+  prepara: () => {
+    const pk = 'inventory:v1:local:products';
+    const r2 = '1732400000000-r2';
+    localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+      { id: r2, name: 'R2', locationId: 'magazzino', barcode: 'SCAF-MAG-R2', maxPieces: 2 },
+      { id: '1732400000000-g1', name: 'G1', locationId: 'magazzino', maxPieces: 10 },
+    ]));
+    localStorage.setItem('furinventory_locations:local', JSON.stringify([
+      { id: 'magazzino', label: 'Magazzino', color: '#3B82F6' },
+      { id: 'vetrina', label: 'Vetrina', color: '#D4AF37', capacity: 2 },
+      { id: 'stand_a', label: 'Stand A', color: '#10B981' },
+      { id: 'stand_b', label: 'Stand B', color: '#10B981' },
+      { id: 'stand_c', label: 'Stand C', color: '#10B981' },
+      { id: 'sartoria', label: 'Sartoria', color: '#8B5CF6' },
+    ]));
+    const list = JSON.parse(localStorage.getItem(pk));
+    const vis = list.find((x) => x.sku === 'VIS-0098');
+    Object.assign(vis, { unit: 'pz', location: 'magazzino', stock: { [`magazzino/${r2}`]: 1, vetrina: 1 } });
+    for (const key of ['weight', 'length', 'width', 'libraryId']) delete vis[key];
+    localStorage.setItem(pk, JSON.stringify(list));
+  },
+  schermate: [
+    ['avviso-movimenta', async (page) => {
+      await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
+      await page.getByLabel('Movimenta', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.getByLabel('In Magazzino', { exact: true }).first().click(); await page.waitForTimeout(200);
+      await page.getByLabel('In Magazzino › R2', { exact: true }).first().click(); await page.waitForTimeout(200);
+      await page.locator('input[placeholder^="es. 2,5"]').first().fill('1'); await page.waitForTimeout(500);
+    }],
+    ['blocco-proposta', async (page) => {
+      await page.locator('input[placeholder^="es. 2,5"]').first().fill('2'); await page.waitForTimeout(300);
+      await page.getByLabel('Registra movimento', { exact: true }).first().click(); await page.waitForTimeout(900);
+    }],
+    ['spostamento-scaffale', async (page) => {
+      await page.goto(`${APP}/automations/batch-move`); await page.waitForTimeout(1800);
+      await page.getByText('Scansiona Posizione', { exact: true }).first().click(); await page.waitForTimeout(600);
+      await page.getByText('Scrivi il codice', { exact: true }).first().click(); await page.waitForTimeout(300);
+      await page.getByPlaceholder('Codice, SKU o link').first().fill('SCAF-MAG-R2');
+      await page.getByText('Usa codice', { exact: true }).first().click(); await page.waitForTimeout(900);
+    }],
+    ['conta-informazione', async (page) => {
+      await page.goto(`${APP}/automations/count`); await page.waitForTimeout(1800);
+      await page.getByLabel('Conta Vetrina', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.getByLabel('Contata VIS-0098', { exact: true }).first().fill('3');
+      await page.getByLabel('Riepilogo della conta', { exact: true }).first().click(); await page.waitForTimeout(600);
+    }],
+  ],
+};
+
 (async () => {
   const fetta = FETTE[process.env.FETTA];
   if (!fetta) throw new Error(`FETTA sconosciuta: ${process.env.FETTA} (note: ${Object.keys(FETTE).join(', ')})`);

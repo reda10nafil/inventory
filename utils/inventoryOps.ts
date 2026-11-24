@@ -11,7 +11,7 @@ import type { Product } from '../types';
 import { canMove, canSell } from './productRules';
 import {
   applyMovement, DEFAULT_UNIT, drawsAt, isAt, isOutOfStock, isStocked, keysAt, movementErrorText, placeOfKey, qtyAt, qtyIn,
-  round3, stockKey, type Movement, type MovementError, type NewEvent,
+  round3, splitStockKey, stockKey, type Movement, type MovementError, type NewEvent,
 } from './stock';
 
 export type OpRefusal = 'missing' | 'trash' | 'same_place' | 'sold' | 'out_of_stock' | 'over_stock' | 'bad_qty' | 'not_allowed';
@@ -43,10 +43,16 @@ function applyAll(product: Product, movements: readonly Movement[], now: string)
 }
 
 /** Sposta il prodotto: un pezzo unico cambia posizione, un articolo a quantità trasferisce tutta la giacenza
- *  della posizione principale, scaffali compresi (un trasferimento per chiave, S1b). */
-export function moveOf(product: Product | undefined, to: string, now: string): OpResult {
+ *  della posizione principale, scaffali compresi (un trasferimento per chiave, S1b).
+ *  S3 (scaffale come destinazione, preso da FLU1): `to` può essere `posizione/idScaffale`. Un pezzo unico va su quello
+ *  scaffale (`shelfId`): cambiando posizione l'evento è «spostato» come prima, nella stessa posizione è il cambio di
+ *  scaffale di Modifica («Scaffale: — → A1», col nome da `shelfName`). Un articolo a quantità trasferisce sullo
+ *  scaffale tutte le chiavi della posizione principale tranne quella dello scaffale stesso; già tutto lì: «già lì». */
+export function moveOf(product: Product | undefined, to: string, now: string, shelfName?: (id: string) => string): OpResult {
   if (!product) return { ok: false, reason: 'missing' };
   if (product.deletedAt) return { ok: false, reason: 'trash' };
+  const { place, shelfId } = splitStockKey(to);
+  if (shelfId) return moveToShelf(product, place, shelfId, now, shelfName);
   if (!canMove(product, to)) return { ok: false, reason: 'same_place' };
   if (!isStocked(product)) {
     return {
@@ -61,6 +67,39 @@ export function moveOf(product: Product | undefined, to: string, now: string): O
   const r = applyAll(product, keys.map(([from, qty]) => ({ kind: 'trasferimento' as const, qty, from, to })), now);
   if (!r.ok) return { ok: false, reason: r.error === 'over_stock' ? 'over_stock' : 'not_allowed' };
   return { ok: true, patch: stockPatch(r.product), events: r.events };
+}
+
+/** `moveOf` verso uno scaffale (S3). */
+function moveToShelf(product: Product, place: string, shelfId: string, now: string, shelfName?: (id: string) => string): OpResult {
+  const to = stockKey(place, shelfId);
+  if (!isStocked(product)) {
+    if (product.location === place && product.shelfId === shelfId) return { ok: false, reason: 'same_place' };
+    const name = (id?: string) => (id ? shelfName?.(id) ?? 'sconosciuto' : '—');
+    return {
+      ok: true,
+      patch: { location: place, shelfId, updatedAt: now, lastScannedAt: now },
+      events: [product.location !== place
+        ? { productId: product.id, type: 'moved', timestamp: now, details: { from: product.location, to: place } }
+        : { productId: product.id, type: 'modified', timestamp: now, details: { changes: [`Scaffale: ${name(product.shelfId)} → ${name(shelfId)}`] } }],
+    };
+  }
+  const all = keysAt(product, product.location);
+  if (!all.length) return { ok: false, reason: 'out_of_stock' };
+  const keys = all.filter(([key]) => key !== to);
+  if (!keys.length) return { ok: false, reason: 'same_place' };
+  const r = applyAll(product, keys.map(([from, qty]) => ({ kind: 'trasferimento' as const, qty, from, to })), now);
+  if (!r.ok) return { ok: false, reason: r.error === 'over_stock' ? 'over_stock' : 'not_allowed' };
+  return { ok: true, patch: stockPatch(r.product), events: r.events };
+}
+
+/**
+ * Che cosa arriva in `to` con `moveOf` (S3, per il controllo del carico): le chiavi da cui parte la merce, con la
+ * quantità. Pezzo unico: 1 dalla sua chiave; articolo a quantità: le chiavi della posizione principale tranne `to`.
+ * Vuoto se non si sposta nulla.
+ */
+export function moveSources(product: Product, to: string): { from: string; qty: number }[] {
+  if (!isStocked(product)) return [{ from: stockKey(product.location, product.shelfId), qty: 1 }];
+  return keysAt(product, product.location).filter(([key]) => key !== to).map(([from, qty]) => ({ from, qty }));
 }
 
 /**

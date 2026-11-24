@@ -392,8 +392,8 @@ export function stockKeyFromCsv(value: string, shelves: readonly Shelf[]): strin
 
 /** Misure del prodotto che contano per lo scaffale (cm e kg, per unità). */
 export type Measured = Pick<Product, 'length' | 'width' | 'height' | 'weight'>;
-/** Prodotto per il carico di uno scaffale. */
-type Loaded = Measured & Pick<Product, 'location' | 'status' | 'deletedAt' | 'stock' | 'shelfId'>;
+/** Prodotto per il carico di uno scaffale (S3: con l'unità, per kg e metri). */
+type Loaded = Measured & Pick<Product, 'location' | 'status' | 'deletedAt' | 'stock' | 'shelfId'> & Partial<Pick<Product, 'unit'>>;
 
 const positive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0;
 // Il più grande prima: con i lati in ordine una scatola si confronta in tutti i versi in cui si può girare
@@ -454,22 +454,41 @@ export function fitsShelf(product: Measured, shelf: ShelfCapacity): FitResult {
 /** Che cosa occupa uno scaffale: pezzi, kg e cm³. */
 export interface ShelfLoad { pieces: number; weight: number; volume: number }
 
+/** Unità contate come una cosa sola su uno scaffale (un rotolo, un sacco): decisione 1 dell'orchestratore, 24/11. */
+const BULK_UNITS: readonly string[] = ['kg', 'm'];
+
+/**
+ * Che cosa porta su uno scaffale (o in una posizione) un prodotto che ci ha `qty` (S3). Un articolo in kg o in metri è
+ * **una cosa sola** (1 pezzo, il suo volume una volta); in kg la quantità è anche il suo peso, in metri pesa il suo peso
+ * una volta. Gli altri: `qty` pezzi, `qty` × peso e `qty` × volume, come in S2.
+ */
+export function loadOf(product: Measured & Partial<Pick<Product, 'unit'>>, qty: number): ShelfLoad {
+  if (!(qty > 0)) return { pieces: 0, weight: 0, volume: 0 };
+  const bulk = !!product.unit && BULK_UNITS.includes(product.unit);
+  const n = bulk ? 1 : qty;
+  const weight = bulk && product.unit === 'kg' ? qty : positive(product.weight) ? n * product.weight : 0;
+  const v = productVolume(product);
+  return { pieces: n, weight, volume: v != null ? n * v : 0 };
+}
+
 /**
  * Carico dello scaffale: per ogni prodotto la sua quantità su `posizione/scaffale` (`qtyAt`, esatta: un pezzo unico
- * disponibile sul suo scaffale vale 1; venduti e cestino 0), per il suo peso e il suo volume se li ha.
+ * disponibile sul suo scaffale vale 1; venduti e cestino 0), con il suo peso e il suo volume se li ha (`loadOf`).
  */
 export function shelfLoad(shelf: ShelfRef, products: readonly Loaded[]): ShelfLoad {
-  const key = stockKey(shelf.locationId, shelf.id);
+  return placeLoad(stockKey(shelf.locationId, shelf.id), products);
+}
+
+/** Carico di una chiave della giacenza: uno scaffale (`posizione/scaffale`) o una posizione con i suoi scaffali. */
+export function placeLoad(key: string, products: readonly Loaded[]): ShelfLoad {
   let pieces = 0;
   let weight = 0;
   let volume = 0;
   for (const product of products) {
-    const qty = qtyAt(product, key);
-    if (!(qty > 0)) continue;
-    pieces += qty;
-    if (positive(product.weight)) weight += qty * product.weight;
-    const v = productVolume(product);
-    if (v != null) volume += qty * v;
+    const one = loadOf(product, qtyAt(product, key));
+    pieces += one.pieces;
+    weight += one.weight;
+    volume += one.volume;
   }
   return { pieces: round3(pieces), weight: round3(weight), volume: round3(volume) };
 }
@@ -657,3 +676,226 @@ export function capacityFromForm(
   }
   return { capacity: shelfCapacity({ kind, ...values }) };
 }
+
+// ---- Avviso, blocco e proposta (S3, ticket 15; capienza delle posizioni in pezzi, AU-V13) ----
+// Un solo calcolo: `checkShelfLoad` per uno scaffale, `checkPlaceLoad` per una posizione con `capacity`; le schermate
+// li chiamano tramite `hooks/useLoadCheck.ts`. Prima di un carico o di uno spostamento il controllo dice se si va
+// avanti (`ok`), se serve l'avviso (dall'80%) o se scatta il blocco (il prodotto non entra), con la proposta di un
+// altro posto adatto. Con il blocco non si scrive nulla.
+
+/** Esito del controllo. */
+export type LoadLevel = 'ok' | 'avviso' | 'blocco';
+
+/** Un altro posto proposto: dove il prodotto entra e che resta sotto l'80% dopo il carico. */
+export interface LoadProposal {
+  /** Chiave della giacenza: `posizione/scaffale` per uno scaffale, la posizione per una posizione. */
+  key: string;
+  locationId: string;
+  shelfId?: string;
+  name: string;
+  /** Libero dopo il carico, in percentuale (per difetto); assente se il posto non ha limiti. */
+  freePercent?: number;
+  /** Perché va bene: «Su A2 ne entrano ancora 5 come questo», «A2: nessun limite». */
+  why: string;
+}
+
+export interface LoadCheck {
+  level: LoadLevel;
+  /** Nome del posto: «A1», «Vetrina». */
+  name: string;
+  /** Scaffale o posizione (per il testo dell'avviso). */
+  place: 'scaffale' | 'posizione';
+  /** Riempimento dopo il carico (null senza limiti). */
+  fill: FillLevel | null;
+  /** Motivo del blocco, coi numeri: «21 pezzi, il massimo è 20», «Un lato di 60 cm è più grande di 50 cm». */
+  reason?: string;
+  /** Con l'avviso o il blocco: il posto proposto, se ce n'è uno. */
+  proposal?: LoadProposal;
+}
+
+/** Il prodotto in arrivo: `before` è la sua quantità già lì (0 per un prodotto nuovo), `add` quella che arriva. */
+export interface Incoming {
+  product: Measured & Partial<Pick<Product, 'unit' | 'libraryId'>>;
+  before: number;
+  add: number;
+}
+
+const sumLoad = (a: ShelfLoad, b: ShelfLoad): ShelfLoad => ({
+  pieces: round3(a.pieces + b.pieces), weight: round3(a.weight + b.weight), volume: round3(a.volume + b.volume),
+});
+const minusLoad = (a: ShelfLoad, b: ShelfLoad): ShelfLoad => ({
+  pieces: round3(a.pieces - b.pieces), weight: round3(a.weight - b.weight), volume: round3(a.volume - b.volume),
+});
+/** Che cosa aggiunge il prodotto in arrivo (per kg e metri: niente pezzi in più se c'era già). */
+export const incomingLoad = ({ product, before, add }: Incoming): ShelfLoad =>
+  minusLoad(loadOf(product, before + add), loadOf(product, before));
+const upperFirst = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+
+/**
+ * Limiti dopo il carico: il primo superato (pezzi, poi peso, poi spazio) dà il blocco col motivo, sulla quantità vera
+ * e non sulla percentuale per difetto (30,2 kg su 30 non entrano anche se la barra direbbe «Pieno»). Altrimenti avviso
+ * dall'80% (con la percentuale per difetto, la stessa accanto alla barra: decisione 2 dell'orchestratore, 24/11).
+ */
+function limitsAfter(shelf: ShelfCapacity, after: ShelfLoad): { level: LoadLevel; reason?: string; fill: FillLevel | null } {
+  const fill = fillLevel(shelf, after);
+  const barra = shelf.kind === 'barra';
+  if (positive(shelf.maxPieces) && after.pieces > shelf.maxPieces + EPS) {
+    return { level: 'blocco', fill, reason: `${formatNumber(after.pieces)} ${piecesWord(after.pieces, barra)}, il massimo è ${formatNumber(shelf.maxPieces)}` };
+  }
+  if (positive(shelf.maxWeight) && after.weight > shelf.maxWeight + EPS) {
+    return { level: 'blocco', fill, reason: `${kg(after.weight)}, il massimo è ${kg(shelf.maxWeight)}` };
+  }
+  const room = shelfVolume(shelf);
+  if (room != null && after.volume > room + EPS) {
+    return { level: 'blocco', fill, reason: `Lo spazio non basta: si arriverebbe al ${Math.floor((after.volume / room) * 100 + EPS)}%` };
+  }
+  return { level: fill && fill.percent >= 80 ? 'avviso' : 'ok', fill };
+}
+
+/** Libero dopo il carico in percentuale (per difetto), o assente senza limiti. */
+const freeAfter = (fill: FillLevel | null): number | undefined => (fill ? Math.max(0, 100 - fill.percent) : undefined);
+
+/**
+ * Controllo del carico su uno scaffale (S3). `products` sono i prodotti salvati (il carico di adesso), `incoming` il
+ * prodotto che arriva. Blocco se un pezzo non entra nemmeno a scaffale vuoto (`fitsShelf`: lato, altezza della barra,
+ * peso di un pezzo) o se dopo il carico si supera un limite; avviso dall'80%. Con l'avviso e il blocco, la proposta
+ * (`proposeShelf`) tra gli altri scaffali della stessa posizione. Uno scaffale senza misure né limiti dà sempre ok.
+ */
+export function checkShelfLoad(
+  shelf: Shelf,
+  products: readonly Loaded[],
+  incoming: Incoming,
+  others: { shelves: readonly Shelf[]; categories: readonly CategoryNode[] },
+): LoadCheck {
+  const base = { name: shelf.name, place: 'scaffale' as const };
+  if (!hasMeasures(shelf)) return { ...base, level: 'ok', fill: null };
+  const fit = fitsShelf(incoming.product, shelf);
+  const after = sumLoad(shelfLoad(shelf, products), incomingLoad(incoming));
+  const result = fit.fits ? limitsAfter(shelf, after) : { level: 'blocco' as const, reason: upperFirst(fit.reason), fill: fillLevel(shelf, after) };
+  if (result.level === 'ok') return { ...base, ...result };
+  const proposal = proposeShelf(shelf, products, incoming, others);
+  return { ...base, ...result, ...(proposal && { proposal }) };
+}
+
+/**
+ * Scaffale proposto (ticket 15, «Scaffale proposto»): tra gli altri scaffali della stessa posizione in cui il prodotto
+ * entra e che restano sotto l'80% dopo il carico, prima quelli della sua categoria (o di una sopra), poi i generici;
+ * a parità quello con più spazio libero; quelli senza limiti dopo quelli con i limiti (non si sa quanto spazio
+ * hanno), per nome. Nessuno adatto: `undefined`.
+ */
+export function proposeShelf(
+  shelf: Shelf,
+  products: readonly Loaded[],
+  incoming: Incoming,
+  { shelves, categories }: { shelves: readonly Shelf[]; categories: readonly CategoryNode[] },
+): LoadProposal | undefined {
+  const { product } = incoming;
+  const own = product.libraryId ? [product.libraryId, ...categoryAncestors(categories, product.libraryId).map((c) => c.id)] : [];
+  const arriving = incomingLoad({ ...incoming, before: 0 });
+  const candidates = shelvesFor(shelves, categories, { location: shelf.locationId, libraryId: product.libraryId })
+    .filter((s) => s.id !== shelf.id && fitsShelf(product, s).fits)
+    .map((s) => {
+      const now = shelfLoad(s, products);
+      const fill = hasCapacity(s) ? fillLevel(s, sumLoad(now, arriving)) : null;
+      return { s, now, fill, group: s.libraryId && own.includes(s.libraryId) ? 0 : 1 };
+    })
+    // Sotto l'80% dopo il carico (il riempimento è il più alto dei limiti: sotto l'80% nessuno è superato)
+    .filter(({ fill }) => !fill || fill.percent < 80);
+  candidates.sort((a, b) => a.group - b.group
+    || Number(!a.fill) - Number(!b.fill)
+    || (a.fill && b.fill ? a.fill.percent - b.fill.percent : 0)
+    || byName(a.s, b.s));
+  const best = candidates[0];
+  if (!best) return undefined;
+  const free = freeAfter(best.fill);
+  return {
+    key: stockKey(best.s.locationId, best.s.id),
+    locationId: best.s.locationId,
+    shelfId: best.s.id,
+    name: best.s.name,
+    ...(free != null && { freePercent: free }),
+    why: fitCountText(fitCount(best.s, product, best.now), best.s.name),
+  };
+}
+
+/** Posizione con la capienza in pezzi (`Location.capacity`, Impostazioni › Posizioni). */
+export interface CappedPlace { id: string; label: string; capacity?: number }
+const placeCapacity = (place: CappedPlace): ShelfCapacity => {
+  const max = positive(place.capacity) ? Math.floor(place.capacity + EPS) : 0;
+  return max > 0 ? { maxPieces: max } : {};
+};
+
+/**
+ * Controllo della capienza di una posizione (AU-V13): la stessa regola degli scaffali, contando i **pezzi** (un pezzo
+ * unico 1, un articolo a quantità la sua quantità, uno in kg o metri 1) e non i prodotti. Senza `capacity`: ok. La
+ * proposta è la prima posizione dopo questa nell'elenco (poi quelle prima) dove entra e resta sotto l'80%; una
+ * posizione senza capienza entra sempre.
+ */
+export function checkPlaceLoad(place: CappedPlace, products: readonly Loaded[], incoming: Incoming, places: readonly CappedPlace[]): LoadCheck {
+  const base = { name: place.label, place: 'posizione' as const };
+  const cap = placeCapacity(place);
+  if (!positive(cap.maxPieces)) return { ...base, level: 'ok', fill: null };
+  const result = limitsAfter(cap, sumLoad(placeLoad(place.id, products), incomingLoad(incoming)));
+  if (result.level === 'ok') return { ...base, ...result };
+  const arriving = incomingLoad({ ...incoming, before: 0 });
+  const at = places.findIndex((p) => p.id === place.id);
+  const order = at >= 0 ? [...places.slice(at + 1), ...places.slice(0, at)] : places.filter((p) => p.id !== place.id);
+  for (const other of order) {
+    const otherCap = placeCapacity(other);
+    const now = placeLoad(other.id, products);
+    const fill = positive(otherCap.maxPieces) ? fillLevel(otherCap, sumLoad(now, arriving)) : null;
+    if (fill && fill.percent >= 80) continue;
+    const free = freeAfter(fill);
+    const proposal: LoadProposal = {
+      key: other.id, locationId: other.id, name: other.label, ...(free != null && { freePercent: free }),
+      why: fitCountText(fitCount(otherCap, incoming.product, now), other.label),
+    };
+    return { ...base, ...result, proposal };
+  }
+  return { ...base, ...result };
+}
+
+/**
+ * Capienza di una posizione dopo una Conta (solo informazione, ticket 15): i pezzi che ci saranno con le quantità
+ * contate (`counted`: id → quantità, solo le scritte; gli altri prodotti come sono). Senza `capacity`: ok.
+ */
+export function checkPlaceCount(
+  place: CappedPlace,
+  products: readonly (Loaded & Pick<Product, 'id'>)[],
+  counted: Readonly<Record<string, number>>,
+): LoadCheck {
+  const base = { name: place.label, place: 'posizione' as const };
+  const cap = placeCapacity(place);
+  if (!positive(cap.maxPieces)) return { ...base, level: 'ok', fill: null };
+  let after: ShelfLoad = { pieces: 0, weight: 0, volume: 0 };
+  for (const product of products) after = sumLoad(after, loadOf(product, counted[product.id] ?? qtyAt(product, place.id)));
+  return { ...base, ...limitsAfter(cap, after) };
+}
+
+/** «all'85%», «al 90%» (l'articolo davanti al numero). */
+const atPercent = (n: number) => (/^(8\d?|11|1)$/.test(String(n)) ? `all'${n}%` : `al ${n}%`);
+
+/** Avviso in una riga (UX0): «A1 sarà pieno all'85%», «A1 sarà pieno»; per una posizione «Vetrina sarà piena…». */
+export function loadWarningText(check: Pick<LoadCheck, 'name' | 'place' | 'fill'>): string {
+  const full = check.place === 'posizione' ? 'piena' : 'pieno';
+  const percent = check.fill?.percent ?? 0;
+  return percent >= 100 ? `${check.name} sarà ${full}` : `${check.name} sarà ${full} ${atPercent(percent)}`;
+}
+
+/** Titolo della finestra del blocco: «Non entra in A1». */
+export const loadBlockTitle = (check: Pick<LoadCheck, 'name'>): string => `Non entra in ${check.name}`;
+
+/** Pulsante della proposta: «Metti in A2 (libero al 40%)»; senza limiti «Metti in A2». */
+export const proposalLabel = (proposal: Pick<LoadProposal, 'name' | 'freePercent'>): string =>
+  (proposal.freePercent != null ? `Metti in ${proposal.name} (libero ${atPercent(proposal.freePercent)})` : `Metti in ${proposal.name}`);
+
+/** Riga quando nessun posto basta (il primario non c'è). */
+export const noProposalText = (check: Pick<LoadCheck, 'place'>): string =>
+  (check.place === 'posizione' ? "Nessun'altra posizione ha posto." : 'Nessun altro scaffale di questa posizione ha posto.');
+
+/** Solo informazione (Conta, Audit, import): l'etichetta piccola sulla riga. */
+export const OVER_LIMIT = 'oltre il limite';
+
+/** Informazione in una frase (Audit, import, Conta): «A1 è oltre il limite: 21 pezzi, il massimo è 20». */
+export const overLimitText = (check: Pick<LoadCheck, 'name' | 'reason'>): string =>
+  `${check.name} è ${OVER_LIMIT}${check.reason ? `: ${check.reason.charAt(0).toLowerCase()}${check.reason.slice(1)}` : ''}`;

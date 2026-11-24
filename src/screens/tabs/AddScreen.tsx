@@ -31,6 +31,11 @@ import { parseMinStock } from '../../../utils/alerts';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { shelvesFor } from '../../../utils/shelves';
 import { ShelfPicker } from '../../../components/ShelfPicker';
+// S3 (ticket 15): avviso e blocco del carico
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { useLoadBlock } from '../../../components/LoadBlockSheet';
+import { LoadNotice } from '../../../components/LoadNotice';
+import { stockKey } from '../../../utils/stock';
 
 export default function AddProductScreen() {
   const t = useTheme();
@@ -74,6 +79,20 @@ export default function AddProductScreen() {
   const [shelfId, setShelfId] = useState('');
   const shelfChoices = shelvesFor(shelves, libraries, { location: formData.location, libraryId: formData.libraryId || undefined });
   const chosenShelf = shelfChoices.some((s) => s.id === shelfId) ? shelfId : '';
+
+  // S3 (ticket 15): il carico iniziale (la quantità, o 1 per un pezzo unico) sullo scaffale scelto o nella posizione
+  // con capienza: avviso in linea sotto lo Scaffale, blocco al salvataggio con la proposta
+  const { check: checkLoad } = useLoadCheck();
+  const load = useLoadBlock();
+  const loadCheck = (() => {
+    const qty = qtyText.trim() ? parseQty(qtyText) : 1;
+    if (!formData.location || qty == null || !(qty > 0)) return null;
+    const draft = {
+      length: parseNumber(formData.length), width: parseNumber(formData.width), height: parseNumber(formData.height),
+      weight: parseNumber(formData.weight), libraryId: formData.libraryId || undefined, ...(qtyText.trim() && { unit }),
+    };
+    return checkLoad(draft, stockKey(formData.location, chosenShelf || undefined), [{ qty }]);
+  })();
 
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -238,18 +257,30 @@ export default function AddProductScreen() {
     }
     setFlagged(NO_FLAGS);
 
+    // S3: con il blocco non si salva nulla; il tocco sulla proposta salva nel posto proposto
+    if (loadCheck?.level === 'blocco') {
+      load.show({ check: loadCheck, onUse: (p) => confirmPhotos({ location: p.locationId, shelfId: p.shelfId ?? '' }) });
+      return;
+    }
+    confirmPhotos();
+  };
+
+  /** `place`: il posto proposto dalla finestra del blocco (S3); senza, quelli scelti nel modulo. */
+  const confirmPhotos = (place?: { location: string; shelfId: string }) => {
     if (images.length === 0) {
       Alert.alert('Attenzione', 'Aggiungi almeno una foto del prodotto', [
-        { text: 'Continua Senza Foto', onPress: () => submitProduct() },
+        { text: 'Continua Senza Foto', onPress: () => submitProduct(place) },
         { text: 'Aggiungi Foto', style: 'cancel' },
       ]);
       return;
     }
 
-    submitProduct();
+    submitProduct(place);
   };
 
-  const submitProduct = async () => {
+  const submitProduct = async (place?: { location: string; shelfId: string }) => {
+    const location = place?.location ?? formData.location; // S3
+    const savedShelf = place ? place.shelfId : chosenShelf; // S3
     setIsSubmitting(true);
     try {
       const finalSKU = formData.sku.trim() || generateSKU();
@@ -277,11 +308,11 @@ export default function AddProductScreen() {
       const added = addProduct({
         sku: finalSKU,
         furType: formData.furType,
-        location: formData.location,
+        location,
         status: 'available',
         ...(qty != null && { unit }),
         ...(minStock != null && { minStock }),
-        ...(chosenShelf && { shelfId: chosenShelf }), // con la quantità il contesto lo mette nella chiave della giacenza
+        ...(savedShelf && { shelfId: savedShelf }), // con la quantità il contesto lo mette nella chiave della giacenza
         images, // senza foto resta vuoto: le schermate mostrano un riquadro (D18, prima un'immagine d'esempio da internet)
         purchasePrice: parseNumber(formData.purchasePrice),
         sellPrice: parseNumber(formData.sellPrice),
@@ -834,6 +865,12 @@ export default function AddProductScreen() {
                 </Text>
               </View>
             ) : null}
+            {/* S3: avviso del carico sotto lo Scaffale, con «Usa A2» se c'è un posto più libero */}
+            <LoadNotice
+              check={loadCheck}
+              onUseProposal={(p) => { if (p.locationId !== formData.location) updateField('location', p.locationId); setShelfId(p.shelfId ?? ''); }}
+            />
+            {load.sheet}
           </View>
 
           {/* Submit Button */}

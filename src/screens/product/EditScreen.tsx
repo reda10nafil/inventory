@@ -30,6 +30,11 @@ import { useShelves } from '../../../contexts/ShelvesContext';
 import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { shelvesFor } from '../../../utils/shelves';
 import { ShelfPicker } from '../../../components/ShelfPicker';
+// S3 (ticket 15): avviso e blocco cambiando scaffale
+import { useLoadCheck } from '../../../hooks/useLoadCheck';
+import { useLoadBlock } from '../../../components/LoadBlockSheet';
+import { LoadNotice } from '../../../components/LoadNotice';
+import { stockKey } from '../../../utils/stock';
 import { PhotoGallery } from '../../../components/PhotoGallery';
 import { addPhotos, photosPatch, type Photos } from '../../../utils/photos';
 
@@ -97,6 +102,21 @@ function EditProductForm({ product }: { product: Product }) {
   // Uno scaffale che questo dispositivo non conosce (o l'elenco non ancora letto) non si tocca da qui: decide il contesto
   const shelfKnown = !shelvesLoading && (!product.shelfId || shelves.some((s) => s.id === product.shelfId));
 
+  // S3 (ticket 15): solo cambiando scaffale (o posizione) di un pezzo unico disponibile: avviso in linea e blocco al
+  // salvataggio con la proposta. Un prodotto che resta dov'è si salva sempre, anche su uno scaffale già oltre il limite
+  const { check: checkLoad } = useLoadCheck();
+  const load = useLoadBlock();
+  const editLoad = (() => {
+    const from = stockKey(product.location, product.shelfId);
+    const to = stockKey(formData.location, chosenShelf || undefined);
+    if (stocked || product.status !== 'available' || product.deletedAt || !formData.location || to === from) return null;
+    const edited = {
+      ...product, length: parseNumber(formData.length), width: parseNumber(formData.width), height: parseNumber(formData.height),
+      weight: parseNumber(formData.weight), libraryId: formData.libraryId || undefined,
+    };
+    return checkLoad(edited, to, [{ from, qty: 1 }]);
+  })();
+
   // Foto con i loro percorsi cloud, se ci sono: ordine ed eliminazioni li spostano insieme (GAL, CSV-G6)
   const [photos, setPhotos] = useState<Photos>({
     images: product.images || [],
@@ -150,7 +170,8 @@ function EditProductForm({ product }: { product: Product }) {
   };
 
   // `withoutPhoto === true` solo dalla conferma qui sotto (onPress passa l'evento, che non è `true`)
-  const handleSave = (withoutPhoto?: unknown) => {
+  // S3: `place` è il posto proposto dalla finestra del blocco
+  const handleSave = (withoutPhoto?: unknown, place?: { location: string; shelfId: string }) => {
     // C1: il tipo di pelle è facoltativo
     if (!formData.sku || !formData.location) {
       Alert.alert('Campi Obbligatori', 'Compila almeno SKU e Posizione');
@@ -186,10 +207,16 @@ function EditProductForm({ product }: { product: Product }) {
     }
     setFlagged(NO_FLAGS);
 
+    // S3: con il blocco non si salva nulla; il tocco sulla proposta salva nel posto proposto
+    if (!place && editLoad?.level === 'blocco') {
+      load.show({ check: editLoad, onUse: (p) => handleSave(withoutPhoto, { location: p.locationId, shelfId: p.shelfId ?? '' }) });
+      return;
+    }
+
     // Foto facoltativa come in Aggiungi: un prodotto senza foto si deve poter modificare (D18)
     if (images.length === 0 && withoutPhoto !== true) {
       Alert.alert('Attenzione', 'Il prodotto non ha foto', [
-        { text: 'Salva Senza Foto', onPress: () => handleSave(true) },
+        { text: 'Salva Senza Foto', onPress: () => handleSave(true, place) },
         { text: 'Aggiungi Foto', style: 'cancel' },
       ]);
       return;
@@ -204,7 +231,9 @@ function EditProductForm({ product }: { product: Product }) {
       furType: formData.furType,
       // Articolo a quantità: la posizione cambia solo con i movimenti (M03; il contesto la ignora comunque).
       // Pezzo unico: lo scaffale scelto, che il contesto tiene solo se è in quella posizione (S1a)
-      ...(stocked ? { minStock } : { location: formData.location, ...(shelfKnown && { shelfId: chosenShelf || undefined }) }),
+      ...(stocked ? { minStock } : place
+        ? { location: place.location, shelfId: place.shelfId || undefined } // S3: il posto proposto
+        : { location: formData.location, ...(shelfKnown && { shelfId: chosenShelf || undefined }) }),
       ...photosPatch(product, photos),
       purchasePrice: parseNumber(formData.purchasePrice),
       sellPrice: parseNumber(formData.sellPrice),
@@ -403,6 +432,12 @@ function EditProductForm({ product }: { product: Product }) {
               <ShelfPicker shelves={shelfChoices} categories={libraries} value={chosenShelf} onChange={setShelfId} />
             </View>
           )}
+          {/* S3: avviso del carico sotto lo Scaffale */}
+          <LoadNotice
+            check={editLoad}
+            onUseProposal={(p) => { if (p.locationId !== formData.location) updateField('location', p.locationId); setShelfId(p.shelfId ?? ''); }}
+          />
+          {load.sheet}
 
           <View style={styles.inputGroup}>
             {renderLabel('Categoria')}
