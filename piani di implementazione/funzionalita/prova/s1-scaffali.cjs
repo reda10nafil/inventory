@@ -217,9 +217,10 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await h.page.getByPlaceholder('Scansiona o Genera...').fill('SCAF-GIACCHE');
     await h.click('Crea Posizione');
     await h.go('settings/folders');
-    await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('Borse');
+    // CAT1: in cima solo il nome; il codice si scrive nella finestra della categoria (qui Pellicce)
+    await h.page.locator('[tabindex="0"]').filter({ hasText: 'ID: pellicce' }).first().click(); await h.page.waitForTimeout(400);
     await h.page.getByPlaceholder('Scansiona o Genera...').fill('scaf-magazzino-a1');
-    await h.click('Crea Categoria');
+    await h.click('Salva Modifiche');
     const codiciAltrove = {
       posizioniUguali: JSON.stringify(await h.store(LOC, 500)) === JSON.stringify(locPrima),
       categorieUguali: JSON.stringify(await h.store(L, 0)) === JSON.stringify(libPrima),

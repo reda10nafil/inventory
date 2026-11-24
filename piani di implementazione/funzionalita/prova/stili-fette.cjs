@@ -270,7 +270,7 @@ const FETTE = {
       ['sottocategoria', async (page) => {
         await page.getByText('Cappotti lunghi e giacche da sera', { exact: true }).first().click(); await page.waitForTimeout(500);
         await page.evaluate(() => window.scrollTo(0, 0));
-        await page.getByText('Sottocategoria di', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+        await page.getByText('Dove sta', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); // CAT1: era «Sottocategoria di»
       }],
       ['aggiungi', async (page) => {
         await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
@@ -732,6 +732,33 @@ FETTE.s2 = {
     ['scheda', async (page) => {
       await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
       await page.getByText('Spazio sullo scaffale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+  ],
+};
+// CAT1 (ticket 33): Impostazioni › Categorie ad albero con lo stato di c1 (Pellicce con Visone e Volpe, Collezione Inverno
+// con un nome lungo): albero aperto, «+ Sottocategoria» col campo, finestra della categoria con «Dove sta», «Dove li
+// sposto?» con una scelta. Si aggiunge qui, fuori dalla tabella, per non toccare le righe delle altre corsie.
+FETTE.cat1 = {
+  prepara: FETTE.c1.prepara,
+  schermate: [
+    ['albero', async (page) => {
+      await page.goto(`${APP}/settings/folders`); await page.waitForTimeout(1800);
+      await page.getByText('Categorie esistenti', { exact: false }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['piu-sottocategoria', async (page) => {
+      await page.getByLabel('Apri Usato e permute', { exact: true }).first().click(); await page.waitForTimeout(300);
+      await page.getByLabel('Aggiungi una sottocategoria a Usato e permute', { exact: true }).first().click(); await page.waitForTimeout(300);
+      await page.getByLabel('Nome della sottocategoria di Usato e permute', { exact: true }).first().fill('Permute di stagione');
+      await page.getByLabel('Nome della sottocategoria di Usato e permute', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['finestra', async (page) => {
+      await page.getByLabel('Annulla la sottocategoria', { exact: true }).first().click(); await page.waitForTimeout(200);
+      await page.getByText('Cappotti lunghi e giacche da sera', { exact: true }).first().click(); await page.waitForTimeout(600);
+    }],
+    ['dove-li-sposto', async (page) => {
+      await page.getByText('Annulla', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+      await page.getByLabel('Elimina Usato e permute', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.getByLabel('Sposta in Pellicce › Visone', { exact: true }).first().click(); await page.waitForTimeout(300);
     }],
   ],
 };
