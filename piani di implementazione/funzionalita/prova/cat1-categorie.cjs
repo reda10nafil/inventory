@@ -5,6 +5,7 @@
 // Ogni scenario legge lo stato salvato.
 // Uso: node cat1-categorie.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const { scenario, apriTendinaCon } = require('./lib.cjs');
+const { chiudiCodice } = require('./eti-util.cjs');
 
 const L = 'inventory:v1:local:libraries';
 const P = 'inventory:v1:local:products';
@@ -38,6 +39,7 @@ async function conVisone(h) {
 const crea = async (h, nome) => {
   await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill(nome);
   await h.click('Crea Categoria');
+  await chiudiCodice(h); // ETI: al «OK» si apre «Codice ed etichetta» della categoria nuova
 };
 
 (async () => {
@@ -268,7 +270,12 @@ const crea = async (h, nome) => {
     await h.go('settings/folders');
     await row(h, 'pellicce').click(); await pause(h);
     await label(h, 'Nome della categoria').fill('Pellicce nuove');
-    await h.page.getByPlaceholder('Scansiona o Genera...').locator('xpath=following-sibling::*[1]').click(); await pause(h, 800);
+    // ETI: il lettore del codice sta in «Codice ed etichetta» › Avanzate › «Cambia codice», accanto al campo di prima
+    if (await hasLabel(h, 'Codice ed etichetta')) {
+      await label(h, 'Codice ed etichetta').click(); await pause(h, 700);
+      await label(h, 'Avanzate').click(); await pause(h, 400);
+    }
+    await h.page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').last().locator('xpath=following-sibling::*[1]').click(); await pause(h, 800);
     const lettore = await h.has('Scrivi il codice', true);
     await h.page.keyboard.press('Escape'); await pause(h, 600);
     const finestra = await h.has('Modifica categoria', true);

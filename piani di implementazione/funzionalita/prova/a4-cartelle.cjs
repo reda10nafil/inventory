@@ -6,6 +6,16 @@
 // categoria»); Elimina di una categoria piena chiede dove spostare i prodotti (qui si annulla).
 // Uso: node a4-cartelle.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const { scenario } = require('./lib.cjs');
+const eti = require('./eti-util.cjs');
+// ETI (ticket 22): il codice di una categoria si cambia in «Codice ed etichetta» › Avanzate › «Cambia codice» (prima
+// il campo «Scansiona o Genera...» nella finestra della categoria); dopo «Crea Categoria» quella finestra si apre da sola
+const scriviCodice = async (h, codice) => {
+  if (await h.page.getByLabel('Codice ed etichetta', { exact: true }).locator('visible=true').count()) {
+    await eti.apri(h, 'Codice ed etichetta');
+    await eti.cambiaCodice(h, codice);
+    await eti.chiudiCodice(h);
+  } else await h.page.getByPlaceholder('Scansiona o Genera...').fill(codice);
+};
 const KEY = 'inventory:v1:local:libraries';
 const NOME = 'Nome categoria (es: Giacche)';
 const row = (h, id) => h.page.locator('[tabindex="0"]').filter({ hasText: `ID: ${id}` }).first();
@@ -18,10 +28,11 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
     await h.page.getByPlaceholder(NOME).fill('Giacche');
     const avviso = await h.has('Il barcode verrà salvato solo se modifichi');
     await h.click('Crea Categoria');
+    await eti.chiudiCodice(h);
     // CAT1: icona e codice nella finestra della categoria appena creata
     await row(h, 'giacche').click(); await h.page.waitForTimeout(400);
     await h.page.getByLabel('Icona Magazzino', { exact: true }).click(); // terza icona = warehouse
-    await h.page.getByPlaceholder('Scansiona o Genera...').fill('LIB-PROVA-1');
+    await scriviCodice(h, 'LIB-PROVA-1');
     await h.click('Salva Modifiche');
     const libs = (await h.store(KEY)) || [];
     const nuova = libs.find((l) => l.name === 'Giacche');
@@ -36,7 +47,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
     await h.page.waitForTimeout(400);
     const titolo = await h.has('Modifica categoria');
     await h.page.getByLabel('Nome della categoria', { exact: true }).fill('Pellicce Lusso');
-    await h.page.getByPlaceholder('Scansiona o Genera...').fill('LIB-PELLICCE');
+    await scriviCodice(h, 'LIB-PELLICCE');
     await h.click('Salva Modifiche');
     const libs = (await h.store(KEY)) || [];
     const prods = await h.products(0);
@@ -59,6 +70,7 @@ const run = (name, fn, opts) => (!solo || name.includes(solo) ? scenario(name, f
     await h.go('settings/folders');
     await h.page.getByPlaceholder(NOME).fill('Temporanea');
     await h.click('Crea Categoria');
+    await eti.chiudiCodice(h);
     const creata = ((await h.store(KEY)) || []).find((l) => l.name === 'Temporanea');
     await row(h, creata.id).locator('[tabindex="0"]').last().click();
     await h.page.waitForTimeout(500);

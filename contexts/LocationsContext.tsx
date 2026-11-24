@@ -1,5 +1,5 @@
 // FurInventory Pro - Locations Context with AsyncStorage persistence
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 
@@ -42,6 +42,9 @@ export function LocationsProvider({ children }: { children: ReactNode }) {
     const { organizationId } = useAuth();
     const [locations, setLocations] = useState<Location[]>(DEFAULT_LOCATIONS);
     const [loading, setLoading] = useState(true);
+    // N1: due modifiche di fila (il tag che passa da una posizione all'altra) partono dall'elenco più recente
+    const latest = useRef(locations);
+    latest.current = locations;
 
     // Load locations from AsyncStorage on mount
     useEffect(() => {
@@ -85,9 +88,10 @@ export function LocationsProvider({ children }: { children: ReactNode }) {
 
     // Update an existing location
     const updateLocation = useCallback(async (id: string, updates: Partial<Location>) => {
-        const newLocations = locations.map((loc) =>
+        const newLocations = latest.current.map((loc) =>
             loc.id === id ? { ...loc, ...updates } : loc
         );
+        latest.current = newLocations;
         setLocations(newLocations);
         await saveLocations(newLocations);
     }, [locations]);

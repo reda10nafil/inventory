@@ -1,6 +1,6 @@
 // FurInventory Pro - Manage Locations Screen
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
 import QRCode from 'react-native-qrcode-svg';
@@ -10,7 +10,12 @@ import { usage } from '../../../utils/productRules';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { locationShelvesError } from '../../../utils/shelves';
 import { newLocationId } from '../../../utils/stock';
-import { codeCheck } from '../../../utils/codes';
+import { codeCheck, codeTaken, suggestCode } from '../../../utils/codes';
+import { isAt } from '../../../utils/stock';
+import { placeWithShelf } from '../../../utils/shelves';
+import { useProductKind } from '../../../hooks/useProductKind';
+import { CodeSheet } from '../../../components/CodeSheet';
+import { labelCountText } from '../../../utils/labelHtml';
 import { useAutomations } from '../../../contexts/AutomationsContext';
 import { automationsUsing, locationInUseText } from '../../../utils/automationRun';
 import BarcodeScanner from '../../../components/BarcodeScanner';
@@ -20,7 +25,6 @@ import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
-import { withAlpha } from '../../../utils/color';
 
 const COLOR_OPTIONS = [
   '#3B82F6', // Blue
@@ -44,6 +48,7 @@ export default function ManageLocationsScreen() {
   const { products, libraries } = useInventory();
   const { shelves } = useShelves();
   const { automations } = useAutomations();
+  const kindOf = useProductKind();
 
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
@@ -51,13 +56,31 @@ export default function ManageLocationsScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [showScanner, setShowScanner] = useState(false);
-  // Codice mostrato nella finestra grande del QR: uno stato suo, non il campo del modulo (NG24: il QR di un'altra
-  // riga riscriveva il codice della posizione che si stava modificando)
-  const [qrCode, setQrCode] = useState<string | null>(null);
+  // ETI: finestra «Codice ed etichetta» di una posizione (dalla riga, o dopo la creazione con la riga «creata»). Uno
+  // stato suo, non il campo del modulo (NG24: il QR di un'altra riga riscriveva il codice della posizione aperta)
+  const [codeSheet, setCodeSheet] = useState<{ id: string; notice?: string } | null>(null);
 
   // COD (NG25): il codice scritto, controllato mentre lo si scrive e al salvataggio
+  const sources = { products, locations, categories: libraries, shelves };
   const codeHint = codeCheck(barcode, editingId ? locations.find((l) => l.id === editingId)?.barcode : undefined,
-    { products, locations, categories: libraries, shelves }, editingId ? { kind: 'location', id: editingId } : undefined);
+    sources, editingId ? { kind: 'location', id: editingId } : undefined);
+
+  const sheetFor = codeSheet ? locations.find((l) => l.id === codeSheet.id) : undefined;
+  // AU-A8: «Stampa tutte le etichette di questa posizione»: lei, i suoi scaffali, i prodotti disponibili che ci stanno
+  const seriesFor = (loc: Location) => {
+    const here = shelves.filter((s) => s.locationId === loc.id && s.barcode);
+    const items = products.filter((p) => !p.deletedAt && p.status !== 'sold' && isAt(p, loc.id));
+    const list = [
+      ...(loc.barcode ? [{ code: loc.barcode, name: loc.label }] : []),
+      ...here.map((s) => ({ code: s.barcode!, name: placeWithShelf(loc.label, s) })),
+      ...items.map((p) => ({ code: p.sku, name: kindOf(p).full })),
+    ];
+    const parts = [
+      here.length === 1 ? '1 scaffale' : `${here.length} scaffali`,
+      items.length === 1 ? '1 prodotto' : `${items.length} prodotti`,
+    ];
+    return { label: 'Stampa tutte le etichette di questa posizione', detail: `${loc.label}, ${parts.join(' e ')}: ${labelCountText(list.length)}`, items: list };
+  };
 
   const resetForm = () => {
     setName('');
@@ -106,13 +129,16 @@ export default function ManageLocationsScreen() {
         return;
       }
 
+      // ETI: un codice vuoto nasce da solo (stessa regola degli scaffali, mai uno già usato), poi «Codice ed etichetta»
+      const code = barcode.trim() || suggestCode('LOC', [name], codeTaken(sources));
       await addLocation({
         id: newId,
         label: name,
         color: selectedColor,
-        barcode: barcode || undefined,
+        barcode: code || undefined,
       });
-      Alert.alert('Successo', 'Posizione creata');
+      const notice = `Posizione "${name.trim()}" creata.`;
+      Alert.alert('Successo', 'Posizione creata', [{ text: 'OK', onPress: () => setCodeSheet({ id: newId, notice }) }]);
       resetForm();
     }
   };
@@ -155,13 +181,12 @@ export default function ManageLocationsScreen() {
   };
 
   const generateBarcode = () => {
-    // If editing, use ID. If new, use name to generate temp ID
-    const baseId = editingId || name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    if (!baseId) {
+    if (!name.trim()) {
       Alert.alert('Errore', 'Inserisci prima un nome per generare il codice.');
       return;
     }
-    setBarcode(`LOC-${baseId.toUpperCase()}`);
+    // ETI: stessa regola del codice che nasce da solo («LOC-DEPOSITO-NORD»), mai uno già usato da altro
+    setBarcode(suggestCode('LOC', [name], codeTaken(sources, editingId ? { kind: 'location', id: editingId } : undefined)));
   };
 
   const handleBarCodeScanned = ({ type, data }: { type: string, data: string }) => {
@@ -216,7 +241,8 @@ export default function ManageLocationsScreen() {
             ))}
           </ScrollView>
 
-          <Text style={styles.label}>Barcode / NFC (Opzionale)</Text>
+          {/* ETI: «Codice»; se resta vuoto nasce da solo alla creazione (UX0, lessico) */}
+          <Text style={styles.label}>Codice</Text>
           <View style={styles.barcodeRow}>
             <TextInput
               style={[styles.input, { flex: 1, minWidth: 0, marginBottom: 0 }]}
@@ -242,6 +268,8 @@ export default function ManageLocationsScreen() {
           ) : null}
           {codeHint.error || codeHint.warning ? (
             <Text style={[styles.codeHint, codeHint.error ? styles.codeHintError : styles.codeHintWarning]}>{codeHint.error ?? codeHint.warning}</Text>
+          ) : !editingId && !barcode.trim() ? (
+            <Text style={styles.codeHintEmpty}>Vuoto: si crea da solo quando salvi.</Text>
           ) : null}
 
           <View style={styles.actionButtons}>
@@ -273,11 +301,10 @@ export default function ManageLocationsScreen() {
             </View>
 
             <View style={styles.itemActions}>
-              {loc.barcode && (
-                <Pressable onPress={() => setQrCode(loc.barcode!)} style={{ marginRight: 8 }}>
-                  <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
-                </Pressable>
-              )}
+              {/* ETI: «Codice ed etichetta» su ogni riga (senza codice lo si crea lì) */}
+              <Pressable onPress={() => setCodeSheet({ id: loc.id })} style={{ marginRight: 8 }} accessibilityLabel={`Codice ed etichetta di ${loc.label}`}>
+                <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
+              </Pressable>
               <Pressable onPress={() => handleDeleteLocation(loc.id)}>
                 <AppIcon name="delete" size={20} color={t.colors.error} />
               </Pressable>
@@ -294,17 +321,26 @@ export default function ManageLocationsScreen() {
         </View>
       )}
 
-      {/* Large QR Modal */}
-      <Modal visible={qrCode !== null} transparent animationType="fade" onRequestClose={() => setQrCode(null)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setQrCode(null)}>
-          <View style={styles.qrCard}>
-            <Text style={styles.qrTitle}>Codice Posizione</Text>
-            <QRCode value={qrCode || 'empty'} size={200} />
-            <Text style={styles.qrBigText}>{qrCode}</Text>
-            <Text style={styles.qrHint}>Scansiona per spostare prodotti qui</Text>
-          </View>
-        </Pressable>
-      </Modal>
+      {/* ETI: «Codice ed etichetta» della posizione, con le etichette di tutto quello che c'è dentro (AU-A8) */}
+      {sheetFor ? (
+        <CodeSheet
+          visible
+          onClose={() => setCodeSheet(null)}
+          kind="posizione"
+          notice={codeSheet?.notice}
+          items={[{ code: sheetFor.barcode ?? '', name: sheetFor.label }]}
+          changeCode={{
+            check: (code) => codeCheck(code, sheetFor.barcode, sources, { kind: 'location', id: sheetFor.id }),
+            suggest: () => suggestCode('LOC', [sheetFor.label], codeTaken(sources, { kind: 'location', id: sheetFor.id })),
+            save: async (code) => {
+              await updateLocation(sheetFor.id, { barcode: code });
+              if (editingId === sheetFor.id) setBarcode(code); // il modulo aperto non riscrive il codice di prima
+            },
+          }}
+          series={seriesFor(sheetFor)}
+          tag={{ self: { kind: 'location', id: sheetFor.id }, saved: sheetFor.nfcTag }} // N1: «Scrivi tag NFC», «Collega un tag»
+        />
+      ) : null}
 
     </SafeAreaView>
   );
@@ -468,40 +504,6 @@ const useStyles = makeStyles((t) => ({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: withAlpha(t.colors.shadow, 0.85),
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  qrCard: {
-    backgroundColor: t.colors.qrPaper,
-    padding: 32,
-    borderRadius: t.radius.card,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 320,
-  },
-  qrTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: t.colors.qrInk,
-  },
-  qrBigText: {
-    marginTop: 16,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: t.colors.qrInk,
-    textAlign: 'center',
-  },
-  qrHint: {
-    fontSize: 14,
-    color: withAlpha(t.colors.qrInk, 0.7),
-    marginTop: 8,
-    textAlign: 'center',
-  },
   // COD: avviso sotto il codice mentre lo si scrive (già usato: rosso, si rifiuta; doppione di prima: si segnala)
   codeHint: {
     fontSize: 13,
@@ -514,5 +516,13 @@ const useStyles = makeStyles((t) => ({
   },
   codeHintWarning: {
     color: t.colors.warningText,
+  },
+  // ETI: il codice vuoto nasce da solo al salvataggio
+  codeHintEmpty: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+    marginBottom: 8,
+    color: t.colors.textMuted,
   },
 }));

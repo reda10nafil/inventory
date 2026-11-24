@@ -1,6 +1,6 @@
 # NFC: quando si ascolta
 
-Tipo: grilling. Stato: **chiuso** il 22 novembre 2026 sera (risposta dell'utente). Fetta: N1.
+Tipo: grilling. Stato: **chiuso** il 22 novembre 2026 sera (risposta dell'utente); **fetta N1 fatta** il 24 novembre (corsia C, `funzioni/codici`, non provata sul telefono: confine e decisioni nel ticket 18). Fetta: N1.
 
 ## Question
 

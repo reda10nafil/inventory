@@ -373,3 +373,47 @@ export function codeCheck(code: string, saved: string | undefined, sources: Code
   }
   return { error: `Il codice "${code.trim()}" è già usato ${owner}.`, warning: null };
 }
+
+// ── Codice nuovo (ETI) ──────────────────────────────────────
+
+/**
+ * Codice che nasce da solo per una posizione o una categoria (ETI, ticket 22): stessa regola di `suggestShelfCode`
+ * (S1a) per gli scaffali. Prefisso e nome senza accenti, in maiuscolo con i trattini («LOC-DEPOSITO-NORD»; per una
+ * sottocategoria tutto il percorso, «LIB-PELLICCE-VISONE»), mai uno già usato («-2», «-3»…). Un nome senza lettere
+ * latine né cifre («★★», «倉庫») dà il solo prefisso numerato («LOC-1», «LOC-2»…), così la cosa ha sempre un codice.
+ */
+export function suggestCode(prefix: 'LOC' | 'LIB', names: readonly string[], taken: (code: string) => boolean): string {
+  const slug = (value: string) => fold(value).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').toUpperCase();
+  const parts = names.map(slug).filter(Boolean);
+  if (!parts.length) {
+    let n = 1;
+    while (taken(`${prefix}-${n}`)) n += 1;
+    return `${prefix}-${n}`;
+  }
+  const code = `${prefix}-${parts.join('-')}`;
+  if (!taken(code)) return code;
+  let n = 2;
+  while (taken(`${code}-${n}`)) n += 1;
+  return `${code}-${n}`;
+}
+
+/** Vero se il codice è già usato da qualcosa (per `suggestCode` e `suggestShelfCode`). */
+export const codeTaken = (sources: CodeSources, self?: CodeRef) => (code: string): boolean => ownerRef(code, sources, self) !== null;
+
+// ── Tag NFC (N1) ──────────────────────────────────────────
+
+/**
+ * Chi ha questo **UID** di tag salvato in `nfcTag` (posizioni, scaffali, categorie), scritto in qualunque modo
+ * («04:A2:3B:1C», «04A23B1C»). Un testo che non è un UID non trova nessuno. `self` resta fuori (N1, ticket 22).
+ */
+export function tagOwners(text: string | null | undefined, sources: CodeSources, self?: CodeRef): CodeRef[] {
+  const id = uid(text ?? undefined);
+  if (!id) return [];
+  const other = (kind: CodeKind, x: string) => !(self && self.kind === kind && self.id === x);
+  const has = (p: CodePlace) => uid(p.nfcTag) === id;
+  return [
+    ...(sources.locations ?? []).filter((l) => other('location', l.id) && has(l)).map((l) => ({ kind: 'location' as const, id: l.id })),
+    ...(sources.shelves ?? []).filter((s) => other('shelf', s.id) && has(s)).map((s) => ({ kind: 'shelf' as const, id: s.id })),
+    ...(sources.categories ?? []).filter((c) => other('category', c.id) && has(c)).map((c) => ({ kind: 'category' as const, id: c.id })),
+  ];
+}

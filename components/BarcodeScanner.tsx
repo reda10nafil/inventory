@@ -6,6 +6,12 @@ import { GradientFill } from './ui/GradientFill';
 import { Text, TextInput } from './ui/Text';
 import { makeStyles, useTheme } from '../contexts/ThemeContext';
 import { withAlpha } from '../utils/color';
+// N1 (ticket 16, 22): «Leggi un tag» accanto a «Scrivi il codice» in ogni lettore (automazioni comprese), e la
+// fotocamera solo se Scanner e NFC la vuole. Il codice del tag arriva a `onScan` come ogni altro codice.
+import { NfcSheet } from './NfcSheet';
+import { useHardwareConfig } from '../contexts/HardwareConfigContext';
+import { useNfcUsable } from '../hooks/useNfcUsable';
+import { readerSources } from '../utils/nfcTag';
 
 interface BarcodeScannerProps {
     onScan: (result: { type: string; data: string }) => void;
@@ -22,15 +28,19 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
     // e il web. Va diritto a `onScan`, senza la pausa della fotocamera: due codici scritti di fila valgono tutti e due.
     const [typing, setTyping] = useState(false);
     const [code, setCode] = useState('');
+    const { hwConfig } = useHardwareConfig();
+    const reader = readerSources(hwConfig.scanMode, useNfcUsable());
+    const [readingTag, setReadingTag] = useState(false);
 
     useEffect(() => {
+        if (!reader.camera) return; // «NFC» in Scanner e NFC: la fotocamera non si apre
         const getPermissions = async () => {
             const { status } = await Camera.requestCameraPermissionsAsync();
             setHasPermission(status === 'granted');
         };
 
         getPermissions();
-    }, []);
+    }, [reader.camera]);
 
     const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
         if (scanned) return;
@@ -48,6 +58,21 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
         setCode('');
         onScan({ type: 'manual', data });
     };
+
+    const tagButton = reader.nfc && !typing && (
+        <Pressable style={styles.writeButton} onPress={() => setReadingTag(true)} accessibilityRole="button" accessibilityLabel="Leggi un tag">
+            <AppIcon name="nfc" size={20} color={t.colors.onData} />
+            <Text style={styles.writeButtonText}>Leggi un tag</Text>
+        </Pressable>
+    );
+    const tagSheet = readingTag && (
+        <NfcSheet
+            visible
+            mode="leggi"
+            onClose={() => setReadingTag(false)}
+            onRead={(data) => { setReadingTag(false); onScan({ type: 'nfc', data }); }}
+        />
+    );
 
     const writeButton = !typing && (
         <Pressable style={styles.writeButton} onPress={() => setTyping(true)} accessibilityRole="button" accessibilityLabel="Scrivi il codice">
@@ -85,6 +110,22 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
         </View>
     );
 
+    if (!reader.camera) {
+        return (
+            <View style={styles.container}>
+                <AppIcon name="nfc" size={64} color={t.colors.onData} />
+                <Text style={styles.text}>Tocca «Leggi un tag» e avvicina il tag</Text>
+                {tagButton}
+                {writeButton}
+                <Pressable style={styles.closeButton} onPress={onClose} accessibilityLabel="Chiudi">
+                    <AppIcon name="close" size={32} color={t.colors.onData} />
+                </Pressable>
+                {writePanel}
+                {tagSheet}
+            </View>
+        );
+    }
+
     if (hasPermission === null || hasPermission === false) {
         return (
             <View style={styles.container}>
@@ -99,6 +140,7 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
                         </Pressable>
                     </>
                 )}
+                {tagButton}
                 {writeButton}
                 {hasPermission === false && (
                     <Pressable style={styles.closeButton} onPress={onClose}>
@@ -106,6 +148,7 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
                     </Pressable>
                 )}
                 {writePanel}
+                {tagSheet}
             </View>
         );
     }
@@ -138,6 +181,7 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
             </View>
 
             <View style={styles.controls}>
+                {tagButton}
                 {writeButton}
                 <Text style={styles.instructions}>Inquadra il codice</Text>
                 <Pressable style={styles.closeRoundButton} onPress={onClose}>
@@ -145,6 +189,7 @@ export default function BarcodeScanner({ onScan, onClose, delay = 2000 }: Barcod
                 </Pressable>
             </View>
             {writePanel}
+            {tagSheet}
         </View>
     );
 }

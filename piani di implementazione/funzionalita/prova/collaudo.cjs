@@ -162,6 +162,7 @@ async function cfB1(h) {
   await h.go('settings/folders');
   await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('Borse');
   await h.click('Crea Categoria');
+  await eti.chiudiCodice(h); // ETI: al «OK» si apre «Codice ed etichetta» della categoria nuova
   await lab('Apri Borse').click(); await h.page.waitForTimeout(400);
   await lab('Aggiungi una sottocategoria a Borse').click(); await h.page.waitForTimeout(400);
   await lab('Nome della sottocategoria di Borse').fill('Zaini');
@@ -350,7 +351,10 @@ async function cfE2(h) {
   // Categoria Pellicce con il codice di Magazzino
   await h.go('settings/folders');
   await page.locator('[tabindex="0"]').filter({ hasText: 'ID: pellicce' }).locator('visible=true').first().click(); await page.waitForTimeout(400);
-  await page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().fill('LOC-MAGAZZINO');
+  // ETI: il codice di una categoria si cambia in «Codice ed etichetta» › Avanzate › «Cambia codice» (stesso controllo)
+  await eti.apri(h, 'Codice ed etichetta');
+  await eti.cambiaCodice(h, 'LOC-MAGAZZINO');
+  await eti.chiudiCodice(h);
   await h.click('Salva Modifiche');
   // Scaffale A1 con il codice di Pellicce
   await h.go('settings/shelves');
@@ -439,6 +443,90 @@ async function cfE3(h) {
   const okEse = out.ese.azioniDopoCestinoELink === '1' && !out.ese.finestraPrezzo && out.ese.motivo && out.ese.azioniDopoVenduto === '0' && out.ese.volInvariato;
   const ok = Object.values(out.riconosciuto).every(Boolean) && Object.values(out.cestino).every(Boolean) && out.puzInvariato && okEse;
   return { ok, ...out };
+}
+
+// ---- ETI (ticket 22, corsia C, 24/11): «Codice ed etichetta» ed etichette fatte in locale ----
+const eti = require('./eti-util.cjs');
+const etiPulita = (html) => !/<script|https?:|qrserver|barcodeapi|jsdelivr|rawgit/i.test(html);
+
+// CF-E4 (ETI): «Codice ed etichetta» di VIS-0142 (col link GS1, P27) e dello scaffale A1: «Stampa etichetta» apre una
+// finestra sua con l'etichetta fatta in locale (il QR porta il codice, nessuno script né indirizzo esterno, nessuna
+// richiesta fuori da localhost); la pagina dell'app non si stampa
+async function cfE4(h) {
+  await c.prepara(h);
+  const st = await eti.guardaStampe(h);
+  await h.click('VIS-0142'); await h.page.waitForTimeout(900);
+  await eti.apri(h, 'Codice ed etichetta', 900);
+  st.esterne.length = 0;
+  await eti.apri(h, 'Stampa etichetta', 1500);
+  const p = await eti.ultimaStampa(st);
+  const prodotto = p && { qr: JSON.stringify(eti.qrHtml(p.html)) === JSON.stringify(eti.qrAtteso('VIS-0142')), pulita: etiPulita(p.html), stampata: p.stampe };
+  const paginaApp = [await h.page.evaluate(() => window.__prints)];
+  await h.go('settings/shelves');
+  await eti.apri(h, 'Codice QR di A1');
+  // le richieste della stampa: aprendo Scaffali lo Scanner web di expo-camera scarica jsQR (lettura, non etichetta)
+  st.esterne.length = 0;
+  await eti.apri(h, 'Stampa etichetta', 1500);
+  const a = await eti.ultimaStampa(st);
+  const scaffale = a && { qr: JSON.stringify(eti.qrHtml(a.html)) === JSON.stringify(eti.qrAtteso('SCAF-MAG-A1')), pulita: etiPulita(a.html), stampata: a.stampe, nome: a.html.includes('Magazzino › A1') };
+  paginaApp.push(await h.page.evaluate(() => window.__prints));
+  const ok = !!prodotto && prodotto.qr && prodotto.pulita && prodotto.stampata === 1 && !!scaffale && scaffale.qr && scaffale.pulita
+    && scaffale.stampata === 1 && scaffale.nome && st.finestre.length === 2 && paginaApp.every((n) => n === 0) && st.esterne.length === 0;
+  return { ok, prodotto, scaffale, finestre: st.finestre.length, paginaApp, esterne: st.esterne };
+}
+
+// CF-D1 (parte ETI): il ripiano «A1» creato dal modulo (Magazzino): al «OK» si apre «Codice ed etichetta» con il codice
+// SCAF-MAGAZZINO-A1 e «Stampa etichetta» lo stampa in una finestra sua. Il codice nasce al salvataggio con S2 (corsia B);
+// su un branch senza S2 la finestra lo crea con «Crea il codice» (stessa regola) e lo dice in `daFare`
+async function cfD1Eti(h) {
+  const st = await eti.guardaStampe(h);
+  await h.go('settings/shelves');
+  await h.page.getByLabel('Nome', { exact: true }).locator('visible=true').first().fill('A1');
+  await eti.apri(h, 'Posizione Magazzino', 200);
+  await eti.apri(h, 'Crea scaffale', 900);
+  const finestra = await eti.aperta(h);
+  const daCreare = await h.has('Questo scaffale non ha ancora un codice.', true);
+  if (daCreare) await eti.apri(h, 'Crea il codice', 800);
+  const salvato = (((await h.store('furinventory_shelves:local', 400)) || [])[0] || {}).barcode;
+  const aVideo = await h.has('SCAF-MAGAZZINO-A1', true);
+  st.esterne.length = 0;
+  await eti.apri(h, 'Stampa etichetta', 1500);
+  const s = await eti.ultimaStampa(st);
+  const stampa = s && { qr: JSON.stringify(eti.qrHtml(s.html)) === JSON.stringify(eti.qrAtteso('SCAF-MAGAZZINO-A1')), pulita: etiPulita(s.html), stampata: s.stampe };
+  const paginaApp = await h.page.evaluate(() => window.__prints);
+  const ok = finestra && salvato === 'SCAF-MAGAZZINO-A1' && aVideo && !!stampa && stampa.qr && stampa.pulita && stampa.stampata === 1 && paginaApp === 0 && st.esterne.length === 0;
+  return { ok, finestra, codiceDa: daCreare ? 'Crea il codice' : 'salvataggio', salvato, aVideo, stampa, paginaApp, esterne: st.esterne,
+    ...(daCreare ? { daFare: 'il codice nasce da solo al salvataggio con S2 (corsia B, all\'unione)' } : {}) };
+}
+
+// CF-E6 (N1): Impostazioni › Scanner e NFC sul web, con una configurazione salvata prima («NFC», proponi il tag): una
+// riga «L'NFC si usa dal telefono», nessuna scelta NFC, nessun interruttore, nessun «Errore» (NG12); la chiave resta
+// uguale; nella finestra «Codice ed etichetta» di VIS-0142 la stessa riga e niente «Programma tag» (NG19)
+async function cfE6(h) {
+  const KEY = 'furinventory_hardware_config:local';
+  const salvata = { scanMode: 'nfc_only', autoWriteNfcOnSave: true };
+  await h.page.evaluate(([k, v]) => localStorage.setItem(k, JSON.stringify(v)), [KEY, salvata]);
+  await h.go('settings/hardware');
+  const t = await c.testo(h);
+  const impostazioni = {
+    riga: await h.has('L\'NFC si usa dal telefono', true),
+    scelte: await h.page.getByLabel(/^Leggi con /).locator('visible=true').count(),
+    interruttori: await h.page.getByRole('switch').locator('visible=true').count(),
+    errore: /errore/i.test(t),
+  };
+  const chiave = await h.store(KEY);
+  await h.go('');
+  await h.click('VIS-0142'); await h.page.waitForTimeout(900);
+  await eti.apri(h, 'Codice ed etichetta', 900);
+  await eti.apri(h, 'Avanzate', 400);
+  const finestra = {
+    riga: await h.page.getByText('L\'NFC si usa dal telefono', { exact: true }).locator('visible=true').count(),
+    programma: await h.page.getByText('Programma tag', { exact: true }).locator('visible=true').count(),
+    scrivi: await h.page.getByLabel('Scrivi tag NFC', { exact: true }).locator('visible=true').count(),
+  };
+  const ok = impostazioni.riga && !impostazioni.scelte && !impostazioni.interruttori && !impostazioni.errore
+    && JSON.stringify(chiave) === JSON.stringify(salvata) && finestra.riga === 1 && !finestra.programma && !finestra.scrivi;
+  return { ok, impostazioni, chiaveUguale: JSON.stringify(chiave) === JSON.stringify(salvata), finestra };
 }
 
 // CF-F7 (ESE): un'automazione personale fatta dal costruttore come l'utente, [Scansiona Prodotto, Tag «Controllato»,
@@ -880,9 +968,9 @@ const PASSI = [
   ['CF-E1', 'Scanner con SKU, SKU minuscolo, vecchio link GS1', 'COD', cfE1],
   ['CF-E2', 'Scanner con i codici di posizione, scaffale, categoria; nessun codice doppio', 'COD', cfE2],
   ['CF-E3', 'Le 5 automazioni con lo stesso codice di prodotto', 'COD, ESE', cfE3],
-  ['CF-E4', '«Codice ed etichetta» di un prodotto e di A1: Stampa', 'ETI'],
+  ['CF-E4', '«Codice ed etichetta» di un prodotto e di A1: Stampa', 'ETI', cfE4],
   ['CF-E5', 'Impostazioni › Codici ed etichette, vuote e con una configurazione GS1 vecchia', 'GS1'],
-  ['CF-E6', 'Impostazioni › Scanner e NFC sul web: «Non disponibile sul web»', 'N1'],
+  ['CF-E6', 'Impostazioni › Scanner e NFC sul web: «L\'NFC si usa dal telefono»', 'N1', cfE6],
   ['CF-F1', 'Ricevimento da un fornitore: 3 articoli in Magazzino › A1', 'FLU1'],
   ['CF-F2', 'Uscita a un cliente con quantità e prezzo', 'FLU1'],
   ['CF-F3', 'Trasferimento di 2 pezzi su 5', 'FLU1'],
@@ -900,6 +988,8 @@ const PASSI = [
   ['CF-Z', 'La catena intera (Borse, modello, campo, foto, scaffale, etichetta, codice, export, import)', 'MCAT, EDC, GAL, FOTO, S3, ETI, COD, ESE, EXP, IMP'],
   // ACC1 (corsia B): passo nuovo, in fondo alla tabella per non scontrarsi con le altre corsie
   ['CF-H4', 'Accesso: profilo riletto, Operatore con le voci spente col motivo, autore in Cronologia', 'ACC1', cfH4],
+  // ETI (corsia C, 24/11): parte ETI di CF-D1 (la riga CF-D1 sopra è di S2): codice e «Codice ed etichetta» con Stampa
+  ['CF-D1-ETI', 'Ripiano «A1» creato: codice e finestra «Codice ed etichetta» con Stampa', 'ETI', cfD1Eti],
 ];
 const TELEFONO = [
   ['CF-T1', 'Tasto Indietro di sistema, link syncroflow:// ad app chiusa, icone su APK in modalità aereo', 'C2, IND'],

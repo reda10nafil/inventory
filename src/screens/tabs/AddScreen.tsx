@@ -39,6 +39,7 @@ import { LoadNotice } from '../../../components/LoadNotice';
 import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
 import { usePermission } from '../../../contexts/ProfileContext';
 import { stockKey } from '../../../utils/stock';
+import { useTagOffer } from '../../../hooks/useTagOffer'; // N1: «Proponi di scrivere il tag» di Scanner e NFC
 
 export default function AddProductScreen() {
   const t = useTheme();
@@ -79,6 +80,7 @@ export default function AddProductScreen() {
   // Scaffale (S1a), tra quelli della posizione e della categoria scelte: per un pezzo unico è il suo scaffale, con una
   // quantità (S1b) è dove va la giacenza iniziale (`withInitialStock`, chiave `posizione/scaffale`)
   const { shelves } = useShelves();
+  const tagOffer = useTagOffer(); // N1
   const [shelfId, setShelfId] = useState('');
   const shelfChoices = shelvesFor(shelves, libraries, { location: formData.location, libraryId: formData.libraryId || undefined });
   const chosenShelf = shelfChoices.some((s) => s.id === shelfId) ? shelfId : '';
@@ -350,7 +352,7 @@ export default function AddProductScreen() {
       Alert.alert(
         'Prodotto Aggiunto',
         `${formData.sku || finalSKU} è stato aggiunto all'inventario`,
-        [
+        tagOffer.withTagOffer(finalSKU, [
           {
             text: 'OK',
             onPress: () => {
@@ -380,7 +382,7 @@ export default function AddProductScreen() {
               router.push('/(tabs)');
             },
           },
-        ]
+        ])
       );
     } catch (error) {
       setIsSubmitting(false);
@@ -876,6 +878,7 @@ export default function AddProductScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {tagOffer.sheet}
     </SafeAreaView>
   );
 }

@@ -1,11 +1,20 @@
-// FurInventory Pro - Hardware Settings Screen
-import React from 'react';
-import { View, Pressable, ScrollView, Switch, Alert } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHardwareConfig, ScanMode } from '../../../contexts/HardwareConfigContext';
+// Impostazioni › Scanner e NFC (N1, ticket 16 e 22; UX0 piano N1). Semplice e onesta: lo stato in una riga col
+// pallino, «Fotocamera · NFC · Tutti e due», «Prova un tag», «Proponi di scrivere il tag», e sotto «Avanzate» (chiuso)
+// il silenziatore di Android. Le scelte hanno effetto: le leggono Scanner, automazioni, «Codice ed etichetta» e
+// Aggiungi (`readerSources`, `offerTagWrite`; prima 4 controlli su 5 non facevano nulla, NG11 = D19). Via la card col
+// testo lungo e le promesse («Pulizia + Scrittura», NG13). Sul web una riga sola: «L'NFC si usa dal telefono» (NG12:
+// prima la diagnostica diceva «Errore»). Aprire la schermata non scrive nulla.
+import React, { useCallback, useEffect, useState } from 'react';
+import { AppState, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHardwareConfig } from '../../../contexts/HardwareConfigContext';
 import { nfcService } from '../../../utils/nfcService';
+import type { NfcState } from '../../../utils/nfcCore';
+import { nfcStateText, readerSources, SCAN_MODES } from '../../../utils/nfcTag';
+import { NfcSheet } from '../../../components/NfcSheet';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
+import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface } from '../../../components/ui/surfaces';
 import { Text } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
@@ -15,111 +24,140 @@ export default function HardwareSettingsScreen() {
   const styles = useStyles();
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { hwConfig, updateHwConfig, resetHwConfig } = useHardwareConfig();
+  const { hwConfig, updateHwConfig } = useHardwareConfig();
+  const [state, setState] = useState<NfcState | null>(null);
+  const [advanced, setAdvanced] = useState(false);
+  const [testing, setTesting] = useState(false);
 
-  const handleTestNfc = async () => {
-    try {
-      const isSupported = await nfcService.isSupported();
-      if (!isSupported) {
-        Alert.alert('Diagnostica NFC', 'Il tuo dispositivo NON supporta l\'NFC o il sensore è rotto.');
-        return;
-      }
-      const isEnabled = await nfcService.isEnabled();
-      if (!isEnabled) {
-        Alert.alert('Diagnostica NFC', 'L\'NFC è supportato ma risulta DISABILITATO. Accendilo nelle impostazioni del telefono.');
-        return;
-      }
-      Alert.alert('Diagnostica NFC', '✅ Sensore NFC supportato e attivo. Pronto all\'uso.');
-    } catch (e) {
-      Alert.alert('Diagnostica NFC', 'Errore durante la verifica dello stato NFC.');
-    }
-  };
+  // Stato dell'NFC, riletto quando si torna nell'app (per esempio dopo averlo acceso nelle impostazioni del telefono)
+  const refresh = useCallback(() => { if (nfcService.available) void nfcService.status().then(setState); }, []);
+  useEffect(() => {
+    refresh();
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') refresh(); });
+    return () => sub.remove();
+  }, [refresh]);
 
-  const renderModeButton = (mode: ScanMode, icon: string, label: string) => {
-    const isActive = hwConfig.scanMode === mode;
+  const web = !nfcService.available;
+  const status = nfcStateText(web ? 'web' : state ?? 'attivo');
+  const statusText = !web && state === null ? 'Controllo l\'NFC…' : status.text;
+  const dot = web || state === null ? t.colors.textMuted : status.tone === 'ok' ? t.colors.success : status.tone === 'warn' ? t.colors.warning : t.colors.textMuted;
+  const hasNfc = !web && state !== 'assente';
+  const nfcOn = hasNfc && readerSources(hwConfig.scanMode, true).nfc;
+
+  const toggle = (value: boolean) => ({
+    trackColor: { false: t.colors.checkRing, true: withAlpha(t.colors.accent, 0.502) },
+    thumbColor: value ? t.colors.accent : t.colors.textMuted,
+  });
+
+  const modeChip = (id: typeof SCAN_MODES[number]['id'], label: string) => {
+    const active = hwConfig.scanMode === id;
     return (
       <Pressable
-        style={[styles.segmentButton, isActive && styles.segmentButtonActive]}
-        onPress={() => updateHwConfig({ scanMode: mode })}
+        key={id}
+        style={[styles.segment, active && styles.segmentActive]}
+        onPress={() => updateHwConfig({ scanMode: id })}
+        accessibilityRole="radio"
+        aria-checked={active}
+        accessibilityLabel={`Leggi con ${label}`}
       >
-        <AppIcon
-          name={icon as any}
-          size={18}
-          color={isActive ? t.colors.accentInk : t.colors.textSecondary}
-        />
-        <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>{label}</Text>
+        {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+        {active && <AppIcon name="check" size={16} color={t.colors.chipActiveText} />}
+        <Text style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1}>{label}</Text>
       </Pressable>
     );
   };
 
   return (
     <View style={styles.container}>
-    <Backdrop />
-    <ScrollView
-      contentContainerStyle={{ paddingHorizontal: t.spacing.screenPadding, paddingBottom: insets.bottom + 24 }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header Info */}
-      <View style={styles.infoCard}>
-        <View style={styles.infoIconWrap}>
-          <AppIcon name="settings-cell" size={24} color={t.colors.accentInk} />
+      <Backdrop />
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: t.spacing.screenPadding, paddingTop: 16, paddingBottom: insets.bottom + 24, gap: 12 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Stato in una riga: pallino e testo (il colore da solo non basta) */}
+        <View style={styles.card}>
+          <View style={styles.statusRow} accessibilityLabel={statusText}>
+            <View style={[styles.dot, { backgroundColor: dot }]} />
+            <Text style={styles.statusText}>{statusText}</Text>
+          </View>
+          {web ? <Text style={styles.hint}>Dal computer: fotocamera o codice scritto a mano.</Text> : null}
         </View>
-        <View style={styles.infoContent}>
-          <Text style={styles.infoTitle}>Scanner & Hardware</Text>
-          <Text style={styles.infoDesc}>
-            Configura come Syncro Flow interagisce con il mondo fisico. Scegli se preferisci usare la fotocamera (QR) o il sensore NFC per scansionare e programmare i prodotti.
-          </Text>
-        </View>
-      </View>
 
-      <Text style={styles.sectionTitle}>Modalità di lettura preferita</Text>
-      <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Metodo di Scansione Azione Rapida</Text>
-        <Text style={styles.helperText}>
-          Definisce quale hardware attivare quando apri la fotocamera per scansionare un prodotto o eseguire automazioni.
-        </Text>
-        
-        <View style={styles.segmentedControl}>
-          {renderModeButton('qr_only', 'qr-code-scanner', 'Solo QR')}
-          {renderModeButton('nfc_only', 'nfc', 'Solo NFC')}
-          {renderModeButton('both', 'sync-alt', 'Entrambi')}
-        </View>
-      </View>
-
-      <Text style={styles.sectionTitle}>Automazioni e flusso</Text>
-      <View style={styles.card}>
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleInfo}>
-            <View style={[styles.iconBadge, { backgroundColor: t.colors.iconWrap }]}>
-              <AppIcon name="save-alt" size={16} color={t.colors.accentInk} />
-            </View>
-            <View style={styles.toggleTextWrap}>
-              <Text style={styles.toggleTitle}>Scrittura Automatica NFC</Text>
-              <Text style={styles.toggleDesc}>
-                Se attivo, dopo aver salvato un nuovo prodotto ti verrà chiesto immediatamente di avvicinare un tag NFC per programmarlo (Pulizia + Scrittura).
+        {hasNfc ? (
+          <>
+            <Text style={styles.sectionTitle}>Come si leggono i codici</Text>
+            <View style={styles.card}>
+              <View style={styles.segments} accessibilityRole="radiogroup">
+                {SCAN_MODES.map((m) => modeChip(m.id, m.label))}
+              </View>
+              <Text style={styles.hint}>
+                {hwConfig.scanMode === 'qr_only' ? 'Solo la fotocamera: nessun pulsante NFC.'
+                  : hwConfig.scanMode === 'nfc_only' ? 'Solo i tag: lo Scanner non apre la fotocamera.'
+                    : 'Fotocamera e tag, in ogni lettore.'}
               </Text>
             </View>
-          </View>
-          <Switch
-            value={hwConfig.autoWriteNfcOnSave}
-            onValueChange={(val) => updateHwConfig({ autoWriteNfcOnSave: val })}
-            trackColor={{ false: t.colors.checkRing, true: withAlpha(t.colors.accent, 0.502) }}
-            thumbColor={hwConfig.autoWriteNfcOnSave ? t.colors.accent : t.colors.textMuted}
-          />
-        </View>
-      </View>
 
-      <Text style={styles.sectionTitle}>Diagnostica</Text>
-      <View style={styles.card}>
-        <Pressable style={styles.actionRow} onPress={handleTestNfc}>
-          <View style={styles.actionRowContent}>
-            <AppIcon name="health-and-safety" size={24} color={t.colors.textPrimary} />
-            <Text style={styles.actionRowText}>Test Stato Sensore NFC</Text>
-          </View>
-          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
-        </Pressable>
-      </View>
-    </ScrollView>
+            {nfcOn ? (
+              <View style={styles.card}>
+                <Pressable style={styles.row} onPress={() => setTesting(true)} accessibilityRole="button" accessibilityLabel="Prova un tag">
+                  <View style={styles.rowIcon}><AppIcon name="nfc" size={20} color={t.colors.accentInk} /></View>
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>Prova un tag</Text>
+                    <Text style={styles.rowSub}>Avvicina un tag e guarda che cosa legge</Text>
+                  </View>
+                  <AppIcon name="chevron-right" size={22} color={t.colors.textMuted} />
+                </Pressable>
+                <View style={styles.divider} />
+                <View style={styles.row}>
+                  <View style={styles.rowIcon}><AppIcon name="save-alt" size={20} color={t.colors.accentInk} /></View>
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>Proponi di scrivere il tag</Text>
+                    <Text style={styles.rowSub}>Dopo un prodotto nuovo, per scrivere subito il suo codice</Text>
+                  </View>
+                  <Switch
+                    value={hwConfig.autoWriteNfcOnSave}
+                    onValueChange={(value) => updateHwConfig({ autoWriteNfcOnSave: value })}
+                    accessibilityLabel="Proponi di scrivere il tag"
+                    {...toggle(hwConfig.autoWriteNfcOnSave)}
+                  />
+                </View>
+              </View>
+            ) : null}
+
+            {/* Avanzate, chiuso. Qui N2 metterà «Leggi più tag» (ritardo e pausa). Il silenziatore c'è solo su Android */}
+            {Platform.OS === 'android' ? (
+              <View style={styles.card}>
+                <Pressable
+                  style={styles.advancedHeader}
+                  onPress={() => setAdvanced(!advanced)}
+                  accessibilityRole="button"
+                  aria-expanded={advanced}
+                  accessibilityLabel="Avanzate"
+                >
+                  <Text style={styles.rowTitle}>Avanzate</Text>
+                  <AppIcon name={advanced ? 'expand-less' : 'expand-more'} size={24} color={t.colors.textSecondary} />
+                </Pressable>
+                {advanced ? (
+                  <View style={styles.row}>
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowTitle}>Zittisci Android con l'app aperta</Text>
+                      <Text style={styles.rowSub}>Un tag avvicinato non apre il browser. Con l'app aperta il telefono non paga.</Text>
+                    </View>
+                    <Switch
+                      value={!!hwConfig.silenceAndroid}
+                      onValueChange={(value) => updateHwConfig({ silenceAndroid: value })}
+                      accessibilityLabel="Zittisci Android con l'app aperta"
+                      {...toggle(!!hwConfig.silenceAndroid)}
+                    />
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+          </>
+        ) : null}
+      </ScrollView>
+
+      {testing ? <NfcSheet visible mode="prova" onClose={() => setTesting(false)} /> : null}
     </View>
   );
 }
@@ -129,141 +167,110 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     backgroundColor: t.colors.background,
   },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: t.colors.accentSoft,
-    borderRadius: t.radius.card,
-    padding: 16,
-    marginTop: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: withAlpha(t.colors.accent, 0.19),
-    gap: 12,
-  },
-  infoIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: t.radius.iconWrap,
-    backgroundColor: t.colors.iconWrap,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    ...t.typography.cardTitle,
-    color: t.colors.accentInk,
-    marginBottom: 4,
-  },
-  infoDesc: {
-    ...t.typography.caption,
-    color: t.colors.textSecondary,
-    lineHeight: 18,
-  },
   sectionTitle: {
     ...t.typography.sectionHeader,
     lineHeight: 18,
-    marginBottom: 10,
     marginTop: 8,
     ...(t.section.line ? { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: t.section.line } : null),
   },
   card: {
     ...cardSurface(t),
     padding: 16,
-    marginBottom: 12,
+    gap: 8,
   },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: t.weights.strong,
-    color: t.colors.textPrimary,
-    marginBottom: 4,
-  },
-  helperText: {
-    ...t.typography.caption,
-    fontSize: 12,
-    color: t.colors.textMuted,
-    marginBottom: 16,
-    lineHeight: 16,
-  },
-  // Controllo a segmenti come il selettore dell'unità di Aggiungi (tela): campo con il segmento attivo velato
-  segmentedControl: {
+  statusRow: {
     flexDirection: 'row',
-    backgroundColor: t.colors.input,
-    borderWidth: 1,
-    borderColor: t.colors.inputBorder,
-    borderRadius: t.radius.inputSmall,
-    padding: 3,
-    gap: 4,
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 24,
   },
-  segmentButton: {
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statusText: {
     flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600',
+    color: t.colors.textPrimary,
+  },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.colors.textMuted,
+  },
+  // Controllo a tre voci, come il formato di «Codice ed etichetta»
+  segments: {
     flexDirection: 'row',
+    gap: 6,
+    padding: 4,
+    borderRadius: t.radius.chip,
+    backgroundColor: t.colors.chip,
+    borderWidth: 1,
+    borderColor: t.colors.chipBorder,
+  },
+  segment: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: t.radius.inputSmall,
-    gap: 6,
+    borderRadius: t.radius.chip,
+    overflow: 'hidden',
   },
-  segmentButtonActive: {
-    backgroundColor: t.colors.accentSoft,
+  segmentActive: {
+    backgroundColor: t.colors.chipActive,
   },
   segmentText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: t.colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: t.colors.chipText,
   },
   segmentTextActive: {
-    fontWeight: '600',
-    color: t.colors.accentInk,
+    color: t.colors.chipActiveText,
   },
-  toggleRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  toggleInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
     gap: 12,
+    minHeight: 52,
   },
-  iconBadge: {
+  rowIcon: {
     width: 32,
     height: 32,
     borderRadius: t.radius.iconWrap,
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  toggleTextWrap: {
+  rowText: {
     flex: 1,
-    paddingRight: 16,
+    minWidth: 0,
   },
-  toggleTitle: {
+  rowTitle: {
     fontSize: 15,
-    fontWeight: t.weights.strong,
+    lineHeight: 20,
+    fontWeight: '600',
     color: t.colors.textPrimary,
-    marginBottom: 4,
   },
-  toggleDesc: {
-    fontSize: 12,
+  rowSub: {
+    fontSize: 13,
+    lineHeight: 18,
     color: t.colors.textSecondary,
-    lineHeight: 16,
   },
-  actionRow: {
+  divider: {
+    height: 1,
+    backgroundColor: t.colors.borderLight,
+  },
+  advancedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  actionRowContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  actionRowText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: t.colors.textPrimary,
+    minHeight: 44,
   },
 }));

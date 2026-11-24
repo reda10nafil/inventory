@@ -13,6 +13,7 @@ import { useShelves } from '../../../contexts/ShelvesContext';
 import { placeWithShelf } from '../../../utils/shelves';
 import { categoryPath, categoryPicker, categoryTree, categoryWithDescendants, rootCategories } from '../../../utils/categories';
 import { isDormant, needsPromotion } from '../../../services/mockData';
+import { CodeSheet } from '../../../components/CodeSheet'; // ETI (AU-A8): etichette in serie dalla selezione
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -67,6 +68,14 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showActionModal, setShowActionModal] = useState(false); // Controls Modal visibility
+  const [showLabels, setShowLabels] = useState(false); // ETI: «Etichette» dei prodotti scelti
+  // ETI: le etichette dei prodotti scelti, nell'ordine dell'Inventario (poi quelli scelti fuori dal filtro)
+  const labelItems = () => {
+    const chosen = new Set(selectedIds);
+    const shown = filteredProducts.filter((p) => chosen.has(p.id));
+    const seen = new Set(shown.map((p) => p.id));
+    return [...shown, ...products.filter((p) => chosen.has(p.id) && !seen.has(p.id))].map((p) => ({ code: p.sku, name: kindOf(p).full }));
+  };
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
@@ -303,14 +312,22 @@ export default function HomeScreen() {
         </View>
         <View style={styles.headerActions}>
           {selectedIds.length > 0 ? (
-            <Pressable
-              style={styles.textButton}
-              onPress={handleSelectAll}
-            >
-              <Text style={styles.textButtonLabel}>
-                {selectedIds.length === filteredProducts.length ? 'Deseleziona' : 'Seleziona Tutto'}
-              </Text>
-            </Pressable>
+            <>
+              {/* ETI (AU-A8): le etichette dei prodotti scelti, nella finestra «Codice ed etichetta» col contatore. In
+                  alto e non nella barra in basso, che ha i suoi pulsanti in posizioni fisse (cartella, cestino, chiudi);
+                  solo l'icona, perché accanto a «Seleziona Tutto» la scritta non ci sta a 375 px */}
+              <Pressable style={styles.labelsButton} onPress={() => setShowLabels(true)} accessibilityRole="button" accessibilityLabel="Stampa le etichette" hitSlop={4}>
+                <AppIcon name="qr-code-2" size={22} color={t.colors.accentInk} />
+              </Pressable>
+              <Pressable
+                style={styles.textButton}
+                onPress={handleSelectAll}
+              >
+                <Text style={styles.textButtonLabel}>
+                  {selectedIds.length === filteredProducts.length ? 'Deseleziona' : 'Seleziona Tutto'}
+                </Text>
+              </Pressable>
+            </>
           ) : (
             <>
               <Pressable
@@ -522,6 +539,16 @@ export default function HomeScreen() {
           </View>
         </View>
       )}
+
+      {/* ETI (AU-A8): etichette in serie, una per prodotto scelto (lo SKU nel QR), nell'ordine dell'Inventario */}
+      {showLabels && selectedIds.length > 0 ? (
+        <CodeSheet
+          visible
+          onClose={() => setShowLabels(false)}
+          kind="prodotto"
+          items={labelItems()}
+        />
+      ) : null}
 
       {/* Product Action Modal */}
       <Modal
@@ -1114,5 +1141,14 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.buttonPrimary,
     color: t.colors.accentInk,
     fontSize: 14,
+  },
+  // ETI: «Stampa le etichette» della selezione: icona del QR in un riquadro da 44
+  labelsButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: t.radius.button,
+    backgroundColor: t.colors.accentSoft,
   },
 }));
