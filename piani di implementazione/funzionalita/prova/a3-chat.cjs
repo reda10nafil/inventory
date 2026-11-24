@@ -5,7 +5,7 @@ const { iconAt, product, timelineIds, newEvents } = require('./a3-util.cjs');
   await scenario('a3-chat', async (h) => {
     await h.tab('Impostazioni');
     await h.click('Rete del negozio'); // ACC1: prima «Accesso Multi-Utente»
-    await h.click('Apri Chat Team (placeholder router.push)');
+    await h.click('Apri la Chat'); // RETE0: prima «Apri Chat Team (placeholder router.push)»
     const aperta = await h.has('Chat Operativa', true);
     // messaggio di testo
     const input = h.page.getByPlaceholder('Messaggio team...');

@@ -41,6 +41,7 @@ function parseHref(href: Href): { name: string; params?: any } {
         '/settings/trash': 'SettingsTrash',
         '/settings/share': 'SettingsShare',
         '/settings/sector-templates': 'SettingsSector',
+        '/settings/network': 'SettingsNetwork', // RETE0
         '/settings/team': 'SettingsTeam',
         '/settings/access': 'SettingsAccess', // ACC1
         '/settings/appearance': 'SettingsAppearance',

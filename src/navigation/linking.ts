@@ -27,9 +27,10 @@ export const PARENT_TAB: Record<string, 'index' | 'automations' | 'settings'> = 
   SettingsShare: 'settings',
   SettingsAppearance: 'settings',
   SettingsSector: 'settings',
-  SettingsTeam: 'settings', // Impostazioni › Persone e telefoni › Rete del negozio (ACC1; la rifà RETE0)
+  SettingsNetwork: 'settings', // Impostazioni › Persone e telefoni › Rete del negozio (RETE0)
+  SettingsTeam: 'settings', // indirizzo vecchio della Rete del negozio (RETE0: stessa schermata)
   SettingsAccess: 'settings', // Impostazioni › Persone e telefoni › Accesso (ACC1)
-  Chat: 'settings', // Team › Apri Chat
+  Chat: 'settings', // Rete del negozio › Apri la Chat
   SettingsAutomationBuilder: 'automations', // Automazioni › Crea Nuova; Flusso di un'automazione › modifica
   Audit: 'automations',
   BatchMove: 'automations',
@@ -69,6 +70,7 @@ const config = {
     SettingsShare: 'settings/share',
     SettingsAppearance: 'settings/appearance',
     SettingsSector: 'settings/sector-templates',
+    SettingsNetwork: 'settings/network',
     SettingsTeam: 'settings/team',
     SettingsAccess: 'settings/access',
     Chat: 'chat',

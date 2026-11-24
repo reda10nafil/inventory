@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { View, Pressable, ScrollView, Alert, Platform, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
-import { useIsFocused } from '@react-navigation/native';
 import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -27,7 +26,8 @@ import { Text, fontStyle } from '../../../components/ui/Text';
 import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
 import { usePermission, useProfile } from '../../../contexts/ProfileContext';
 import { profileSubtitle } from '../../../utils/profile';
-import { getActiveRole, getActiveSocket } from '../../services/meshSync';
+import { useStoreNetwork } from '../../../contexts/StoreNetworkContext';
+import { settingsSubtitle } from '../../../utils/storeNetwork';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
 export default function SettingsScreen() {
@@ -60,11 +60,8 @@ export default function SettingsScreen() {
   const settingsPerm = usePermission('impostazioni');
   const addPerm = usePermission('aggiungere');
   const openSetting = (path: string) => { if (settingsPerm.allowed) router.push(path); };
-  // Rete del negozio: lo stato di oggi in una riga, riletto a ogni ritorno su Impostazioni (la schermata la rifà
-  // RETE0). Sul web un centro non può esistere (niente server): mai «Fa da centro»
-  useIsFocused();
-  const networkState = Platform.OS !== 'web' && getActiveRole() === 'host' ? 'Fa da centro'
-    : getActiveSocket()?.readyState === 1 ? 'Collegato a un centro' : 'Non collegato';
+  // Rete del negozio (RETE0): lo stato vero, dal contesto della rete (sul web mai «Fa da centro»)
+  const networkState = settingsSubtitle(useStoreNetwork().view);
 
   const showComingSoon = (feature: string) => {
     Alert.alert('Prossimamente', `${feature} sarà disponibile nella prossima versione`);
@@ -669,10 +666,10 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
-        {/* La schermata di oggi resta all'indirizzo `settings/team`: la rifà RETE0 */}
+        {/* RETE0: indirizzo nuovo `settings/network` (`settings/team` resta come indirizzo vecchio) */}
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/team')}
+          onPress={() => router.push('/settings/network')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>

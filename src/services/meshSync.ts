@@ -73,7 +73,7 @@ export function subscribeSyncStatus(cb: SyncListener): () => void {
 // ---------------------------------------------------------------------------
 // Helpers: token + IP
 // ---------------------------------------------------------------------------
-function randomToken(len = 16): string {
+export function randomToken(len = 16): string {
   // Never use Math.random for a pairing credential.
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -202,6 +202,10 @@ function createWs(url: string): WebSocket {
       }
       if (msg && msg.type === 'chat' && msg.payload) {
         chatListeners.forEach(cb => { try { cb({ payload: msg.payload, raw }); } catch {} });
+      } else if (msg && msg.type === 'chat' && (typeof msg.text === 'string' || Array.isArray(msg.skus))) {
+        // RETE0: il centro (meshServer `broadcastWs`) manda la Chat «piatta», senza `payload`: prima si perdeva
+        const payload = { text: typeof msg.text === 'string' ? msg.text : '', skus: Array.isArray(msg.skus) ? msg.skus : [], automationIds: Array.isArray(msg.automationIds) ? msg.automationIds : [] };
+        chatListeners.forEach(cb => { try { cb({ payload, raw }); } catch {} });
       }
     } catch {}
   };
@@ -325,6 +329,139 @@ export async function joinRoom(qrPayload: string): Promise<JoinInfo> {
   }
 
   return info;
+}
+
+// ---------------------------------------------------------------------------
+// RETE0 (ticket 32): collegamento a un centro della «Rete del negozio», usato da `contexts/StoreNetworkContext.tsx`.
+// Come `joinRoom` (stesso socket per la Chat: `sendLightPayload`, `subscribeChat`), ma con il nome di questo telefono
+// nel `hello`, l'esito vero in parole (`CenterLinkError`) e i messaggi dopo l'aggancio (presenza, risposte al segnale)
+// passati a chi chiama. Niente sincronizzazione del database: per ora passano solo i messaggi della Chat.
+// ---------------------------------------------------------------------------
+export type CenterLinkErrorKind = 'non-risponde' | 'rifiutato' | 'chiuso' | 'tempo';
+export class CenterLinkError extends Error {
+  kind: CenterLinkErrorKind;
+  constructor(kind: CenterLinkErrorKind) {
+    super(`centro: ${kind}`);
+    this.kind = kind;
+  }
+}
+
+export function connectToCenter(
+  link: { url: string; token: string; hello: Record<string, unknown> },
+  on: { message: (msg: any) => void; closed: () => void },
+): Promise<{ centerName?: string }> {
+  activeRole = 'client';
+  activeRoomToken = link.token;
+  console.log('[meshSync:connectToCenter] connecting to', redactPairingUrl(link.url));
+  const ws = createWs(link.url);
+  const baseOnMessage = ws.onmessage;
+  const baseOnClose = ws.onclose;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let acked = false;
+    let opened = false;
+    const fail = (kind: CenterLinkErrorKind) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { ws.close(); } catch {}
+      // Collegamento non riuscito: non resta nulla in memoria. Altrimenti un messaggio scritto in Chat partirebbe come
+      // POST verso l'indirizzo mai raggiunto, col codice nell'intestazione (ripiego HTTP di `sendLightPayload`).
+      if (activeSocket === ws || activeSocket === null) {
+        activeSocket = null;
+        activeWsUrl = null;
+        activeRoomToken = null;
+        if (activeRole === 'client') activeRole = null;
+      }
+      reject(new CenterLinkError(kind));
+    };
+    const timer = setTimeout(() => fail('tempo'), 8000);
+    ws.onopen = () => {
+      opened = true;
+      try { ws.send(JSON.stringify(link.hello)); } catch { fail('chiuso'); }
+    };
+    ws.onmessage = (event) => {
+      baseOnMessage?.call(ws, event);
+      let message: any;
+      try { message = JSON.parse(String(event.data)); } catch { return; }
+      if (!settled) {
+        if (message?.type === 'hello_ack' && message.token === link.token) {
+          settled = true;
+          acked = true;
+          clearTimeout(timer);
+          const name = typeof message.center?.name === 'string' ? message.center.name : undefined;
+          resolve({ centerName: name });
+        } else if (message?.type === 'error') fail('rifiutato');
+        return;
+      }
+      if (activeSocket === ws) on.message(message);
+    };
+    ws.onerror = () => { if (!settled) fail(opened ? 'chiuso' : 'non-risponde'); };
+    ws.onclose = (event) => {
+      baseOnClose?.call(ws, event);
+      if (!settled) fail(opened ? 'chiuso' : 'non-risponde');
+      else if (acked) on.closed();
+    };
+  });
+}
+
+/** Manda un messaggio al centro sul collegamento aperto (false se non c'è). */
+export function sendToCenter(obj: unknown): boolean {
+  const ws = activeSocket;
+  if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+  try { ws.send(JSON.stringify(obj)); return true; } catch { return false; }
+}
+
+/** Chiude il collegamento al centro senza toccare il server (che sul web non esiste). */
+export function leaveCenter(): void {
+  const ws = activeSocket;
+  activeSocket = null;
+  if (ws) { try { ws.close(); } catch {} }
+  activeWsUrl = null;
+  activeRoomToken = null;
+  if (activeRole === 'client') activeRole = null;
+  setSyncStatus('idle');
+}
+
+// ---------------------------------------------------------------------------
+// RETE0: il centro su questo telefono. Mai sul web e mai da solo: lo accende «Fai da centro del negozio» (AR02, CT09).
+// Il codice lo decide chi chiama (salvato e riusato); «Nuovo codice» non riavvia il server (CT11, AR10).
+// Scritto in RETE0, da provare sul telefono in RETE1.
+// ---------------------------------------------------------------------------
+export async function startCenter(opts: { token: string; name: string; port?: number }): Promise<{ ip: string; port: number }> {
+  if (Platform.OS === 'web') throw new Error('Sul web un centro non può esistere');
+  const port = opts.port ?? DEFAULT_PORT;
+  const ip = await getLocalIp();
+  const { startMeshServer } = await import('./meshServer');
+  await startMeshServer(port, opts.token, undefined, { name: opts.name });
+  activeRole = 'host';
+  activeRoomToken = opts.token;
+  activeWsUrl = buildQrPayload(ip, port, opts.token);
+  return { ip, port };
+}
+
+export async function stopCenter(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const { stopMeshServer } = await import('./meshServer');
+  await stopMeshServer();
+  if (activeRole === 'host') { activeRole = null; activeRoomToken = null; activeWsUrl = null; }
+}
+
+export function renewCenterCode(token: string): void {
+  if (Platform.OS === 'web') return;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const ms: any = require('./meshServer');
+  ms.setMeshServerToken?.(token);
+  activeRoomToken = token;
+}
+
+/** Telefoni collegati al centro di questo telefono (null sul web o a centro spento). */
+export function centerInfo(): { phones: any[] } | null {
+  if (Platform.OS === 'web' || activeRole !== 'host') return null;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const ms: any = require('./meshServer');
+  const info = ms.getMeshServerInfo?.();
+  return info?.listening ? { phones: info.phones ?? [] } : null;
 }
 
 // ---------------------------------------------------------------------------

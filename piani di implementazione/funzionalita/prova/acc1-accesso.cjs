@@ -64,7 +64,8 @@ const eliminaDallaHome = async (h, sku) => {
       'Titolare Può tutto', 'I ruoli diventano sicuri con gli account: oggi valgono su questo telefono'].filter((s) => !a.includes(s));
     out.chiaviScritte = [await leggi(h, PK), await leggi(h, TK)].filter(Boolean).length;
     out.supabase = sb.length;
-    out.ok = out.persone && out.accesso && out.reteSottotitolo && out.rete.startsWith('/settings/team true') && !out.via.length && out.backup && out.info
+    // RETE0: la voce porta all'indirizzo nuovo `settings/network` (prima `settings/team`, che resta come indirizzo vecchio)
+    out.ok = out.persone && out.accesso && out.reteSottotitolo && out.rete.startsWith('/settings/network true') && !out.via.length && out.backup && out.info
       && out.backupFinestre === 0 && out.backupResta === '/settings' && out.dalMenu === '/settings/access' && out.frecciaMenu === '/settings'
       && !out.diretto.notFound && out.diretto.titolo && out.frecciaDiretto === '/settings' && !out.account.length && out.chiaviScritte === 0 && out.supabase === 0;
     return out;

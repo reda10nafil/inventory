@@ -22,7 +22,7 @@ import TrashScreen from '../screens/settings/TrashScreen';
 import ShareScreen from '../screens/settings/ShareScreen';
 import SectorTemplatesScreen from '../screens/settings/SectorTemplatesScreen';
 import AutomationBuilderScreen from '../screens/settings/AutomationBuilderScreen';
-import TeamScreen from '../screens/settings/TeamScreen';
+import StoreNetworkScreen from '../screens/settings/StoreNetworkScreen';
 import AccessScreen from '../screens/settings/AccessScreen';
 import AppearanceScreen from '../screens/settings/AppearanceScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -54,6 +54,7 @@ export type RootStackParamList = {
   SettingsShare: undefined;
   SettingsSector: undefined;
   SettingsTeam: undefined;
+  SettingsNetwork: undefined;
   SettingsAccess: undefined;
   SettingsAppearance: undefined;
   Chat: undefined;
@@ -114,7 +115,9 @@ export default function RootNavigator() {
       <Stack.Screen name="SettingsTrash" component={TrashScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsShare" component={ShareScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsSector" component={SectorTemplatesScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="SettingsTeam" component={TeamScreen} options={{ headerShown: false }} />
+      {/* RETE0 (ticket 32): Rete del negozio; `settings/team` resta come indirizzo vecchio verso la stessa schermata */}
+      <Stack.Screen name="SettingsNetwork" component={StoreNetworkScreen} options={{ headerShown: true, headerTitle: 'Rete del negozio', title: 'Rete del negozio' }} />
+      <Stack.Screen name="SettingsTeam" component={StoreNetworkScreen} options={{ headerShown: true, headerTitle: 'Rete del negozio', title: 'Rete del negozio' }} />
       {/* ACC1 (ticket 32): profilo dell'operatore, account onesto, ruoli e permessi di questo telefono */}
       <Stack.Screen name="SettingsAccess" component={AccessScreen} options={{ headerShown: true, headerTitle: 'Accesso' }} />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />

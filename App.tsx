@@ -18,6 +18,7 @@ import { AutomationsProvider } from './contexts/AutomationsContext';
 import { GS1ConfigProvider } from './contexts/GS1ConfigContext';
 import { HardwareConfigProvider } from './contexts/HardwareConfigContext';
 import { ProfileProvider } from './contexts/ProfileContext';
+import { StoreNetworkProvider } from './contexts/StoreNetworkContext';
 import { soundService } from './services/SoundService';
 import RootNavigator from './src/navigation/RootNavigator';
 import { linking } from './src/navigation/linking';
@@ -131,9 +132,12 @@ function SignedInApp() {
                 <ProfileProvider>
                 <InventoryProvider>
                   <BatteryMonitor />
+                  {/* RETE0: la connessione della Rete del negozio vive sopra la navigazione (nome del telefono dal profilo) */}
+                  <StoreNetworkProvider>
                   <NavigationContainer linking={linking as any} fallback={null} theme={navTheme}>
                     <RootNavigator />
                   </NavigationContainer>
+                  </StoreNetworkProvider>
                 </InventoryProvider>
                 </ProfileProvider>
               </GS1ConfigProvider>

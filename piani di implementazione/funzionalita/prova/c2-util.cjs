@@ -25,9 +25,10 @@ const MADRE = {
   'settings/share': 'settings', // SettingsScreen.tsx:478
   'settings/appearance': 'settings', // SettingsScreen.tsx:250
   'settings/sector-templates': 'settings', // SettingsScreen.tsx:365
-  'settings/team': 'settings', // SettingsScreen.tsx (Persone e telefoni › Rete del negozio, da ACC1; prima Accesso Multi-Utente)
+  'settings/network': 'settings', // SettingsScreen.tsx (Persone e telefoni › Rete del negozio, RETE0)
+  'settings/team': 'settings', // indirizzo vecchio della Rete del negozio (da RETE0 stessa schermata di settings/network)
   'settings/access': 'settings', // SettingsScreen.tsx (Persone e telefoni › Accesso, ACC1)
-  chat: 'settings', // TeamScreen.tsx:261 (Team sta in Impostazioni)
+  chat: 'settings', // StoreNetworkScreen.tsx «Apri la Chat» (la Rete del negozio sta in Impostazioni; prima TeamScreen)
   'settings/automation-builder': 'automations', // AutomationsScreen.tsx:103, :115; AutomationFlowScreen.tsx:77
   'automations/audit': 'automations', // AutomationsScreen.tsx:38 e :67 (modelli); CountScreen.tsx:137
   'automations/batch-move': 'automations', // AutomationsScreen.tsx:22

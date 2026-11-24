@@ -57,7 +57,8 @@ async function cfA2(h) {
     n += 1;
     if (dalMenu !== indirizzo || !tocco || dopo !== '/settings') rosse.push(`menu ${voce}: ${dalMenu}, dopo la ricarica ${tocco || 'nessuna freccia'} → ${dopo}`);
   }
-  for (const indirizzo of ['settings/team', 'chat', 'settings/automation-builder']) {
+  // RETE0: in più `settings/network`, l'indirizzo nuovo della Rete del negozio (`settings/team` è quello vecchio)
+  for (const indirizzo of ['settings/team', 'settings/network', 'chat', 'settings/automation-builder']) {
     await h.go(indirizzo);
     await h.page.reload(); await h.page.waitForTimeout(2200);
     n += 1;
@@ -776,6 +777,61 @@ async function cfH4(h) {
   return { ok, indirizzo, riletti, motivi, restaInImpostazioni, autore, righe, supabase: sb.length };
 }
 
+// CF-H5 (RETE0, ticket 32): Impostazioni › Persone e telefoni › Rete del negozio col centro finto delle prove
+// (`centro-finto.mjs`, su questo computer): all'entrata «Non collegato» e nessuna scelta fatta, «Fai da centro» spento
+// col motivo; il codice del centro scritto, la domanda in pagina, «Collegato al centro "Magazzino" · 3 telefoni online»,
+// le righe dei telefoni con «online dalle…» e «visto alle…», la voce di Impostazioni con lo stato vero; il centro tace
+// (acceso ma muto: così la console resta pulita) → «non risponde» e tutti «visto alle…»; «Scollegati» → «Non collegato».
+// Il centro vero sul telefono resta a CF-T6.
+async function cfH5(h) {
+  const { pathToFileURL } = require('url');
+  const { avviaCentro } = await import(pathToFileURL(require('path').join(__dirname, 'centro-finto.mjs')).href);
+  const ora = Date.now();
+  const centro = await avviaCentro({
+    porta: 47331, token: 'RETE0COLLAUDO001', nome: 'Magazzino',
+    altri: [
+      { id: 'banco-2', name: 'Banco 2', since: ora - 10 * 60_000, lastSeen: ora, online: true },
+      { id: 'cassa', name: 'Cassa', since: ora - 2 * 3600_000, lastSeen: ora - 5 * 60_000, online: false },
+    ],
+  });
+  const stato = async () => ((await h.page.locator('[data-testid="rete-stato"]').locator('visible=true').first().innerText()) || '').replace(/\s+/g, ' ').trim();
+  const righe = () => h.page.locator('[data-testid="rete-telefono"]').locator('visible=true').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  const aspetta = async (re, ms) => { const t0 = Date.now(); let s = await stato(); while (!re.test(s) && Date.now() - t0 < ms) { await h.page.waitForTimeout(500); s = await stato(); } return s; };
+  try {
+    const esterne = [];
+    // richieste verso fuori (non `data:` o `blob:`; il lettore di QR di sempre, jsqr, non conta)
+    h.page.on('request', (r) => { const x = new URL(r.url()); if (/^https?:$/.test(x.protocol) && !/^(localhost|127\.0\.0\.1)$/.test(x.hostname) && !/jsdelivr/.test(x.hostname)) esterne.push(x.hostname); });
+    await h.go('settings');
+    await h.click('Rete del negozio');
+    await h.page.waitForTimeout(1200);
+    const entrata = { indirizzo: u.percorso(h.page), stato: await stato(), motivo: await h.has('Sul computer non si può: usa un telefono che resta acceso in negozio.', true) };
+    await h.click('Collegati a un centro');
+    await h.page.getByLabel('Codice del centro', { exact: true }).fill(centro.codice);
+    await h.click('Continua');
+    const domanda = await h.has('Collegarti al centro "Magazzino"?', true);
+    await h.click('Collegati');
+    const collegato = await aspetta(/^Collegato/, 8000);
+    await h.page.waitForTimeout(800);
+    const telefoni = await righe();
+    await u.toccaIndietro(h.page); await h.page.waitForTimeout(1200);
+    const voce = await h.has('Collegato al centro "Magazzino"', true);
+    await h.click('Rete del negozio'); await h.page.waitForTimeout(1000);
+    centro.muto(true);
+    const tace = await aspetta(/non risponde/, 50000);
+    const visti = await righe();
+    await h.click('Scollegati'); await h.page.waitForTimeout(1200);
+    const scollegato = await stato();
+    const nomi = telefoni.join(' | ');
+    const ok = entrata.indirizzo === '/settings/network' && entrata.stato === 'Non collegato' && entrata.motivo && domanda
+      && collegato === 'Collegato al centro "Magazzino" · 3 telefoni online' && telefoni.length === 4
+      && /^Magazzino, Centro · online dalle \d\d:\d\d, Online$/.test(telefoni[0]) && /Banco 2, online dalle \d\d:\d\d, Online/.test(nomi)
+      && /Cassa, visto alle \d\d:\d\d, Non in linea/.test(nomi) && voce
+      && tace.startsWith('Il centro "Magazzino" non risponde') && visti.length === 4 && visti.every((r) => /visto alle \d\d:\d\d, Non in linea$/.test(r))
+      && scollegato === 'Non collegato' && esterne.length === 0;
+    return { ok, entrata, domanda, collegato, voce, tace, scollegato, esterne, telefoni, visti };
+  } finally { await centro.spegni(); }
+}
+
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
@@ -818,6 +874,8 @@ const PASSI = [
   ['CF-Z', 'La catena intera (Borse, modello, campo, foto, scaffale, etichetta, codice, export, import)', 'MCAT, EDC, GAL, FOTO, S3, ETI, COD, ESE, EXP, IMP'],
   // ACC1 (corsia B): passo nuovo, in fondo alla tabella per non scontrarsi con le altre corsie
   ['CF-H4', 'Accesso: profilo riletto, Operatore con le voci spente col motivo, autore in Cronologia', 'ACC1', cfH4],
+  // RETE0 (corsia B): passo nuovo, in fondo alla tabella
+  ['CF-H5', 'Rete del negozio col centro finto: nessuna scelta all\'entrata, collegato con i telefoni «online dalle…» e «visto alle…», centro che tace, Scollegati', 'RETE0', cfH5],
 ];
 const TELEFONO = [
   ['CF-T1', 'Tasto Indietro di sistema, link syncroflow:// ad app chiusa, icone su APK in modalità aereo', 'C2, IND'],
