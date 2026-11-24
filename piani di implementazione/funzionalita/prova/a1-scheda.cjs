@@ -90,9 +90,8 @@ const share = async (page) => {
     await page.waitForTimeout(2500);
     const prints = await page.evaluate(() => window.__prints);
     const legacy = (await h.has('Mostra SKU QR')) || (await codice.count()) > 0;
-    await avanzate();
-    await press(page, 'Programma tag');
-    await page.waitForTimeout(2500);
+    // N1: «Programma tag» (il link in due passi, sul web «Operazione Annullata», NG19) non c'è più: al suo posto
+    // «Scrivi tag NFC» col codice, che sul web è la riga «L'NFC si usa dal telefono» (prova n1-nfc.cjs)
     return { link, copiato: copied, uguale: copied === link, stampeFinestra: prints, pulsanteEtichetta: legacy };
   }, { dialogs: ['ok', 'ok', 'ok', 'ok'] });
 

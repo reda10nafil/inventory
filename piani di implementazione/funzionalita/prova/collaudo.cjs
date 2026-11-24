@@ -498,6 +498,36 @@ async function cfD1Eti(h) {
     ...(daCreare ? { daFare: 'il codice nasce da solo al salvataggio con S2 (corsia B, all\'unione)' } : {}) };
 }
 
+// CF-E6 (N1): Impostazioni › Scanner e NFC sul web, con una configurazione salvata prima («NFC», proponi il tag): una
+// riga «L'NFC si usa dal telefono», nessuna scelta NFC, nessun interruttore, nessun «Errore» (NG12); la chiave resta
+// uguale; nella finestra «Codice ed etichetta» di VIS-0142 la stessa riga e niente «Programma tag» (NG19)
+async function cfE6(h) {
+  const KEY = 'furinventory_hardware_config:local';
+  const salvata = { scanMode: 'nfc_only', autoWriteNfcOnSave: true };
+  await h.page.evaluate(([k, v]) => localStorage.setItem(k, JSON.stringify(v)), [KEY, salvata]);
+  await h.go('settings/hardware');
+  const t = await c.testo(h);
+  const impostazioni = {
+    riga: await h.has('L\'NFC si usa dal telefono', true),
+    scelte: await h.page.getByLabel(/^Leggi con /).locator('visible=true').count(),
+    interruttori: await h.page.getByRole('switch').locator('visible=true').count(),
+    errore: /errore/i.test(t),
+  };
+  const chiave = await h.store(KEY);
+  await h.go('');
+  await h.click('VIS-0142'); await h.page.waitForTimeout(900);
+  await eti.apri(h, 'Codice ed etichetta', 900);
+  await eti.apri(h, 'Avanzate', 400);
+  const finestra = {
+    riga: await h.page.getByText('L\'NFC si usa dal telefono', { exact: true }).locator('visible=true').count(),
+    programma: await h.page.getByText('Programma tag', { exact: true }).locator('visible=true').count(),
+    scrivi: await h.page.getByLabel('Scrivi tag NFC', { exact: true }).locator('visible=true').count(),
+  };
+  const ok = impostazioni.riga && !impostazioni.scelte && !impostazioni.interruttori && !impostazioni.errore
+    && JSON.stringify(chiave) === JSON.stringify(salvata) && finestra.riga === 1 && !finestra.programma && !finestra.scrivi;
+  return { ok, impostazioni, chiaveUguale: JSON.stringify(chiave) === JSON.stringify(salvata), finestra };
+}
+
 // CF-F7 (ESE): un'automazione personale fatta dal costruttore come l'utente, [Scansiona Prodotto, Tag «Controllato»,
 // Tag «Da Pulire», Imposta Campo Condizione = Buono, Vendi con conferma], eseguita su AST-0033 con il prezzo «1300,50»
 // scritto con la virgola. Tre note presenti (la nota che AST-0033 aveva già e i due tag), Condizione in `customData` con
@@ -610,7 +640,7 @@ const PASSI = [
   ['CF-E3', 'Le 5 automazioni con lo stesso codice di prodotto', 'COD, ESE', cfE3],
   ['CF-E4', '«Codice ed etichetta» di un prodotto e di A1: Stampa', 'ETI', cfE4],
   ['CF-E5', 'Impostazioni › Codici ed etichette, vuote e con una configurazione GS1 vecchia', 'GS1'],
-  ['CF-E6', 'Impostazioni › Scanner e NFC sul web: «Non disponibile sul web»', 'N1'],
+  ['CF-E6', 'Impostazioni › Scanner e NFC sul web: «L\'NFC si usa dal telefono»', 'N1', cfE6],
   ['CF-F1', 'Ricevimento da un fornitore: 3 articoli in Magazzino › A1', 'FLU1'],
   ['CF-F2', 'Uscita a un cliente con quantità e prezzo', 'FLU1'],
   ['CF-F3', 'Trasferimento di 2 pezzi su 5', 'FLU1'],

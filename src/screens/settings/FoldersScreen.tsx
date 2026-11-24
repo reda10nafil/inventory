@@ -342,6 +342,7 @@ export default function ManageFoldersScreen() {
         suggest: () => suggestCode('LIB', pathNames(sheetLib.id), codeTaken(sources, { kind: 'category', id: sheetLib.id })),
         save: (code) => updateLibrary(sheetLib.id, { barcode: code }),
       }}
+      tag={{ self: { kind: 'category', id: sheetLib.id }, saved: sheetLib.nfcTag }} // N1: «Scrivi tag NFC», «Collega un tag»
     />
   ) : null;
 

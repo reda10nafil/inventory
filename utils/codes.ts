@@ -399,3 +399,21 @@ export function suggestCode(prefix: 'LOC' | 'LIB', names: readonly string[], tak
 
 /** Vero se il codice è già usato da qualcosa (per `suggestCode` e `suggestShelfCode`). */
 export const codeTaken = (sources: CodeSources, self?: CodeRef) => (code: string): boolean => ownerRef(code, sources, self) !== null;
+
+// ── Tag NFC (N1) ──────────────────────────────────────────
+
+/**
+ * Chi ha questo **UID** di tag salvato in `nfcTag` (posizioni, scaffali, categorie), scritto in qualunque modo
+ * («04:A2:3B:1C», «04A23B1C»). Un testo che non è un UID non trova nessuno. `self` resta fuori (N1, ticket 22).
+ */
+export function tagOwners(text: string | null | undefined, sources: CodeSources, self?: CodeRef): CodeRef[] {
+  const id = uid(text ?? undefined);
+  if (!id) return [];
+  const other = (kind: CodeKind, x: string) => !(self && self.kind === kind && self.id === x);
+  const has = (p: CodePlace) => uid(p.nfcTag) === id;
+  return [
+    ...(sources.locations ?? []).filter((l) => other('location', l.id) && has(l)).map((l) => ({ kind: 'location' as const, id: l.id })),
+    ...(sources.shelves ?? []).filter((s) => other('shelf', s.id) && has(s)).map((s) => ({ kind: 'shelf' as const, id: s.id })),
+    ...(sources.categories ?? []).filter((c) => other('category', c.id) && has(c)).map((c) => ({ kind: 'category' as const, id: c.id })),
+  ];
+}

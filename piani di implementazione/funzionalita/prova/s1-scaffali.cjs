@@ -179,7 +179,8 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await label(h, 'Posizione Magazzino').click();
     await label(h, 'Categoria Pellicce').click();
     await field(h, 'Codice dello scaffale').fill('SCAF-GIACCHE');
-    await field(h, 'Tag NFC (facoltativo)').fill('04:A2:3B:1C');
+    // N1 (NG18): il campo «Tag NFC» scritto a mano non c'è più (il tag si collega dal telefono); la tenuta del tag
+    // salvato prima la prova n1-nfc.cjs
     await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(600); await chiudiCodice(h); // ETI
     // stesso nome in un'altra posizione: va bene
     await label(h, 'Nuovo scaffale').click(); await h.page.waitForTimeout(300);

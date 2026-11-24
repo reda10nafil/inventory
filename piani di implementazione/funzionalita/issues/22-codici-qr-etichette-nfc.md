@@ -1,6 +1,6 @@
 # Codici, QR, etichette e NFC: funzionano? interfacce semplici
 
-Tipo: grilling + research (verifica). Stato: **verificato** il 23 novembre 2026 mattina, **una risposta dell'utente**, due domande aperte; **fetta COD fatta** il 23 novembre, **fetta ETI fatta** il 24 novembre (corsia C, branch `funzioni/codici`; vedi sotto). Fette: **COD**, **ETI**, **GS1**, più gli aggiornamenti di **N1** e **N2** (ticket 16-18). Mappa: [`../map-3.md`](../map-3.md). Verifica completa: [`../ricerche/verifiche-23/verifica-nfc-gs1.md`](../ricerche/verifiche-23/verifica-nfc-gs1.md) (difetti `NG01-NG27`) e, per i lettori nelle automazioni, [`verifica-automazioni.md`](../ricerche/verifiche-23/verifica-automazioni.md) (AU-V07, AU-V14, AU-A0, AU-A8).
+Tipo: grilling + research (verifica). Stato: **verificato** il 23 novembre 2026 mattina, **una risposta dell'utente**, due domande aperte; **fetta COD fatta** il 23 novembre, **fetta ETI fatta** il 24 novembre (corsia C, branch `funzioni/codici`; vedi sotto); **fetta N1 fatta** il 24 novembre (stesso branch, non provata sul telefono; confine e decisioni nel ticket 18). Fette: **COD**, **ETI**, **GS1**, più gli aggiornamenti di **N1** e **N2** (ticket 16-18). Mappa: [`../map-3.md`](../map-3.md). Verifica completa: [`../ricerche/verifiche-23/verifica-nfc-gs1.md`](../ricerche/verifiche-23/verifica-nfc-gs1.md) (difetti `NG01-NG27`) e, per i lettori nelle automazioni, [`verifica-automazioni.md`](../ricerche/verifiche-23/verifica-automazioni.md) (AU-V07, AU-V14, AU-A0, AU-A8).
 
 ## Question
 
@@ -80,7 +80,7 @@ Riconfermati: P01 chiuso in parte (una Modifica senza cambiamenti tiene il link)
 - Schermata «Scanner e NFC» semplice: stato in una riga, «Prova un tag», fotocamera / NFC / tutti e due (sul web la scelta non c'è), «Proponi di scrivere il tag» dopo un prodotto nuovo; «Avanzate» per «Leggi più tag» (N2), «Zittisci Android con l'app aperta», «Pulisci un tag» (NG11-NG13, D19).
 - Sul tag si scrive **il codice come record di testo** in un tocco (`writeNdefMessage` sostituisce tutto, la pulizia prima non serve: NG14), e si salva l'**UID** in `nfcTag`; «Collega un tag» per i tag bloccati (sostituisce il campo scritto a mano di S1a, NG18). Prima di sovrascrivere un tag pieno si mostra il contenuto e si chiede conferma.
 - La lettura NFC passa da `resolveCode`: i passi «Scansiona» delle automazioni accettano QR, NFC o entrambi secondo Scanner e NFC (così i «passi NFC nel costruttore» di `map-2.md` non sono passi a sé).
-- Sul web: «Non disponibile sul web» invece di «Operazione annullata» (NG19).
+- Sul web: «Non disponibile sul web» invece di «Operazione annullata» (NG19). **N1** (24/11): la riga è «L'NFC si usa dal telefono» (UX0), in Scanner e NFC e in «Codice ed etichetta»; «Collega un tag» sta accanto a «Scrivi tag NFC» (non sotto «Avanzate»), così il tag si trova subito; «Pulisci un tag» non c'è (la scrittura sostituisce tutto). Decisa dall'orchestratore al posto dell'utente, 24/11 (ticket 18).
 
 ## Piano di verifica
 

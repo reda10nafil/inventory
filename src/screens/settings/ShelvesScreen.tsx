@@ -1,7 +1,7 @@
 // Impostazioni › Scaffali (S1a, ticket 13): ogni scaffale sta in una posizione (scelta alla creazione, poi fissa),
 // è generico o di una categoria e ha un codice (QR) e un tag NFC facoltativi. Elenco per posizione con i prodotti
 // che ci stanno; uno scaffale con prodotti non si elimina, come una posizione. Logica in utils/shelves.ts.
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
@@ -54,6 +54,11 @@ export default function ShelvesScreen() {
   const shelfSelf = editingId ? { kind: 'shelf' as const, id: editingId } : undefined;
   const barcodeHint = codeCheck(barcode, savedShelf?.barcode, sources, shelfSelf);
   const tagHint = codeCheck(nfcTag, savedShelf?.nfcTag, sources, shelfSelf);
+  // N1: il tag non si scrive più nel modulo; quello salvato (anche collegato da «Codice ed etichetta» col modulo aperto)
+  // resta com'è al salvataggio
+  useEffect(() => {
+    if (editingId) setNfcTag(shelves.find((s) => s.id === editingId)?.nfcTag ?? '');
+  }, [shelves, editingId]);
   // Senza scaffali il modulo è già aperto: è la prima cosa da fare
   const showForm = formOpen || shelves.length === 0;
 
@@ -223,11 +228,7 @@ export default function ShelvesScreen() {
               <Text style={[styles.codeHint, barcodeHint.error ? styles.codeHintError : styles.codeHintWarning]}>{barcodeHint.error ?? barcodeHint.warning}</Text>
             ) : null}
 
-            {field('Tag NFC (facoltativo)', nfcTag, setNfcTag, 'Es. 04:A2:3B:1C')}
-            {tagHint.error || tagHint.warning ? (
-              <Text style={[styles.codeHint, tagHint.error ? styles.codeHintError : styles.codeHintWarning]}>{tagHint.error ?? tagHint.warning}</Text>
-            ) : null}
-            <Text style={styles.hint}>Il tag si salva con lo scaffale; la lettura col telefono arriverà più avanti.</Text>
+            {/* N1 (NG18): niente tag da scrivere a mano: si collega dal telefono in «Codice ed etichetta» (icona del QR) */}
 
             <View style={styles.actionButtons}>
               {(editingId || shelves.length > 0) && (
@@ -314,6 +315,7 @@ export default function ShelvesScreen() {
             onClose={() => setQrShelf(null)}
             kind="scaffale"
             items={[{ code: shelf.barcode ?? '', name: `${placeLabel(shelf.locationId)} › ${shelf.name}` }]}
+            tag={{ self, saved: shelf.nfcTag }} // N1: «Scrivi tag NFC», «Collega un tag»
             changeCode={{
               check: (code) => codeCheck(code, shelf.barcode, sources, self),
               // un nome senza lettere latine né cifre («★★») dà il codice numerato della posizione («SCAF-MAGAZZINO-1»)

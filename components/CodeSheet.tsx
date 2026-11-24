@@ -4,6 +4,9 @@
 // «Avanzate» chiuso, e in basso fisso «Condividi» e «Stampa etichetta». Con più etichette (selezione dell'Inventario,
 // «tutte le etichette di questa posizione») mostra il contatore. Le etichette sono fatte in locale (`utils/labelHtml`).
 // Sul web la stampa apre una finestra sua e stampa quella, mai la pagina dell'app.
+// N1 (ticket 22): sotto l'etichetta le righe del tag NFC, «Scrivi tag NFC» (il codice in un tocco) e «Collega un tag»
+// (posizioni, scaffali, categorie), che aprono `NfcSheet`; solo se Scanner e NFC lo permettono. Sul web una riga sola,
+// «L'NFC si usa dal telefono». «Programma tag» (il link in due passi, NG14) non c'è più.
 import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +19,12 @@ import { makeStyles, useTheme } from '../contexts/ThemeContext';
 import { useLabelFormat } from '../hooks/useLabelFormat';
 import { LABEL_FORMATS, LABEL_FORMAT_IDS, labelCountText, labelHtml, type LabelItem } from '../utils/labelHtml';
 import { openPrintWindow, printHtml, shareHtml } from '../src/lib/print';
+import { NfcSheet } from './NfcSheet';
+import { useHardwareConfig } from '../contexts/HardwareConfigContext';
+import { nfcService } from '../utils/nfcService';
+import { useNfcUsable } from '../hooks/useNfcUsable';
+import { readerSources } from '../utils/nfcTag';
+import type { CodeRef } from '../utils/codes';
 
 /** Che cosa mostra la finestra, per le scritte («Questa posizione non ha ancora un codice»). */
 export type CodeSheetKind = 'prodotto' | 'posizione' | 'scaffale' | 'categoria';
@@ -42,10 +51,11 @@ export interface CodeSheetProps {
   notice?: string;
   /** Prodotto: il codice è lo SKU, si cambia in Modifica. */
   onEditSku?: () => void;
-  /** Prodotto col link GS1 salvato: il link sotto «Avanzate», con «Copia link» e «Programma tag» di prima. */
+  /** Prodotto col link GS1 salvato: il link sotto «Avanzate», con «Copia link». */
   link?: string;
   onCopyLink?: () => void;
-  onProgramTag?: () => void;
+  /** N1: il tag NFC di questa cosa. Un prodotto non ha il tag salvato: solo «Scrivi tag NFC» (col suo SKU). */
+  tag?: { self: CodeRef; saved?: string };
   /** Posizioni, categorie e scaffali: «Cambia codice» sotto «Avanzate», «Crea il codice» per chi non ce l'ha. */
   changeCode?: {
     /** Controllo del codice nuovo (`codeCheck`): errore = rifiuto, avviso = si salva e si dice. */
@@ -59,7 +69,7 @@ export interface CodeSheetProps {
 }
 
 export function CodeSheet({
-  visible, onClose, items, kind, notice, onEditSku, link, onCopyLink, onProgramTag, changeCode, series,
+  visible, onClose, items, kind, notice, onEditSku, link, onCopyLink, changeCode, series, tag,
 }: CodeSheetProps) {
   const styles = useStyles();
   const t = useTheme();
@@ -71,11 +81,14 @@ export function CodeSheet({
   const [scanner, setScanner] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [nfc, setNfc] = useState<'scrivi' | 'collega' | null>(null);
+  const { hwConfig } = useHardwareConfig();
+  const nfcHere = useNfcUsable();
 
   // Ogni apertura parte pulita: Avanzate chiuso, una etichetta sola, nessun messaggio
   useEffect(() => {
     if (!visible) return;
-    setAdvanced(false); setAll(false); setNewCode(''); setScanner(false); setMessage(null); setDone(null);
+    setAdvanced(false); setAll(false); setNewCode(''); setScanner(false); setMessage(null); setDone(null); setNfc(null);
   }, [visible]);
 
   const list = (all && series ? series.items : items).filter((i) => i.code?.trim());
@@ -87,6 +100,7 @@ export function CodeSheet({
 
   const close = () => {
     if (scanner) setScanner(false); // prima il lettore, poi la finestra (tasto Indietro, Esc)
+    else if (nfc) setNfc(null);
     else onClose();
   };
 
@@ -168,6 +182,8 @@ export function CodeSheet({
   };
 
   const empty = !many && !code;
+  // N1: righe del tag secondo Scanner e NFC («Fotocamera» = nessuna riga NFC); sul web la riga del telefono
+  const tagRows = !many && tag ? (!nfcService.available ? 'web' : readerSources(hwConfig.scanMode, nfcHere).nfc ? 'nfc' : null) : null;
   // Etichette in serie senza nessun codice (per esempio una posizione e i suoi scaffali senza codice): niente da stampare
   const nothing = many && list.length === 0;
   const top = done || notice;
@@ -247,6 +263,36 @@ export function CodeSheet({
               </>
             ) : null}
 
+            {tagRows === 'web' ? (
+              <View style={styles.row} accessibilityLabel="L'NFC si usa dal telefono">
+                <View style={styles.rowIcon}><AppIcon name="nfc" size={20} color={t.colors.textMuted} /></View>
+                <Text style={[styles.rowSub, styles.rowText]}>L'NFC si usa dal telefono</Text>
+              </View>
+            ) : tagRows === 'nfc' && tag ? (
+              <>
+                {code ? (
+                  <Pressable style={styles.row} onPress={() => setNfc('scrivi')} accessibilityRole="button" accessibilityLabel="Scrivi tag NFC">
+                    <View style={styles.rowIcon}><AppIcon name="nfc" size={20} color={t.colors.accentInk} /></View>
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowTitle}>Scrivi tag NFC</Text>
+                      <Text style={styles.rowSub} numberOfLines={1}>Scrive {code} sul tag</Text>
+                    </View>
+                    <AppIcon name="chevron-right" size={22} color={t.colors.textMuted} />
+                  </Pressable>
+                ) : null}
+                {tag.self.kind !== 'product' ? (
+                  <Pressable style={styles.row} onPress={() => setNfc('collega')} accessibilityRole="button" accessibilityLabel="Collega un tag">
+                    <View style={styles.rowIcon}><AppIcon name="link" size={20} color={t.colors.accentInk} /></View>
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowTitle}>Collega un tag</Text>
+                      <Text style={styles.rowSub} numberOfLines={1}>{tag.saved ? 'Tag collegato: avvicinane un altro per cambiarlo' : 'Per un tag già scritto o bloccato'}</Text>
+                    </View>
+                    <AppIcon name="chevron-right" size={22} color={t.colors.textMuted} />
+                  </Pressable>
+                ) : null}
+              </>
+            ) : null}
+
             {/* Avanzate, chiuso: il codice si cambia qui (posizioni, categorie, scaffali) o in Modifica (prodotti) */}
             {!many && (changeCode || onEditSku || link) ? (
               <>
@@ -281,12 +327,6 @@ export function CodeSheet({
                             <Pressable style={styles.smallButton} onPress={onCopyLink} accessibilityRole="button">
                               <AppIcon name="content-copy" size={18} color={t.colors.onButtonSecondary} />
                               <Text style={styles.smallButtonText}>Copia link</Text>
-                            </Pressable>
-                          ) : null}
-                          {onProgramTag ? (
-                            <Pressable style={styles.smallButton} onPress={onProgramTag} accessibilityRole="button">
-                              <AppIcon name="nfc" size={18} color={t.colors.onButtonSecondary} />
-                              <Text style={styles.smallButtonText}>Programma tag</Text>
                             </Pressable>
                           ) : null}
                         </View>
@@ -358,6 +398,16 @@ export function CodeSheet({
               <BarcodeScanner onScan={({ data }) => { setNewCode(data); setScanner(false); }} onClose={() => setScanner(false)} />
             </View>
           )}
+          {nfc && tag ? (
+            <NfcSheet
+              visible
+              mode={nfc}
+              code={code}
+              self={tag.self}
+              onClose={() => setNfc(null)}
+              onDone={(text) => { setNfc(null); setDone(text); }}
+            />
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </Modal>

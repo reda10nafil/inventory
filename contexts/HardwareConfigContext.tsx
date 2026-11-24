@@ -2,20 +2,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
+// N1 (NG11 = D19): la configurazione si legge con `parseHardwareConfig` e la rispettano Scanner, automazioni, finestre
+// del codice e Aggiungi (`readerSources`, `offerTagWrite`); il silenziatore (N0) segue l'interruttore. Stessa chiave e
+// stessi valori di prima; `silenceAndroid` è nuovo e facoltativo.
+import { DEFAULT_HARDWARE_CONFIG, parseHardwareConfig, type HardwareConfig, type ScanMode } from '../utils/nfcTag';
+import { nfcService } from '../utils/nfcService';
 
 const STORAGE_KEY = 'furinventory_hardware_config';
 
-export type ScanMode = 'nfc_only' | 'qr_only' | 'both';
-
-export interface HardwareConfig {
-  scanMode: ScanMode;
-  autoWriteNfcOnSave: boolean;
-}
-
-const DEFAULT_HARDWARE_CONFIG: HardwareConfig = {
-  scanMode: 'both',
-  autoWriteNfcOnSave: false,
-};
+export type { HardwareConfig, ScanMode };
 
 interface HardwareConfigContextType {
   hwConfig: HardwareConfig;
@@ -41,10 +36,7 @@ export function HardwareConfigProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       if (!organizationId) return;
       const stored = await AsyncStorage.getItem(`${STORAGE_KEY}:${organizationId}`);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setHwConfig({ ...DEFAULT_HARDWARE_CONFIG, ...parsed });
-      }
+      if (stored) setHwConfig(parseHardwareConfig(stored));
     } catch (error) {
       console.error('Error loading Hardware config:', error);
     } finally {
@@ -65,6 +57,11 @@ export function HardwareConfigProvider({ children }: { children: ReactNode }) {
     setHwConfig(newConfig);
     await saveConfig(newConfig);
   }, [hwConfig]);
+
+  // N1: «Zittisci Android con l'app aperta» (solo Android; sul web il servizio non fa nulla)
+  useEffect(() => {
+    if (!loading) void nfcService.setSilencer(!!hwConfig.silenceAndroid);
+  }, [loading, hwConfig.silenceAndroid]);
 
   const resetHwConfig = useCallback(async () => {
     setHwConfig(DEFAULT_HARDWARE_CONFIG);

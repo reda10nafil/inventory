@@ -338,6 +338,7 @@ export default function ManageLocationsScreen() {
             },
           }}
           series={seriesFor(sheetFor)}
+          tag={{ self: { kind: 'location', id: sheetFor.id }, saved: sheetFor.nfcTag }} // N1: «Scrivi tag NFC», «Collega un tag»
         />
       ) : null}
 

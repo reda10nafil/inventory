@@ -20,7 +20,6 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import { orderByLayout } from '../../../utils/layoutOrder';
 import { useFieldOptions } from '../../../hooks/useFieldOptions';
 import { choiceLabel, valueText } from '../../../utils/fieldValues';
-import { nfcService } from '../../../utils/nfcService';
 import { CodeSheet } from '../../../components/CodeSheet'; // ETI: finestra «Codice ed etichetta»
 import { pdfFieldOrder, pdfFieldRows, productPdfHtml } from '../../../utils/productPdf'; // ETI: PDF con codici locali
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -327,35 +326,6 @@ export default function ProductDetailScreen() {
     if (product.gs1DigitalLink) {
       await Clipboard.setStringAsync(product.gs1DigitalLink);
       Alert.alert('Copiato', 'Link GS1 copiato negli appunti');
-    }
-  };
-
-  const handleProgramNFC = async () => {
-    if (!product.gs1DigitalLink) {
-      Alert.alert('Errore', 'Nessun Digital Link generato per questo prodotto.');
-      return;
-    }
-
-    try {
-      // Step 1: Clean tag
-      const cleaned = await nfcService.cleanTag();
-      if (!cleaned) {
-        Alert.alert('Operazione Annullata', 'Pulizia del tag non completata.');
-        return;
-      }
-
-      // Step 2: Write tag (small delay to let user remove and re-tap if needed, or just let system prompt handle it)
-      setTimeout(async () => {
-        const written = await nfcService.writeGS1Uri(product.gs1DigitalLink!);
-        if (written) {
-          Alert.alert('Successo', 'Il tag NFC è stato programmato correttamente con il Digital Link GS1.');
-        } else {
-          Alert.alert('Errore', 'Impossibile registrare il prodotto sul tag.');
-        }
-      }, 500);
-
-    } catch (e) {
-      Alert.alert('Errore Hardware', 'Si è verificato un errore di comunicazione con il sensore NFC.');
     }
   };
 
@@ -790,7 +760,8 @@ export default function ProductDetailScreen() {
       <MovementSheet product={product} visible={showMovement} onClose={() => setShowMovement(false)} />
 
       {/* ETI: «Codice ed etichetta» del prodotto: il QR porta lo SKU, come l'etichetta e il PDF (NG23); il link GS1
-          salvato resta com'è (vincolo 5) e si vede sotto «Avanzate» con «Copia link» e «Programma tag» di prima */}
+          salvato resta com'è (vincolo 5) e si vede sotto «Avanzate» con «Copia link». N1: «Scrivi tag NFC» scrive lo
+          SKU sul tag in un tocco, al posto di «Programma tag» (il link in due passi, NG14) */}
       <CodeSheet
         visible={showQRModal}
         onClose={() => setShowQRModal(false)}
@@ -799,7 +770,7 @@ export default function ProductDetailScreen() {
         onEditSku={() => { setShowQRModal(false); router.push(`/product/edit/${product.id}`); }}
         link={product.gs1DigitalLink || undefined}
         onCopyLink={handleCopyGS1Link}
-        onProgramTag={handleProgramNFC}
+        tag={{ self: { kind: 'product', id: product.id } }}
       />
 
       {/* Visore a tutto schermo (GAL, CSV-G3): stessa galleria con frecce, ←/→ ed Esc; X e tasto Indietro del telefono */}
