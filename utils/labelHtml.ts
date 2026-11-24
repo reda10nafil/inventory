@@ -98,10 +98,13 @@ function labelBlock(item: LabelItem, format: LabelFormatId): string {
 
 function styles(format: LabelFormatId): string {
   const f = LABEL_FORMATS[format];
+  // Etichettatrice: l'etichetta mezzo millimetro più bassa della pagina, perché l'arrotondamento dei mm non aggiunga
+  // una pagina bianca tra un'etichetta e l'altra (da provare con la stampante vera)
+  const height = format === 'labeler' ? f.height - 0.5 : f.height;
   const common = `*{box-sizing:border-box;margin:0;padding:0}html,body{background:#fff;color:#000}`
     + `body{font-family:Arial,Helvetica,sans-serif}.qr svg,.bars svg{display:block;width:100%;height:100%}`
     + `.code{font-weight:700;letter-spacing:.02em;overflow-wrap:anywhere}.name{overflow:hidden;word-break:break-word}`
-    + `.label{width:${f.width}mm;height:${f.height}mm;overflow:hidden;page-break-inside:avoid;break-inside:avoid}`
+    + `.label{width:${f.width}mm;height:${height}mm;overflow:hidden;page-break-inside:avoid;break-inside:avoid}`
     + `@page{size:${f.page};margin:${f.margin}mm}`;
   if (format === 'single') {
     return `${common}.page{page-break-after:always;break-after:page}.page:last-child{page-break-after:auto;break-after:auto}`
@@ -110,7 +113,7 @@ function styles(format: LabelFormatId): string {
       + `.bars{height:8mm;margin-top:1mm}`;
   }
   const qr = format === 'a4' ? 31 : 25;
-  return `${common}.page{display:grid;grid-template-columns:repeat(${f.cols},${f.width}mm);grid-auto-rows:${f.height}mm;`
+  return `${common}.page{display:grid;grid-template-columns:repeat(${f.cols},${f.width}mm);grid-auto-rows:${height}mm;`
     + `page-break-after:always;break-after:page}.page:last-child{page-break-after:auto;break-after:auto}`
     + `.label{display:flex;align-items:center;gap:2mm;padding:2mm}.qr{width:${qr}mm;height:${qr}mm;flex:none}`
     + `.text{flex:1;min-width:0}.code{font-size:${format === 'a4' ? 10 : 9}pt}.name{font-size:${format === 'a4' ? 8 : 7}pt;max-height:9mm;margin-top:1mm}`;

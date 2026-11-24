@@ -379,12 +379,17 @@ export function codeCheck(code: string, saved: string | undefined, sources: Code
 /**
  * Codice che nasce da solo per una posizione o una categoria (ETI, ticket 22): stessa regola di `suggestShelfCode`
  * (S1a) per gli scaffali. Prefisso e nome senza accenti, in maiuscolo con i trattini («LOC-DEPOSITO-NORD»; per una
- * sottocategoria tutto il percorso, «LIB-PELLICCE-VISONE»), mai uno già usato («-2», «-3»…). Vuoto senza un nome.
+ * sottocategoria tutto il percorso, «LIB-PELLICCE-VISONE»), mai uno già usato («-2», «-3»…). Un nome senza lettere
+ * latine né cifre («★★», «倉庫») dà il solo prefisso numerato («LOC-1», «LOC-2»…), così la cosa ha sempre un codice.
  */
 export function suggestCode(prefix: 'LOC' | 'LIB', names: readonly string[], taken: (code: string) => boolean): string {
   const slug = (value: string) => fold(value).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').toUpperCase();
   const parts = names.map(slug).filter(Boolean);
-  if (!parts.length) return '';
+  if (!parts.length) {
+    let n = 1;
+    while (taken(`${prefix}-${n}`)) n += 1;
+    return `${prefix}-${n}`;
+  }
   const code = `${prefix}-${parts.join('-')}`;
   if (!taken(code)) return code;
   let n = 2;

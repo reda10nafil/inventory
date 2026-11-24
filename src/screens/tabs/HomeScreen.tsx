@@ -56,6 +56,13 @@ export default function HomeScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showActionModal, setShowActionModal] = useState(false); // Controls Modal visibility
   const [showLabels, setShowLabels] = useState(false); // ETI: «Etichette» dei prodotti scelti
+  // ETI: le etichette dei prodotti scelti, nell'ordine dell'Inventario (poi quelli scelti fuori dal filtro)
+  const labelItems = () => {
+    const chosen = new Set(selectedIds);
+    const shown = filteredProducts.filter((p) => chosen.has(p.id));
+    const seen = new Set(shown.map((p) => p.id));
+    return [...shown, ...products.filter((p) => chosen.has(p.id) && !seen.has(p.id))].map((p) => ({ code: p.sku, name: kindOf(p).full }));
+  };
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
@@ -505,9 +512,7 @@ export default function HomeScreen() {
           visible
           onClose={() => setShowLabels(false)}
           kind="prodotto"
-          items={filteredProducts.concat(products.filter((p) => !filteredProducts.includes(p)))
-            .filter((p) => selectedIds.includes(p.id))
-            .map((p) => ({ code: p.sku, name: kindOf(p).full }))}
+          items={labelItems()}
         />
       ) : null}
 

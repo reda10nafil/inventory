@@ -26,6 +26,12 @@ const NO_CODE: Record<CodeSheetKind, string> = {
   categoria: 'Questa categoria non ha ancora un codice.',
 };
 
+/** Stampa o condivisione annullata da chi usa l'app (non è un errore da dire). */
+const cancelled = (error: unknown): boolean => {
+  const e = error as { name?: string; code?: string; message?: string } | null;
+  return !!e && (e.name === 'AbortError' || /cancel|incomplete|annull/i.test(`${e.code ?? ''} ${e.message ?? ''}`));
+};
+
 export interface CodeSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -58,7 +64,7 @@ export function CodeSheet({
   const styles = useStyles();
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const [format, setFormat] = useLabelFormat();
+  const [format, setFormat] = useLabelFormat(visible);
   const [advanced, setAdvanced] = useState(false);
   const [all, setAll] = useState(false);
   const [newCode, setNewCode] = useState('');
@@ -91,8 +97,9 @@ export function CodeSheet({
     try {
       const ok = await printHtml(labelHtml(list, format), win);
       if (!ok) setMessage('Il browser ha bloccato la finestra della stampa: consenti le finestre di questo sito e riprova.');
-    } catch {
-      setMessage('Stampa non riuscita. Riprova.');
+    } catch (error) {
+      win?.close(); // niente finestra vuota lasciata aperta
+      if (!cancelled(error)) setMessage('Stampa non riuscita. Riprova.');
     }
   };
 
@@ -100,8 +107,8 @@ export function CodeSheet({
     setMessage(null);
     try {
       await shareHtml(labelHtml(list, format), fileName);
-    } catch {
-      setMessage('Condivisione non riuscita. Riprova.');
+    } catch (error) {
+      if (!cancelled(error)) setMessage('Condivisione non riuscita. Riprova.');
     }
   };
 
@@ -117,7 +124,12 @@ export function CodeSheet({
       Alert.alert('Errore', check.error);
       return;
     }
-    await changeCode.save(next);
+    try {
+      await changeCode.save(next);
+    } catch {
+      Alert.alert('Errore', 'Codice non salvato. Riprova.');
+      return;
+    }
     setNewCode(''); setAdvanced(false);
     setDone(`Codice salvato: ${next}.`);
     if (check.warning) Alert.alert('Codice salvato', check.warning);
@@ -156,7 +168,9 @@ export function CodeSheet({
   };
 
   const empty = !many && !code;
-  const top = notice || done;
+  // Etichette in serie senza nessun codice (per esempio una posizione e i suoi scaffali senza codice): niente da stampare
+  const nothing = many && list.length === 0;
+  const top = done || notice;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
@@ -223,7 +237,7 @@ export function CodeSheet({
               </Pressable>
             ) : null}
 
-            {!empty ? (
+            {!empty && !nothing ? (
               <>
                 <Text style={styles.label}>Formato</Text>
                 <View style={styles.segments} accessibilityRole="radiogroup">
@@ -315,8 +329,9 @@ export function CodeSheet({
           </ScrollView>
 
           {message ? <Text style={[styles.message, styles.hintError]} accessibilityRole="alert">{message}</Text> : null}
+          {nothing ? <Text style={[styles.message, styles.messageInfo]}>Nessuna di queste cose ha un codice: niente da stampare.</Text> : null}
           <View style={[styles.bar, { paddingBottom: 14 + insets.bottom }]}>
-            {empty ? (
+            {nothing ? null : empty ? (
               changeCode ? (
                 <Pressable style={styles.primary} onPress={createCode} accessibilityRole="button" accessibilityLabel="Crea il codice">
                   <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
@@ -674,6 +689,9 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
     paddingHorizontal: t.spacing.screenPadding,
     paddingTop: 8,
+  },
+  messageInfo: {
+    color: t.colors.textSecondary,
   },
   // Barra fissa in basso (R11): «Condividi» contornato a sinistra, «Stampa etichetta» pieno a destra
   bar: {

@@ -218,4 +218,32 @@ async function prodotto(h, sku) {
     out.esterne = st.esterne;
     return out;
   });
+
+  // 10. Rilievi del revisore (riprodotti su 8d332f2): uno scaffale già salvato senza codice ha l'icona sulla riga e
+  //     «Crea il codice» (prima l'icona c'era solo con il codice); dopo la creazione, «Cambia codice» dice «Codice
+  //     salvato» (prima restava la riga «… creata.»)
+  await run('eti-revisore', async (h) => {
+    await prepara(h, {
+      extra: () => localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+        { id: '1732300000000-gen1', name: 'A1', locationId: 'magazzino', barcode: 'SCAF-MAG-A1' },
+        { id: '1732300000000-gen2', name: 'B1', locationId: 'magazzino', libraryId: 'pellicce' },
+      ])),
+    });
+    await h.go('settings/shelves');
+    const out = { iconaB1: (await h.page.getByLabel('Codice QR di B1', { exact: true }).locator('visible=true').count()) > 0 };
+    if (out.iconaB1) {
+      await e.apri(h, 'Codice QR di B1');
+      out.vuoto = await h.has('Questo scaffale non ha ancora un codice.', true);
+      await e.apri(h, 'Crea il codice', 700);
+      const b1 = ((await h.store(SK, 400)) || []).find((s) => s.name === 'B1');
+      out.b1 = b1 && { codice: b1.barcode, categoria: b1.libraryId, aVideo: await h.has('SCAF-MAGAZZINO-B1', true) };
+      await e.chiudiCodice(h);
+    }
+    await h.go('settings/locations');
+    await h.page.getByPlaceholder('Es. Magazzino A, Scaffale 1').fill('Deposito');
+    await h.click('Crea Posizione');
+    await e.cambiaCodice(h, 'LOC-DEP-NUOVO');
+    out.dopoCreazione = { avvisoSalvato: await h.has('Codice salvato: LOC-DEP-NUOVO.', true), salvato: ((await h.store(LOC, 300)) || []).find((l) => l.id === 'deposito')?.barcode };
+    return out;
+  }, { dialogs: OK });
 })();

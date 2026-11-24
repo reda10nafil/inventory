@@ -275,11 +275,10 @@ export default function ShelvesScreen() {
                     {shelf.barcode ? <Text style={styles.itemMeta}>Codice {shelf.barcode}</Text> : null}
                     {shelf.nfcTag ? <Text style={styles.itemMeta}>NFC {shelf.nfcTag}</Text> : null}
                   </View>
-                  {shelf.barcode ? (
-                    <Pressable onPress={() => setQrShelf(shelf)} hitSlop={8} accessibilityLabel={`Codice QR di ${shelf.name}`}>
-                      <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
-                    </Pressable>
-                  ) : null}
+                  {/* ETI: «Codice ed etichetta» su ogni riga, anche senza codice («Crea il codice») */}
+                  <Pressable onPress={() => setQrShelf(shelf)} hitSlop={8} accessibilityLabel={`Codice QR di ${shelf.name}`}>
+                    <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
+                  </Pressable>
                   <Pressable onPress={() => handleDelete(shelf)} hitSlop={8} accessibilityLabel={`Elimina scaffale ${shelf.name}`}>
                     <AppIcon name="delete" size={20} color={t.colors.error} />
                   </Pressable>

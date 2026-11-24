@@ -75,7 +75,10 @@ export function productPdfHtml(p: ProductPdfInput): string {
     ...(p.sellPrice ? [{ name: 'Vendita', value: p.sellPrice }] : []),
   ];
   const section = (title: string, body: string) => `<div class="section"><div class="section-title">${escapeHtml(title)}</div>${body}</div>`;
-  const bars = code128Svg(p.sku);
+  // Uno SKU vuoto (solo da un import) non fa fallire il PDF: senza codici
+  const sku = p.sku.trim();
+  const bars = sku ? code128Svg(sku) : '';
+  const qr = sku ? qrSvg(sku) : '';
   return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scheda prodotto ${escapeHtml(p.sku)}</title>
 <style>
@@ -117,7 +120,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#000;padding:3
     + (p.notes?.trim() ? section('Note tecniche', `<div class="notes">${escapeHtml(p.notes.trim())}</div>`) : '')
     + (p.images.length ? section(`Foto (${p.images.length})`, `<div class="gallery">${p.images.map((img, i) => `<img src="data:image/jpeg;base64,${img.replace(/[^A-Za-z0-9+/=]/g, '')}" alt="Foto ${i + 1}">`).join('')}</div>`) : '')
     + (p.timeline.length ? section('Cronologia', p.timeline.map((e) => `<div class="event">${escapeHtml(e.text)} <span class="date">${escapeHtml(e.date)}</span></div>`).join('')) : '')
-    + section('Codice', `<div class="codes"><div class="code"><div class="qr">${qrSvg(p.sku)}</div><div class="value">${escapeHtml(p.sku)}</div></div>`
-      + `${bars ? `<div class="code"><div class="bars">${bars}</div><div class="value">${escapeHtml(p.sku)}</div></div>` : ''}</div>`)
+    + (qr ? section('Codice', `<div class="codes"><div class="code"><div class="qr">${qr}</div><div class="value">${escapeHtml(sku)}</div></div>`
+      + `${bars ? `<div class="code"><div class="bars">${bars}</div><div class="value">${escapeHtml(sku)}</div></div>` : ''}</div>`) : '')
     + `<div class="footer">Documento generato: ${escapeHtml(p.generatedAt)}</div></body></html>`;
 }

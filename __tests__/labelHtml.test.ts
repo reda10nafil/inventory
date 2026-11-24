@@ -61,6 +61,7 @@ describe('labelHtml', () => {
     const roll = labelHtml(many.slice(0, 2), 'labeler');
     expect(pages(roll)).toBe(2);
     expect(roll).toContain('@page{size:62mm 29mm;margin:0mm}');
+    expect(roll).toContain('grid-auto-rows:28.5mm'); // mezzo millimetro sotto la pagina: nessuna pagina bianca in più
     expect(LABEL_FORMATS.a4.cols * LABEL_FORMATS.a4.rows).toBe(24);
   });
 
@@ -117,6 +118,12 @@ describe('productPdfHtml', () => {
     expect(qrCells(html)).toEqual(expectedCells('VIS-0142'));
     expect(html).toContain('class="bars-svg"');
     expect(html).toContain('Fodera &lt;seta&gt;');
+  });
+
+  it('uno SKU vuoto (da un import) non fa fallire il PDF: niente codici (rilievo del revisore)', () => {
+    const html = productPdfHtml({ ...base, sku: '  ' });
+    expect(html).toContain('<h1>Syncro Flow</h1>');
+    expect(html).not.toContain('class="qr-svg"');
   });
 
   it('un colore della posizione che non è un colore non entra nello stile', () => {

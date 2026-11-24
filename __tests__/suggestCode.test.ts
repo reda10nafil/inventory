@@ -15,7 +15,11 @@ describe('suggestCode', () => {
     expect(suggestCode('LOC', ['Deposito Nord'], free)).toBe('LOC-DEPOSITO-NORD');
     expect(suggestCode('LOC', ['  Città / Più giù  '], free)).toBe('LOC-CITTA-PIU-GIU');
     expect(suggestCode('LIB', ['Pellicce', 'Visone'], free)).toBe('LIB-PELLICCE-VISONE');
-    expect(suggestCode('LIB', ['', '  '], free)).toBe('');
+  });
+
+  it('un nome senza lettere latine né cifre dà il prefisso numerato, mai vuoto (rilievo del revisore)', () => {
+    expect(suggestCode('LIB', ['', '  '], () => false)).toBe('LIB-1');
+    expect(suggestCode('LOC', ['★★'], (c) => c === 'LOC-1')).toBe('LOC-2');
   });
 
   it('mai un codice già usato: -2, -3… (anche se lo usa una cosa di un altro tipo)', () => {
