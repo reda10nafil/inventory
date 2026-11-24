@@ -9,7 +9,11 @@
 //   tasto Indietro: quello del telefono arriva al `Modal` (`onRequestClose`); sul web quello del browser toglie una voce
 //   della storia aggiunta all'apertura, con lo stesso indirizzo e lo stesso id di React Navigation (che così resta sulla
 //   stessa schermata). Chiusa in un altro modo, la voce si toglie da sola: dopo la chiusura la storia è quella di prima.
-//   Chi chiude la finestra e cambia subito schermata deve farlo dopo la chiusura (la voce si toglie in modo asincrono).
+//   Una finestra che si apre mentre la voce di quella appena chiusa si sta togliendo aspetta che sia tolta (il
+//   `history.back()` è asincrono e il suo `popstate` non deve chiudere la finestra nuova). Chi chiude la finestra e cambia
+//   subito schermata deve farlo dopo la chiusura. Una finestra che chiede conferma prima di chiudersi non va: Indietro
+//   ha già tolto la voce. Se React Navigation riscrive la voce mentre la finestra è aperta, o la pagina si ricarica con la
+//   finestra aperta, la voce resta (un Indietro in più che non cambia schermata).
 // Solo ruoli del tema: fondo `backgroundSecondary`, bordo `border`, maniglia `border`, velatura `scrim`, raggio `card`.
 import React, { useEffect, useRef } from 'react';
 import { Modal, Platform, Pressable, ScrollView, View } from 'react-native';
@@ -32,20 +36,55 @@ interface Props {
   scrimLabel?: string;
 }
 
+// Storia del browser condivisa tra le finestre (web): quanti `history.back()` chiamati dalle finestre stesse non sono
+// ancora arrivati, e le finestre che aspettano quel momento per aggiungere la loro voce. `ownPop` vale per il `popstate`
+// in corso (l'ascoltatore comune è registrato prima di quelli delle finestre, quindi lo vedono già).
+let ownBacks = 0;
+let backGeneration = 0;
+let ownPop = false;
+const afterBacks: (() => void)[] = [];
+let listening = false;
+const flushAfterBacks = () => afterBacks.splice(0).forEach((push) => push());
+function listenOnce() {
+  if (listening) return;
+  listening = true;
+  window.addEventListener('popstate', () => {
+    ownPop = ownBacks > 0;
+    if (!ownPop) return;
+    ownBacks -= 1;
+    if (ownBacks === 0) flushAfterBacks();
+  });
+}
+
 /** Sul web il tasto Indietro del browser chiude la finestra aperta invece di lasciare la schermata. */
 function useWebBack(visible: boolean, onClose: () => void) {
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
     if (Platform.OS !== 'web' || !visible || typeof window === 'undefined') return undefined;
+    listenOnce();
     const token = `sheet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const state = window.history.state;
-    window.history.pushState({ ...(state && typeof state === 'object' ? state : {}), sheet: token }, '');
-    const onPop = () => close.current();
-    window.addEventListener('popstate', onPop);
+    let pushed = false;
+    let closed = false;
+    const onPop = () => { if (!ownPop) close.current(); };
+    const push = () => {
+      if (closed) return;
+      const state = window.history.state;
+      window.history.pushState({ ...(state && typeof state === 'object' ? state : {}), sheet: token }, '');
+      window.addEventListener('popstate', onPop);
+      pushed = true;
+    };
+    if (ownBacks > 0) afterBacks.push(push);
+    else push();
     return () => {
+      closed = true;
       window.removeEventListener('popstate', onPop);
-      if (window.history.state?.sheet === token) window.history.back();
+      if (!pushed || window.history.state?.sheet !== token) return;
+      ownBacks += 1;
+      const generation = ++backGeneration;
+      window.history.back();
+      // Se il `popstate` non arriva (pagina lasciata), le finestre dopo non restano senza voce
+      setTimeout(() => { if (generation === backGeneration && ownBacks > 0) { ownBacks = 0; flushAfterBacks(); } }, 1500);
     };
   }, [visible]);
 }
@@ -58,7 +97,7 @@ export function Sheet({ visible, onClose, title, children, top, footer, scrimLab
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={scrimLabel} />
+        <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={scrimLabel} />
         <View style={[styles.sheet, !footer && { paddingBottom: 12 + insets.bottom }]}>
           <View style={styles.handle} />
           <View style={styles.header}>

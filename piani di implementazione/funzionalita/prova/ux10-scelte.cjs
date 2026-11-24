@@ -14,6 +14,11 @@
 //   pillola non fa scorrere il binario; in Modifica la scelta (posizione e categoria in fondo ai binari) è a vista
 //   all'apertura, con la spunta;
 // - ux10-minimal: in Minimal il bordo dei campi e delle pillole è #E7E6E3 (prima uguale al fondo #F4F4F2).
+// Dopo il parere del revisore (7af7e38):
+// - ux10-sottocategorie-nuove: cambiando categoria il binario delle sottocategorie riparte da capo (non resta scorso
+//   e taglia l'ultima pillola con le misure delle pillole nuove, come aperto da zero);
+// - ux10-due-finestre: una finestra chiusa e un'altra aperta subito: la seconda resta aperta, e dopo la sua chiusura un
+//   Indietro va a Home (nessuna voce in più nella storia).
 // Ogni scenario restituisce `ok` e i dettagli. Uso: node ux10-scelte.cjs [nome-scenario]
 const { scenario } = require('./lib.cjs');
 const e = require('./edc-util.cjs');
@@ -214,6 +219,61 @@ const finestra = (page, velatura) => page.evaluate((vl) => {
       && dopoTocco.scrollLeft === 0
       && Object.values(inVista).every((x) => x && x.dentro && x.spunta && x.altezza === 36 && x.scrollLeft > 0);
     return { ok, tagli, dopoTocco, inVista };
+  });
+
+  // 7. Dopo il revisore: le sottocategorie di un'altra categoria ripartono da capo
+  await run('ux10-sottocategorie-nuove', async (h) => {
+    await h.page.evaluate((lk) => {
+      const libs = JSON.parse(localStorage.getItem(lk));
+      const at = '2026-11-24T09:00:00.000Z';
+      ['Giacche lunghe da sera', 'Cappotti doppiopetto', 'Mantelle e stole', 'Colli staccabili', 'Gilet e smanicati', 'Cappelli e copricapi']
+        .forEach((n, i) => libs.push({ id: `p-${i}`, name: n, icon: 'folder', createdAt: at, parentId: 'pellicce' }));
+      ['Lana merino', 'Seta pura', 'Lino lavato', 'Misto cashmere', 'Cotone pesante', 'Feltro di lana']
+        .forEach((n, i) => libs.push({ id: `c-${i}`, name: n, icon: 'folder', createdAt: at, parentId: 'collezione-inverno' }));
+      localStorage.setItem(lk, JSON.stringify(libs));
+    }, LIBS);
+    const sotto = () => h.page.evaluate(() => {
+      const el = [...document.querySelectorAll('[aria-label="Sottocategorie"]')].find((x) => x.offsetParent);
+      const pills = [...el.querySelectorAll('[tabindex="0"]')].map((p) => p.getBoundingClientRect());
+      return { scrollLeft: Math.round(el.scrollLeft), spazi: [...new Set(pills.slice(1).map((p, i) => Math.round(p.left - pills[i].right)))] };
+    });
+    await h.go('add');
+    await h.page.getByLabel('Categoria Pellicce', { exact: true }).locator('visible=true').first().click(); await h.page.waitForTimeout(800);
+    await h.page.evaluate(() => { [...document.querySelectorAll('[aria-label="Sottocategorie"]')].find((x) => x.offsetParent).scrollLeft = 9999; });
+    await h.page.waitForTimeout(400);
+    await h.page.getByLabel('Categoria Collezione Inverno', { exact: true }).locator('visible=true').first().click(); await h.page.waitForTimeout(1000);
+    const cambiata = await sotto();
+    const tagliata = await taglio(h.page, 'Sottocategorie');
+    await h.go('add');
+    await h.page.getByLabel('Categoria Collezione Inverno', { exact: true }).locator('visible=true').first().click(); await h.page.waitForTimeout(800);
+    const daZero = await sotto();
+    const ok = cambiata.scrollLeft === 0 && JSON.stringify(cambiata.spazi) === JSON.stringify(daZero.spazi) && tagliata.dentro >= 0.25 && tagliata.dentro <= 0.75;
+    return { ok, cambiata, tagliata, daZero };
+  });
+
+  // 8. Dopo il revisore: chiudere una finestra e aprirne subito un'altra
+  await run('ux10-due-finestre', async (h) => {
+    await h.page.evaluate(() => {
+      const k = 'furinventory_custom_fields:local';
+      const fields = JSON.parse(localStorage.getItem(k));
+      for (const id of ['width', 'length']) Object.assign(fields.find((f) => f.id === id), { input: 'wheel', dataset: { min: 40, max: 120, step: 10 } });
+      localStorage.setItem(k, JSON.stringify(fields));
+    });
+    await h.go('');
+    await h.tab('Aggiungi');
+    await e.apriRuota(h, 'Larghezza');
+    // «Fatto» e, senza attese, il campo Lunghezza (come una schermata che chiude una finestra e ne apre un'altra)
+    await h.page.evaluate(() => {
+      [...document.querySelectorAll('[role="button"], [tabindex="0"]')].find((x) => x.offsetParent && (x.innerText || '').trim() === 'Fatto').click();
+      setTimeout(() => [...document.querySelectorAll('[aria-label="Lunghezza: nessun valore"]')].find((x) => x.getClientRects().length > 0).click(), 0);
+    });
+    await h.page.waitForTimeout(1200);
+    const seconda = await h.page.locator('[aria-label="Ruota Lunghezza"]').locator('visible=true').count();
+    if (seconda) { await e.visibile(h, '[aria-label="Chiudi"]').click(); await h.page.waitForTimeout(800); }
+    const dopo = await h.page.evaluate(() => location.pathname);
+    await h.page.goBack(); await h.page.waitForTimeout(1200);
+    const home = await h.page.evaluate(() => location.pathname);
+    return { ok: seconda === 1 && dopo === '/add' && home === '/', seconda, dopo, home };
   });
 
   // 6. Minimal: bordo di campi e pillole #E7E6E3

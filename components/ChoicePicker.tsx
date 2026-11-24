@@ -1,6 +1,6 @@
 // Scelte di un campo nell'aspetto scelto (EDC, ticket 23; richieste dell'utente del 24 e regole R1-R3 di UX0): un
-// disegno solo per i campi a scelta (`FieldInput`), per i campi Base Posizione e Tipo di pelle in Aggiungi e Modifica e
-// per la Categoria in colonna (`CategoryPicker`).
+// disegno solo per i campi a scelta (`FieldInput`) e per i campi Base Posizione e Tipo di pelle in Aggiungi e Modifica
+// (la Categoria è `CategoryPicker`, col binario `ChoiceRail` come qui).
 // - `chips` **binario orizzontale** (predefinito delle pillole, R1): una riga sola che scorre, **solo a larghezza
 //   intera** (`ChoiceRail` di `components/ui/`, UX1-0: all'apertura la scelta entra in vista, l'ultima pillola a vista
 //   è tagliata, una sfumatura col fondo del tema dice che continua); pillole alte 36 (44 da toccare), la scelta ha la

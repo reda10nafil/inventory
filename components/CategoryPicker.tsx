@@ -70,7 +70,8 @@ export function CategoryPicker({ categories, value, onChange, showNone = false, 
       {picker.rootId && picker.children.length > 0 && (
         <>
           <Text style={styles.subLabel}>Sottocategoria</Text>
-          <ChoiceRail label="Sottocategorie" selected={picker.children.findIndex((child) => child.id === picker.childId)}>
+          {/* Le sottocategorie di un'altra principale ripartono da capo: binario nuovo (misure e scelta in vista) */}
+          <ChoiceRail key={picker.rootId} label="Sottocategorie" selected={picker.children.findIndex((child) => child.id === picker.childId)}>
             {picker.children.map((child) => {
               const active = picker.childId === child.id;
               return chip(child.id, child.name, child.icon || 'subdirectory-arrow-right', active, () => onChange(active ? picker.rootId! : child.id), `Sottocategoria ${child.name}`);
