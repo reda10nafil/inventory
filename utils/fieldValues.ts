@@ -425,9 +425,10 @@ export function rangeFromText(text: { min: string; max: string; step: string }, 
   return { ok: true, range: { min, max, step } };
 }
 
-/** Misure Base disegnate con `FieldInput` (EDC, punto 4 del ticket 23): unità e segnaposto di sempre. */
-export const MEASURE_UNITS: Record<string, string> = { length: 'cm', width: 'cm', weight: 'kg' };
-export const MEASURE_PLACEHOLDERS: Record<string, string> = { length: '85', width: '120', weight: '1,2' };
+/** Misure Base disegnate con `FieldInput` (EDC, punto 4 del ticket 23): unità e segnaposto di sempre. L'altezza è
+ *  di S2 (ticket 14), unita qui con l'Unione 1. */
+export const MEASURE_UNITS: Record<string, string> = { length: 'cm', width: 'cm', weight: 'kg', height: 'cm' };
+export const MEASURE_PLACEHOLDERS: Record<string, string> = { length: '85', width: '120', weight: '1,2', height: '40' };
 
 /** Campo Base di una misura dal registro (con l'unità di sempre se manca), o quello di sempre se il registro non c'è. */
 export function baseMeasureField(fields: readonly CustomField[], id: string): CustomField {

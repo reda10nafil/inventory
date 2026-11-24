@@ -656,12 +656,14 @@ export default function AddProductScreen() {
         );
 
       // Misure Base (EDC, ticket 23 punto 4): lo stesso disegnatore dei campi, scritte o con la ruota se il campo Base
-      // lo dice; scritte, uguali a prima (segnaposto, unità, icona del modulo)
+      // lo dice; scritte, uguali a prima (segnaposto, unità, icona del modulo). L'Altezza (S2, ticket 14: su quali
+      // scaffali entra e quanti ne entrano) è una misura come le altre
       case 'length':
       case 'width':
-      case 'weight': {
+      case 'weight':
+      case 'height': {
         const base = baseMeasureField(customFields, field.id);
-        const key = field.id as 'length' | 'width' | 'weight';
+        const key = field.id as 'length' | 'width' | 'weight' | 'height';
         return (
           <FieldInput
             key={field.id}
@@ -688,21 +690,6 @@ export default function AddProductScreen() {
               value: formData.technicalNotes,
               onChangeText: (value) => updateField('technicalNotes', value),
               numberOfLines: 4,
-            })}
-          </View>
-        );
-
-      // S2 (ticket 14): altezza del prodotto, per sapere su quali scaffali entra e quanti ne entrano
-      case 'height':
-        return (
-          <View key="height" style={sizeStyle}>
-            {renderLabel()}
-            {renderInputWithIcon({
-              placeholder: '40',
-              value: formData.height,
-              onChangeText: (value) => updateField('height', value),
-              keyboardType: 'numeric',
-              unit: 'cm',
             })}
           </View>
         );

@@ -432,7 +432,8 @@ const forma = (f) => f && { type: f.type, uiType: f.uiType, input: f.input, look
     return { ok, ...out };
   });
 
-  // 13. Campi Personalizzati raggruppati per tipo, col numero dei campi
+  // 13. Campi Personalizzati raggruppati per tipo, col numero dei campi (Unione 1: «Misura» ha anche l'Altezza di S2,
+  //     cinque campi)
   await run('edc-gruppi', async (h) => {
     await e.crea(h, { tipo: 'sino', nome: 'EDC Restaurato' });
     await h.go('settings/fields');
@@ -442,7 +443,7 @@ const forma = (f) => f && { type: f.type, uiType: f.uiType, input: f.input, look
       const g = [...document.querySelectorAll('[aria-label="Gruppo Sì/No"]')].find((x) => x.offsetParent);
       return g ? g.innerText.includes('EDC Restaurato') : false;
     });
-    const ok = gruppi.join() === 'Testo breve (3),Testo lungo (2),Numero (1),Misura (4),Valuta (3),Data (1),Scelta (10),Sì/No (1),Immagini (2),Documenti (1)' && nelGruppo;
+    const ok = gruppi.join() === 'Testo breve (3),Testo lungo (2),Numero (1),Misura (5),Valuta (3),Data (1),Scelta (10),Sì/No (1),Immagini (2),Documenti (1)' && nelGruppo;
     return { ok, gruppi, nelGruppo };
   });
 

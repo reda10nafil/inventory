@@ -42,8 +42,8 @@ const COMMON_ICONS = [
   'wb-sunny', 'style', 'fingerprint', 'medication', 'public', 'thermostat',
 ];
 
-/** Misure Base che si possono compilare con la ruota (punto 4 del ticket 23); con S2 arriverà l'altezza. */
-const BASE_MEASURES = ['length', 'width', 'weight'];
+/** Misure Base che si possono compilare con la ruota (punto 4 del ticket 23); l'altezza è di S2 (ticket 14). */
+const BASE_MEASURES = ['length', 'width', 'weight', 'height'];
 /** Limiti proposti per la ruota di una misura che non ne ha ancora. */
 const RANGE_PROPOSAL = (unit?: string) => (unit === 'kg' ? { min: '0', max: '20', step: '0,1' } : { min: '0', max: '200', step: '1' });
 

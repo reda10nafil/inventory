@@ -56,11 +56,12 @@ function parseCsv(input) {
     const impostazioni = { tipiDiPelle: await h.has('Tipi di pelle', true), campi: await h.has('Campi Personalizzati', true) };
     await h.click('Campi Personalizzati');
     const matite = await h.page.locator(`${MATITA}:visible`).count();
-    // Da EDC: matite «Come si compila» delle tre misure Base e «Come si vede» di Posizione
+    // Da EDC: matite «Come si compila» delle misure Base e «Come si vede» di Posizione (Unione 1: con l'Altezza di S2
+    // le misure sono quattro)
     const misure = await h.page.locator('[aria-label^="Come si compila "]:visible, [aria-label^="Come si vede "]:visible').count();
     // Matite e cestini a video (glifi MaterialIcons edit e delete): una coppia per ogni campo personalizzato attivo
-    // (16 nel campionario) più la matita di «Tipo di pelle» e, da EDC, quelle delle tre misure Base (Lunghezza,
-    // Larghezza, Peso: «Come si compila») e di Posizione («Come si vede»); gli altri campi Base non ne hanno
+    // (16 nel campionario) più la matita di «Tipo di pelle» e, da EDC, quelle delle quattro misure Base (Lunghezza,
+    // Larghezza, Peso, Altezza: «Come si compila») e di Posizione («Come si vede»); gli altri campi Base non ne hanno
     const glifi = await h.page.evaluate(() => {
       const n = (cp) => [...document.querySelectorAll('div')]
         .filter((d) => d.childElementCount === 0 && d.textContent === String.fromCodePoint(cp) && d.offsetParent).length;
@@ -75,7 +76,7 @@ function parseCsv(input) {
       nome: await h.has('Nome del Campo *', true), cambia: await h.has('Cambia', true), icona: await h.has("Scegli un'icona", true),
     };
     const chiavi = u.changedKeys(prima, await u.snapshot(h.page));
-    const ok = !impostazioni.tipiDiPelle && impostazioni.campi && matite === 1 && glifi.matite === personali + 1 + misure && misure === 4 && glifi.cestini === personali && rigaValori
+    const ok = !impostazioni.tipiDiPelle && impostazioni.campi && matite === 1 && glifi.matite === personali + 1 + misure && misure === 5 && glifi.cestini === personali && rigaValori
       && JSON.stringify(editor.elenco) === JSON.stringify(['Visone', 'Volpe', 'Zibellino', 'Cincillà', 'Ermellino', 'Astrakan', 'Altro'])
       && editor.titolo && !editor.nome && !editor.cambia && !editor.icona && chiavi.length === 0;
     return { ok, impostazioni, matite, misure, glifi, personali, rigaValori, editor, chiaviCambiate: chiavi };

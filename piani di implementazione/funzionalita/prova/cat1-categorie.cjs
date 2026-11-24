@@ -4,7 +4,7 @@
 // Cronologia; «Annulla» non cambia nulla), rifiuti con sottocategorie (l'albero si apre) e con uno scaffale.
 // Ogni scenario legge lo stato salvato.
 // Uso: node cat1-categorie.cjs [nome-scenario]   (senza argomento li esegue tutti)
-const { scenario } = require('./lib.cjs');
+const { scenario, apriTendinaCon } = require('./lib.cjs');
 
 const L = 'inventory:v1:local:libraries';
 const P = 'inventory:v1:local:products';
@@ -81,9 +81,12 @@ const crea = async (h, nome) => {
     await label(h, 'Nome della sottocategoria di Pellicce').fill('Zaini');
     await h.page.keyboard.press('Enter'); await pause(h, 700);
     const finale = ids(await h.store(L));
-    // In Aggiungi: Borse › Zaini si sceglie
+    // In Aggiungi: Borse › Zaini si sceglie. Da EDC la Categoria in colonna è una tendina: le scelte si cercano
+    // aprendola (`apriTendinaCon` di lib.cjs, come in s1-scaffali; Unione 1)
     await h.go('add');
+    await apriTendinaCon(h.page, h.page.getByLabel('Categoria Borse', { exact: true }).locator('visible=true'));
     await label(h, 'Categoria Borse').click(); await pause(h, 300);
+    await apriTendinaCon(h.page, h.page.getByLabel('Sottocategoria Zaini', { exact: true }).locator('visible=true'));
     const aggiungi = { zaini: await hasLabel(h, 'Sottocategoria Zaini') };
     return {
       zaini, sotto: !!riga.zaini && !!riga.borse && riga.zaini.y > riga.borse.y && riga.zaini.x > riga.borse.x, riga: riga.testo,

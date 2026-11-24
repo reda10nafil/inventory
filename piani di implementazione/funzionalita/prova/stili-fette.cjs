@@ -733,6 +733,15 @@ FETTE.s2 = {
       await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
       await page.getByText('Spazio sullo scaffale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
     }],
+    // Unione 1 (S2 con EDC): l'Altezza è una misura come le altre, in Aggiungi (tre per riga, lei sotto) e in Modifica
+    ['aggiungi-altezza', async (page) => {
+      await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+      await page.getByText('Altezza', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['modifica-misure', async (page) => {
+      await page.goto(`${APP}/product/edit/cmp-2`); await page.waitForTimeout(1800);
+      await page.getByText('Altezza', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
   ],
 };
 // CAT1 (ticket 33): Impostazioni › Categorie ad albero con lo stato di c1 (Pellicce con Visone e Volpe, Collezione Inverno

@@ -109,6 +109,8 @@ function EditProductForm({ product }: { product: Product }) {
   const imageWidth = Math.max(1, screenWidth - 32);
   // Riquadri delle scelte: tre per riga, 10 px tra l'uno e l'altro, come in Aggiungi
   const tileWidth = Math.floor((imageWidth - 20) / 3);
+  // Misure: tre per riga con 12 px tra l'una e l'altra (come `row`), la quarta (Altezza) a capo alla stessa larghezza
+  const measureWidth = Math.floor((imageWidth - 24) / 3);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -429,9 +431,10 @@ function EditProductForm({ product }: { product: Product }) {
 
           {renderSection('Misure')}
 
-          {/* Misure Base (EDC, ticket 23 punto 4): lo stesso disegnatore dei campi di Aggiungi, scritte o con la ruota */}
-          <View style={styles.row}>
-            {(['length', 'width', 'weight'] as const).map((key) => (
+          {/* Misure Base (EDC, ticket 23 punto 4): lo stesso disegnatore dei campi di Aggiungi, scritte o con la ruota.
+              L'Altezza (S2, ticket 14) è la quarta: tre per riga come in Aggiungi, lei va sotto alla stessa larghezza */}
+          <View style={[styles.row, styles.measureRow]}>
+            {(['length', 'width', 'weight', 'height'] as const).map((key) => (
               <FieldInput
                 key={key}
                 field={baseMeasureField(customFields, key)}
@@ -441,23 +444,9 @@ function EditProductForm({ product }: { product: Product }) {
                 icon={fieldIcon(baseMeasureField(customFields, key), layout.fields.find((lf) => lf.id === key)?.icon)}
                 placeholder={MEASURE_PLACEHOLDERS[key]}
                 tileWidth={tileWidth}
-                style={[styles.inputGroup, styles.thirdWidth]}
+                style={[styles.inputGroup, { width: measureWidth }]}
               />
             ))}
-          </View>
-
-          {/* S2 (ticket 14): altezza del prodotto per gli scaffali, in una riga a sé sotto le misure */}
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, styles.thirdWidth]}>
-              {renderLabel('Altezza (cm)')}
-              {renderInput({
-                placeholder: '40',
-                value: formData.height,
-                onChangeText: (value) => updateField('height', value),
-                numeric: true,
-                small: true,
-              })}
-            </View>
           </View>
 
           {renderSection('Note tecniche')}
@@ -565,10 +554,11 @@ const useStyles = makeStyles((t) => ({
     flexDirection: 'row',
     gap: 12,
   },
-  halfWidth: {
-    flex: 1,
+  measureRow: {
+    flexWrap: 'wrap',
+    rowGap: 0,
   },
-  thirdWidth: {
+  halfWidth: {
     flex: 1,
   },
   // Barra fissa Annulla / Salva (regola 9): vetro, filetto in alto
