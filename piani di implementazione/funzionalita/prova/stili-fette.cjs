@@ -738,6 +738,8 @@ FETTE.acc1 = {
       details: { changes: ['Prezzo vendita: 4.200 € → 4.300 €'] }, author: { id, name: 'Mario Rossi', device: 'Banco 1' },
     });
     localStorage.setItem(tk, JSON.stringify(tl));
+    // tabella cambiata dal Titolare: l'Operatore non vende (per la causale «Vendita» spenta in Movimenta)
+    localStorage.setItem('device:v1:permissions', JSON.stringify({ operatore: { vendere: false } }));
   },
   schermate: [
     ['impostazioni-persone', async (page) => {
@@ -762,8 +764,16 @@ FETTE.acc1 = {
       await page.goto(`${APP}/settings/access`); await page.waitForTimeout(1800);
       await page.getByText('Che cosa può fare ogni ruolo', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
     }],
+    // dal revisore: Operatore senza «Vendere», Movimenta › Scarico con la causale «Vendita» spenta col motivo
+    ['operatore-movimenta-vendita', async (page) => {
+      await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800);
+      await page.getByLabel('Movimenta', { exact: true }).first().click(); await page.waitForTimeout(600);
+      await page.getByLabel('Tipo Scarico', { exact: true }).first().click(); await page.waitForTimeout(400);
+      await page.getByLabel('Causale Vendita', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
     // Solo lettura: le azioni spente col motivo sopra le barre e i pulsanti (Home, Scheda, Aggiungi, Azione rapida)
     ['lettura-home-elimina', async (page) => {
+      await page.goto(`${APP}/settings/access`); await page.waitForTimeout(1800);
       await page.getByRole('radio', { name: 'Ruolo Solo lettura' }).click(); await page.waitForTimeout(500);
       await page.goto(APP); await page.waitForTimeout(1800);
       const box = await page.getByText('VIS-0142', { exact: true }).first().boundingBox();

@@ -89,6 +89,7 @@ Fatta su `funzioni/scaffali` (worktree `inventory-scaffali`), dopo S3. Le parole
 4. **Foto locale piccola**: `data:image/jpeg`, sul web un quadrato centrale 160×160 (circa 5 KB), sul telefono larga 160 con le proporzioni (non provato), con un limite di 150.000 caratteri. Un `blob:` non sopravvive a una ricarica, e lo storage del browser ha la stessa quota dell'inventario.
 5. **Azioni spente toccabili e inerti.** Restano attenuate e il tocco non fa nulla; il motivo sta nella riga sopra. Niente `disabled`, che sul web diventa `aria-disabled`.
 6. **Inviti e cambio di spazio tolti da Impostazioni.** Con `LOGIN_ENABLED = false` erano codice morto. ACC3 li rifà in Accesso con i ruoli; il codice di prima è a `1db2c12`, `SettingsScreen.tsx:59-99` e `:543-589`.
+7. **L'autore è dichiarato, non verificato** (parere del revisore): senza account chiunque scrive «Mario», e anche la Cronologia si cambia dallo storage. Dice chi ha fatto che cosa, non lo prova; diventa affidabile con gli account (ACC3) e gli eventi firmati dal telefono che li manda (RETE2a).
 
 ## Verifica
 
