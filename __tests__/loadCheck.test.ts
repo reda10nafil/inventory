@@ -314,3 +314,33 @@ describe('checkLoadAt: il controllo delle schermate (correzioni del revisore di 
     expect(checkLoadAt(d, {}, `magazzino/${a.id}`, [])).toEqual({ level: 'ok', name: 'A', place: 'scaffale', fill: null });
   });
 });
+
+describe('checkLoadAt: seconda revisione di S3', () => {
+  const data = (extra: Partial<LoadData>): LoadData => ({ products: [], shelves: [], categories, locations: [], ...extra });
+  it('posizione in avviso (non oltre): lo scaffale libero della stessa posizione si propone', () => {
+    const y1 = shelf('qy1', 'Y1', { maxPieces: 1, locationId: 'y' });
+    const y2 = shelf('qy2', 'Y2', { maxPieces: 10, locationId: 'y' });
+    const there = [piece({ id: 'a', location: 'y', shelfId: y1.id }), piece({ id: 'q', location: 'y', unit: 'pz', stock: { y: 7 } })];
+    const unico = piece({ id: 'u', location: 'w' });
+    const locations = [{ id: 'y', label: 'Y', capacity: 10 }, { id: 'w', label: 'W' }];
+    const r = checkLoadAt(data({ products: [...there, unico], shelves: [y1, y2], locations }), unico, `y/${y1.id}`, moveSources(unico, `y/${y1.id}`), { sourcesFor: (key) => moveSources(unico, key) });
+    expect(r).toMatchObject({ level: 'blocco', name: 'Y1', proposal: { name: 'Y2', freePercent: 90 } }); // Y a 9 su 10: avviso, va bene
+  });
+  it('«libero al» e la scelta col carico vero: tutta la posizione principale va sullo scaffale proposto', () => {
+    const a1 = shelf('qa1', 'A1', { maxPieces: 10 });
+    const a2 = shelf('qa2', 'A2', { maxPieces: 20 });
+    const art = piece({ unit: 'pz', stock: { magazzino: 1, [`magazzino/${a1.id}`]: 10 } });
+    const to = `magazzino/${a1.id}`;
+    const r = checkLoadAt(data({ products: [art], shelves: [a1, a2] }), art, to, moveSources(art, to), { sourcesFor: (key) => moveSources(art, key) });
+    expect(r.proposal).toMatchObject({ name: 'A2', freePercent: 45 }); // 11 su 20 = 55%, non «libero al 95%»
+  });
+  it('uno scaffale che col carico vero va bene non si scarta per la stima', () => {
+    const a1 = shelf('qb1', 'A1', { maxPieces: 2 });
+    const a2 = shelf('qb2', 'A2', { maxPieces: 10 });
+    const art = piece({ unit: 'pz', stock: { magazzino: 1, [`magazzino/${a2.id}`]: 4, [`magazzino/${a1.id}`]: 2 } });
+    const to = `magazzino/${a1.id}`;
+    const r = checkLoadAt(data({ products: [art], shelves: [a1, a2] }), art, to, moveSources(art, to), { sourcesFor: (key) => moveSources(art, key) });
+    expect(r).toMatchObject({ level: 'blocco', reason: '7 pezzi, il massimo è 2' });
+    expect(r.proposal).toMatchObject({ name: 'A2', freePercent: 30 }); // su A2 arrivano 1 + 2 (A2 ha già 4): 7 su 10
+  });
+});

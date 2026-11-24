@@ -752,6 +752,18 @@ function limitsAfter(shelf: ShelfCapacity, after: ShelfLoad): { level: LoadLevel
   return { level: fill && fill.percent >= 80 ? 'avviso' : 'ok', fill };
 }
 
+/**
+ * Come cercare la proposta (revisore di S3): `incomingFor` dà la merce che arriverebbe davvero in un altro posto (per
+ * uno spostamento parte altro: `moveSources` verso quel posto), `null` se lì non arriva nulla (il posto di partenza);
+ * `accept` scarta una proposta per un altro motivo (la posizione che la contiene oltre la capienza); `noProposal` salta
+ * la ricerca (il ricontrollo di una proposta non ne cerca altre).
+ */
+export interface ProposalOptions {
+  incomingFor?: (key: string) => Incoming | null;
+  accept?: (proposal: LoadProposal) => boolean;
+  noProposal?: boolean;
+}
+
 /** Libero dopo il carico in percentuale (per difetto), o assente senza limiti. */
 const freeAfter = (fill: FillLevel | null): number | undefined => (fill ? Math.max(0, 100 - fill.percent) : undefined);
 
@@ -765,14 +777,14 @@ export function checkShelfLoad(
   shelf: Shelf,
   products: readonly Loaded[],
   incoming: Incoming,
-  others: { shelves: readonly Shelf[]; categories: readonly CategoryNode[]; accept?: (proposal: LoadProposal) => boolean },
+  others: { shelves: readonly Shelf[]; categories: readonly CategoryNode[] } & ProposalOptions,
 ): LoadCheck {
   const base = { name: shelf.name, place: 'scaffale' as const };
   if (!hasMeasures(shelf)) return { ...base, level: 'ok', fill: null };
   const fit = fitsShelf(incoming.product, shelf);
   const after = sumLoad(shelfLoad(shelf, products), incomingLoad(incoming));
   const result = fit.fits ? limitsAfter(shelf, after) : { level: 'blocco' as const, reason: upperFirst(fit.reason), fill: fillLevel(shelf, after) };
-  if (result.level === 'ok') return { ...base, ...result };
+  if (result.level === 'ok' || others.noProposal) return { ...base, ...result };
   const proposal = proposeShelf(shelf, products, incoming, others);
   return { ...base, ...result, ...(proposal && { proposal }) };
 }
@@ -781,24 +793,26 @@ export function checkShelfLoad(
  * Scaffale proposto (ticket 15, «Scaffale proposto»): tra gli altri scaffali della stessa posizione in cui il prodotto
  * entra e che restano sotto l'80% dopo il carico, prima quelli della sua categoria (o di una sopra), poi i generici;
  * a parità quello con più spazio libero; quelli senza limiti dopo quelli con i limiti (non si sa quanto spazio
- * hanno), per nome. Nessuno adatto: `undefined`. `accept` (revisore di S3) scarta una proposta che col carico vero non
- * va: `checkLoadAt` la ricontrolla con la merce che ci arriverebbe davvero e con la capienza della posizione.
+ * hanno), per nome. Nessuno adatto: `undefined`. Filtro, ordine e «libero al» si calcolano con la merce che arriverebbe
+ * davvero in ogni scaffale (`incomingFor`, revisore di S3); `accept` scarta per la posizione (`checkLoadAt`).
  */
 export function proposeShelf(
   shelf: Shelf,
   products: readonly Loaded[],
   incoming: Incoming,
-  { shelves, categories, accept }: { shelves: readonly Shelf[]; categories: readonly CategoryNode[]; accept?: (proposal: LoadProposal) => boolean },
+  { shelves, categories, accept, incomingFor }: { shelves: readonly Shelf[]; categories: readonly CategoryNode[] } & ProposalOptions,
 ): LoadProposal | undefined {
   const { product } = incoming;
   const own = product.libraryId ? [product.libraryId, ...categoryAncestors(categories, product.libraryId).map((c) => c.id)] : [];
-  const arriving = incomingLoad({ ...incoming, before: 0 });
   const candidates = shelvesFor(shelves, categories, { location: shelf.locationId, libraryId: product.libraryId })
     .filter((s) => s.id !== shelf.id && fitsShelf(product, s).fits)
-    .map((s) => {
+    .flatMap((s) => {
+      // La merce che arriverebbe davvero qui (senza `incomingFor`: quella in arrivo, come se lì non ce ne fosse)
+      const inc = incomingFor ? incomingFor(stockKey(s.locationId, s.id)) : { ...incoming, before: 0 };
+      if (!inc || !(inc.add > 0)) return [];
       const now = shelfLoad(s, products);
-      const fill = hasCapacity(s) ? fillLevel(s, sumLoad(now, arriving)) : null;
-      return { s, now, fill, group: s.libraryId && own.includes(s.libraryId) ? 0 : 1 };
+      const fill = hasCapacity(s) ? fillLevel(s, sumLoad(now, incomingLoad(inc))) : null;
+      return [{ s, now, fill, group: s.libraryId && own.includes(s.libraryId) ? 0 : 1 }];
     })
     // Sotto l'80% dopo il carico (il riempimento è il più alto dei limiti: sotto l'80% nessuno è superato)
     .filter(({ fill }) => !fill || fill.percent < 80);
@@ -839,20 +853,21 @@ export function checkPlaceLoad(
   products: readonly Loaded[],
   incoming: Incoming,
   places: readonly CappedPlace[],
-  accept?: (proposal: LoadProposal) => boolean,
+  { accept, incomingFor, noProposal }: ProposalOptions = {},
 ): LoadCheck {
   const base = { name: place.label, place: 'posizione' as const };
   const cap = placeCapacity(place);
   if (!positive(cap.maxPieces)) return { ...base, level: 'ok', fill: null };
   const result = limitsAfter(cap, sumLoad(placeLoad(place.id, products), incomingLoad(incoming)));
-  if (result.level === 'ok') return { ...base, ...result };
-  const arriving = incomingLoad({ ...incoming, before: 0 });
+  if (result.level === 'ok' || noProposal) return { ...base, ...result };
   const at = places.findIndex((p) => p.id === place.id);
   const order = at >= 0 ? [...places.slice(at + 1), ...places.slice(0, at)] : places.filter((p) => p.id !== place.id);
   for (const other of order) {
+    const inc = incomingFor ? incomingFor(other.id) : { ...incoming, before: 0 };
+    if (!inc || !(inc.add > 0)) continue; // lì non arriverebbe nulla: è da dove parte
     const otherCap = placeCapacity(other);
     const now = placeLoad(other.id, products);
-    const fill = positive(otherCap.maxPieces) ? fillLevel(otherCap, sumLoad(now, arriving)) : null;
+    const fill = positive(otherCap.maxPieces) ? fillLevel(otherCap, sumLoad(now, incomingLoad(inc))) : null;
     if (fill && fill.percent >= 80) continue;
     const free = freeAfter(fill);
     const proposal: LoadProposal = {
@@ -890,8 +905,10 @@ function arrivingAt(to: string, sources: readonly LoadSource[]): number {
  * schermate (`hooks/useLoadCheck.ts`): lo scaffale (`checkShelfLoad`) e, se la posizione ha una capienza, la posizione
  * (`checkPlaceLoad`, con la merce che arriva da fuori). Vale il più grave; a parità quello con una proposta, poi la
  * posizione (revisore di S3: la proposta di un altro scaffale non deve scavalcare una posizione piena). Ogni proposta
- * si ricontrolla con la merce che ci arriverebbe davvero (`sourcesFor`, per uno spostamento `moveSources` verso quel
- * posto) e deve dare ok: niente proposta che porta oltre un limite, né il posto di partenza (nulla da spostare).
+ * si cerca con la merce che ci arriverebbe davvero (`sourcesFor`, per uno spostamento `moveSources` verso quel posto):
+ * sotto l'80% dopo il carico vero, mai il posto di partenza (nulla da spostare); uno scaffale proposto solo se la sua
+ * posizione non va oltre la capienza (l'avviso della posizione basta). Il ricontrollo della posizione non cerca altre
+ * proposte (`noProposal`).
  * `soloScaffale`: senza la posizione (l'import la controlla a parte, con la somma della riga).
  */
 export function checkLoadAt(
@@ -902,33 +919,31 @@ export function checkLoadAt(
   opts: { sourcesFor?: (key: string) => readonly LoadSource[]; soloScaffale?: boolean } = {},
 ): LoadCheck {
   const sourcesFor = opts.sourcesFor ?? (() => sources);
-  const results = (key: string, from: readonly LoadSource[], accept?: (p: LoadProposal) => boolean, soloScaffale = false): LoadCheck[] => {
-    const saved = product.id ? data.products.find((p) => p.id === product.id) : undefined;
+  const saved = product.id ? data.products.find((p) => p.id === product.id) : undefined;
+  /** La merce che arriverebbe in `key` (uno scaffale o una posizione) da `from`; `null` se non ne arriva. */
+  const incomingAt = (key: string, from: readonly LoadSource[]): Incoming | null => {
+    const add = arrivingAt(key, from);
+    return add > 0 ? { product, before: saved ? qtyAt(saved, key) : 0, add } : null;
+  };
+  const results = (key: string, from: readonly LoadSource[], proposals: ProposalOptions, soloScaffale = false): LoadCheck[] => {
     const { place, shelfId } = splitStockKey(key);
     const location = data.locations.find((l) => l.id === place);
     const shelf = shelfId ? data.shelves.find((s) => s.id === shelfId && s.locationId === place) : undefined;
     const out: LoadCheck[] = [];
-    if (shelf) {
-      const add = arrivingAt(key, from);
-      if (add > 0) {
-        out.push(checkShelfLoad(shelf, data.products, { product, before: saved ? qtyAt(saved, key) : 0, add }, { shelves: data.shelves, categories: data.categories, accept }));
-      }
-    }
-    if (!soloScaffale && location?.capacity) {
-      const add = arrivingAt(place, from);
-      if (add > 0) {
-        out.push(checkPlaceLoad(location, data.products, { product, before: saved ? qtyAt(saved, place) : 0, add }, data.locations, accept));
-      }
-    }
+    const toShelf = shelf ? incomingAt(key, from) : null;
+    if (shelf && toShelf) out.push(checkShelfLoad(shelf, data.products, toShelf, { shelves: data.shelves, categories: data.categories, ...proposals }));
+    const toPlace = !soloScaffale && location?.capacity ? incomingAt(place, from) : null;
+    if (location && toPlace) out.push(checkPlaceLoad(location, data.products, toPlace, data.locations, proposals));
     return out;
   };
-  // Una proposta va bene se lì arriva davvero qualcosa e il carico vero (scaffale e posizione) dà ok
-  const accept = (p: LoadProposal): boolean => {
-    const from = sourcesFor(p.key);
-    if (!(arrivingAt(p.key, from) > 0)) return false;
-    return results(p.key, from, () => false).every((r) => r.level === 'ok');
+  // Le proposte si cercano con la merce che arriverebbe davvero in ogni posto (`sourcesFor`); uno scaffale proposto
+  // dentro una posizione con capienza va bene solo se la posizione non va oltre il limite (l'avviso basta)
+  const proposals: ProposalOptions = {
+    incomingFor: (key) => incomingAt(key, sourcesFor(key)),
+    accept: (p) => !p.shelfId || results(p.key, sourcesFor(p.key), { noProposal: true })
+      .every((r) => r.place === 'scaffale' || r.level !== 'blocco'),
   };
-  const found = results(to, sources, accept, opts.soloScaffale);
+  const found = results(to, sources, proposals, opts.soloScaffale);
   if (!found.length) {
     const { place, shelfId } = splitStockKey(to);
     const shelf = shelfId ? data.shelves.find((s) => s.id === shelfId) : undefined;
