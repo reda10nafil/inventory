@@ -4,10 +4,15 @@
 // (NG16). Ora niente all'import, lettura a richiesta e scrittura in un tocco. Non provato sul telefono (NG20: la
 // libreria 3.x è dichiarata per la vecchia architettura, il progetto ha `newArchEnabled=true`).
 import { Platform } from 'react-native';
-import NfcManager, { Ndef, NdefStatus, NfcEvents, NfcTech, type TagEvent } from 'react-native-nfc-manager';
+import NfcManager, { Ndef, NdefStatus, NfcError, NfcEvents, NfcTech, type TagEvent } from 'react-native-nfc-manager';
 import { createNfcService, type NfcDriver, type NfcTagEvent } from './nfcCore';
 
 const asTag = (tag: TagEvent | null): NfcTagEvent | null => (tag ? (tag as unknown as NfcTagEvent) : null);
+// iOS: il pannello chiuso dall'utente arriva come `NfcError.UserCancel`, un errore senza messaggio: lo si dice «cancel»
+// (il servizio lo legge come Annulla). Con `instanceof`, perché i nomi delle classi non restano nel bundle di release.
+const cancelAware = <T,>(p: Promise<T>): Promise<T> => p.catch((error: unknown) => {
+  throw error instanceof NfcError.UserCancel ? new Error('cancel') : error;
+});
 
 const driver: NfcDriver = {
   os: Platform.OS === 'ios' ? 'ios' : 'android',
@@ -21,13 +26,13 @@ const driver: NfcDriver = {
     NfcEvents.StateChanged,
     listener ? (event: { state?: string } | string) => listener(typeof event === 'string' ? event : event?.state ?? '') : null,
   ),
-  requestNdef: async (options) => (await NfcManager.requestTechnology(NfcTech.Ndef, options)) != null,
+  requestNdef: async (options) => (await cancelAware(NfcManager.requestTechnology(NfcTech.Ndef, options))) != null,
   getTag: async () => asTag(await NfcManager.getTag()),
   ndefStatus: async () => {
     const s = await NfcManager.ndefHandler.getNdefStatus();
     return { writable: s.status === NdefStatus.ReadWrite, capacity: s.capacity };
   },
-  writeNdef: (bytes) => NfcManager.ndefHandler.writeNdefMessage(bytes),
+  writeNdef: (bytes) => cancelAware(NfcManager.ndefHandler.writeNdefMessage(bytes)),
   cancelRequest: () => NfcManager.cancelTechnologyRequest(),
 };
 

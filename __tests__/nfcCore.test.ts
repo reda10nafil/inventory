@@ -4,7 +4,10 @@
 // - Android: un tag arriva all'app solo con il reader mode registrato; `requestTechnology` senza registrazione la crea
 //   da sola e `cancelTechnologyRequest` la toglie un secondo dopo (`NfcManagerAndroid.js:32-62`);
 // - iOS: l'evento della sessione NDEF (`registerTagEvent`) non porta l'`id` (`ios/NfcManager.m:165-176`), `getTag`
-//   dopo `requestTechnology` sì; il pannello chiuso dall'utente rifiuta la richiesta con «UserCancel».
+//   dopo `requestTechnology` sì; il pannello chiuso dall'utente rifiuta la richiesta con `NfcError.UserCancel`, che il
+//   driver vero (`utils/nfcService.ts`, `cancelAware`) passa al servizio come un errore «cancel»: qui il driver finto
+//   rifiuta già così (la traduzione sta nel driver vero, che jest non carica);
+// - `getTag` dopo l'annullamento della richiesta dà errore (Android: ERR_NO_TECH_REQ).
 import { createNfcService, SILENCER, type NfcDriver, type NfcTagEvent } from '../utils/nfcCore';
 
 type Listener<T> = ((value: T) => void) | null;
@@ -13,7 +16,7 @@ function fakeDriver(os: 'android' | 'ios' = 'android', { supported = true, enabl
   const calls: string[] = [];
   let tagListener: Listener<NfcTagEvent> = null;
   let stateListener: Listener<string> = null;
-  let closedListener: Listener<void> = null;
+  let connected = false; // c'è una richiesta collegata a un tag
   let pendingRequest: { resolve: (connected: boolean) => void; reject: (e: Error) => void } | null = null;
   let current: NfcTagEvent | null = null;
   const native = { registered: false, libraryOwns: false };
@@ -27,18 +30,18 @@ function fakeDriver(os: 'android' | 'ios' = 'android', { supported = true, enabl
     unregisterTagEvent: async () => { calls.push('unregister'); native.registered = false; },
     onTag: (l) => { tagListener = l; },
     onStateChange: (l) => { stateListener = l; },
-    onSessionClosed: (l) => { closedListener = l; },
     requestNdef: (options) => {
       calls.push('request');
       state.registerOptions.push(options);
       if (os === 'android' && !native.registered) { native.registered = true; native.libraryOwns = true; }
       return new Promise<boolean>((resolve, reject) => { pendingRequest = { resolve, reject }; });
     },
-    getTag: async () => current,
+    getTag: async () => { if (!connected) throw new Error('no tech request available'); return current; },
     ndefStatus: async () => ({ writable: state.writable, capacity: 137 }),
     writeNdef: async () => { calls.push('write'); if (state.writeFails) throw new Error('tag allontanato'); },
     cancelRequest: async () => {
       calls.push('cancel');
+      connected = false;
       if (pendingRequest) { const p = pendingRequest; pendingRequest = null; p.reject(new Error('cancelled')); }
       if (native.libraryOwns) {
         native.libraryOwns = false;
@@ -55,14 +58,14 @@ function fakeDriver(os: 'android' | 'ios' = 'android', { supported = true, enabl
       else if (native.registered) tagListener?.(tag);
       if (pendingRequest && (os === 'ios' || native.registered)) {
         const p = pendingRequest; pendingRequest = null;
+        connected = true;
         p.resolve(!tag.techTypes || tag.techTypes.some((t) => /Ndef$/.test(t)));
       }
     },
     nfcState(value: string) { stateListener?.(value); },
-    /** iOS: l'utente chiude il pannello di sistema. */
+    /** iOS: l'utente chiude il pannello di sistema (come lo passa il driver vero). */
     closeSession() {
-      closedListener?.();
-      if (pendingRequest) { const p = pendingRequest; pendingRequest = null; p.reject(new Error('UserCancel')); }
+      if (pendingRequest) { const p = pendingRequest; pendingRequest = null; p.reject(new Error('cancel')); }
     },
     get listening() { return tagListener !== null; },
   };

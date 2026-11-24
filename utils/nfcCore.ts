@@ -35,7 +35,10 @@ export interface NfcDriver {
   unregisterTagEvent(): Promise<void>;
   onTag(listener: ((tag: NfcTagEvent) => void) | null): void;
   onStateChange(listener: ((state: string) => void) | null): void;
-  /** Vero se il tag si è collegato con la tecnologia Ndef (la libreria dà `null` per un tag che non la sa). */
+  /**
+   * Vero se il tag si è collegato con la tecnologia Ndef (la libreria dà `null` per un tag che non la sa). Il pannello
+   * di iOS chiuso dall'utente rifiuta con un errore che dice «cancel» (il driver traduce `NfcError.UserCancel`).
+   */
   requestNdef(options: ReaderOptions): Promise<boolean>;
   getTag(): Promise<NfcTagEvent | null>;
   ndefStatus(): Promise<{ writable: boolean; capacity: number }>;
@@ -70,7 +73,7 @@ export interface NfcService {
 }
 
 const message = (error: unknown) => String((error as { message?: string } | null)?.message ?? error ?? '');
-// iOS: il pannello di sistema chiuso dall'utente rifiuta la richiesta («UserCancel»): non è un errore da dire
+// iOS: il pannello di sistema chiuso dall'utente rifiuta la richiesta (il driver lo dice con «cancel»): non è un errore
 const failure = (error: unknown): NfcOutcome => (/cancel/i.test(message(error)) ? { esito: 'annullato' } : { esito: 'errore', messaggio: message(error) });
 // Android: un tag senza la tecnologia Ndef (mai formattato, o di un altro tipo) non si collega alla richiesta di scrittura
 const isNonNdef = (tag: NfcTagEvent) => !!tag.techTypes?.length && !tag.techTypes.some((t) => /(^|\.)Ndef$/.test(t));
@@ -254,6 +257,7 @@ export function createNfcService(driver: NfcDriver): NfcService {
           // In reader mode la libreria manda l'evento di ogni tag: uno senza Ndef non si collegherebbe mai, lo si dice
           driver.onTag((tag) => { if (isNonNdef(tag)) void stop({ esito: 'non-ndef', id: tag.id ?? null }); });
           await holdReader(); // la registrazione è del servizio, non di `requestTechnology`
+          if (reason) return reason; // Annulla mentre si registrava: la richiesta non parte
         }
         let connected: boolean;
         try {
@@ -295,7 +299,7 @@ export function createNfcService(driver: NfcDriver): NfcService {
         await driver.writeNdef(bytes);
         return { esito: 'scritto', id: tag.id ?? null };
       } catch (error) {
-        return { esito: 'errore', messaggio: message(error) };
+        return failure(error);
       } finally {
         await closeSession();
       }

@@ -22,7 +22,8 @@ export function useTagLinks() {
     else if (ref.kind === 'shelf') {
       const shelf = shelves.find((s) => s.id === ref.id);
       if (!shelf) return;
-      // `updateShelf` riscrive lo scaffale: si tiene tutto il resto (codice, categoria, misure e limiti di S2)
+      // `updateShelf` riscrive lo scaffale con quello che `shelfData` conserva: si passa tutto il resto com'è (oggi nome,
+      // categoria e codice; dopo l'unione con S2 anche misure e limiti, se il suo `shelfData` li tiene)
       const { id, createdAt: _created, locationId: _place, ...rest } = shelf;
       await updateShelf(id, { ...rest, nfcTag: nfcTag ?? '' });
     }

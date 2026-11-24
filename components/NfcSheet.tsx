@@ -87,7 +87,8 @@ export function NfcSheet({ visible, mode, onClose, code = '', self, onRead, onDo
     const me = self ?? { kind: 'product' as const, id: '' };
     const step = writeStep(opened.tag, code, me, sources, { writable: opened.writable, capacity: opened.capacity }, canLink);
     if (step.kind === 'readonly') { await nfcService.cancel(); return show(id, { kind: 'fine', text: step.text, retry: true }); }
-    if (step.kind === 'write' || (confirmed !== undefined && step.uid === confirmed)) return doWrite(id, step.uid, step.clear);
+    // stesso tag già confermato (con l'UID: due tag senza UID non si riconoscono, si chiede di nuovo)
+    if (step.kind === 'write' || (confirmed != null && step.uid === confirmed)) return doWrite(id, step.uid, step.clear);
     if (!nfcService.holdsTagWhileAsking) await nfcService.cancel(); // iOS: il pannello di sistema coprirebbe la domanda
     show(id, {
       kind: 'conferma',
