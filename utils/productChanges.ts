@@ -46,6 +46,7 @@ export function describeChanges(
   if (changed('length')) out.push(`Lunghezza: ${num(before.length)} → ${num(updates.length)}`);
   if (changed('width')) out.push(`Larghezza: ${num(before.width)} → ${num(updates.width)}`);
   if (changed('weight')) out.push(`Peso: ${num(before.weight)} → ${num(updates.weight)}`);
+  if (changed('height')) out.push(`Altezza: ${num(before.height)} → ${num(updates.height)}`); // S2
   if (changed('productionDate')) out.push(`Data produzione: ${show(before.productionDate)} → ${show(updates.productionDate)}`);
   if (changed('minStock')) out.push(`Scorta minima: ${num(before.minStock)} → ${num(updates.minStock)}`);
   if (changed('technicalNotes')) out.push('Note aggiornate');

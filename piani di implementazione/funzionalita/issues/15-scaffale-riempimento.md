@@ -1,6 +1,6 @@
 # Scaffale: riempimento e avvisi
 
-Tipo: grilling. Stato: **chiuso** il 22 novembre 2026 sera, **aggiornato il 23 mattina** (risposta dell'utente: soglie confermate e **blocco** quando il prodotto non entra; vedi in fondo). Fette: S2 (riempimento), S3 (avviso, blocco e proposta). Dipende dai ticket 13 e 14.
+Tipo: grilling. Stato: **chiuso** il 22 novembre 2026 sera, **aggiornato il 23 mattina** (risposta dell'utente: soglie confermate e **blocco** quando il prodotto non entra; vedi in fondo). Fette: S2 (riempimento, **fatto il 24 novembre**, vedi in fondo), S3 (avviso, blocco e proposta). Dipende dai ticket 13 e 14.
 
 ## Question
 
@@ -64,3 +64,9 @@ Tra gli scaffali della stessa posizione in cui il prodotto **entra** (`fitsShelf
 ## Come si torna indietro
 
 Togliere il blocco e lasciare l'avviso; o togliere entrambi: il riempimento resta solo un'informazione.
+
+## Riempimento fatto in S2 (24 novembre 2026, corsia B)
+
+- **Fatta la parte del riempimento** (fetta S2, ticket 14): `fillLevel` in `utils/shelves.ts` (il più alto tra pezzi, peso e volume; percentuale per difetto, così 199 su 200 è 99% e non «pieno»; verde fino al 50%, blu fino all'80%, rosso oltre, «Pieno» al 100%, «Pieno (110%)» sopra), barra alta 6 con la percentuale scritta accanto («72%», revisione UX0) in `components/ShelfFill.tsx` con i ruoli del tema `success`, `info`, `error` (nei 5 stili, `stili-s2.jpg`), in Impostazioni › Scaffali (con «Liberi: … pezzi · … kg») e nella Scheda («Spazio sullo scaffale»). Uno scaffale senza limiti non ha barra. Prova `s2-capacita.cjs` · `s2-riempimento`; collaudo CF-D2.
+- **Pronto per S3**: `fitsShelf` (motivo del blocco «non entra»), `shelfLoad` (carico in pezzi, kg e cm³ dalle chiavi `posizione/scaffale`), `fillLevel` (soglie dell'avviso), `fitCount` e `fitCountText` (perché lo scaffale proposto va bene: «A2: ne entrano ancora 5», aggiunta della corsia B del 24), `shelvesOfProduct`. Il carico «in arrivo» di `checkShelfLoad` si fa sommando la quantità al `ShelfLoad` (pezzi + q, peso + q × peso, volume + q × volume) e richiamando `fillLevel`.
+- **Resta a S3** (invariato): avviso, blocco e proposta nei punti di carico; lo scaffale come destinazione nelle automazioni (aggiunta della corsia B del 24); posizioni con `capacity` in pezzi (AU-V13).

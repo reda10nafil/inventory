@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { appendLayoutFields } from '../utils/templateFields';
+import { withLateBaseFields } from '../utils/templateFields';
 
 // Types
 export type FieldSize = 'small' | 'medium' | 'full'; // 33%, 50%, 100%
@@ -47,6 +48,8 @@ const DEFAULT_LAYOUT: LayoutConfig = {
         { id: 'length', type: 'base', size: 'small', visible: true },
         { id: 'width', type: 'base', size: 'small', visible: true },
         { id: 'weight', type: 'base', size: 'small', visible: true },
+        // S2 (ticket 14): «Altezza» in fondo alle misure; nei layout salvati prima la mette `withLateBaseFields`
+        { id: 'height', type: 'base', size: 'small', visible: true },
 
         // Sezione Note
         { id: 'section_note', type: 'section', size: 'full', visible: true, label: 'NOTE' },
@@ -126,7 +129,10 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
                     // Auto-save the new default
                     await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(DEFAULT_LAYOUT));
                 } else {
-                    setLayout(parsed);
+                    // S2 (ticket 14): «Altezza» anche nei layout salvati prima, solo in memoria: il layout salvato non
+                    // si riscrive e la `version` non cambia (vincolo 1 di map-3); si salva con il prossimo «Salva»
+                    const fields = Array.isArray(parsed.fields) ? withLateBaseFields(parsed.fields) : parsed.fields;
+                    setLayout(fields === parsed.fields ? parsed : { ...parsed, fields });
                 }
             }
         } catch (error) {

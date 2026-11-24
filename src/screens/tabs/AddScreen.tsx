@@ -58,6 +58,7 @@ export default function AddProductScreen() {
     length: '',
     width: '',
     weight: '',
+    height: '', // S2
     technicalNotes: '',
     libraryId: '',
   });
@@ -272,6 +273,7 @@ export default function AddProductScreen() {
 
       const qty = qtyText.trim() ? parseQty(qtyText) : undefined;
       const minStock = qty != null ? parseMinStock(minText) : undefined;
+      const height = parseNumber(formData.height); // S2 (ticket 14)
       const added = addProduct({
         sku: finalSKU,
         furType: formData.furType,
@@ -286,6 +288,7 @@ export default function AddProductScreen() {
         length: parseNumber(formData.length),
         width: parseNumber(formData.width),
         weight: parseNumber(formData.weight),
+        ...(height != null && { height }), // S2: senza altezza il campo non c'è
         technicalNotes: formData.technicalNotes || undefined,
         libraryId: formData.libraryId || undefined,
         gs1DigitalLink,
@@ -324,6 +327,7 @@ export default function AddProductScreen() {
                 length: '',
                 width: '',
                 weight: '',
+                height: '', // S2
                 technicalNotes: '',
                 libraryId: '',
               });
@@ -700,6 +704,21 @@ export default function AddProductScreen() {
               value: formData.technicalNotes,
               onChangeText: (value) => updateField('technicalNotes', value),
               numberOfLines: 4,
+            })}
+          </View>
+        );
+
+      // S2 (ticket 14): altezza del prodotto, per sapere su quali scaffali entra e quanti ne entrano
+      case 'height':
+        return (
+          <View key="height" style={sizeStyle}>
+            {renderLabel()}
+            {renderInputWithIcon({
+              placeholder: '40',
+              value: formData.height,
+              onChangeText: (value) => updateField('height', value),
+              keyboardType: 'numeric',
+              unit: 'cm',
             })}
           </View>
         );

@@ -176,6 +176,7 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await label(h, 'Nuovo scaffale').click(); await h.page.waitForTimeout(300);
     await field(h, 'Nome').fill('Giacche');
     await label(h, 'Posizione Magazzino').click();
+    await label(h, 'Categoria dello scaffale').click(); // S2 (UX0): la categoria dello scaffale è una tendina
     await label(h, 'Categoria Pellicce').click();
     await field(h, 'Codice dello scaffale').fill('SCAF-GIACCHE');
     await field(h, 'Tag NFC (facoltativo)').fill('04:A2:3B:1C');
@@ -202,6 +203,7 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await label(h, 'Modifica scaffale Giacche').click(); await h.page.waitForTimeout(400);
     const modifica = { titolo: await h.has('Modifica scaffale', true), posizioneFissa: await h.has('La posizione si sceglie alla creazione e poi resta quella.', true), pilloleposizione: await hasLabel(h, 'Posizione Vetrina') };
     await field(h, 'Nome').fill('Giacche lunghe');
+    await label(h, 'Categoria dello scaffale').click(); // S2 (UX0): tendina
     await label(h, 'Categoria Collezione Inverno').click();
     await label(h, 'Salva scaffale').click(); await h.page.waitForTimeout(600);
     const finale = (await h.store(S)) || [];

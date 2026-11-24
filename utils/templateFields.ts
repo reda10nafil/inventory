@@ -23,3 +23,27 @@ export function appendLayoutFields(current: readonly LayoutField[], ids: readonl
   const added = [...new Set(ids)].filter((id) => !present.has(id)).map((id) => ({ id, type: 'custom' as const, size, visible: true }));
   return [...current, ...added];
 }
+
+/**
+ * Campi Base nati dopo i layout già salvati (S2, ticket 14: «Altezza»): vanno subito dopo l'ultima delle misure che ci
+ * sono (lunghezza, larghezza, peso). Un layout senza nessuna di quelle (misure tolte dall'utente) resta com'è.
+ */
+const LATE_BASE_FIELDS: { id: string; after: readonly string[]; size: FieldSize }[] = [
+  { id: 'height', after: ['length', 'width', 'weight'], size: 'small' },
+];
+
+/**
+ * Layout letto con i campi Base nuovi, **solo in memoria**: chi lo chiama non lo riscrive e la `version` non cambia
+ * (vincolo 1 di map-3, che sostituirebbe il modulo dell'utente). Stesso array se non manca niente.
+ */
+export function withLateBaseFields(fields: LayoutField[]): LayoutField[] {
+  let out = fields;
+  for (const late of LATE_BASE_FIELDS) {
+    if (out.some((f) => f.id === late.id)) continue;
+    let at = -1;
+    out.forEach((f, i) => { if (late.after.includes(f.id)) at = i; });
+    if (at < 0) continue;
+    out = [...out.slice(0, at + 1), { id: late.id, type: 'base', size: late.size, visible: true }, ...out.slice(at + 1)];
+  }
+  return out;
+}

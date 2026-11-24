@@ -40,6 +40,7 @@ import { canMoveStock as canMoveStockRule } from '../../../utils/productRules';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { UNKNOWN_SHELF } from '../../../utils/shelves';
+import { ShelfSpace } from '../../../components/ShelfSpace';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -940,6 +941,9 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
+          {/* S2 (ticket 14 e 15): riempimento dello scaffale del prodotto e quanti ne entrano ancora come questo */}
+          <ShelfSpace product={product} />
+
           {/* Prezzi: anche 0 è un prezzo (CSV-I6: con `&&` sul numero restava uno «0» isolato, e a 0 e 0 la sezione spariva) */}
           {(product.purchasePrice != null || product.sellPrice != null) && (
             <View style={styles.section}>
@@ -964,7 +968,7 @@ export default function ProductDetailScreen() {
           )}
 
           {/* Measurements */}
-          {!!(product.length || product.width || product.weight) && (
+          {!!(product.length || product.width || product.weight || product.height) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Misure</Text>
               <View style={styles.measureRow}>
@@ -987,6 +991,14 @@ export default function ProductDetailScreen() {
                     <AppIcon name="fitness-center" size={22} color={t.colors.fieldIcon} />
                     <Text style={styles.measureLabel}>Peso</Text>
                     <Text style={styles.measureValue}>{formatNumber(product.weight)} kg</Text>
+                  </View>
+                )}
+                {/* S2 (ticket 14): altezza, in fondo alle misure */}
+                {!!product.height && (
+                  <View style={styles.measureCard}>
+                    <AppIcon name="height" size={22} color={t.colors.fieldIcon} />
+                    <Text style={styles.measureLabel}>Altezza</Text>
+                    <Text style={styles.measureValue}>{formatNumber(product.height)} cm</Text>
                   </View>
                 )}
               </View>

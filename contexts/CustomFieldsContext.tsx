@@ -27,6 +27,8 @@ export const SYSTEM_FIELDS: CustomField[] = [
     { id: 'length', name: 'Lunghezza', type: 'number', uiType: 'text', required: false, order: 7, isSystem: true, icon: 'straighten', unit: 'cm' },
     { id: 'width', name: 'Larghezza', type: 'number', uiType: 'text', required: false, order: 8, isSystem: true, icon: 'straighten', unit: 'cm' },
     { id: 'weight', name: 'Peso', type: 'number', uiType: 'text', required: false, order: 9, isSystem: true, icon: 'fitness-center', unit: 'kg' },
+    // S2 (ticket 14): altezza del prodotto per gli scaffali; ordine tra Peso e Note senza rinumerare i campi salvati
+    { id: 'height', name: 'Altezza', type: 'number', uiType: 'text', required: false, order: 9.5, isSystem: true, icon: 'height', unit: 'cm' },
     { id: 'technicalNotes', name: 'Note Tecniche', type: 'text_long', uiType: 'text', required: false, order: 10, isSystem: true, icon: 'notes' },
 ];
 

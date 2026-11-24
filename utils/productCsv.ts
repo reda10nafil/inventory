@@ -20,8 +20,8 @@ import {
 const mainFirst = (location: string) => (key: string) => (key === location ? 2 : placeOfKey(key) === location ? 1 : 0);
 
 // Stesse posizioni delle colonne di prima di C1: cambiano solo i nomi della seconda («Categoria» → «Tipo di pelle»)
-// e della sedicesima («Cartella» → «Categoria»). «Scaffale» (S1a) è l'ultima: le altre restano dove erano.
-export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Categoria', 'Unità', 'Giacenza', 'Scorta minima', 'Scaffale'];
+// e della sedicesima («Cartella» → «Categoria»). «Scaffale» (S1a) e poi «Altezza» (S2) in fondo: le altre restano dove erano.
+export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Categoria', 'Unità', 'Giacenza', 'Scorta minima', 'Scaffale', 'Altezza'];
 
 /**
  * Giacenza di un articolo a quantità per il CSV: «magazzino:12; vetrina:2.5», con la posizione principale per
@@ -84,6 +84,7 @@ export function productCsvRows(products: readonly Product[], categories: readonl
       stockCell(product),
       product.minStock,
       productShelf(product, shelves)?.name ?? '',
+      product.height,
     ]),
   ];
 }
@@ -151,6 +152,8 @@ export function productCsvColumns(header: readonly string[]) {
     minStock: column('scorta minima', 'min stock'),
     // S1a: scaffale (nome dentro la posizione)
     shelf: column('scaffale', 'shelf'),
+    // S2: altezza del prodotto (cm), ultima colonna
+    height: column('altezza', 'height'),
   };
 }
 
@@ -195,6 +198,7 @@ export function productFromCsvRow(
   }
   const shelfId = stock ? undefined : shelfIdFromCsv(valueAt(cols.shelf), location, shelves);
   const minStock = numberAt(cols.minStock);
+  const height = numberAt(cols.height);
 
   const rawStatus = valueAt(cols.status).toLocaleLowerCase();
   // Un articolo a quantità non è mai «venduto» (ticket 03): con la giacenza è disponibile
@@ -233,6 +237,7 @@ export function productFromCsvRow(
       ...(stock && { unit: valueAt(cols.unit) || undefined }),
       ...(stock && minStock != null && minStock >= 0 && { minStock }),
       ...(shelfId && { shelfId }),
+      ...(height != null && height > 0 && { height }),
     },
   };
 }
