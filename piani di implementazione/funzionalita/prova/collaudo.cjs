@@ -528,6 +528,105 @@ async function cfB3(h) {
   return { ok, ...out };
 }
 
+// ---- CF-D (parti S2, corsia B, 24/11): ripiano A1 con misure, riempimento a colori, barra da 15 grucce ----
+// Il blocco del prodotto che non entra e del pezzo in più (CF-D3, CF-D4, il 16° capo di CF-D5) è di S3; codice ed
+// etichetta di A1 con Stampa (CF-D1) di ETI.
+const S2_SHELVES = 'furinventory_shelves:local';
+const s2Label = (h, name) => h.page.getByLabel(name, { exact: true }).locator('visible=true').first();
+const s2Barre = (h) => h.page.evaluate(() => [...document.querySelectorAll('[data-testid^="riempimento-"]')]
+  .filter((e) => e.getClientRects().length > 0)
+  .map((e) => ({ etichetta: e.getAttribute('aria-label'), fascia: e.getAttribute('data-testid').replace('riempimento-', ''), colore: getComputedStyle(e.firstElementChild.firstElementChild).backgroundColor })));
+/** Scaffali salvati e VIS-0098 a quantità in Magazzino (1 pz, senza peso né misure: conta solo i pezzi), poi ricarica. */
+async function s2Prepara(h, shelves) {
+  await h.page.evaluate(([sk, shelves]) => {
+    localStorage.setItem(sk, JSON.stringify(shelves));
+    const pk = 'inventory:v1:local:products';
+    const list = JSON.parse(localStorage.getItem(pk));
+    const p = list.find((x) => x.sku === 'VIS-0098');
+    Object.assign(p, { stock: { magazzino: 1 }, unit: 'pz', location: 'magazzino' });
+    for (const k of ['shelfId', 'weight', 'length', 'width']) delete p[k];
+    localStorage.setItem(pk, JSON.stringify(list));
+  }, [S2_SHELVES, shelves]);
+  await h.go('');
+}
+async function s2Carico(h, sku, posto, qty) {
+  await h.go(''); await h.click(sku); await h.page.waitForTimeout(800);
+  await s2Label(h, 'Movimenta').click(); await h.page.waitForTimeout(500);
+  await s2Label(h, 'Tipo Carico').click();
+  await s2Label(h, 'In Magazzino').click();
+  await s2Label(h, `In Magazzino › ${posto}`).click();
+  await h.page.locator('input[placeholder^="es. 2,5"]').locator('visible=true').first().fill(String(qty));
+  await s2Label(h, 'Registra movimento').click(); await h.page.waitForTimeout(900);
+}
+
+// CF-D1 (parte S2): categoria Borse, poi dal modulo il ripiano «A1» 50×50×30 cm, 10 kg, 20 pezzi in Magazzino, categoria
+// Borse: salvato con le misure e il codice creato da solo (SCAF-MAGAZZINO-A1), nell'elenco con le misure e la barra a 0%
+async function cfD1(h) {
+  await h.go('settings/folders');
+  await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('Borse');
+  await h.click('Crea Categoria');
+  await h.go('settings/shelves');
+  await s2Label(h, 'Nome').fill('A1');
+  await s2Label(h, 'Posizione Magazzino').click();
+  await s2Label(h, 'Categoria dello scaffale').click(); await h.page.waitForTimeout(300); // tendina (UX0)
+  await s2Label(h, 'Categoria Borse').click();
+  await s2Label(h, 'Tipo Ripiano').click();
+  for (const [campo, valore] of [['Lunghezza', '50'], ['Profondità', '50'], ['Altezza', '30'], ['Peso massimo', '10'], ['Pezzi massimi', '20']]) await s2Label(h, campo).fill(valore);
+  await s2Label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(800);
+  const salvato = ((await h.store(S2_SHELVES)) || [])[0] || {};
+  const categoria = ((await h.store('inventory:v1:local:libraries', 0)) || []).find((c) => c.name === 'Borse');
+  const riga = await s2Label(h, 'Modifica scaffale A1').evaluate((e) => e.innerText);
+  const barre = await s2Barre(h);
+  const ok = salvato.name === 'A1' && salvato.locationId === 'magazzino' && !!categoria && salvato.libraryId === categoria.id
+    && salvato.length === 50 && salvato.depth === 50 && salvato.height === 30 && salvato.maxWeight === 10 && salvato.maxPieces === 20 && !salvato.kind
+    && salvato.barcode === 'SCAF-MAGAZZINO-A1' && riga.includes('Base 50 × 50 cm, alta 30 cm · fino a 10 kg · fino a 20 pezzi')
+    && barre.length === 1 && barre[0].etichetta === 'Riempimento A1: 0%' && barre[0].fascia === 'verde';
+  return { ok, salvato: { ...salvato, id: undefined, createdAt: undefined }, riga, barre, daFare: 'finestra «Codice ed etichetta» con Stampa dopo la creazione (ETI)' };
+}
+
+// CF-D2: su A1 (20 pezzi) si caricano con Movimenta 10, poi 6, poi 4 pezzi: 50% verde, 80% blu, «Pieno» rosso, ognuno col
+// colore del suo ruolo del tema (tre colori diversi); la Scheda dice quanti ne entrano ancora
+async function cfD2(h) {
+  const a1 = { id: '1732300000000-cfd1', name: 'A1', locationId: 'magazzino', length: 50, depth: 50, height: 30, maxWeight: 10, maxPieces: 20 };
+  await s2Prepara(h, [a1]);
+  const passi = [];
+  for (const qty of [10, 6, 4]) {
+    await s2Carico(h, 'VIS-0098', 'A1', qty);
+    const scheda = await h.page.evaluate(() => (document.body.innerText.match(/Su A1 [^\n]*/) || [null])[0]);
+    await h.go('settings/shelves');
+    const [b] = await s2Barre(h);
+    passi.push({ ...b, scheda });
+  }
+  const stock = ((await h.products(0)).find((p) => p.sku === 'VIS-0098') || {}).stock;
+  const atteso = [['Riempimento A1: 50%', 'verde'], ['Riempimento A1: 80%', 'blu'], ['Riempimento A1: Pieno', 'rosso']];
+  const ok = passi.length === 3 && passi.every((p, i) => p.etichetta === atteso[i][0] && p.fascia === atteso[i][1])
+    && new Set(passi.map((p) => p.colore)).size === 3 && passi[0].scheda === 'Su A1 ne entrano ancora 10 come questo'
+    && passi[2].scheda === 'Su A1 non ne entrano altri: pezzi al massimo' && !!stock && stock[`magazzino/${a1.id}`] === 20;
+  return { ok, passi, stock };
+}
+
+// CF-D5 (parte S2): dal modulo la barra appendiabiti da 15 grucce (Magazzino); 15 capi appesi con Movimenta: «Pieno», 0
+// grucce libere, la Scheda dice che non ne entrano altri
+async function cfD5(h) {
+  await s2Prepara(h, []);
+  await h.go('settings/shelves');
+  await s2Label(h, 'Nome').fill('Barra giacche');
+  await s2Label(h, 'Posizione Magazzino').click();
+  await s2Label(h, 'Tipo Barra appendiabiti').click(); await h.page.waitForTimeout(300);
+  const senzaLati = !(await h.page.getByLabel('Lunghezza', { exact: true }).locator('visible=true').count());
+  await s2Label(h, 'Grucce massime').fill('15');
+  await s2Label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(800);
+  const salvata = ((await h.store(S2_SHELVES)) || [])[0] || {};
+  await s2Carico(h, 'VIS-0098', 'Barra giacche', 15);
+  const scheda = await h.page.evaluate(() => (document.body.innerText.match(/Su Barra giacche [^\n]*/) || [null])[0]);
+  await h.go('settings/shelves');
+  const riga = await s2Label(h, 'Modifica scaffale Barra giacche').evaluate((e) => e.innerText);
+  const [b] = await s2Barre(h);
+  const ok = salvata.kind === 'barra' && salvata.maxPieces === 15 && senzaLati && !!b && b.etichetta === 'Riempimento Barra giacche: Pieno'
+    && b.fascia === 'rosso' && riga.includes('Liberi: 0 grucce') && scheda === 'Su Barra giacche non ne entrano altri: pezzi al massimo';
+  return { ok, salvata: { ...salvata, id: undefined, createdAt: undefined }, senzaLati, barra: b, riga, scheda, daFare: 'il 16° capo bloccato con la proposta di un altro scaffale (S3)' };
+}
+
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
@@ -542,11 +641,11 @@ const PASSI = [
   ['CF-C2', 'Ricaricare la pagina: le 3 foto ci sono ancora', 'FOTO'],
   ['CF-C3', 'Modifica: foto principale, eliminare la foto 3', 'GAL', cfC3],
   ['CF-C4', 'Modifica senza cambiare nulla, poi cambio di un campo', 'COD, VAL, GAL', cfC4],
-  ['CF-D1', 'Ripiano «A1» con misure, peso e pezzi', 'S1a, S2, ETI'],
-  ['CF-D2', 'Riempimento al 50%, 80%, 100%', 'S2'],
+  ['CF-D1', 'Ripiano «A1» con misure, peso e pezzi', 'S1a, S2, ETI', cfD1],
+  ['CF-D2', 'Riempimento al 50%, 80%, 100%', 'S2', cfD2],
   ['CF-D3', 'Prodotto troppo grande, troppo pesante, pezzo in più: blocco e proposta', 'S3'],
   ['CF-D4', 'Stesso carico da tutti i punti di carico', 'S3'],
-  ['CF-D5', 'Barra appendiabiti da 15 grucce, 16° capo', 'S2, S3'],
+  ['CF-D5', 'Barra appendiabiti da 15 grucce, 16° capo', 'S2, S3', cfD5],
   ['CF-E1', 'Scanner con SKU, SKU minuscolo, vecchio link GS1', 'COD', cfE1],
   ['CF-E2', 'Scanner con i codici di posizione, scaffale, categoria; nessun codice doppio', 'COD', cfE2],
   ['CF-E3', 'Le 5 automazioni con lo stesso codice di prodotto', 'COD, ESE', cfE3],

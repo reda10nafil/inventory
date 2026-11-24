@@ -11,9 +11,16 @@ import { useLocations } from '../../../contexts/LocationsContext';
 import {
   shelfDeleteError, shelfKind, shelfNameError, shelfUsage, shelvesByLocation, suggestShelfCode, type Shelf,
 } from '../../../utils/shelves';
+// S2 (ticket 14 e 15): tipo, misure e limiti, riempimento, spazio libero, quanti ne entrano di un prodotto
+import {
+  capacityFromForm, capacityLabel, capacityText, fillLevel, fitCount, fitCountText, freeText, hasMeasures, measuresText,
+  shelfLoad, type ShelfType,
+} from '../../../utils/shelves';
+import { ShelfFill } from '../../../components/ShelfFill';
+import { formatNumberInput } from '../../../utils/number';
 import BarcodeScanner from '../../../components/BarcodeScanner';
 import { codeCheck, codeOwner } from '../../../utils/codes';
-import { CategoryPicker } from '../../../components/CategoryPicker';
+import { CategorySelect } from '../../../components/CategorySelect';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -24,6 +31,19 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 
 const productsText = (n: number) => (n === 0 ? 'Nessun prodotto' : n === 1 ? '1 prodotto' : `${n} prodotti`);
+
+// S2: campi numerici del modulo, per tipo (UX0): le misure in una riga a 1/3 con «cm» dentro il campo (Lunghezza,
+// Altezza, Profondità; la barra solo l'altezza libera), poi peso e pezzi affiancati, tutti e due facoltativi
+type CapacityKey = 'length' | 'depth' | 'height' | 'maxWeight' | 'maxPieces';
+const MEASURE_ROW: Record<ShelfType, CapacityKey[]> = { ripiano: ['length', 'height', 'depth'], barra: ['height'] };
+const LIMIT_ROW: CapacityKey[] = ['maxWeight', 'maxPieces'];
+const CAPACITY_UNITS: Partial<Record<CapacityKey, string>> = { length: 'cm', depth: 'cm', height: 'cm' };
+/** Unità nell'etichetta dei limiti: «Peso massimo (kg)», «Pezzi massimi (pz)»; le grucce si contano e basta. */
+const limitLabel = (key: CapacityKey, kind: ShelfType) =>
+  `${capacityLabel(key, kind)}${key === 'maxWeight' ? ' (kg)' : key === 'maxPieces' && kind !== 'barra' ? ' (pz)' : ''}`;
+const KIND_LABELS: Record<ShelfType, string> = { ripiano: 'Ripiano', barra: 'Barra appendiabiti' };
+// Prodotti proposti mentre si scrive nella prova «Quanti ne entrano»
+const PROBE_MAX = 6;
 
 export default function ShelvesScreen() {
   const styles = useStyles();
@@ -42,8 +62,21 @@ export default function ShelvesScreen() {
   const [showScanner, setShowScanner] = useState(false);
   const [qrShelf, setQrShelf] = useState<Shelf | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // S2: tipo e capacità nel modulo (testi come scritti, letti al salvataggio con `capacityFromForm`)
+  const [kind, setKind] = useState<ShelfType>('ripiano');
+  const [capTexts, setCapTexts] = useState<Partial<Record<CapacityKey, string>>>({});
+  // S2: prodotto di prova per «quanti ne entrano» su ogni scaffale
+  const [probeQuery, setProbeQuery] = useState('');
+  const [probeId, setProbeId] = useState<string | null>(null);
 
   const usage = useMemo(() => shelfUsage(products, shelves), [products, shelves]);
+  const loads = useMemo(() => new Map(shelves.map((s) => [s.id, shelfLoad(s, products)])), [shelves, products]);
+  const probe = probeId ? products.find((p) => p.id === probeId && !p.deletedAt) : undefined;
+  const probeMatches = useMemo(() => {
+    const q = probeQuery.trim().toLocaleLowerCase();
+    if (!q || probe) return [];
+    return products.filter((p) => !p.deletedAt && p.sku.toLocaleLowerCase().includes(q)).slice(0, PROBE_MAX);
+  }, [probeQuery, probe, products]);
   const groups = useMemo(() => shelvesByLocation(shelves, locations), [shelves, locations]);
   const editing = shelves.find((s) => s.id === editingId);
   const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
@@ -58,12 +91,18 @@ export default function ShelvesScreen() {
 
   const resetForm = () => {
     setName(''); setLocationId(''); setLibraryId(''); setBarcode(''); setNfcTag('');
+    setKind('ripiano'); setCapTexts({});
     setEditingId(null); setFormOpen(false);
   };
 
   const startEdit = (shelf: Shelf) => {
     setName(shelf.name); setLocationId(shelf.locationId); setLibraryId(shelf.libraryId ?? '');
     setBarcode(shelf.barcode ?? ''); setNfcTag(shelf.nfcTag ?? '');
+    setKind(shelf.kind === 'barra' ? 'barra' : 'ripiano');
+    setCapTexts({
+      length: formatNumberInput(shelf.length), depth: formatNumberInput(shelf.depth), height: formatNumberInput(shelf.height),
+      maxWeight: formatNumberInput(shelf.maxWeight), maxPieces: formatNumberInput(shelf.maxPieces),
+    });
     setEditingId(shelf.id); setFormOpen(true);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
@@ -72,13 +111,19 @@ export default function ShelvesScreen() {
     // COD (NG25): codice e tag (anche l'UID scritto in un altro modo) già usati altrove si rifiutano se sono nuovi;
     // un doppione già salvato prima non blocca il salvataggio di un altro campo, ma si segnala
     const codeChecks = [barcodeHint, tagHint];
-    const error = shelfNameError(shelves, name, locationId, editingId ?? undefined) ?? codeChecks.find((c) => c.error)?.error;
+    // S2: misure e limiti facoltativi; un numero sbagliato si dice e non si salva nulla
+    const capacity = capacityFromForm(kind, capTexts);
+    const error = shelfNameError(shelves, name, locationId, editingId ?? undefined) ?? capacity.error ?? codeChecks.find((c) => c.error)?.error;
     if (error) {
       Alert.alert('Errore', error);
       return;
     }
     const warning = codeChecks.map((c) => c.warning).filter(Boolean).join('\n\n');
-    const data = { name, libraryId, barcode, nfcTag };
+    // UX0: alla creazione un codice vuoto si crea da solo, dalla posizione e dal nome (`suggestShelfCode`, mai già usato)
+    const code = (barcode.trim() || editingId)
+      ? barcode
+      : suggestShelfCode(placeLabel(locationId), name, (c) => codeOwner(c, sources) !== null);
+    const data = { name, libraryId, barcode: code, nfcTag, ...capacity.capacity };
     if (editingId) {
       await updateShelf(editingId, data);
       Alert.alert(warning ? 'Scaffale aggiornato' : 'Fatto', warning || 'Scaffale aggiornato');
@@ -185,18 +230,76 @@ export default function ShelvesScreen() {
               </View>
             )}
 
+            {/* UX0 (audit G4): tendina con «Generico» per primo, al posto delle pillole a capo */}
             <Text style={styles.label}>Categoria</Text>
-            <CategoryPicker categories={libraries} value={libraryId} onChange={setLibraryId} showNone noneLabel="Generico" />
+            <CategorySelect categories={libraries} value={libraryId} onChange={setLibraryId} noneLabel="Generico" label="Categoria dello scaffale" />
+            {!libraries.some((c) => c.id === libraryId) ? (
+              <Text style={styles.hint}>Generico: per prodotti di ogni categoria.</Text>
+            ) : null}
+
+            {/* S2 (ticket 14): tipo, misure e limiti, tutti facoltativi */}
+            <Text style={styles.label}>Tipo</Text>
+            <View style={styles.chipWrap}>
+              {(['ripiano', 'barra'] as const).map((k) => {
+                const active = kind === k;
+                return (
+                  <Pressable
+                    key={k}
+                    style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
+                    onPress={() => setKind(k)}
+                    accessibilityLabel={`Tipo ${KIND_LABELS[k]}`}
+                    accessibilityState={{ selected: active }}
+                  >
+                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                    <AppIcon name={k === 'barra' ? 'checkroom' : 'shelves'} size={16} color={active ? t.colors.chipActiveText : t.colors.chipText} />
+                    <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]}>{KIND_LABELS[k]}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
             <Text style={styles.hint}>
-              Generico: per prodotti di ogni categoria. Uno scaffale di una categoria vale anche per le sue sottocategorie.
+              {kind === 'barra'
+                ? 'Per i capi appesi: quante grucce porta, quanto peso e quanto spazio c\'è sotto la barra (un capo più lungo non entra).'
+                : 'Scaffale, cassetto o contenitore: le misure interne dicono che scatole ci stanno e quante.'}
+            </Text>
+            {[MEASURE_ROW[kind], LIMIT_ROW].map((row, r) => (
+              <View key={row.join('-')} style={styles.capRow}>
+                {row.map((key) => {
+                  const label = capacityLabel(key, kind);
+                  const unit = CAPACITY_UNITS[key];
+                  return (
+                    <View key={key} style={styles.capCell}>
+                      <Text style={styles.label} numberOfLines={2}>{r === 0 ? label : limitLabel(key, kind)}</Text>
+                      <View style={[styles.inputBox, styles.inputBoxSmall]}>
+                        <TextInput
+                          style={styles.inputText}
+                          placeholder="—"
+                          placeholderTextColor={t.colors.placeholder}
+                          value={capTexts[key] ?? ''}
+                          onChangeText={(v) => setCapTexts((prev) => ({ ...prev, [key]: v }))}
+                          keyboardType={key === 'maxPieces' ? 'number-pad' : 'decimal-pad'}
+                          accessibilityLabel={label}
+                        />
+                        {unit ? <Text style={[styles.unit, styles.unitSmall]}>{unit}</Text> : null}
+                      </View>
+                    </View>
+                  );
+                })}
+                {/* Le misure restano a 1/3 anche quando sono meno di tre (barra) */}
+                {r === 0 && row.length < 3 ? Array.from({ length: 3 - row.length }, (_, i) => <View key={`vuoto-${i}`} style={styles.capCell} />) : null}
+              </View>
+            ))}
+            <Text style={styles.hint}>
+              Tutto facoltativo, anche uno solo: con le misure si sa che scatole ci stanno; con il peso o i pezzi, quanto porta.
             </Text>
 
-            <Text style={styles.label}>Codice (QR, facoltativo)</Text>
+            {/* UX0: «Codice»; alla creazione, se resta vuoto, si crea da solo al salvataggio (come «Genera») */}
+            <Text style={styles.label}>Codice</Text>
             <View style={styles.inputRow}>
               <View style={[styles.inputBox, styles.inputFill]}>
                 <TextInput
                   style={styles.inputText}
-                  placeholder="Scansiona o genera"
+                  placeholder={editingId ? 'Scansiona o genera' : 'Si crea da solo'}
                   placeholderTextColor={t.colors.placeholder}
                   value={barcode}
                   onChangeText={setBarcode}
@@ -247,6 +350,51 @@ export default function ShelvesScreen() {
           </Pressable>
         )}
 
+        {/* S2 (corsia B, 24/11): un prodotto di prova, e ogni scaffale dice quanti ne entrano ancora come quello */}
+        {shelves.length > 0 && (
+          <View style={styles.probeCard}>
+            <Text style={styles.probeTitle}>Quanti ne entrano</Text>
+            {probe ? (
+              <View style={styles.probeChosen}>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemLabel} numberOfLines={1}>{probe.sku}</Text>
+                  <Text style={styles.itemMeta}>{measuresText(probe) || 'Senza misure né peso: conta solo i pezzi'}</Text>
+                </View>
+                <Pressable onPress={() => { setProbeId(null); setProbeQuery(''); }} hitSlop={8} accessibilityLabel="Togli il prodotto di prova">
+                  <AppIcon name="close" size={20} color={t.colors.textSecondary} />
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <View style={styles.inputBox}>
+                  <AppIcon name="search" size={18} color={t.colors.fieldIcon} />
+                  <TextInput
+                    style={styles.inputText}
+                    placeholder="SKU di un prodotto, es. VIS-0142"
+                    placeholderTextColor={t.colors.placeholder}
+                    value={probeQuery}
+                    onChangeText={setProbeQuery}
+                    autoCapitalize="characters"
+                    accessibilityLabel="Prodotto da provare"
+                  />
+                </View>
+                {probeMatches.length > 0 && (
+                  <View style={[styles.chipWrap, styles.probeMatches]}>
+                    {probeMatches.map((p) => (
+                      <Pressable key={p.id} style={[styles.chip, styles.chipSmall]} onPress={() => setProbeId(p.id)} accessibilityLabel={`Prova con ${p.sku}`}>
+                        <Text style={[styles.chipText, styles.chipTextSmall]}>{p.sku}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+            <Text style={styles.hint}>
+              {probe ? 'Ogni scaffale qui sotto dice quanti ne entrano ancora come questo.' : 'Scegli un prodotto: ogni scaffale dirà quanti ne entrano ancora come quello.'}
+            </Text>
+          </View>
+        )}
+
         <Text style={styles.listTitle}>Scaffali ({shelves.length})</Text>
         {groups.map((group) => (
           <View key={group.locationId}>
@@ -254,6 +402,12 @@ export default function ShelvesScreen() {
             {group.shelves.map((shelf) => {
               const used = usage[shelf.id];
               const count = (used?.active ?? 0) + (used?.trashed ?? 0);
+              // S2: misure, riempimento e spazio libero solo per gli scaffali che li hanno
+              const load = loads.get(shelf.id) ?? { pieces: 0, weight: 0, volume: 0 };
+              const capacity = shelf.kind === 'barra' || hasMeasures(shelf) ? capacityText(shelf) : '';
+              const fill = fillLevel(shelf, load);
+              const free = freeText(shelf, load);
+              const probeText = probe ? fitCountText(fitCount(shelf, probe, load), shelf.name, `come ${probe.sku}`) : '';
               return (
                 <Pressable
                   key={shelf.id}
@@ -272,6 +426,10 @@ export default function ShelvesScreen() {
                     {/* Codice e tag per intero, ognuno sulla sua riga (un codice lungo va a capo) */}
                     {shelf.barcode ? <Text style={styles.itemMeta}>Codice {shelf.barcode}</Text> : null}
                     {shelf.nfcTag ? <Text style={styles.itemMeta}>NFC {shelf.nfcTag}</Text> : null}
+                    {capacity ? <Text style={styles.itemMeta}>{capacity}</Text> : null}
+                    {fill ? <ShelfFill fill={fill} name={shelf.name} /> : null}
+                    {free ? <Text style={styles.itemMeta}>{free}</Text> : null}
+                    {probeText ? <Text style={[styles.itemMeta, styles.probeLine]} accessibilityLabel={`Quanti ne entrano: ${probeText}`}>{probeText}</Text> : null}
                   </View>
                   {shelf.barcode ? (
                     <Pressable onPress={() => setQrShelf(shelf)} hitSlop={8} accessibilityLabel={`Codice QR di ${shelf.name}`}>
@@ -486,5 +644,37 @@ const useStyles = makeStyles((t) => ({
   },
   codeHintWarning: {
     color: t.colors.warningText,
+  },
+  // S2: misure in righe da tre (o due), prova «Quanti ne entrano»
+  capRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  capCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  probeCard: {
+    ...cardSurface(t),
+    padding: 14,
+    marginBottom: 20,
+  },
+  probeTitle: {
+    ...t.typography.sectionHeader,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  probeChosen: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  probeMatches: {
+    marginTop: 8,
+  },
+  probeLine: {
+    color: t.colors.textPrimary,
+    fontWeight: t.weights.strong,
+    marginTop: 4,
   },
 }));

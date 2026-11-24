@@ -19,7 +19,8 @@ export function useInstallFields() {
         created += 1;
       }
     }
-    const layoutFields = await appendToLayout(ids, size);
+    // S2 (revisore): un campo del modello abbinato a un campo di sistema («Altezza», «Peso») entra nel layout come Base
+    const layoutFields = await appendToLayout(ids, size, customFields.filter((f) => f.isSystem).map((f) => f.id));
     return { created, existing: ids.length - created, layoutFields };
   };
 }

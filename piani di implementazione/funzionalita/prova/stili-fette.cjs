@@ -317,6 +317,7 @@ const FETTE = {
         await page.getByLabel('Nuovo scaffale', { exact: true }).first().click(); await page.waitForTimeout(400);
         await page.getByLabel('Nome', { exact: true }).first().fill('Ripiano giacche da sera');
         await page.getByLabel('Posizione Magazzino', { exact: true }).first().click();
+        await page.getByLabel('Categoria dello scaffale', { exact: true }).first().click(); await page.waitForTimeout(400); // S2: tendina
         await page.getByLabel('Categoria Pellicce', { exact: true }).first().click();
         await page.getByLabel('Genera il codice', { exact: true }).first().click(); await page.waitForTimeout(400);
         await page.getByText('Categoria', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
@@ -683,6 +684,57 @@ const FETTE = {
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;
+// S2 (corsia B, 24/11): scaffali con le barre verde, blu e rossa, modulo di un ripiano e di una barra, «Quanti ne
+// entrano», Scheda con il riempimento. Aggiunta qui sotto (non dentro l'oggetto) per non scontrarsi con le altre corsie.
+FETTE.s2 = {
+  prepara: () => {
+    const pk = 'inventory:v1:local:products';
+    localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+      { id: '1732300000000-s2a1', name: 'A1', locationId: 'magazzino', length: 50, depth: 50, height: 30, maxWeight: 10, maxPieces: 20 },
+      { id: '1732300000000-s2a2', name: 'A2', locationId: 'magazzino', libraryId: 'pellicce', maxPieces: 10 },
+      { id: '1732300000000-s2a3', name: 'A3', locationId: 'magazzino', maxPieces: 10, maxWeight: 25 },
+      { id: '1732300000000-s2b1', name: 'Barra giacche', locationId: 'magazzino', kind: 'barra', height: 150, maxPieces: 15 },
+    ]));
+    const list = JSON.parse(localStorage.getItem(pk));
+    const set = (sku, data, drop = []) => { const p = list.find((x) => x.sku === sku); Object.assign(p, data); for (const k of drop) delete p[k]; };
+    set('VIS-0098', { unit: 'pz', location: 'magazzino', stock: { 'magazzino/1732300000000-s2a1': 8 } }, ['weight', 'length', 'width']); // 40%
+    set('LIN-0021', { unit: 'pz', location: 'magazzino', stock: { 'magazzino/1732300000000-s2a2': 7 } }, ['weight']); // 70%
+    set('PUZ-0012', { unit: 'pz', location: 'magazzino', stock: { 'magazzino/1732300000000-s2a3': 9 } }, ['weight']); // 90%
+    set('VIS-0142', { location: 'magazzino', shelfId: '1732300000000-s2b1' });
+    set('VOL-0087', { length: 40, width: 30, height: 20 });
+    localStorage.setItem(pk, JSON.stringify(list));
+  },
+  schermate: [
+    ['scaffali', async (page) => {
+      await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+      await page.getByText('Scaffali (4)', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['scaffali-barra', async (page) => {
+      await page.getByLabel('Modifica scaffale Barra giacche', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['modulo-ripiano', async (page) => {
+      await page.getByLabel('Modifica scaffale A1', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      await page.getByText('Tipo', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['modulo-barra', async (page) => {
+      await page.getByLabel('Modifica scaffale Barra giacche', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      await page.getByText('Tipo', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['tendina-categoria', async (page) => {
+      await page.getByLabel('Categoria dello scaffale', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(700);
+    }],
+    ['quanti-ne-entrano', async (page) => {
+      await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+      await page.getByLabel('Prodotto da provare', { exact: true }).first().fill('VOL'); await page.waitForTimeout(300);
+      await page.getByLabel('Prova con VOL-0087', { exact: true }).first().click(); await page.waitForTimeout(400);
+      await page.getByText('Quanti ne entrano', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['scheda', async (page) => {
+      await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
+      await page.getByText('Spazio sullo scaffale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+  ],
+};
 
 (async () => {
   const fetta = FETTE[process.env.FETTA];

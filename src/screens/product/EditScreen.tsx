@@ -84,6 +84,7 @@ function EditProductForm({ product }: { product: Product }) {
     length: formatNumberInput(product?.length),
     width: formatNumberInput(product?.width),
     weight: formatNumberInput(product?.weight),
+    height: formatNumberInput(product?.height), // S2
     technicalNotes: product?.technicalNotes || '',
     libraryId: product?.libraryId || '',
     minStock: formatNumberInput(product?.minStock),
@@ -211,6 +212,7 @@ function EditProductForm({ product }: { product: Product }) {
       length: parseNumber(formData.length),
       width: parseNumber(formData.width),
       weight: parseNumber(formData.weight),
+      height: parseNumber(formData.height), // S2 (ticket 14)
       technicalNotes: formData.technicalNotes || undefined,
       libraryId: formData.libraryId || undefined,
       customData: Object.keys(customFieldValues)
@@ -442,6 +444,20 @@ function EditProductForm({ product }: { product: Product }) {
                 style={[styles.inputGroup, styles.thirdWidth]}
               />
             ))}
+          </View>
+
+          {/* S2 (ticket 14): altezza del prodotto per gli scaffali, in una riga a sé sotto le misure */}
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, styles.thirdWidth]}>
+              {renderLabel('Altezza (cm)')}
+              {renderInput({
+                placeholder: '40',
+                value: formData.height,
+                onChangeText: (value) => updateField('height', value),
+                numeric: true,
+                small: true,
+              })}
+            </View>
           </View>
 
           {renderSection('Note tecniche')}

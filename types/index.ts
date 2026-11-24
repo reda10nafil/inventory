@@ -20,6 +20,8 @@ export interface Product {
   length?: number;
   width?: number;
   weight?: number;
+  /** Altezza in cm (S2, ticket 14), facoltativa: con lunghezza e larghezza dà il volume per gli scaffali. */
+  height?: number;
   productionDate?: string;
   technicalNotes?: string;
   customData: ProductCustomData[];

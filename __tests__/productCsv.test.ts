@@ -277,7 +277,8 @@ describe('Scaffale nel CSV dei prodotti (S1a)', () => {
   const lists = { categories: libraries, furTypes: DEFAULT_FUR_TYPES, shelves };
 
   it('in fondo: le colonne di prima restano dove erano e il formato resta riconosciuto', () => {
-    expect(PRODUCT_CSV_HEADER.indexOf('Scaffale')).toBe(PRODUCT_CSV_HEADER.length - 1);
+    // S2: dopo «Scaffale» c'è «Altezza», in fondo; «Scaffale» resta la ventesima
+    expect(PRODUCT_CSV_HEADER.indexOf('Scaffale')).toBe(19);
     expect(PRODUCT_CSV_HEADER.slice(15, 19)).toEqual(['Categoria', 'Unità', 'Giacenza', 'Scorta minima']);
     expect(productCsvFormat(PRODUCT_CSV_HEADER)).toBe('c1');
     expect(productCsvColumns(PRODUCT_CSV_HEADER).shelf).toBe(19);
@@ -350,5 +351,23 @@ describe('Scaffale nel CSV dei prodotti (S1a)', () => {
     const cols = productCsvColumns(rows[0]);
     const back = rows.slice(1).map((row) => productFromCsvRow(row, cols, lists)?.product);
     expect(back.map((p) => [p?.sku, p?.location, p?.shelfId])).toEqual([['A', 'vetrina', '1700000000000-aaa'], ['B', 'magazzino', '1700000000000-bbb'], ['C', 'vetrina', undefined]]);
+  });
+});
+
+describe('Altezza nel CSV dei prodotti (S2)', () => {
+  const lists = { categories: [], furTypes: DEFAULT_FUR_TYPES };
+  it('ultima colonna, esportata e riletta; un CSV di prima senza la colonna dà un prodotto senza altezza', () => {
+    expect(PRODUCT_CSV_HEADER[PRODUCT_CSV_HEADER.length - 1]).toBe('Altezza');
+    expect(productCsvColumns(PRODUCT_CSV_HEADER).height).toBe(20);
+    const rows = productCsvRows([product({ sku: 'A', height: 42.5 }), product({ sku: 'B' })], []);
+    expect(rows.slice(1).map((r) => r[20])).toEqual([42.5, undefined]);
+    const csv = parseCsv(stringifyCsv(rows));
+    const cols = productCsvColumns(csv[0]);
+    const back = csv.slice(1).map((row) => productFromCsvRow(row, cols, lists)?.product);
+    expect(back.map((x) => x?.height)).toEqual([42.5, undefined]);
+    expect('height' in (back[1] ?? {})).toBe(false);
+    const old = productCsvColumns(PRODUCT_CSV_HEADER.slice(0, 20));
+    expect(old.height).toBe(-1);
+    expect('height' in (productFromCsvRow(['A', 'visone', 'vetrina'], old, lists)?.product ?? {})).toBe(false);
   });
 });

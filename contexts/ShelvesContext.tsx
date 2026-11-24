@@ -15,7 +15,8 @@ interface ShelvesContextType {
   loading: boolean;
   /** Aggiunge uno scaffale (nome, posizione e codice vanno controllati prima) e lo restituisce. */
   addShelf: (data: ShelfInput) => Promise<Shelf>;
-  /** Cambia nome, categoria, codice e tag; la posizione resta quella della creazione. */
+  /** Sostituisce nome, categoria, codice, tag e capacità (S2) con quelli dati: chi chiama passa lo scaffale intero
+   *  (un campo che manca si toglie). La posizione resta quella della creazione. */
   updateShelf: (id: string, data: Omit<ShelfInput, 'locationId'>) => Promise<void>;
   /** Elimina (chi chiama controlla prima che sia vuoto, `shelfDeleteError`). */
   deleteShelf: (id: string) => Promise<void>;
