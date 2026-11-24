@@ -24,6 +24,9 @@
 //   applicato in Aggiungi e in Modifica;
 // - edc-gruppi: Campi Personalizzati raggruppati per tipo, col numero dei campi;
 // - edc-ruota-scorre: la ruota si ferma da sola sul valore al centro dopo la rotella del mouse.
+// Dopo il parere del revisore (e799818):
+// - edc-ruota-fuori-fila: un valore che non è tra quelli della ruota (numero o testo di prima) si legge e «–» lo toglie;
+// - edc-card-data: una data nella card si legge come data.
 // Ogni scenario restituisce `ok` e i dettagli. Uso: node edc-editor.cjs [nome-scenario]
 const { scenario } = require('./lib.cjs');
 const { clickAt, skus } = require('./a1-util.cjs');
@@ -469,5 +472,42 @@ const forma = (f) => f && { type: f.type, uiType: f.uiType, input: f.input, look
     const p = await e.salvaNuovo(h);
     const ok = p.width === 60 && nellaFascia === 'Larghezza 60 cm';
     return { ok, larghezza: p.width, nellaFascia };
+  });
+  // 15. Dopo il parere del revisore: la ruota mostra e toglie un valore che non è tra i suoi (anche un testo di prima)
+  await run('edc-ruota-fuori-fila', async (h) => {
+    await h.page.evaluate(() => {
+      const cf = 'furinventory_custom_fields:local';
+      const fields = JSON.parse(localStorage.getItem(cf));
+      const sp = fields.find((f) => f.id === 'field_cmp_spessore');
+      Object.assign(sp, { input: 'wheel', dataset: { min: 0, max: 10, step: 2 } });
+      localStorage.setItem(cf, JSON.stringify(fields));
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      list.find((p) => p.sku === 'VIS-0098').customData.push({ value: 'circa 3', fieldSnapshot: { ...sp, input: undefined, dataset: null } });
+      localStorage.setItem(pk, JSON.stringify(list));
+    });
+    await v.openEdit(h, 'VIS-0098');
+    const testoDiPrima = await h.has('Valore scritto: circa 3', true);
+    await v.openEdit(h, 'VIS-0142');
+    const numeroFuori = await h.has('Valore scritto: 3 mm', true);
+    await e.visibile(h, '[aria-label="Spessore nessuno"]').click(); await h.page.waitForTimeout(500);
+    await e.salvaModifica(h);
+    const vis = (await h.products()).find((p) => p.sku === 'VIS-0142');
+    const out = { testoDiPrima, numeroFuori, spessoreDopo: v.valore(vis, 'field_cmp_spessore') ?? null };
+    return { ok: testoDiPrima && numeroFuori && out.spessoreDopo === null, ...out };
+  });
+
+  // 16. Dopo il parere del revisore: una data nella card si legge come data
+  await run('edc-card-data', async (h) => {
+    await h.page.evaluate(() => {
+      const cf = 'furinventory_custom_fields:local';
+      const fields = JSON.parse(localStorage.getItem(cf));
+      fields.find((f) => f.id === 'field_cmp_arrivo').showInCard = true;
+      localStorage.setItem(cf, JSON.stringify(fields));
+    });
+    await h.go('');
+    await h.page.getByText('VIS-0142', { exact: true }).first().waitFor();
+    const testo = await e.card(h.page, 'VIS-0142');
+    return { ok: /\b\d{2}\/\d{2}\/2026\b/.test(testo || '') && !/T\d{2}:/.test(testo || ''), card: testo };
   });
 })();

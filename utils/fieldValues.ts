@@ -305,7 +305,8 @@ export function stepperDefaults(fields: readonly Pick<CustomField, 'id' | 'type'
 /** Valore salvato → valore del modulo: un numero scritto con la virgola (12.5 → «12,5»), il contatore come numero,
  *  il resto com'è (le scelte restano id o etichette: le riconosce `optionOf`). */
 export function formValue(field: Pick<CustomField, 'type' | 'uiType'> & { input?: CustomField['input'] }, value: unknown): unknown {
-  if (isNumberField(field) && !isStepper(field) && field.input !== 'wheel' && typeof value === 'number') return formatNumberInput(value);
+  // Anche la ruota: legge «2,5» come 2,5; se il campo torna «Lo scrivo io» in Modifica si vede con la virgola
+  if (isNumberField(field) && !isStepper(field) && typeof value === 'number') return formatNumberInput(value);
   return value;
 }
 
@@ -580,7 +581,7 @@ export function initialValues(fields: readonly CustomField[]): Record<string, un
 
 const TYPE_NAMES: Record<CustomField['type'], string> = {
   text_short: 'Testo breve', text_long: 'Testo lungo', number: 'Numero o misura', currency: 'Prezzo', date: 'Data',
-  boolean: 'Sì/No', single_choice: 'Scelta da un elenco', multi_choice: 'Scelta da un elenco', images: 'Foto', document: 'Documento',
+  boolean: 'Sì/No', single_choice: 'Scelta da un elenco', multi_choice: 'Più scelte da un elenco', images: 'Foto', document: 'Documento',
 };
 
 /** Coppie di tipi in cui i valori salvati si leggono uguali (testo, numero, scelta una → più). */
@@ -629,6 +630,26 @@ export const CARD_FIELDS_MAX = 2;
  *  partenza: la card di sempre non cambia finché l'utente non ne accende uno. */
 export function cardFields<F extends Pick<CustomField, 'type' | 'showInCard' | 'deletedAt'>>(fields: readonly F[]): F[] {
   return fields.filter((f) => f.showInCard && !f.deletedAt && canShowInCard(f)).slice(0, CARD_FIELDS_MAX);
+}
+
+/** Testo di un valore nella card: una data come data («24/11/2026», non il testo salvato), il resto come `valueText`. */
+export function cardText(
+  field: Pick<CustomField, 'type' | 'uiType' | 'unit'>,
+  value: unknown,
+  opts: { options?: readonly FieldOption[]; snapshot?: OptionsSource | null } = {},
+): string {
+  if (field.type === 'date' && typeof value === 'string' && value) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  return valueText(field, value, opts);
+}
+
+/** Campo ripristinato dal cestino: senza `deletedAt`; se la card ha già 2 campi accesi, senza «Mostra nella card». */
+export function restoredField<F extends Pick<CustomField, 'id' | 'type' | 'showInCard' | 'deletedAt'>>(fields: readonly F[], field: F): F {
+  const restored = { ...field, deletedAt: undefined };
+  if (restored.showInCard && cardFields(fields.filter((f) => f.id !== field.id)).length >= CARD_FIELDS_MAX) restored.showInCard = undefined;
+  return restored;
 }
 
 /** Errore per accendere «Mostra nella card» su un campo, altrimenti null. */

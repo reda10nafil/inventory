@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { CustomField, FieldUIType } from '../types';
 import { withSystemFieldNames } from '../utils/furTypes';
-import { appendOption, fieldOptions, newOptionId, normalizeField, type FieldOption } from '../utils/fieldValues';
+import { appendOption, fieldOptions, newOptionId, normalizeField, restoredField, type FieldOption } from '../utils/fieldValues';
 
 const STORAGE_KEY = 'furinventory_custom_fields';
 
@@ -174,7 +174,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
 
     // Restore a soft-deleted field
     const restoreField = useCallback(async (id: string) => {
-        await writeFields((current) => current.map((f) => (f.id === id ? { ...f, deletedAt: undefined } : f)));
+        // EDC: se la card ha già 2 campi accesi, il campo ripristinato torna senza «Mostra nella card»
+        await writeFields((current) => current.map((f) => (f.id === id ? restoredField(current, f) : f)));
     }, [organizationId]);
 
     // Permanently delete a field

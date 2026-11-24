@@ -125,6 +125,7 @@ export function Wheel({ items, index, onSelect, name }: {
         snapToInterval={ROW}
         decelerationRate="fast"
         contentContainerStyle={styles.wheelContent}
+        contentOffset={{ x: 0, y: row * ROW }}
         onScroll={onScroll}
         scrollEventThrottle={32}
         onMomentumScrollEnd={(e) => { y.current = e.nativeEvent.contentOffset.y; if (timer.current) clearTimeout(timer.current); settle(); }}
@@ -135,7 +136,7 @@ export function Wheel({ items, index, onSelect, name }: {
             <Pressable
               key={item.key}
               style={styles.wheelRow}
-              onPress={() => { if (r !== row) onSelect(r - 1); y.current = r * ROW; ref.current?.scrollTo({ y: r * ROW, animated: true }); }}
+              onPress={() => { if (r !== row || r === 0) onSelect(r - 1); y.current = r * ROW; ref.current?.scrollTo({ y: r * ROW, animated: true }); }}
               accessibilityRole="button"
               accessibilityLabel={item.a11y}
               accessibilityState={{ selected: on }}

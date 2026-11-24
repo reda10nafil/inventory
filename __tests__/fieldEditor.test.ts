@@ -1,6 +1,6 @@
 import type { CustomField } from '../types';
 import {
-  BASE_LOOK_FIELDS, baseLook, appendOption, canShowInCard, cardFields, choiceLook, defaultOf, fieldOptions, formValue, freeText, initialValues, inputMode, isSelected,
+  BASE_LOOK_FIELDS, baseLook, appendOption, canShowInCard, cardText, restoredField, cardFields, choiceLook, defaultOf, fieldOptions, formValue, freeText, initialValues, inputMode, isSelected,
   liveField, lookFields, newOptionId, rangeFromText, savedValue, searchTexts, showInCardError, stepFrom, stepperRange, typeChangeError,
   typedChoice, valueText, wheelValues, WHEEL_MAX_VALUES,
 } from '../utils/fieldValues';
@@ -51,7 +51,7 @@ describe('valore predefinito', () => {
     expect(initialValues([PEZZI, SPESS, COLORE])).toEqual({ field_cmp_pezzi: 1 });
     expect(initialValues([{ ...PEZZI, defaultValue: 4 }, { ...SPESS, defaultValue: 2.5 }, { ...COLORE, defaultValue: 'opt_2' }]))
       .toEqual({ field_cmp_pezzi: 4, field_cmp_spessore: '2,5', field_cmp_colore: 'opt_2' });
-    expect(initialValues([{ ...LARG, defaultValue: 100 }])).toEqual({ width: 100 });
+    expect(initialValues([{ ...LARG, defaultValue: 100 }])).toEqual({ width: '100' });
     // il predefinito si salva come gli altri valori
     expect(savedValue(SPESS, '2,5')).toEqual({ ok: true, value: 2.5 });
   });
@@ -91,8 +91,8 @@ describe('ruota e contatore col passo', () => {
     expect(inputMode(PEZZI)).toBe('stepper');
     expect(inputMode(SPESS)).toBe('write');
     expect(inputMode({ ...LARG, type: 'currency' })).toBe('write');
-    // la ruota tiene il numero nel modulo (come il contatore)
-    expect(formValue(LARG, 90)).toBe(90);
+    // la ruota nel modulo: il numero con la virgola, come gli altri numeri (la ruota lo legge)
+    expect(formValue(LARG, 90)).toBe('90');
     expect(formValue(SPESS, 2.5)).toBe('2,5');
   });
   it('limiti scritti con la virgola; errori detti', () => {
@@ -210,6 +210,29 @@ describe('card e ricerca', () => {
     // senza il registro come prima
     expect(matchesSearch(p, 'bianchi', locs)).toBe(false);
     expect(matchesSearch(p, 'vetrina', locs, [], [], registro)).toBe(true);
+  });
+});
+
+describe('dopo il parere del revisore (e799818)', () => {
+  it('nella card una data si legge come data, non come testo da macchina', () => {
+    const ARRIVO = field({ id: 'f_arrivo', name: 'Arrivo', type: 'date', uiType: 'date' });
+    expect(cardText(ARRIVO, '2026-11-24T09:12:33.000Z')).toBe('24/11/2026');
+    expect(cardText(ARRIVO, 'boh')).toBe('boh');
+    expect(cardText(COLORE, 'opt_1', { options: fieldOptions(COLORE) })).toBe('Marrone');
+  });
+  it('un campo ripristinato dal cestino non accende una terza riga nella card', () => {
+    const a = { ...COLORE, showInCard: true };
+    const b = { ...FORNITORE, showInCard: true };
+    const c = { ...SPESS, showInCard: true, deletedAt: '2026-11-24T08:00:00.000Z' };
+    expect(restoredField([a, b, c], c)).toEqual({ ...SPESS, showInCard: undefined, deletedAt: undefined });
+    expect(restoredField([a, c], c)).toEqual({ ...SPESS, showInCard: true, deletedAt: undefined });
+  });
+  it('la ruota nel modulo tiene il numero con la virgola, come gli altri numeri (Modifica dopo un cambio a «Lo scrivo io»)', () => {
+    expect(formValue(LARG, 1.5)).toBe('1,5');
+    expect(initialValues([{ ...LARG, defaultValue: 100 }])).toEqual({ width: '100' });
+  });
+  it('il nome del tipo a più scelte nel messaggio del cambio di tipo', () => {
+    expect(typeChangeError(DETT, 'date', [{ customData: [{ value: ['opt_0'], fieldSnapshot: DETT }] }])).toMatch(/da Più scelte da un elenco a Data/);
   });
 });
 

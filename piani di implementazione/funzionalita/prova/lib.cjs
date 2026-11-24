@@ -60,7 +60,8 @@ async function scenario(name, fn, { dialogs = [] } = {}) {
 // (`aria-expanded="false"`) finché la scelta compare; quelle che non la contengono si richiudono. Conta solo una scelta
 // che si tocca (dentro un pulsante): lo stesso testo può essere un titolo («Magazzino» è anche la sezione di Aggiungi).
 async function apriTendinaCon(page, locator) {
-  const toccabile = () => locator.evaluateAll((els) => els.some((e) => e.closest('[tabindex="0"], [role="button"], button, a, input')));
+  // La casella di una tendina chiusa mostra la scelta fatta: quella non vale (si apre la tendina e si tocca la riga)
+  const toccabile = () => locator.evaluateAll((els) => els.some((e) => e.closest('[tabindex="0"], [role="button"], button, a, input') && !e.closest('[aria-expanded]')));
   if (await toccabile()) return true;
   for (const tendina of await page.$$('[aria-expanded="false"]')) {
     if (!(await tendina.isVisible())) continue;
@@ -77,8 +78,15 @@ function helpers(page, name) {
     page,
     vis,
     click: async (text, exact = true) => {
-      await apriTendinaCon(page, page.getByText(text, { exact }).locator('visible=true'));
-      await vis(text, exact).click(); await page.waitForTimeout(700);
+      const tutti = page.getByText(text, { exact }).locator('visible=true');
+      await apriTendinaCon(page, tutti);
+      // il primo a vista, saltando la casella di una tendina che mostra lo stesso testo
+      let bersaglio = tutti.first();
+      const n = await tutti.count();
+      for (let i = 0; i < n; i += 1) {
+        if (!(await tutti.nth(i).evaluate((e) => !!e.closest('[aria-expanded]')))) { bersaglio = tutti.nth(i); break; }
+      }
+      await bersaglio.click(); await page.waitForTimeout(700);
     },
     longPress: async (text) => {
       const box = await vis(text).boundingBox();

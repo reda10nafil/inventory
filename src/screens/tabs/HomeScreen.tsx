@@ -26,7 +26,8 @@ import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
 import { formatQty, isOutOfStock, isStocked, storedTotal } from '../../../utils/stock';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useFieldOptions } from '../../../hooks/useFieldOptions';
-import { cardFields, optionOf, valueText } from '../../../utils/fieldValues';
+import { cardFields, cardText, optionOf } from '../../../utils/fieldValues';
+import { useLayout } from '../../../contexts/LayoutContext';
 import { fieldIcon } from '../../../components/FieldInput';
 import { OptionMark, hasMark } from '../../../components/OptionMark';
 
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const { shelfOf } = useShelves();
   const { customFields, allFieldsIncludingDeleted } = useCustomFields();
   const optionsOf = useFieldOptions();
+  const { layout } = useLayout();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
@@ -265,12 +267,12 @@ export default function HomeScreen() {
             const entry = (product.customData || []).find((d: any) => d.fieldSnapshot?.id === field.id);
             if (!entry) return null;
             const options = optionsOf(field);
-            const text = valueText(field, entry.value, { options, snapshot: entry.fieldSnapshot });
+            const text = cardText(field, entry.value, { options, snapshot: entry.fieldSnapshot });
             if (!text) return null;
             const option = field.type === 'single_choice' ? optionOf(entry.value, options, entry.fieldSnapshot) : undefined;
             return (
               <View key={field.id} style={styles.cardFieldRow} accessibilityLabel={`${field.name}: ${text}`}>
-                <AppIcon name={fieldIcon(field)} size={13} color={t.colors.fieldIcon} />
+                <AppIcon name={fieldIcon(field, layout.fields.find((f) => f.id === field.id)?.icon)} size={13} color={t.colors.fieldIcon} />
                 {hasMark(option) && <OptionMark option={option} size={8} />}
                 <Text style={styles.cardFieldText} numberOfLines={1}>{text}</Text>
               </View>

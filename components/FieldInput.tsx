@@ -422,18 +422,22 @@ function NumberWheel({ field, value, onChange, small, narrow, placeholder, icon 
   const [open, setOpen] = useState(false);
   // «Scrivi il valore»: vale quando si esce dalla casella o con Invio
   const [typed, setTyped] = useState('');
+  // un testo che non è un numero resta nella casella con la riga rossa, non si perde
   const commitTyped = () => { const n = numberOf(typed); if (n !== undefined) { onChange(n); setTyped(''); } };
+  const typedWrong = typed.trim() !== '' && numberOf(typed) === undefined;
   const range = stepperRange(field);
   const values = useMemo(() => wheelValues(range), [range.min, range.max, range.step]);
   const unit = field.unit ? ` ${field.unit}` : '';
   const items = useMemo(() => values.map((v) => ({ key: String(v), text: `${formatNumber(v)}${unit}`, a11y: `${field.name} ${formatNumber(v)}${unit}` })), [values, unit, field.name]);
   const current = numberOf(value);
   const index = current === undefined ? -1 : values.findIndex((v) => Math.abs(v - current) < 1e-9);
-  const shown = current === undefined ? '' : `${formatNumber(current)}${unit}`;
+  // Un valore salvato che non è un numero («circa 90», scritto prima della ruota) si legge com'è
+  const saved = value == null || value === '' ? '' : String(value);
+  const shown = current === undefined ? saved : `${formatNumber(current)}${unit}`;
   const wheel = (
     <>
       <Wheel name={field.name} items={items} index={index} onSelect={(i) => onChange(i < 0 ? null : values[i])} />
-      {current !== undefined && index < 0 ? <Text style={styles.wheelOutside}>Valore scritto: {shown}</Text> : null}
+      {shown && index < 0 ? <Text style={styles.wheelOutside}>Valore scritto: {shown}</Text> : null}
       <View style={[styles.inputBox, styles.wheelWrite]}>
         <AppIcon name="edit" size={16} color={t.colors.fieldIcon} />
         <TextInput
@@ -449,6 +453,7 @@ function NumberWheel({ field, value, onChange, small, narrow, placeholder, icon 
         />
         {field.unit ? <Text style={styles.unit}>{field.unit}</Text> : null}
       </View>
+      {typedWrong ? <Text style={styles.errorText} accessibilityRole="alert">Scrivi un numero, per esempio 12,5.</Text> : null}
     </>
   );
   if (!narrow) return <View style={styles.bottom}>{wheel}</View>;
