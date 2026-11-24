@@ -274,10 +274,13 @@ describe('giacenza sugli scaffali (S1b)', () => {
     expect(stockPlaceLabel(`vetrina/${a1.id}`, label, shelves)).toBe(`Vetrina › ${UNKNOWN_SHELF}`);
   });
 
-  it('withShelfRead: un pezzo unico con uno scaffale che non torna si legge senza; gli altri uguali', () => {
+  it('withShelfRead: un pezzo unico con lo scaffale di un\'altra posizione si muove senza; uno sconosciuto resta', () => {
     const stray = piece({ location: 'vetrina', shelfId: a1.id });
     expect('shelfId' in withShelfRead(stray, shelves)).toBe(false);
-    expect('shelfId' in withShelfRead(piece({ shelfId: 'sparito' }), shelves)).toBe(false);
+    // Sconosciuto (o elenco non ancora letto, revisore): resta, la chiave magazzino/sparito resta in Magazzino
+    const unknown = piece({ shelfId: 'sparito' });
+    expect(withShelfRead(unknown, shelves)).toBe(unknown);
+    expect(withShelfRead(piece({ shelfId: a1.id }), [])).toEqual(piece({ shelfId: a1.id }));
     const good = piece({ shelfId: a1.id });
     expect(withShelfRead(good, shelves)).toBe(good);
     const stocked = piece({ shelfId: a1.id, stock: { [K1]: 1 } });

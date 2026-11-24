@@ -67,6 +67,10 @@ export function splitStockKey(key: string): { place: string; shelfId?: string } 
 /** Posizione di una chiave della giacenza. */
 export const placeOfKey = (key: string): string => splitStockKey(key).place;
 
+/** La chiave conta per `place`: è proprio quella (anche una posizione con `/` scritta prima di S1b da un CSV a mano)
+ *  oppure è uno scaffale di quella posizione. */
+const belongsTo = (key: string, place: string): boolean => key === place || placeOfKey(key) === place;
+
 /** Id di una posizione nuova dal nome (Impostazioni › Posizioni): solo a-z, 0-9 e `_`, quindi mai il separatore. */
 export const newLocationId = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
@@ -131,7 +135,7 @@ export function isLowStock(product: StockProduct & Pick<Product, 'minStock'>): b
 function milliAt(milli: Readonly<Record<string, number>>, place: string): number {
   if (splitStockKey(place).shelfId) return milli[place] ?? 0;
   let sum = 0;
-  for (const [key, m] of Object.entries(milli)) if (placeOfKey(key) === place) sum += m;
+  for (const [key, m] of Object.entries(milli)) if (belongsTo(key, place)) sum += m;
   return sum;
 }
 
@@ -156,7 +160,9 @@ export function qtyIn(product: StockProduct, key: string): number {
  *  chiave con lo scaffale vale la sua posizione. */
 export function positionsOf(product: Pick<Product, 'location' | 'stock'>): string[] {
   const places = new Set<string>(product.location ? [product.location] : []);
-  for (const [place, qty] of Object.entries(product.stock ?? {})) if (place && typeof qty === 'number' && qty > 0) places.add(placeOfKey(place));
+  for (const [place, qty] of Object.entries(product.stock ?? {})) {
+    if (place && typeof qty === 'number' && qty > 0) places.add(place === product.location ? place : placeOfKey(place));
+  }
   return [...places];
 }
 
@@ -165,7 +171,7 @@ export function positionsOf(product: Pick<Product, 'location' | 'stock'>): strin
 export function mainLocation(stock: Readonly<Record<string, number>>, current: string): string {
   const totals: Record<string, number> = {};
   for (const [key, qty] of Object.entries(stock)) {
-    const place = placeOfKey(key);
+    const place = key === current ? current : placeOfKey(key);
     totals[place] = (totals[place] ?? 0) + (qty > 0 ? qty : 0);
   }
   if ((totals[current] ?? 0) > 0) return current;
@@ -180,7 +186,7 @@ export function mainLocation(stock: Readonly<Record<string, number>>, current: s
 /** Chiavi di una posizione con giacenza: prima quella senza scaffale, poi gli scaffali in ordine di chiave. */
 export function keysAt(product: StockProduct, place: string): [string, number][] {
   return Object.entries(milliOf(product))
-    .filter(([key]) => placeOfKey(key) === place)
+    .filter(([key]) => belongsTo(key, place))
     .sort(([a], [b]) => Number(b === place) - Number(a === place) || (a < b ? -1 : a > b ? 1 : 0))
     .map(([key, m]) => [key, fromMilli(m)]);
 }
@@ -324,10 +330,10 @@ export function applyMovement(product: Product, movement: Movement, now: string)
 
   const location = mainLocation(next, product.location);
   // La posizione principale resta come chiave a 0 solo se non ha giacenza su un suo scaffale (S1b): niente zeri in più
-  const shelved = Object.entries(next).some(([key, milli]) => milli > 0 && key !== location && placeOfKey(key) === location);
+  const shelved = Object.entries(next).some(([key, milli]) => milli > 0 && key !== location && belongsTo(key, location));
   const stock: Stock = {};
   for (const [place, milli] of Object.entries(next)) if (milli > 0 || (place === location && !shelved)) stock[place] = fromMilli(Math.max(0, milli));
-  if (!Object.keys(stock).some((key) => placeOfKey(key) === location)) stock[location] = 0;
+  if (!Object.keys(stock).some((key) => belongsTo(key, location))) stock[location] = 0;
 
   const events: NewEvent[] = [];
   const home = stockKey(product.location, product.shelfId);

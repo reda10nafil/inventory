@@ -205,7 +205,10 @@ function countMoves(product: Product, at: string, counted: number): Movement[] {
   if (!at || !Number.isFinite(counted) || counted < 0 || product.deletedAt || product.status !== 'available') return plain(counted);
   const delta = round3(counted - qtyAt(product, at));
   if (delta >= 0) return plain(round3(qtyIn(product, at) + delta));
-  return (drawsAt(product, at, -delta) ?? []).map(([key, take]) => ({
+  const draws = drawsAt(product, at, -delta);
+  // Non dovrebbe mancare (il calo non supera il totale): se manca, il rifiuto di `applyMovement`, mai una rettifica vuota
+  if (!draws?.length) return plain(counted);
+  return draws.map(([key, take]) => ({
     kind: 'rettifica' as const, at: key, counted: round3(qtyIn(product, key) - take), reason: 'conta' as const,
   }));
 }

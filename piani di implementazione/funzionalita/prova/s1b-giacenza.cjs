@@ -4,7 +4,8 @@
 // e l'`invariante`: ogni chiave è una posizione oppure posizione/scaffale di quella posizione, nessuna posizione del
 // prodotto è composta, nessun articolo a quantità ha `shelfId`.
 // - Scheda: VIS-0098 con 5 pezzi in Magazzino e 3 su A1 → totale 8, Magazzino 8, A1 3; la Conta lo aspetta a 8;
-// - Movimenta da A1 a Stand B e dalla posizione allo scaffale (Magazzino → Magazzino › A1);
+// - Movimenta da A1 a Stand B e dalla posizione allo scaffale (Magazzino → Magazzino › A2); nella stessa posizione
+//   «Da» cambiato sulla chiave di «A» non blocca il movimento (revisore di e7edecf);
 // - Conta di Magazzino: la differenza va prima sulla posizione senza scaffale, poi sugli scaffali;
 // - Vendi da A1 (Scarico con causale Vendita) e Vendita flash di un articolo che sta solo su uno scaffale;
 // - Spostamento rapido (tutta la posizione principale, scaffali compresi) e Scanner sul codice dello scaffale;
@@ -188,6 +189,16 @@ async function scarica(h, voce) {
     const cronologia = await h.page.evaluate(() => (document.body.innerText.match(/VIS-0098 - Trasferimento:[^\n]*/g) || []).slice(0, 2));
     return { pillole, dopoA1, dopoA2, scheda, cronologia, invariante: await invariante(h) };
   }, { dialogs: ['ok', 'ok', 'ok'] });
+
+  // 2b. Movimenta nella stessa posizione (revisore di e7edecf): «Da Magazzino › Nessuno», «A Magazzino» (proposto A1),
+  //     poi «Da Magazzino › A1»: «A» non resta sulla stessa chiave nascosta, il movimento si registra (A1 → senza scaffale)
+  await run('s1b-movimenta-stessa', async (h) => {
+    await prepara(h, { 'VIS-0098': { magazzino: 5, [KA1]: 3 } });
+    await apri(h, 'VIS-0098');
+    await movimento(h, { tipo: 'Trasferimento', da: ['Da Magazzino › Nessuno scaffale', 'A Magazzino', 'Da Magazzino › A1'], qty: '1' });
+    const finestraAperta = await h.has('Movimenta VIS-0098', true);
+    return { finestraAperta, ...(await check(h, 'VIS-0098')), invariante: await invariante(h) };
+  }, { dialogs: ['ok', 'ok'] });
 
   // 3. Conta di Magazzino: contati 2 su 8 → −5 senza scaffale e −1 su A1; la Scheda e gli eventi tornano
   await run('s1b-conta', async (h) => {

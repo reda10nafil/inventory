@@ -118,12 +118,15 @@ export function productShelfId(product: Holder, shelves: readonly ShelfRef[]): s
 }
 
 /**
- * Il prodotto come lo leggono le schede (S1b): un pezzo unico con uno `shelfId` che non torna (scaffale sconosciuto o
- * di un'altra posizione, arrivato da fuori) torna senza, così il suo primo movimento e Movimenta non scrivono una
- * chiave `posizione/scaffale` sbagliata. Gli altri prodotti tornano uguali.
+ * Il pezzo unico da muovere (S1b): con lo scaffale di **un'altra posizione** (dato arrivato da fuori) torna senza, così
+ * il suo primo movimento e Movimenta non scrivono una chiave `posizione/scaffale` sbagliata. Uno scaffale che questo
+ * dispositivo non conosce (o un elenco non ancora letto) resta: la chiave `posizione/scaffale` tiene comunque i pezzi
+ * nella posizione giusta (forma 2), come la regola di scrittura di S1a. Gli altri prodotti tornano uguali.
  */
 export function withShelfRead<T extends Holder>(product: T, shelves: readonly ShelfRef[]): T {
-  if (product.stock != null || !product.shelfId || productShelfId(product, shelves) === product.shelfId) return product;
+  if (product.stock != null || !product.shelfId) return product;
+  const shelf = shelves.find((s) => s.id === product.shelfId);
+  if (!shelf || shelf.locationId === product.location) return product;
   const rest = { ...product };
   delete rest.shelfId;
   return rest;

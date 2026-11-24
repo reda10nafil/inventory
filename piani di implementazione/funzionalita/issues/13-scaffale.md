@@ -85,6 +85,13 @@ Che cosa fa S1b:
 - CSV: la Giacenza esporta le chiavi salvate (`magazzino/<id>:3`); l'import accetta `posizione/<id o nome>` e l'id o il codice di uno scaffale; scaffale sconosciuto o `/` nella posizione → riga saltata.
 - Dati: nessuna migrazione; gli eventi di prima si rigiocano come prima (`replayStock` è per chiave).
 
+Rischi aperti (revisore di S1b, bassi, nessuno blocca):
+
+- un pezzo unico con uno scaffale che questo dispositivo non conosce: il report delle giacenze dice «Magazzino › scaffale sconosciuto», Scheda e Home solo «Magazzino»;
+- un backup CSV con la giacenza su scaffali, reimportato in uno spazio che non ha quegli scaffali, salta quelle righe (il prodotto intero): prima si ricreano gli scaffali;
+- con la rete locale (mesh) o il cloud, un dispositivo con l'app di prima di S1b legge `magazzino/<id>` come una posizione sconosciuta: Magazzino conta meno e Conta e Audit non vedono quei pezzi finché non si aggiorna;
+- una chiave `a/b` scritta prima di S1b da un CSV a mano conta anche per la posizione `a` (`isAt`, `positionsOf`); totali ed eventi restano giusti.
+
 ## Come si torna indietro
 
 `shelfId` è facoltativo: senza la schermata e il campo, i prodotti restano nella loro posizione. Le chiavi `posizione/scaffale` di `stock` si riportano alla loro posizione con un trasferimento per chiave (eventi, così la giacenza salvata resta quella degli eventi rigiocati); anche senza farlo, le funzioni di prima di S1b le leggerebbero come posizioni sconosciute.

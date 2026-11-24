@@ -2400,9 +2400,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795502184.4964657,
-    "seen": 1795502231.1108449,
-    "ast_hash": "58be6d70629e126f0dc4a084307bd2c9",
+    "mtime": 1795503510.8194969,
+    "seen": 1795504281.5297449,
+    "ast_hash": "eabc93b2e9e759b39751d0e151615a81",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795500212.5011463,
-    "seen": 1795502231.1108449,
-    "ast_hash": "f5d898f5ca8caa77e3a03b2ae80eeb04",
+    "mtime": 1795503495.7264392,
+    "seen": 1795504281.5297449,
+    "ast_hash": "2126cb324348fd4d85e961f407a9a9aa",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3246,9 +3246,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795502192.7919528,
-    "seen": 1795502231.1108449,
-    "ast_hash": "a71975dde445aea6073c80013589bf3c",
+    "mtime": 1795503510.8205,
+    "seen": 1795504281.5297449,
+    "ast_hash": "c5b04219f24a37d0dc5a54c2fa6c79ce",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3384,9 +3384,9 @@
     "semantic_hash": ""
   },
   "utils/productCsv.ts": {
-    "mtime": 1795498325.2750473,
-    "seen": 1795502231.1078453,
-    "ast_hash": "5727fd1f4cc14fccae5b98eb1eeb6f35",
+    "mtime": 1795503327.8214157,
+    "seen": 1795504281.5267444,
+    "ast_hash": "6ff96bf51760aad7241717cbc90f4069",
     "semantic_hash": ""
   },
   "__tests__/templateFields.test.ts": {
@@ -3522,15 +3522,15 @@
     "semantic_hash": ""
   },
   "utils/stock.ts": {
-    "mtime": 1795498165.843418,
-    "seen": 1795502231.1078453,
-    "ast_hash": "1eee7dc2a632f578f55edd66b3e17f66",
+    "mtime": 1795503304.831355,
+    "seen": 1795504281.5267444,
+    "ast_hash": "42e92eeabab03abea066b6c16f6ff868",
     "semantic_hash": ""
   },
   "__tests__/inventoryOps.test.ts": {
-    "mtime": 1795498043.9244132,
-    "seen": 1795502231.0201397,
-    "ast_hash": "34eeba9826fc1b07de981135e92b1831",
+    "mtime": 1795503285.6321433,
+    "seen": 1795504281.4865887,
+    "ast_hash": "c73de2c1f6041c9e31f547a593b1310b",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/m03-giacenza.cjs": {
@@ -3540,9 +3540,9 @@
     "semantic_hash": ""
   },
   "utils/inventoryOps.ts": {
-    "mtime": 1795498244.1950178,
-    "seen": 1795502231.1078453,
-    "ast_hash": "a79849ea3458c5422815b5a6b07e33f9",
+    "mtime": 1795503304.831355,
+    "seen": 1795504281.5257158,
+    "ast_hash": "acfba8ce1ed1826a1fd2050f22f3fc22",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-m03.jpg": {
@@ -3552,9 +3552,9 @@
     "semantic_hash": ""
   },
   "components/MovementSheet.tsx": {
-    "mtime": 1795499718.2757134,
-    "seen": 1795502231.0356705,
-    "ast_hash": "e901aff1d1f8ea412d5816fefd48ad78",
+    "mtime": 1795503455.6166735,
+    "seen": 1795504281.4920998,
+    "ast_hash": "2cc01ab3889ae915392b12b0b5af73de",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/m04-movimenta.cjs": {
@@ -3684,9 +3684,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/13-scaffale.md": {
-    "mtime": 1795499141.303279,
-    "seen": 1795502231.112348,
-    "ast_hash": "83679917dd12e77cfc9f84fc5ac704f2",
+    "mtime": 1795503510.8205,
+    "seen": 1795504281.530747,
+    "ast_hash": "18eff1aa2740c174a771148ec241dd2e",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/14-scaffale-capacita.md": {
@@ -3798,9 +3798,9 @@
     "semantic_hash": ""
   },
   "__tests__/shelves.test.ts": {
-    "mtime": 1795499736.1341486,
-    "seen": 1795502231.022204,
-    "ast_hash": "726d08646fb62f3eb7dbc2d9402cac5b",
+    "mtime": 1795503383.4796715,
+    "seen": 1795504281.4865887,
+    "ast_hash": "43a4bdc7b9a5a212cb11c6368aca55d3",
     "semantic_hash": ""
   },
   "components/ShelfPicker.tsx": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": ""
   },
   "utils/shelves.ts": {
-    "mtime": 1795499707.3031504,
-    "seen": 1795502231.1078453,
-    "ast_hash": "180c612accae9a658b055bc0485d92ee",
+    "mtime": 1795503327.8224156,
+    "seen": 1795504281.5267444,
+    "ast_hash": "67ec3228eed60dd05a3a9841052ea8ab",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-s1a.jpg": {
@@ -4116,9 +4116,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-3.md": {
-    "mtime": 1795499179.036815,
-    "seen": 1795502231.1138916,
-    "ast_hash": "baec3b5f227aa0839b15db00a726984a",
+    "mtime": 1795503510.8205,
+    "seen": 1795504281.5327427,
+    "ast_hash": "74d3b88afeff6dce5655eb56472b06b8",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/ricerche/verifiche-23/script/indietro/modali.txt": {
@@ -4362,9 +4362,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/s1b-giacenza.cjs": {
-    "mtime": 1795498874.0008268,
-    "seen": 1795502231.061862,
-    "ast_hash": "de174cce045c23214a1529d0a97fe8a7",
+    "mtime": 1795503892.5913613,
+    "seen": 1795504281.5026348,
+    "ast_hash": "6277d49f8322906f55f2d5e783542ff9",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-s1b.jpg": {

@@ -499,6 +499,26 @@ describe('giacenza sugli scaffali (S1b)', () => {
     expect(z.product.stock).toEqual({ magazzino: 0 });
   });
 
+  it('posizione con «/» arrivata da un CSV scritto a mano prima di S1b: si sposta, si vende e si conta come prima (revisore)', () => {
+    const p = stocked({ 'a/b': 5 }, { id: 'p1', location: 'a/b' });
+    const moved = moveOf(p, 'vetrina', NOW);
+    expect(moved.ok && moved.patch.stock).toEqual({ vetrina: 5 });
+    const sold = saleOf(p, undefined, 1, NOW);
+    expect(sold.ok && [sold.patch.location, sold.patch.stock]).toEqual(['a/b', { 'a/b': 4 }]);
+    const counted = countOf([p], 'a/b', { p1: 3 }, NOW);
+    expect(counted.events.map((e) => [e.details.from, e.details.qty])).toEqual([['a/b', 2]]);
+    expect({ ...p, ...counted.patches[0].patch }.stock).toEqual({ 'a/b': 3 });
+  });
+
+  it('Conta di uno scaffale (chiave esatta, per CON): rettifica vera, mai «rettificato» senza eventi (revisore)', () => {
+    const p = onShelves({ magazzino: 5, [K1]: 3 }, { id: 'p1' });
+    const r = countOf([p], K1, { p1: 1 }, NOW);
+    expect(r.adjusted).toEqual(['VIS-1']);
+    expect(r.events.map((e) => [e.details.from, e.details.qty])).toEqual([[K1, 2]]);
+    expect({ ...p, ...r.patches[0].patch }.stock).toEqual({ magazzino: 5, [K1]: 1 });
+    expect(countOf([p], K1, { p1: 3 }, NOW).unchanged).toEqual(['VIS-1']);
+  });
+
   it('uniqueAt e countRows: un pezzo unico su uno scaffale conta nella sua posizione', () => {
     expect(uniqueAt([item({ location: 'magazzino', shelfId: 's-1' })], 'magazzino')).toBe(1);
   });

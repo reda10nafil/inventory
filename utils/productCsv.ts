@@ -33,7 +33,7 @@ export function stockCell(product: Pick<Product, 'location' | 'stock'>): string 
   const entries = Object.entries(product.stock ?? {})
     .filter(([place, qty]) => place && typeof qty === 'number' && Number.isFinite(qty) && (qty > 0 || place === product.location))
     .map(([place, qty]) => [place, round3(Math.max(0, qty))] as const);
-  if (!entries.some(([place]) => placeOfKey(place) === product.location)) entries.push([product.location, 0]);
+  if (!entries.some(([place]) => place === product.location || placeOfKey(place) === product.location)) entries.push([product.location, 0]);
   const rank = mainFirst(product.location);
   entries.sort(([a], [b]) => rank(b) - rank(a));
   return entries.map(([place, qty]) => `${place}:${qty}`).join('; ');

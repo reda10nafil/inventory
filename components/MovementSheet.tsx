@@ -124,7 +124,14 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
   };
 
   // Un'altra posizione: lo scaffale riparte da quello proposto («Da»/«In») o da nessuno («A»)
-  const pickPlace = (id: string) => { setPlace(id); setPlaceShelf(defaultShelf(id)); };
+  // Cambiata la partenza, se «A» è diventata la stessa chiave (fila nascosta nella stessa posizione) si propone un'altra
+  // chiave di quella posizione, così il movimento non resta bloccato su «Le due posizioni devono essere diverse»
+  const keepToApart = (pos: string, shelf: string) => {
+    if (to !== pos || toShelf !== shelf) return;
+    setToShelf(['', ...shelvesAt(pos).map((s) => s.id)].find((id) => id !== shelf) ?? '');
+  };
+  const pickPlace = (id: string) => { const shelf = defaultShelf(id); setPlace(id); setPlaceShelf(shelf); keepToApart(id, shelf); };
+  const pickPlaceShelf = (shelf: string) => { setPlaceShelf(shelf); keepToApart(place, shelf); };
   // Nella stessa posizione partendo dalla parte senza scaffale, la destinazione proposta è il primo scaffale
   const pickTo = (id: string) => { setTo(id); setToShelf(id === place && !placeShelf ? (shelvesAt(id)[0]?.id ?? '') : ''); };
 
@@ -242,7 +249,7 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
 
             <Text style={styles.label}>{placeTitle}</Text>
             {placeChips(placeTitle, place, pickPlace)}
-            {shelfChips(placeTitle, place, placeShelf, setPlaceShelf)}
+            {shelfChips(placeTitle, place, placeShelf, pickPlaceShelf)}
 
             {kind === 'trasferimento' && (
               <>
