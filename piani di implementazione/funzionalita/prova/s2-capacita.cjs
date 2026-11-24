@@ -5,7 +5,8 @@
 // - riempimento a 0, 50, 80 e 100%: verde, verde, blu, rosso («Pieno»), con il colore del ruolo del tema;
 // - un prodotto 60×40×20 «non entra» su A1 vuoto; uno 40×30×20 «circa 3»; uno scaffale senza limiti «nessun limite»;
 // - gli scaffali di prima (senza misure) si leggono e si risalvano uguali; aprire le schermate non riscrive nulla;
-// - Altezza del prodotto in Aggiungi, Scheda, Modifica (con l'evento), CSV; layout salvato non riscritto;
+// - Altezza del prodotto in Aggiungi, Scheda, Modifica (con l'evento), CSV; layout salvato non riscritto; tolta dal
+//   costruttore non torna (revisore);
 // - Scheda: «Spazio sullo scaffale» col riempimento e «ne entrano ancora N come questo».
 // Uso: node s2-capacita.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const fs = require('fs');
@@ -269,6 +270,24 @@ async function scarica(h, voce) {
       layoutSenzaAltezza: !(layoutDopo.fields || []).some((f) => f.id === 'height'),
     };
   }, { dialogs: ['ok', 'ok', 'ok', 'ok'] });
+
+  // 6b. Revisore di S2: l'Altezza tolta dal costruttore del modulo (X, «Salva Layout») non torna in Aggiungi, nemmeno
+  //     ricaricando; il layout salvato ricorda in `lateFields` che è stata proposta
+  await run('s2-altezza-tolta', async (h) => {
+    await h.go('settings/layout-builder');
+    const nelCostruttore = await h.has('Altezza', true);
+    const riga = h.vis('Altezza').locator('xpath=ancestor::div[.//div[@tabindex="0"]][1]').locator('div[tabindex="0"]');
+    await riga.nth(3).click(); await h.page.waitForTimeout(600); // rimuovi (finestra «Rimuovi Campo»)
+    await h.click('Salva Layout');
+    const salvato = await h.store(LAYOUT);
+    await h.go('add');
+    const inAggiungi = await h.has('Altezza', true);
+    await h.page.reload(); await h.page.waitForTimeout(2500);
+    return {
+      nelCostruttore, salvatoConAltezza: (salvato.fields || []).some((f) => f.id === 'height'), lateFields: salvato.lateFields,
+      versione: salvato.version, inAggiungi, dopoRicarica: await h.has('Altezza', true),
+    };
+  }, { dialogs: ['ok', 'ok', 'ok'] });
 
   // 7. Scheda di un pezzo unico su A1 (40×30×20, 2 kg) con 4 pezzi di VIS-0098 (senza peso) su A1: 5 pezzi su 20, 2 kg
   //    su 10, 24.000 cm³ su 75.000 → 32% verde; ne entrano ancora circa 2 (volume). VOL-0087, su nessuno scaffale, non

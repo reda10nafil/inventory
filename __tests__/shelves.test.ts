@@ -425,6 +425,11 @@ describe('capacità degli scaffali (S2)', () => {
     const barra = { kind: 'barra' as const, maxPieces: 15, height: 150 };
     expect(fitCount(barra, box(110, 60), { pieces: 15, weight: 0, volume: 0 })).toEqual({ kind: 'numero', count: 0, by: 'pezzi' });
     expect(fitCount(barra, box(160), empty)).toEqual({ kind: 'non-entra', reason: 'è lungo 160 cm, sotto la barra ce ne sono 150' });
+    // Revisore di S2: un limite già pieno vale 0 anche se al prodotto manca il dato per quel limite
+    expect(fitCount(ripiano, box(), { pieces: 5, weight: 12, volume: 0 })).toEqual({ kind: 'numero', count: 0, by: 'peso' });
+    expect(fitCount(ripiano, box(), { pieces: 5, weight: 0, volume: 80000 })).toEqual({ kind: 'numero', count: 0, by: 'volume' });
+    expect(fitCount({ maxWeight: 10 }, box(), { pieces: 0, weight: 10, volume: 0 })).toEqual({ kind: 'numero', count: 0, by: 'peso' });
+    expect(fitCount({ maxWeight: 10 }, box(), { pieces: 0, weight: 9.9, volume: 0 })).toEqual({ kind: 'non-calcolabile', missing: 'peso' });
   });
 
   it('testi in italiano semplice, senza sigle', () => {
@@ -434,7 +439,8 @@ describe('capacità degli scaffali (S2)', () => {
     expect(fitCountText({ kind: 'numero', count: 0, by: 'pezzi' }, 'A1')).toBe('Su A1 non ne entrano altri: pezzi al massimo');
     expect(fitCountText({ kind: 'non-entra', reason: 'un lato di 60 cm è più grande di 50 cm' }, 'A1')).toBe('Su A1 non entra: un lato di 60 cm è più grande di 50 cm');
     expect(fitCountText({ kind: 'nessun-limite' }, 'A1')).toBe('A1: nessun limite');
-    expect(fitCountText({ kind: 'non-calcolabile', missing: 'peso' }, 'A1')).toBe('A1: per sapere quanti ne entrano servono il peso del prodotto');
+    expect(fitCountText({ kind: 'non-calcolabile', missing: 'peso' }, 'A1')).toBe('A1: per sapere quanti ne entrano serve il peso del prodotto');
+    expect(fitCountText({ kind: 'non-calcolabile', missing: 'misure' }, 'A1')).toBe('A1: per sapere quanti ne entrano servono le tre misure del prodotto');
     expect(capacityText(ripiano)).toBe('Base 50 × 50 cm, alta 30 cm · fino a 10 kg · fino a 20 pezzi');
     expect(capacityText({ length: 50, depth: 40 })).toBe('Base 50 × 40 cm');
     expect(capacityText({ length: 50, height: 30 })).toBe('Lunghezza 50 cm · altezza 30 cm');
@@ -442,9 +448,12 @@ describe('capacità degli scaffali (S2)', () => {
     expect(capacityText({ kind: 'barra', height: 150, maxPieces: 15 })).toBe('Barra appendiabiti · altezza libera 150 cm · fino a 15 grucce');
     expect(capacityText({ kind: 'barra' })).toBe('Barra appendiabiti');
     expect(capacityText({})).toBe('');
-    expect(freeText(ripiano, { pieces: 9, weight: 4.5, volume: 0 })).toBe('Liberi: 11 pezzi · 5,5 kg');
+    expect(freeText(ripiano, { pieces: 9, weight: 4.5, volume: 0 })).toBe('Liberi: 11 pezzi · 5,5 kg · 100% dello spazio');
+    expect(freeText({ maxPieces: 20, maxWeight: 10 }, { pieces: 9, weight: 4.5, volume: 0 })).toBe('Liberi: 11 pezzi · 5,5 kg');
     expect(freeText({ kind: 'barra', maxPieces: 15 }, { pieces: 16, weight: 0, volume: 0 })).toBe('Liberi: 0 grucce');
-    expect(freeText({ length: 50, depth: 50, height: 30 }, { pieces: 1, weight: 0, volume: 10 })).toBe('');
+    expect(freeText({ length: 50, depth: 50, height: 30 }, { pieces: 1, weight: 0, volume: 30000 })).toBe('Liberi: 60% dello spazio');
+    expect(freeText({ length: 50, depth: 50 }, { pieces: 1, weight: 0, volume: 10 })).toBe('');
+    expect(freeText(ripiano, { pieces: 1, weight: 1, volume: 80000 })).toBe('Liberi: 19 pezzi · 9 kg · 0% dello spazio');
     expect(fillText({ percent: 45, band: 'verde', full: false, by: 'pezzi' })).toBe('45%');
     expect(fillText({ percent: 100, band: 'rosso', full: true, by: 'pezzi' })).toBe('Pieno');
     expect(fillText({ percent: 110, band: 'rosso', full: true, by: 'peso' })).toBe('Pieno (110%)');
@@ -461,5 +470,8 @@ describe('capacità degli scaffali (S2)', () => {
     expect(capacityFromForm('ripiano', { maxPieces: '2,5' })).toEqual({ error: 'Pezzi massimi: scrivi un numero intero.' });
     expect(capacityFromForm('barra', { length: 'x', maxPieces: '15', height: '150' })).toEqual({ capacity: { kind: 'barra', height: 150, maxPieces: 15 } });
     expect(capacityFromForm('barra', { maxPieces: '0' })).toEqual({ error: 'Grucce massime: scrivi un numero maggiore di zero, oppure lascialo vuoto.' });
+    // Revisore di S2: un numero che si arrotonda a 0 non si salva in silenzio come «nessun limite»
+    expect(capacityFromForm('ripiano', { maxWeight: '0,0004' }).error).toMatch(/^Peso massimo: /);
+    expect(capacityFromForm('ripiano', { maxWeight: '0,0006' })).toEqual({ capacity: { maxWeight: 0.001 } });
   });
 });

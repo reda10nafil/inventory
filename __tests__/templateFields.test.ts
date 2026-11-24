@@ -1,4 +1,4 @@
-import { appendLayoutFields, matchTemplateFields, withLateBaseFields } from '../utils/templateFields';
+import { appendLayoutFields, LATE_BASE_FIELD_IDS, matchTemplateFields, withLateBaseFields } from '../utils/templateFields';
 
 describe('matchTemplateFields (D12)', () => {
   const existing = [
@@ -22,6 +22,10 @@ describe('appendLayoutFields (D12, P11)', () => {
     expect(out[1]).toEqual(current[1]); // quello già presente non cambia
     expect(out[2]).toEqual({ id: 'f9', type: 'custom', size: 'medium', visible: true });
   });
+  it('revisore di S2: un campo di sistema abbinato da un modello entra come Base', () => {
+    const out = appendLayoutFields(current, ['height', 'f9'], 'medium', ['height', 'weight']);
+    expect(out.slice(2)).toEqual([{ id: 'height', type: 'base', size: 'medium', visible: true }, { id: 'f9', type: 'custom', size: 'medium', visible: true }]);
+  });
 });
 
 describe('withLateBaseFields (S2, «Altezza» nei layout salvati prima)', () => {
@@ -39,5 +43,14 @@ describe('withLateBaseFields (S2, «Altezza» nei layout salvati prima)', () => 
     expect(withLateBaseFields(withHeight)).toBe(withHeight);
     const noMeasures = [f('sku'), f('technicalNotes')];
     expect(withLateBaseFields(noMeasures)).toBe(noMeasures);
+  });
+  it('revisore di S2: tolta dall’utente non torna; con le misure tutte nascoste nasce nascosta', () => {
+    expect(LATE_BASE_FIELD_IDS).toEqual(['height']);
+    const removed = [f('length'), f('width'), f('weight')];
+    expect(withLateBaseFields(removed, ['height'])).toBe(removed);
+    const hidden = [f('length', 'base', false), f('width', 'base', false), f('weight', 'base', false)];
+    expect(withLateBaseFields(hidden)[3]).toEqual({ id: 'height', type: 'base', size: 'small', visible: false });
+    const oneVisible = [f('length', 'base', false), f('weight')];
+    expect(withLateBaseFields(oneVisible)[2].visible).toBe(true);
   });
 });

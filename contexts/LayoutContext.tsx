@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { appendLayoutFields } from '../utils/templateFields';
-import { withLateBaseFields } from '../utils/templateFields';
+import { LATE_BASE_FIELD_IDS, withLateBaseFields } from '../utils/templateFields';
 
 // Types
 export type FieldSize = 'small' | 'medium' | 'full'; // 33%, 50%, 100%
@@ -21,6 +21,8 @@ export interface LayoutField {
 export interface LayoutConfig {
     fields: LayoutField[];
     version: number;
+    /** S2: campi Base nati dopo già proposti a questo layout (`withLateBaseFields`): tolti dall'utente non tornano. */
+    lateFields?: string[];
 }
 
 // Layout fields rely on CustomFieldsContext for their base definitions (name, icon).
@@ -56,6 +58,7 @@ const DEFAULT_LAYOUT: LayoutConfig = {
         { id: 'technicalNotes', type: 'base', size: 'full', visible: true },
     ],
     version: 4, // Fix sku full per banda nera in Add
+    lateFields: [...LATE_BASE_FIELD_IDS], // S2: l'Altezza c'è già qui sopra
 };
 
 // Titoli delle sezioni predefinite con l'iniziale maiuscola (ritocco del ticket 08), solo quando si mostrano: i dati
@@ -84,7 +87,7 @@ interface LayoutContextType {
     updateFieldSize: (fieldId: string, size: FieldSize) => void;
     toggleFieldVisibility: (fieldId: string) => void;
     addFieldToLayout: (field: LayoutField) => void;
-    appendToLayout: (ids: string[], size?: FieldSize) => Promise<LayoutField[]>;
+    appendToLayout: (ids: string[], size?: FieldSize, baseIds?: string[]) => Promise<LayoutField[]>;
     removeFieldFromLayout: (fieldId: string) => void;
     applyTemplate: (templateFields: LayoutField[]) => void;
 
@@ -131,8 +134,12 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
                 } else {
                     // S2 (ticket 14): «Altezza» anche nei layout salvati prima, solo in memoria: il layout salvato non
                     // si riscrive e la `version` non cambia (vincolo 1 di map-3); si salva con il prossimo «Salva»
-                    const fields = Array.isArray(parsed.fields) ? withLateBaseFields(parsed.fields) : parsed.fields;
-                    setLayout(fields === parsed.fields ? parsed : { ...parsed, fields });
+                    // `lateFields` ricorda (in memoria, salvato col prossimo «Salva») che l'Altezza è stata proposta: tolta
+                    // dall'utente non torna (revisore di S2)
+                    const offered: string[] = Array.isArray(parsed.lateFields) ? parsed.lateFields : [];
+                    const fields = Array.isArray(parsed.fields) ? withLateBaseFields(parsed.fields, offered) : parsed.fields;
+                    const allOffered = LATE_BASE_FIELD_IDS.every((id) => offered.includes(id));
+                    setLayout(fields === parsed.fields && allOffered ? parsed : { ...parsed, fields, lateFields: [...new Set([...offered, ...LATE_BASE_FIELD_IDS])] });
                 }
             }
         } catch (error) {
@@ -189,8 +196,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
 
     // Mette in fondo al layout i campi che mancano e lo salva subito (campi nuovi e modelli: D12, P11).
     // Parte dal layout più recente (`layoutRef`), così più chiamate di seguito non si sovrascrivono.
-    const appendToLayout = async (ids: string[], size: FieldSize = 'medium') => {
-        const next = { ...layoutRef.current, fields: appendLayoutFields(layoutRef.current.fields, ids, size) };
+    const appendToLayout = async (ids: string[], size: FieldSize = 'medium', baseIds: string[] = []) => {
+        const next = { ...layoutRef.current, fields: appendLayoutFields(layoutRef.current.fields, ids, size, baseIds) };
         layoutRef.current = next;
         setLayout(next);
         if (organizationId) await AsyncStorage.setItem(`${STORAGE_KEY}:${organizationId}`, JSON.stringify(next));

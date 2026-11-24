@@ -528,17 +528,21 @@ export function fitCount(shelf: ShelfCapacity, product: Measured, load: ShelfLoa
   if (!fit.fits) return { kind: 'non-entra', reason: fit.reason };
   const counts: [FillBy, number][] = [];
   if (positive(shelf.maxPieces)) counts.push(['pezzi', floor(shelf.maxPieces - load.pieces)]);
-  const weightLimit = positive(shelf.maxWeight);
-  if (positive(shelf.maxWeight) && positive(product.weight)) counts.push(['peso', floor((shelf.maxWeight - load.weight) / product.weight)]);
+  const weightLimit = positive(shelf.maxWeight) ? shelf.maxWeight : undefined;
+  // Un limite già pieno vale 0 anche se al prodotto manca il dato per quel limite (revisore di S2: «Pieno» accanto a
+  // «ne entrano ancora 15» si contraddicevano)
+  if (weightLimit != null && positive(product.weight)) counts.push(['peso', floor((weightLimit - load.weight) / product.weight)]);
+  else if (weightLimit != null && load.weight >= weightLimit - EPS) counts.push(['peso', 0]);
   const room = shelfVolume(shelf);
   const one = productVolume(product);
   if (room != null && one != null) counts.push(['volume', floor((room - load.volume) / one)]);
+  else if (room != null && load.volume >= room - EPS) counts.push(['volume', 0]);
   if (counts.length) {
     const [by, count] = counts.reduce((a, b) => (b[1] < a[1] ? b : a));
     return { kind: 'numero', count, by };
   }
-  if (!weightLimit && room == null) return { kind: 'nessun-limite' };
-  const missing = weightLimit && room != null ? 'peso e misure' : weightLimit ? 'peso' : 'misure';
+  if (weightLimit == null && room == null) return { kind: 'nessun-limite' };
+  const missing = weightLimit != null && room != null ? 'peso e misure' : weightLimit != null ? 'peso' : 'misure';
   return { kind: 'non-calcolabile', missing };
 }
 
@@ -555,7 +559,7 @@ export function fitCountText(result: FitCount, shelfName: string, what = 'come q
     case 'nessun-limite':
       return `${shelfName}: nessun limite`;
     case 'non-calcolabile':
-      return `${shelfName}: per sapere quanti ne entrano servono ${result.missing === 'peso' ? 'il peso' : result.missing === 'misure' ? 'le tre misure' : 'il peso o le tre misure'} del prodotto`;
+      return `${shelfName}: per sapere quanti ne entrano ${result.missing === 'peso' ? 'serve il peso' : result.missing === 'misure' ? 'servono le tre misure' : 'servono il peso o le tre misure'} del prodotto`;
     case 'numero': {
       const { count, by } = result;
       if (count === 0) {
@@ -597,7 +601,10 @@ export function capacityText(shelf: ShelfCapacity): string {
 /** Percentuale scritta accanto alla barra (UX0: il colore da solo non basta): «72%», «Pieno», «Pieno (110%)». */
 export const fillText = (fill: FillLevel): string => (!fill.full ? `${fill.percent}%` : fill.percent > 100 ? `Pieno (${fill.percent}%)` : 'Pieno');
 
-/** Spazio libero in parole, per pezzi e peso: «Liberi: 11 pezzi · 5,5 kg». '' senza questi limiti. */
+/**
+ * Spazio libero in parole: «Liberi: 11 pezzi · 5,5 kg · 60% dello spazio» (il volume in percentuale, non in cm³; quante
+ * scatole ci stanno lo dice `fitCount` con un prodotto). '' senza limiti.
+ */
 export function freeText(shelf: ShelfCapacity, load: ShelfLoad): string {
   const barra = shelf.kind === 'barra';
   const parts: string[] = [];
@@ -606,6 +613,8 @@ export function freeText(shelf: ShelfCapacity, load: ShelfLoad): string {
     parts.push(`${formatNumber(free)} ${piecesWord(free, barra)}`);
   }
   if (positive(shelf.maxWeight)) parts.push(kg(Math.max(0, round3(shelf.maxWeight - load.weight))));
+  const room = shelfVolume(shelf);
+  if (room != null) parts.push(`${floor(((room - load.volume) / room) * 100)}% dello spazio`);
   return parts.length ? `Liberi: ${parts.join(' · ')}` : '';
 }
 
@@ -638,7 +647,9 @@ export function capacityFromForm(
     if (kind === 'barra' && (key === 'length' || key === 'depth')) continue;
     const raw = (texts[key] ?? '').trim();
     if (!raw) continue;
-    const value = parseNumber(raw);
+    const parsed = parseNumber(raw);
+    // Arrotondato come si salva: «0,0004» diventerebbe 0 e lo scaffale resterebbe senza quel limite senza dirlo
+    const value = parsed == null ? undefined : round3(parsed);
     const name = capacityLabel(key, kind);
     if (value == null || !(value > 0)) return { error: `${name}: scrivi un numero maggiore di zero, oppure lascialo vuoto.` };
     if (key === 'maxPieces' && !Number.isInteger(value)) return { error: `${name}: scrivi un numero intero.` };

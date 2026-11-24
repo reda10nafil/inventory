@@ -39,10 +39,13 @@ export function CategorySelect({
     return q ? all.filter((r) => fold(r.path).includes(q)) : all;
   }, [categories, noneLabel, query]);
 
-  const choose = (id: string) => {
-    onChange(id);
+  const close = () => {
     setOpen(false);
     setQuery('');
+  };
+  const choose = (id: string) => {
+    onChange(id);
+    close();
   };
 
   return (
@@ -52,14 +55,14 @@ export function CategorySelect({
         <Text style={styles.valueText} numberOfLines={1}>{shown}</Text>
         <AppIcon name="expand-more" size={22} color={t.colors.textSecondary} />
       </Pressable>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+      <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
         <View style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Chiudi la scelta della categoria" />
+          <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Chiudi la scelta della categoria" />
           <View style={styles.sheet}>
             <View style={styles.handle} />
             <View style={styles.headerRow}>
               <Text style={styles.title}>{label}</Text>
-              <Pressable onPress={() => setOpen(false)} hitSlop={8} accessibilityLabel="Chiudi">
+              <Pressable onPress={close} hitSlop={8} accessibilityLabel="Chiudi">
                 <AppIcon name="close" size={24} color={t.colors.textSecondary} />
               </Pressable>
             </View>
