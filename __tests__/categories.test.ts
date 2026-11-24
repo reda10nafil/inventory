@@ -2,6 +2,8 @@ import {
   CATEGORY_SEPARATOR,
   categoryAncestors,
   categoryDeleteError,
+  categoryDeleteStep,
+  categoryMoveTargets,
   categoryName,
   categoryNameError,
   categoryPath,
@@ -10,11 +12,14 @@ import {
   categoryWithDescendants,
   childrenOf,
   kindLine,
+  moveQuestion,
   parentIdOf,
   parentOptions,
   productKind,
+  productsInCategory,
   rootCategories,
 } from '../utils/categories';
+import { usage } from '../utils/productRules';
 
 // Le cartelle del campionario (senza `parentId`, come i dati di prima di C1) più due sottocategorie
 const OGGI = [
@@ -174,5 +179,48 @@ describe('categoryDeleteError con gli scaffali (S1a)', () => {
     expect(categoryDeleteError(CON_SOTTO, [], 'pellicce-volpe', [{ libraryId: 'pellicce-volpe' }])).toBe('La categoria "Volpe" è usata da 1 scaffale: cambia la sua categoria o eliminalo prima, da Impostazioni › Scaffali.');
     expect(categoryDeleteError(CON_SOTTO, [], 'pellicce-volpe', [{ libraryId: 'pellicce-volpe' }, { libraryId: 'pellicce-volpe' }, {}])).toMatch(/2 scaffali: cambia la loro categoria o eliminali prima/);
     expect(categoryDeleteError(CON_SOTTO, [], 'pellicce-volpe', [{ libraryId: 'altro' }, {}])).toBeNull();
+  });
+});
+
+describe('Elimina con la via d\'uscita (CAT1)', () => {
+  const products = [
+    { id: 'a', libraryId: 'pellicce', status: 'available' },
+    { id: 'b', libraryId: 'pellicce', status: 'sold' }, // venduto: conta
+    { id: 'c', libraryId: 'pellicce', deletedAt: '2026-11-24' }, // nel cestino: non conta
+    { id: 'd', libraryId: 'collezione-inverno' },
+  ];
+  it('prodotti della categoria: venduti compresi, cestino escluso, come usage().active', () => {
+    expect(productsInCategory(products, 'pellicce').map((p) => p.id)).toEqual(['a', 'b']);
+    const conUsage = usage(products.map((p) => ({ location: 'vetrina', ...p })), { libraryId: 'pellicce' }).active;
+    expect(productsInCategory(products, 'pellicce')).toHaveLength(conUsage);
+  });
+  it('con sottocategorie: rifiuto di sempre, motivo «children»', () => {
+    expect(categoryDeleteStep(CON_SOTTO, products, 'pellicce')).toEqual({
+      kind: 'refused', reason: 'children', message: 'La categoria "Pellicce" ha 2 sottocategorie: spostale o eliminale prima.',
+    });
+  });
+  it('usata da uno scaffale: rifiuto prima dei prodotti (spostarli non basterebbe)', () => {
+    const step = categoryDeleteStep(OGGI, products, 'pellicce', [{ libraryId: 'pellicce' }]);
+    expect(step).toEqual({ kind: 'refused', reason: 'shelves', message: 'La categoria "Pellicce" è usata da 1 scaffale: cambia la sua categoria o eliminalo prima, da Impostazioni › Scaffali.' });
+  });
+  it('con prodotti: si chiede dove spostarli; vuota o solo col cestino: conferma', () => {
+    expect(categoryDeleteStep(OGGI, products, 'pellicce')).toEqual({ kind: 'move', count: 2 });
+    expect(categoryDeleteStep(OGGI, [{ id: 'c', libraryId: 'usato-e-permute', deletedAt: 'x' }], 'usato-e-permute')).toEqual({ kind: 'empty' });
+    expect(categoryDeleteStep(CON_SOTTO, products, 'pellicce-volpe')).toEqual({ kind: 'empty' });
+  });
+  it('dove spostarli: le altre, nell\'ordine dell\'albero e col nome completo, senza sé e le sue sottocategorie', () => {
+    expect(categoryMoveTargets(CON_SOTTO, 'collezione-inverno')).toEqual([
+      { id: 'pellicce', label: 'Pellicce' },
+      { id: 'pellicce-visone', label: 'Pellicce › Visone' },
+      { id: 'pellicce-volpe', label: 'Pellicce › Volpe' },
+      { id: 'usato-e-permute', label: 'Usato e permute' },
+      { id: 'usato-visone', label: 'Usato e permute › Visone' },
+    ]);
+    expect(categoryMoveTargets(CON_SOTTO, 'pellicce').map((c) => c.id)).toEqual(['collezione-inverno', 'usato-e-permute', 'usato-visone']);
+    expect(categoryMoveTargets(CON_SOTTO, 'pellicce-volpe').map((c) => c.id)).not.toContain('pellicce-volpe');
+  });
+  it('la domanda', () => {
+    expect(moveQuestion('Pellicce', 3)).toBe('Pellicce ha 3 prodotti. Dove li sposto?');
+    expect(moveQuestion('Visone', 1)).toBe('Visone ha 1 prodotto. Dove li sposto?');
   });
 });

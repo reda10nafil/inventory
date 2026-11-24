@@ -230,11 +230,14 @@ const apriModifica = async (h, sku) => { await h.click(sku); await h.page.waitFo
     await h.go('settings/folders');
     await riga('cat_uno').click(); await h.page.waitForTimeout(400);
     const out = { campoA: await campo().inputValue() };
-    await riga('cat_due').locator('[tabindex="0"]').first().click();
+    // CAT1: la finestra della categoria copre l'elenco; si chiude, si apre il QR grande di B dalla sua riga, si riapre A
+    await h.click('Annulla');
+    await riga('cat_due').getByLabel('Codice di Cat Due', { exact: true }).click();
     await h.page.waitForTimeout(700);
     out.finestraB = await h.has('LIB-DUE', true);
     await h.page.mouse.click(10, 10);
     await h.page.waitForTimeout(500);
+    await riga('cat_uno').click(); await h.page.waitForTimeout(400);
     out.campoDopoQR = await campo().inputValue();
     await h.click('Salva Modifiche');
     const salvate = async () => Object.fromEntries(((await h.store(LK, 600)) || []).filter((l) => /cat_/.test(l.id)).map((l) => [l.id, l.barcode]));

@@ -147,6 +147,47 @@ async function cfB5(h) {
   return { ok, voceInImpostazioni: voce, valori: salvata && salvata.map((c) => `${c.id}:${c.label}`), prodottiUguali: JSON.stringify(prodDopo) === JSON.stringify(prodPrima), scheda };
 }
 
+// CF-B1 (C1, CAT1): «Borse» creata in cima a Impostazioni › Categorie, «Zaini» con «+ Sottocategoria» sulla riga di
+// Borse (come l'utente, niente scritto a mano nello storage): albero giusto (Zaini rientrata sotto Borse); VIS-0142
+// messo in «Borse › Zaini» da Modifica; nome completo nella Scheda; nell'Inventario «Borse» apre la seconda fila e
+// «Zaini» filtra solo VIS-0142.
+async function cfB1(h) {
+  const L = 'inventory:v1:local:libraries';
+  const lab = (t) => h.page.getByLabel(t, { exact: true }).locator('visible=true').first();
+  const riga = async (id) => {
+    const b = await h.page.locator('[tabindex="0"]').filter({ hasText: new RegExp(`ID: ${id}(?![\\w-])`) }).first().boundingBox();
+    return b && { x: Math.round(b.x), y: Math.round(b.y) };
+  };
+  await h.go('settings/folders');
+  await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('Borse');
+  await h.click('Crea Categoria');
+  await lab('Apri Borse').click(); await h.page.waitForTimeout(400);
+  await lab('Aggiungi una sottocategoria a Borse').click(); await h.page.waitForTimeout(400);
+  await lab('Nome della sottocategoria di Borse').fill('Zaini');
+  await lab('Aggiungi la sottocategoria a Borse').click(); await h.page.waitForTimeout(600);
+  const libs = await h.store(L);
+  const borse = libs.find((l) => l.name === 'Borse');
+  const zaini = libs.find((l) => l.name === 'Zaini');
+  const albero = { borse: await riga('borse'), zaini: await riga('zaini') };
+  const rientrata = !!albero.borse && !!albero.zaini && albero.zaini.y > albero.borse.y && albero.zaini.x > albero.borse.x;
+  await v.openEdit(h, 'VIS-0142');
+  await lab('Categoria Borse').click(); await h.page.waitForTimeout(300);
+  await lab('Sottocategoria Zaini').click(); await h.page.waitForTimeout(300);
+  await h.click('Salva Modifiche');
+  const vis = (await h.products()).find((p) => p.sku === 'VIS-0142');
+  await h.go('product/cmp-1');
+  const scheda = await h.has('Borse › Zaini', true);
+  await h.go('');
+  await h.click('Borse');
+  const secondaFila = await h.has('Zaini', true);
+  await h.click('Zaini');
+  const filtrati = await h.page.evaluate(() => [...document.querySelectorAll('div')]
+    .filter((d) => d.childElementCount === 0 && /^[A-Z]{3}-\d{4}$/.test(d.textContent || '') && d.offsetParent).map((d) => d.textContent));
+  const ok = !!borse && !borse.parentId && !!zaini && zaini.parentId === borse.id && rientrata && vis.libraryId === zaini.id
+    && scheda && secondaFila && filtrati.join() === 'VIS-0142';
+  return { ok, categorie: libs.map((l) => (l.parentId ? `${l.id}<${l.parentId}` : l.id)), rientrata, libraryId: vis.libraryId, scheda, secondaFila, filtrati };
+}
+
 // CF-C1 (parte GAL): Aggiungi con 3 foto (scelta file del browser), salvare, aprire la Scheda dalla Home (senza
 // ricaricare: sul web le foto aggiunte sono `blob:` e una ricarica le perde, P20 = fetta FOTO): miniature, frecce,
 // puntini; la miniatura 3 mostra la foto 3; visore con frecce ed Esc. Resta a MCAT la categoria in testa ad Aggiungi.
@@ -492,7 +533,7 @@ const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
   ['CF-A2', 'Ogni indirizzo di linking.ts dal menu, ricaricato, aperto direttamente: freccia, scheda madre, 0 GO_BACK; Team, Chat, Crea automazione senza NotFound', 'C2, IND', cfA2],
   ['CF-A3', 'Avvio a freddo e giro di tutte le schermate: 0 errori in console; nessuna voce «Prossimamente» senza decisione', 'IND, VOCI', cfA3],
-  ['CF-B1', 'Categoria «Borse» con la sottocategoria «Borse › Zaini»', 'C1 (fatta, passo da scrivere)'],
+  ['CF-B1', 'Categoria «Borse» con la sottocategoria «Borse › Zaini»', 'C1, CAT1', cfB1],
   ['CF-B2', 'Modulo di «Borse» da un Modello di settore', 'MCAT'],
   ['CF-B3', 'Campo «Colore» (pillole, colori, icona) e «Larghezza» (ruota); rinomina di un\'opzione usata', 'VAL, EDC', cfB3],
   ['CF-B4', 'Modulo di «Borse»: nascondere, sezione, uscire senza salvare, salvare', 'MOD, MCAT'],

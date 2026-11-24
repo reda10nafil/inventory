@@ -150,6 +150,52 @@ export function categoryDeleteError(
   return null;
 }
 
+// ---- CAT1 (ticket 33): Elimina che dice che cosa succede e offre la via d'uscita ----
+
+/** Prodotti di una categoria che contano per l'eliminazione: non nel cestino, venduti compresi (come `usage().active`). */
+export function productsInCategory<P extends { id: string; libraryId?: string; deletedAt?: string }>(products: readonly P[], id: string): P[] {
+  return products.filter((p) => p.libraryId === id && !p.deletedAt);
+}
+
+/**
+ * Che cosa fa «Elimina» su una categoria (CAT1). Nell'ordine: con sottocategorie si rifiuta e l'albero le mostra;
+ * usata da uno scaffale si rifiuta (spostare i prodotti non basterebbe); con prodotti si chiede dove spostarli;
+ * altrimenti si conferma e basta. I messaggi dei rifiuti sono quelli di `categoryDeleteError`.
+ */
+export type CategoryDeleteStep =
+  | { kind: 'refused'; reason: 'children' | 'shelves'; message: string }
+  | { kind: 'move'; count: number }
+  | { kind: 'empty' };
+
+export function categoryDeleteStep(
+  list: readonly CategoryNode[],
+  products: readonly { id: string; libraryId?: string; deletedAt?: string }[],
+  id: string,
+  shelves: readonly { libraryId?: string }[] = [],
+): CategoryDeleteStep {
+  if (childrenOf(list, id).length > 0) return { kind: 'refused', reason: 'children', message: categoryDeleteError(list, [], id) ?? '' };
+  if (shelves.some((s) => s.libraryId === id)) return { kind: 'refused', reason: 'shelves', message: categoryDeleteError(list, [], id, shelves) ?? '' };
+  const count = productsInCategory(products, id).length;
+  return count > 0 ? { kind: 'move', count } : { kind: 'empty' };
+}
+
+/**
+ * Dove si possono spostare i prodotti di una categoria che si elimina: tutte le altre, nell'ordine dell'albero e col
+ * nome completo («Pellicce › Visone»), senza la categoria stessa e le sue sottocategorie. «Senza categoria» lo
+ * aggiunge la schermata. Nessuna è scelta in partenza: lo spostamento è sempre una scelta dell'utente.
+ */
+export function categoryMoveTargets(list: readonly CategoryNode[], id: string): { id: string; label: string }[] {
+  const out = categoryWithDescendants(list, id);
+  return categoryTree(list)
+    .filter(({ category }) => !out.has(category.id))
+    .map(({ category }) => ({ id: category.id, label: categoryPath(list, category.id) }));
+}
+
+/** Frase del conteggio per «Dove li sposto?»: «Pellicce ha 3 prodotti.» */
+export function moveQuestion(name: string, count: number): string {
+  return `${name} ha ${count === 1 ? '1 prodotto' : `${count} prodotti`}. Dove li sposto?`;
+}
+
 /**
  * Categoria scritta nel CSV → id di una categoria esistente, altrimenti nessuna. Si confronta prima col nome
  * completo di ogni categoria («Pellicce › Visone», anche con «>»), poi con l'id, poi col solo nome (la prima
