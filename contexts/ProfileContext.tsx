@@ -40,24 +40,26 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const profileRef = useRef(profile);
   const permissionsRef = useRef(permissions);
   const loadedRef = useRef(false);
-  // Lettura fallita (storage non leggibile o JSON rotto): il primo evento non riscrive il profilo salvato; una modifica
-  // esplicita in Accesso (profilo o tabella) invece sì, perché la sceglie chi la fa guardando ciò che è a video
+  // Lettura del PROFILO fallita (storage non leggibile o JSON rotto): il primo evento non riscrive il profilo salvato;
+  // una modifica esplicita in Accesso invece sì, perché la sceglie chi la fa guardando ciò che è a video. Una tabella
+  // rotta non conta qui: torna quella di partenza e gli eventi hanno l'autore (revisore, ba58f82)
   const readFailedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
-    Promise.all([AsyncStorage.getItem(PROFILE_KEY), AsyncStorage.getItem(PERMISSIONS_KEY)])
+    const parse = (s: string | null) => (s ? JSON.parse(s) : null);
+    const readProfile = AsyncStorage.getItem(PROFILE_KEY).then(parse).catch(() => { readFailedRef.current = true; return null; });
+    const readTable = AsyncStorage.getItem(PERMISSIONS_KEY).then(parse).catch(() => null);
+    Promise.all([readProfile, readTable])
       .then(([p, t]) => {
         if (!active) return;
-        const parse = (s: string | null) => { try { return s ? JSON.parse(s) : null; } catch { readFailedRef.current = true; return null; } };
-        const nextProfile = normalizeProfile(parse(p));
-        const nextTable = normalizePermissions(parse(t));
+        const nextProfile = normalizeProfile(p);
+        const nextTable = normalizePermissions(t);
         profileRef.current = nextProfile;
         permissionsRef.current = nextTable;
         setProfile(nextProfile);
         setPermissions(nextTable);
       })
-      .catch(() => { readFailedRef.current = true; })
       .finally(() => { if (active) { loadedRef.current = true; setLoaded(true); } });
     return () => { active = false; };
   }, []);

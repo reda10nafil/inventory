@@ -261,4 +261,23 @@ const eliminaDallaHome = async (h, sku) => {
     out.ok = tabella === false && motivo.length === 1 && !prezzo && !nuovi.some((e) => / vendita$|^sold/.test(e)) && pdf === 'pulsante PDF' && out.supabase === 0;
     return out;
   });
+
+  // 6. Dal secondo parere (ba58f82): storage rotto. Tabella rotta: torna quella di partenza e l'evento nuovo ha
+  // l'autore («Questo telefono»). Profilo rotto: l'evento nuovo non riscrive la chiave salvata (resta com'era)
+  await run('acc1-storage-rotto', async (h) => {
+    const out = {};
+    await h.page.evaluate((k) => localStorage.setItem(k, '{rotto'), TK);
+    await eliminaDallaHome(h, 'VIS-0142');
+    let tl = await h.timeline();
+    out.tabellaRotta = { autore: tl[0].author ? Object.keys(tl[0].author).join(',') : 'nessuno', profiloScritto: !!(await leggi(h, PK)) };
+    await h.go('settings/access');
+    out.tabellaRotta.interruttori = await h.page.getByRole('switch').count();
+    await h.page.evaluate((k) => localStorage.setItem(k, '{rotto'), PK);
+    await eliminaDallaHome(h, 'LIN-0021');
+    tl = await h.timeline();
+    out.profiloRotto = { autore: tl[0].author ? Object.keys(tl[0].author).join(',') : 'nessuno', chiaveIntatta: (await leggi(h, PK)) === '{rotto' };
+    out.ok = out.tabellaRotta.autore === 'id' && out.tabellaRotta.profiloScritto && out.tabellaRotta.interruttori === 5
+      && out.profiloRotto.autore === 'nessuno' && out.profiloRotto.chiaveIntatta;
+    return out;
+  }, { dialogs: ['ok', 'ok'] });
 })();
