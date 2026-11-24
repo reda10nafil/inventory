@@ -13,6 +13,7 @@ const { textOf, press } = require('./a1-util.cjs');
 const c = require('./cod-util.cjs');
 const { scan, iconAt } = require('./a3-util.cjs');
 const v = require('./val-util.cjs');
+const e = require('./edc-util.cjs');
 
 const goBacks = (page) => { const l = []; page.on('console', (m) => { if (/GO_BACK/.test(m.text())) l.push(m.text()); }); return l; };
 const IN_BASSO = ['Indietro', 'Annulla', 'Torna Indietro', 'Chiudi'];
@@ -463,9 +464,12 @@ async function cfF7(h) {
   return { ok, ...out };
 }
 
-// CF-B3 (parte VAL): un'opzione usata e rinominata dall'editor dei valori (Campi › Taglia, «M» → «Media»): i prodotti
+// CF-B3. Parte VAL: un'opzione usata e rinominata dall'editor dei valori (Campi › Taglia, «M» → «Media»): i prodotti
 // che l'avevano non si riscrivono, mostrano «Media» nella Scheda e in Modifica resta scelta; gli id delle opzioni non
-// cambiano. Restano a EDC «Colore» con pillole, colori e icona, «Larghezza» con la ruota, la compilazione veloce.
+// cambiano. Parte EDC: campo «Colore del capo» creato dall'interfaccia (scelta da un elenco a binario orizzontale, «Mostra nella
+// card»), colore e icona dati ai valori; Larghezza Base con la ruota; Aggiungi compilato coi tocchi (pillola e ruota);
+// Scheda con l'icona e il pallino del colore, card dell'Inventario col valore. («Colore» c'è già nel campionario: il
+// campo nuovo ha un altro nome, così le etichette non si confondono.)
 async function cfB3(h) {
   const prima = await h.products(0);
   await v.matita(h, 'Taglia');
@@ -479,12 +483,49 @@ async function cfB3(h) {
   };
   await v.openEdit(h, 'VIS-0098');
   const inModifica = await v.scelti(h.page, ['XS', 'S', 'Media', 'L', 'XL']);
+
+  // EDC: «Colore del capo» a pillole con colore e icona dei valori, nella card
+  await e.crea(h, { tipo: 'scelta', nome: 'Colore del capo', valori: ['Nero lucido', 'Cammello'], aspetto: 'Binario orizzontale', card: true });
+  await v.matita(h, 'Colore del capo');
+  await e.visibile(h, '[aria-label="Rinomina Cammello"]').click(); await h.page.waitForTimeout(300);
+  await e.visibile(h, '[aria-label="Colore Marrone"]').click();
+  await e.visibile(h, '[aria-label="Icona star"]').click();
+  await e.visibile(h, '[aria-label="Rinomina Nero lucido"]').click(); await h.page.waitForTimeout(300);
+  await e.visibile(h, '[aria-label="Colore Nero"]').click();
+  await h.click('Aggiorna');
+  const colore = await e.campo(h, 'Colore del capo');
+  // Larghezza Base con la ruota, da 40 a 120 cm, passo 10
+  await h.go('settings/fields');
+  await e.visibile(h, '[aria-label="Come si compila Larghezza"]').click(); await h.page.waitForTimeout(500);
+  await h.click('Ruota');
+  await e.visibile(h, '[aria-label="Da della ruota"]').fill('40');
+  await e.visibile(h, '[aria-label="A della ruota"]').fill('120');
+  await e.visibile(h, '[aria-label="Passo della ruota"]').fill('10');
+  await h.click('Aggiorna');
+  // Aggiungi compilato coi tocchi
+  await e.prepara(h, 'Media');
+  await h.click('Cammello'); // a 1/2 il binario è una tendina: si apre e si sceglie
+  await e.ruota(h, 'Larghezza', '90 cm'); // a 1/3 il campo apre la ruota in una finestra dal basso
+  const nuovo = await e.salvaNuovo(h);
+  const cammello = (colore.options || []).find((o) => o.label === 'Cammello');
+  // davanti al nome c'è la stella del valore (un glifo): si cerca il nome nel testo
+  const schedaColore = (await v.scheda(h, nuovo.id, [['Colore del capo', 14]]))['Colore del capo'];
+  const pallinoScheda = await e.puntoColore(h.page, 'Cammello', 'rgb(141, 110, 99)');
+  await h.go('');
+  await h.page.getByText(nuovo.sku, { exact: true }).first().waitFor();
+  const cardNuovo = await e.card(h.page, nuovo.sku);
+  const pallinoCard = await e.puntoColore(h.page, 'Cammello', 'rgb(141, 110, 99)');
+
   const out = {
     opzioni: (taglia.options || []).map((o) => `${o.id}:${o.label}`).join(), prodottiUguali: JSON.stringify(dopo) === JSON.stringify(prima), schede, inModifica,
+    colore: { look: colore.look, showInCard: colore.showInCard, cammello },
+    nuovo: { colore: v.valore(nuovo, colore.id), larghezza: nuovo.width }, schedaColore, pallinoScheda, cardNuovo, pallinoCard,
   };
   const ok = out.opzioni === 'opt_0:XS,opt_1:S,opt_2:Media,opt_3:L,opt_4:XL' && out.prodottiUguali && schede.vis0142 === 'Media' && schede.vis0098 === 'Media'
-    && inModifica.join() === 'Media';
-  return { ok, ...out, daFare: 'EDC: «Colore» con pillole, colori e icona, «Larghezza» con la ruota, compilazione veloce in Aggiungi, icone e colori nella Scheda' };
+    && inModifica.join() === 'Media'
+    && colore.look === 'chips' && colore.showInCard === true && cammello && cammello.color === '#8D6E63' && cammello.icon === 'star'
+    && out.nuovo.colore === cammello.id && nuovo.width === 90 && /Cammello/.test(schedaColore || '') && pallinoScheda && /Cammello/.test(cardNuovo || '') && pallinoCard;
+  return { ok, ...out };
 }
 
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
@@ -532,11 +573,12 @@ const TELEFONO = [
   ['CF-T1', 'Tasto Indietro di sistema, link syncroflow:// ad app chiusa, icone su APK in modalità aereo', 'C2, IND'],
   ['CF-T2', 'Fotocamera e NFC nello Scanner e nelle automazioni', 'COD, N1, N2'],
   ['CF-T3', 'Scaffale A1 con un tag NFC', 'ETI, N1'],
-  ['CF-T4', 'Stampa di etichetta e PDF in modalità aereo', 'ETI, EDC'],
+  ['CF-T4', 'Stampa di etichetta e PDF in modalità aereo', 'ETI (il PDF con i campi, lasciato da EDC)'],
   ['CF-T5', 'Foto da galleria e fotocamera dopo «Svuota cache»', 'FOTO, GAL'],
   ['CF-T6', 'Due o tre telefoni sullo stesso modem senza internet', 'CHAT1, RETE1, RETE2, RIC1, RIC2'],
   ['CF-T7', 'Export CSV aperto in Excel; import da Excel sul telefono', 'EXP, IMP'],
   ['CF-T8', 'Login Google e passaggio dei dati locali', 'L1, L2'],
+  ['CF-T9', 'Ruota a scatti col dito, binari, menu a tendina e tastiera nei campi di Aggiungi e Modifica', 'EDC'],
 ];
 
 (async () => {

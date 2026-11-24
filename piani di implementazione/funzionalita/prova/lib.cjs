@@ -55,12 +55,31 @@ async function scenario(name, fn, { dialogs = [] } = {}) {
   return { name, result, dialogs: seenDialogs, errors: realErrors };
 }
 
+// EDC (R1 di UX0): in Aggiungi Posizione, Categoria e i campi a scelta in una colonna da 1/2 o 1/3 sono tendine. Una
+// scelta che non si vede può stare in una tendina chiusa: come l'utente, si aprono una alla volta le tendine chiuse
+// (`aria-expanded="false"`) finché la scelta compare; quelle che non la contengono si richiudono. Conta solo una scelta
+// che si tocca (dentro un pulsante): lo stesso testo può essere un titolo («Magazzino» è anche la sezione di Aggiungi).
+async function apriTendinaCon(page, locator) {
+  const toccabile = () => locator.evaluateAll((els) => els.some((e) => e.closest('[tabindex="0"], [role="button"], button, a, input')));
+  if (await toccabile()) return true;
+  for (const tendina of await page.$$('[aria-expanded="false"]')) {
+    if (!(await tendina.isVisible())) continue;
+    await tendina.click(); await page.waitForTimeout(250);
+    if (await toccabile()) return true;
+    await tendina.click(); await page.waitForTimeout(150);
+  }
+  return false;
+}
+
 function helpers(page, name) {
   const vis = (text, exact = true) => page.getByText(text, { exact }).locator('visible=true').first();
   return {
     page,
     vis,
-    click: async (text, exact = true) => { await vis(text, exact).click(); await page.waitForTimeout(700); },
+    click: async (text, exact = true) => {
+      await apriTendinaCon(page, page.getByText(text, { exact }).locator('visible=true'));
+      await vis(text, exact).click(); await page.waitForTimeout(700);
+    },
     longPress: async (text) => {
       const box = await vis(text).boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -81,4 +100,4 @@ function helpers(page, name) {
   };
 }
 
-module.exports = { scenario, log, APP, SHOTS };
+module.exports = { scenario, log, APP, SHOTS, apriTendinaCon };

@@ -20,7 +20,8 @@ import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { orderByLayout } from '../../../utils/layoutOrder';
 import { useFieldOptions } from '../../../hooks/useFieldOptions';
-import { choiceLabel, valueText } from '../../../utils/fieldValues';
+import { choiceLabel, liveField, optionOf, valueText } from '../../../utils/fieldValues';
+import { OptionMark, hasMark } from '../../../components/OptionMark';
 import { nfcService } from '../../../utils/nfcService';
 import Barcode from '../../../components/Barcode';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -1011,16 +1012,22 @@ export default function ProductDetailScreen() {
               <View style={styles.customCardsContainer}>
                 {orderByLayout(product.customData, layout.fields.map((f) => f.id)).map((dataItem, index) => {
                   const value = dataItem.value;
-                  const field = dataItem.fieldSnapshot;
+                  // EDC (CAM-F6, CAM-F7): nome, icona, tipo e opzioni dal registro (anche nel cestino); la copia salvata
+                  // col prodotto solo se il campo non c'è più, e per riconoscere le etichette di prima
+                  const snapshot = dataItem.fieldSnapshot;
+                  const field = liveField(snapshot, allFieldsIncludingDeleted);
                   if (value === undefined || value === null || value === '') return null;
-                  const options = optionsOf(allFieldsIncludingDeleted.find((f) => f.id === field.id) ?? field);
+                  const options = optionsOf(field);
+                  // Icona: quella del modulo (layout builder, come in Aggiungi), poi quella del campo
+                  const layoutIcon = layout.fields.find((f) => f.id === field.id)?.icon;
+                  const iconOf = (fallback: string) => layoutIcon || field.icon || fallback;
 
                   // Text Long -> Spanning full width like a Note
                   if (field.type === 'text_long') {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'notes'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('notes')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <Text style={styles.customNotesText}>{String(value)}</Text>
@@ -1034,15 +1041,18 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'label'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('label')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <View style={styles.customTagsRow}>
                           {displayArray.map(val => {
-                            // Etichetta di adesso anche per un'etichetta salvata prima di VAL o un'opzione rinominata
-                            const label = choiceLabel(val, options, field);
+                            // Etichetta di adesso anche per un'etichetta salvata prima di VAL o un'opzione rinominata;
+                            // colore e icona dell'opzione (EDC) accanto, se ne ha
+                            const label = choiceLabel(val, options, snapshot);
+                            const option = optionOf(val, options, snapshot);
                             return (
-                              <View key={val} style={styles.customTag}>
+                              <View key={val} style={[styles.customTag, hasMark(option) && styles.customTagMarked]}>
+                                {hasMark(option) && <OptionMark option={option} />}
                                 <Text style={styles.customTagText}>{label}</Text>
                               </View>
                             )
@@ -1058,7 +1068,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'description'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('description')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <View style={styles.customDocumentList}>
@@ -1080,7 +1090,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'image'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('image')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         {/* GAL: si aprono nel visore delle foto, partendo da quella toccata */}
@@ -1108,7 +1118,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                         <View style={[styles.customIconWrap, { backgroundColor: t.colors.infoSoft }]}>
-                          <AppIcon name={field.icon as any || 'event'} size={19} color={t.colors.info} />
+                          <AppIcon name={iconOf('event')} size={19} color={t.colors.info} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1123,7 +1133,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                         <View style={[styles.customIconWrap, { backgroundColor: t.colors.accentSoft }]}>
-                          <AppIcon name={field.icon as any || 'attach-money'} size={19} color={t.colors.accentInk} />
+                          <AppIcon name={iconOf('attach-money')} size={19} color={t.colors.accentInk} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1136,17 +1146,26 @@ export default function ProductDetailScreen() {
                     );
                   }
 
-                  // Default / Single Choice / Number / Text Short: numeri con la virgola, scelta con l'etichetta di adesso
-                  const displayValue = valueText(field, value, { options, snapshot: field });
+                  // Default / Single Choice / Number / Text Short / Sì-No: numeri con la virgola, scelta con l'etichetta
+                  // di adesso; una scelta con colore o icona (EDC) come pillola
+                  const displayValue = valueText(field, value, { options, snapshot });
+                  const chosen = field.type === 'single_choice' ? optionOf(value, options, snapshot) : undefined;
 
                   return (
                     <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                       <View style={styles.customIconWrap}>
-                        <AppIcon name={field.icon as any || 'info'} size={19} color={t.colors.fieldIcon} />
+                        <AppIcon name={iconOf('info')} size={19} color={t.colors.fieldIcon} />
                       </View>
                       <View style={styles.customCardContent}>
                         <Text style={styles.customFieldLabel}>{field.name}</Text>
-                        <Text style={styles.customFieldValue}>{displayValue}</Text>
+                        {hasMark(chosen) ? (
+                          <View style={[styles.customTag, styles.customTagMarked, styles.customTagInCard]}>
+                            <OptionMark option={chosen} />
+                            <Text style={styles.customTagText} numberOfLines={2}>{displayValue}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.customFieldValue}>{displayValue}</Text>
+                        )}
                       </View>
                     </View>
                   );
@@ -1947,6 +1966,18 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
     fontWeight: '500',
     color: t.colors.textPrimary,
+  },
+  // EDC: pillola con il colore e l'icona dell'opzione
+  customTagMarked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingLeft: 10,
+  },
+  customTagInCard: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    maxWidth: '100%',
   },
   customDocumentList: {
     gap: 8,

@@ -8,6 +8,8 @@ import { choiceList } from './fieldValues';
 export interface FurType {
   id: string;
   label: string;
+  /** Colore facoltativo (EDC, ticket 23 punto 6): si tiene se c'è, come per le opzioni dei campi. */
+  color?: string;
 }
 
 /** Predefiniti = i tipi di pelle di sempre, stessi id. */
@@ -33,7 +35,8 @@ export function parseFurTypes(raw: string | null | undefined): FurType[] {
       const label = item && typeof item.label === 'string' ? item.label.trim() : '';
       if (!id || !label || seen.has(id)) continue;
       seen.add(id);
-      list.push({ id, label });
+      const color = typeof item.color === 'string' && item.color.trim() ? item.color.trim() : undefined;
+      list.push({ id, label, ...(color && { color }) });
     }
     return list.length ? list : [...DEFAULT_FUR_TYPES];
   } catch {

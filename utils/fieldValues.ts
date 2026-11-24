@@ -11,7 +11,11 @@
 // - Contatore (CAM-F3): `stepperRange`, `stepFrom`, `stepperDefaults` (in Aggiungi il minimo è il valore vero, salvato).
 // - Modulo: `formValue` (valore salvato → modulo), `savedValue` (modulo → valore da salvare, con il rifiuto di un numero
 //   sbagliato), `sameValue` (lo stesso valore scritto in due forme), `valueText` (testo da mostrare).
-import type { CustomField } from '../types';
+// - EDC (editor in tre domande e lettura veloce, in fondo): come si compila (`inputMode`, ruota `wheelValues`, «Scelgo o
+//   scrivo» `typedChoice` / `appendOption`), come si vede (`choiceLook`, `lookFields`), valore predefinito (`defaultOf`,
+//   `initialValues`), cambi di tipo (`typeChangeError`), lettura dal registro con ripiego sulla copia (`liveField`),
+//   card (`cardFields`, `showInCardError`) e ricerca (`searchTexts`). Proprietà nuove tutte facoltative.
+import type { CustomField, FieldUIType } from '../types';
 import { formatNumber, formatNumberInput, parseNumber } from './number';
 import { formatPrice } from './price';
 import { isEmptyValue } from './formValidation';
@@ -27,7 +31,7 @@ type OptionsSource = Pick<CustomField, 'options' | 'dataset'>;
 type Lists = {
   locations?: readonly { id: string; label: string }[];
   categories?: readonly { id: string; label: string }[];
-  furTypes?: readonly { id: string; label: string }[];
+  furTypes?: readonly { id: string; label: string; color?: string }[];
 };
 
 export const isChoiceField = (field: Pick<CustomField, 'type'>): boolean =>
@@ -99,7 +103,7 @@ export function newOptionId(existing: readonly { id: string }[], now: number = D
 export function choiceOptions(field: Pick<CustomField, 'options' | 'dataset' | 'linkTo'>, lists: Lists = {}): FieldOption[] {
   if (field.linkTo === 'locations') return (lists.locations ?? []).map(({ id, label }) => ({ id, label }));
   if (field.linkTo === 'libraries') return (lists.categories ?? []).map(({ id, label }) => ({ id, label }));
-  if (field.linkTo === 'furType') return (lists.furTypes ?? []).map(({ id, label }) => ({ id, label }));
+  if (field.linkTo === 'furType') return (lists.furTypes ?? []).map(({ id, label, color }) => ({ id, label, ...(color && { color }) }));
   return fieldOptions(field);
 }
 
@@ -300,8 +304,8 @@ export function stepperDefaults(fields: readonly Pick<CustomField, 'id' | 'type'
 
 /** Valore salvato → valore del modulo: un numero scritto con la virgola (12.5 → «12,5»), il contatore come numero,
  *  il resto com'è (le scelte restano id o etichette: le riconosce `optionOf`). */
-export function formValue(field: Pick<CustomField, 'type' | 'uiType'>, value: unknown): unknown {
-  if (isNumberField(field) && !isStepper(field) && typeof value === 'number') return formatNumberInput(value);
+export function formValue(field: Pick<CustomField, 'type' | 'uiType'> & { input?: CustomField['input'] }, value: unknown): unknown {
+  if (isNumberField(field) && !isStepper(field) && field.input !== 'wheel' && typeof value === 'number') return formatNumberInput(value);
   return value;
 }
 
@@ -373,4 +377,285 @@ export function valueText(
     return `${n === undefined ? String(value) : formatNumber(n)}${unit}`;
   }
   return `${String(value)}${unit}`;
+}
+
+// ── EDC: come si compila ─────────────────────────────────────
+
+/** Massimo di caratteri di un testo breve (CAM-F9: «Max 100 caratteri» prima era scritto ma non applicato). */
+export const SHORT_TEXT_MAX = 100;
+
+export type InputMode = 'write' | 'choose' | 'choose_or_write' | 'stepper' | 'wheel';
+
+/** Come si compila un campo: dai dati di sempre (`type`, `uiType`) più `input` (EDC). Le scelte collegate a una lista
+ *  dell'app si scelgono soltanto; la ruota e il contatore valgono per i numeri. */
+export function inputMode(field: Pick<CustomField, 'type' | 'uiType' | 'input' | 'linkTo'>): InputMode {
+  if (isChoiceField(field)) return field.type === 'single_choice' && field.input === 'choose_or_write' && !field.linkTo ? 'choose_or_write' : 'choose';
+  if (field.type !== 'number') return 'write';
+  if (isStepper(field)) return 'stepper';
+  return field.input === 'wheel' ? 'wheel' : 'write';
+}
+
+/** Valori della ruota (da, a, passo), al massimo `WHEEL_MAX_VALUES`. */
+export const WHEEL_MAX_VALUES = 400;
+export function wheelValues(range: StepperRange): number[] {
+  const out: number[] = [];
+  for (let i = 0; out.length < WHEEL_MAX_VALUES; i += 1) {
+    const v = Math.round((range.min + i * range.step) * 1000) / 1000;
+    if (v > range.max + 1e-9) break;
+    out.push(v);
+  }
+  return out;
+}
+
+/**
+ * Limiti scritti nell'editor (contatore e ruota: «da», «a», «passo», con la virgola) → limiti, oppure l'errore da dire.
+ * La ruota ha al massimo `WHEEL_MAX_VALUES` valori.
+ */
+export function rangeFromText(text: { min: string; max: string; step: string }, wheel = false): { ok: true; range: StepperRange } | { ok: false; error: string } {
+  const min = parseNumber(text.min);
+  const max = parseNumber(text.max);
+  const step = parseNumber(text.step);
+  if (min === undefined || max === undefined || step === undefined) return { ok: false, error: 'Scrivi «da», «a» e «passo» con dei numeri, per esempio 80, 120 e 0,5.' };
+  if (step <= 0) return { ok: false, error: 'Il passo deve essere più di zero.' };
+  if (max < min) return { ok: false, error: '«a» deve essere uguale o più grande di «da».' };
+  if (wheel && (max - min) / step + 1 > WHEEL_MAX_VALUES + 1e-9) {
+    return { ok: false, error: `La ruota ha troppi valori: al massimo ${WHEEL_MAX_VALUES}. Aumenta il passo o stringi «da» e «a».` };
+  }
+  return { ok: true, range: { min, max, step } };
+}
+
+/** Misure Base disegnate con `FieldInput` (EDC, punto 4 del ticket 23): unità e segnaposto di sempre. */
+export const MEASURE_UNITS: Record<string, string> = { length: 'cm', width: 'cm', weight: 'kg' };
+export const MEASURE_PLACEHOLDERS: Record<string, string> = { length: '85', width: '120', weight: '1,2' };
+
+/** Campo Base di una misura dal registro (con l'unità di sempre se manca), o quello di sempre se il registro non c'è. */
+export function baseMeasureField(fields: readonly CustomField[], id: string): CustomField {
+  const unit = MEASURE_UNITS[id];
+  const found = fields.find((f) => f.id === id);
+  if (found) return { ...found, unit: found.unit || unit, required: false };
+  return { id, name: id, type: 'number', uiType: 'text', unit, required: false, order: 0, isSystem: true };
+}
+
+/** Valore di una misura nel modulo (testo con la virgola, come prima): la ruota dà un numero. */
+export const measureText = (value: unknown): string =>
+  typeof value === 'number' ? formatNumberInput(value) : value == null ? '' : String(value);
+
+// ── EDC: come si vede (scelte) ───────────────────────────────
+
+/** Aspetti di una scelta: binario orizzontale (`chips`), a capo, riquadri, elenco verticale, menu a tendina, elenco
+ *  dal basso, ruota. */
+export type ChoiceLook = 'tiles' | 'chips' | 'wrap' | 'list' | 'dropdown' | 'sheet' | 'wheel';
+const NEW_LOOKS: readonly ChoiceLook[] = ['chips', 'wrap', 'list', 'dropdown', 'wheel'];
+
+/** Aspetto di una scelta: quello salvato in `look`; altrimenti riquadri (`grid`, `segmented`: CAM-F8, erano uguali) o
+ *  elenco dal basso (`picker`, `modal_list`). La ruota vale solo per la scelta di un valore. */
+export function choiceLook(field: Pick<CustomField, 'uiType' | 'look'> & { type?: CustomField['type'] }): ChoiceLook {
+  const look = field.look as ChoiceLook | undefined;
+  if (look && NEW_LOOKS.includes(look) && !(look === 'wheel' && field.type === 'multi_choice')) return look;
+  return field.uiType === 'picker' || field.uiType === 'modal_list' ? 'sheet' : 'tiles';
+}
+
+/**
+ * `uiType` e `look` da salvare per l'aspetto scelto nell'editor. Lo stesso aspetto di prima non cambia nulla
+ * (`segmented` e `modal_list` restano); gli aspetti nuovi tengono in `uiType` quello vecchio più vicino (le pillole
+ * e l'elenco verticale i riquadri, tendina e ruota l'elenco dal basso), così tornando indietro (codice di prima di
+ * EDC) il campo si disegna ancora.
+ */
+export function lookFields(look: ChoiceLook, current?: Pick<CustomField, 'uiType' | 'look'> | null): { uiType: FieldUIType; look: CustomField['look'] } {
+  if (current && choiceLook(current) === look) return { uiType: current.uiType, look: current.look };
+  if (look === 'tiles' || look === 'sheet') return { uiType: look === 'sheet' ? 'picker' : 'grid', look: undefined };
+  return { uiType: look === 'dropdown' || look === 'wheel' ? 'picker' : 'grid', look };
+}
+
+/** Campi Base con l'aspetto scelto nell'editor (richiesta dell'utente del 24): Posizione e Tipo di pelle. */
+export const BASE_LOOK_FIELDS: readonly string[] = ['location', 'furType'];
+/** Aspetti dei campi Base: binario (predefinito), a capo, elenco verticale, menu a tendina, ruota. */
+export const BASE_LOOKS: readonly ChoiceLook[] = ['chips', 'wrap', 'list', 'dropdown', 'wheel'];
+
+/** Aspetto di un campo Base a pillole (Posizione, Tipo di pelle): quello salvato, altrimenti il **binario orizzontale**. */
+export function baseLook(field: Pick<CustomField, 'look'> | undefined | null): ChoiceLook {
+  const look = field?.look as ChoiceLook | undefined;
+  return look && BASE_LOOKS.includes(look) ? look : 'chips';
+}
+
+/** Colori che l'utente può dare alle opzioni (pillola nella Scheda e nella card): si disegnano come un pallino con il
+ *  bordo del tema, così il testo resta leggibile in tutti e 5 gli stili. */
+export const OPTION_COLORS: readonly { color: string; name: string }[] = [
+  { color: '#D64545', name: 'Rosso' },
+  { color: '#E8833A', name: 'Arancio' },
+  { color: '#E2B93B', name: 'Giallo' },
+  { color: '#4CAF50', name: 'Verde' },
+  { color: '#2E9E8F', name: 'Verde acqua' },
+  { color: '#3B82F6', name: 'Blu' },
+  { color: '#7C5CC4', name: 'Viola' },
+  { color: '#D45A9A', name: 'Rosa' },
+  { color: '#8D6E63', name: 'Marrone' },
+  { color: '#9E9E9E', name: 'Grigio' },
+  { color: '#212121', name: 'Nero' },
+  { color: '#F5F5F5', name: 'Bianco' },
+];
+
+/** Icone che l'utente può dare alle opzioni. */
+export const OPTION_ICONS: readonly string[] = [
+  'star', 'favorite', 'check-circle', 'warning', 'verified', 'eco', 'ac-unit', 'wb-sunny', 'diamond', 'bolt',
+  'local-shipping', 'build', 'straighten', 'palette', 'style', 'label',
+];
+
+// ── EDC: «Scelgo o scrivo» ───────────────────────────────────
+
+/** Testo scritto in «Scelgo o scrivo»: l'id dell'opzione con lo stesso nome (maiuscole e accenti indifferenti),
+ *  altrimenti il testo com'è (si salva così, senza diventare un'opzione); vuoto = nessun valore. */
+export function typedChoice(text: string, options: readonly FieldOption[]): string | null {
+  const name = text.trim();
+  if (!name) return null;
+  return options.find((o) => fold(o.label) === fold(name))?.id ?? name;
+}
+
+/** Testo libero di «Scelgo o scrivo» da mostrare nella casella: il valore salvato se non è un'opzione. */
+export function freeText(value: unknown, options: readonly FieldOption[], snapshot?: OptionsSource | null): string {
+  if (typeof value !== 'string' || !value) return '';
+  return optionOf(value, options, snapshot) ? '' : value;
+}
+
+/** Campo con un'opzione nuova in fondo (dopo la conferma di «Aggiungi ai valori»): id nuovo, `dataset` allineato. */
+export function appendOption<F extends CustomField>(field: F, label: string, id: string): F {
+  const options = [...fieldOptions(field), { id, label: label.trim() }];
+  return { ...field, options, dataset: options.map((o) => o.label) };
+}
+
+// ── EDC: valore predefinito ──────────────────────────────────
+
+/**
+ * Valore predefinito del campo nella forma salvata, se è ancora valido (testo, numero nei limiti del contatore o tra
+ * i valori della ruota, Sì/No, id di un'opzione che c'è); altrimenti `undefined`. Date, foto, documenti, scelte
+ * multiple e scelte collegate non ne hanno.
+ */
+export function defaultOf(field: Pick<CustomField, 'type' | 'uiType' | 'input' | 'linkTo' | 'dataset' | 'options' | 'defaultValue'>): string | number | boolean | undefined {
+  const d = field.defaultValue;
+  if (d === undefined || d === null || d === '') return undefined;
+  switch (field.type) {
+    case 'text_short':
+      return typeof d === 'string' && d.trim() ? d.slice(0, SHORT_TEXT_MAX) : undefined;
+    case 'text_long':
+      return typeof d === 'string' && d.trim() ? d : undefined;
+    case 'number':
+    case 'currency': {
+      const n = numberOf(d);
+      if (n === undefined) return undefined;
+      const mode = inputMode(field);
+      if (mode === 'stepper') {
+        const r = stepperRange(field);
+        return n >= r.min && n <= r.max ? n : undefined;
+      }
+      if (mode === 'wheel') return wheelValues(stepperRange(field)).some((v) => Math.abs(v - n) < 1e-9) ? n : undefined;
+      return n;
+    }
+    case 'boolean':
+      return typeof d === 'boolean' ? d : undefined;
+    case 'single_choice':
+      return !field.linkTo && fieldOptions(field).some((o) => o.id === d) ? String(d) : undefined;
+    default:
+      return undefined;
+  }
+}
+
+/** Tipi che possono avere un valore predefinito. */
+export const takesDefault = (field: Pick<CustomField, 'type' | 'linkTo'>): boolean =>
+  ['text_short', 'text_long', 'number', 'currency', 'boolean'].includes(field.type) || (field.type === 'single_choice' && !field.linkTo);
+
+/**
+ * Valori di partenza in Aggiungi per i campi del modulo: il contatore dal minimo (VAL, CAM-F3), poi il valore
+ * predefinito al suo posto dove c'è, nella forma del modulo. Si salvano anche senza toccarli. Mai in Modifica.
+ */
+export function initialValues(fields: readonly CustomField[]): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...stepperDefaults(fields) };
+  for (const f of fields) {
+    const d = defaultOf(f);
+    if (d !== undefined) out[f.id] = formValue(f, d);
+  }
+  return out;
+}
+
+// ── EDC: cambio di tipo (CAM-F10) ────────────────────────────
+
+const TYPE_NAMES: Record<CustomField['type'], string> = {
+  text_short: 'Testo breve', text_long: 'Testo lungo', number: 'Numero o misura', currency: 'Prezzo', date: 'Data',
+  boolean: 'Sì/No', single_choice: 'Scelta da un elenco', multi_choice: 'Scelta da un elenco', images: 'Foto', document: 'Documento',
+};
+
+/** Coppie di tipi in cui i valori salvati si leggono uguali (testo, numero, scelta una → più). */
+const SAME_READING: [CustomField['type'], CustomField['type']][] = [
+  ['text_short', 'text_long'], ['text_long', 'text_short'], ['number', 'currency'], ['currency', 'number'], ['single_choice', 'multi_choice'],
+];
+
+type WithData = { deletedAt?: string; customData?: readonly { value: unknown; fieldSnapshot?: Pick<CustomField, 'id'> }[] };
+const entriesOf = (products: readonly WithData[], fieldId: string) =>
+  products.flatMap((p) => (p.customData || []).filter((d) => d.fieldSnapshot?.id === fieldId && !isEmptyValue(d.value)));
+
+/**
+ * Errore del cambio di tipo, altrimenti null. Nessun valore salvato si converte: si cambia solo dove si leggono uguali
+ * (testo breve ↔ lungo, numero ↔ prezzo, scelta una → più; più → una se nessun prodotto ne ha più di uno), oppure se
+ * nessun prodotto (cestino compreso) ha un valore in quel campo.
+ */
+export function typeChangeError(field: Pick<CustomField, 'id' | 'name' | 'type'>, to: CustomField['type'], products: readonly WithData[]): string | null {
+  if (field.type === to) return null;
+  const entries = entriesOf(products, field.id);
+  if (!entries.length) return null;
+  if (SAME_READING.some(([a, b]) => a === field.type && b === to)) return null;
+  const n = entries.length === 1 ? '1 prodotto ha' : `${entries.length} prodotti hanno`;
+  if (field.type === 'multi_choice' && to === 'single_choice') {
+    const many = entries.filter((d) => choiceList(d.value).length > 1).length;
+    if (!many) return null;
+    return `${many === 1 ? '1 prodotto ha' : `${many} prodotti hanno`} più di un valore in «${field.name}»: con un valore solo non si leggerebbero come adesso. Togli prima i valori in più.`;
+  }
+  return `${n} un valore in «${field.name}»: da ${TYPE_NAMES[field.type]} a ${TYPE_NAMES[to]} si leggerebbe in un altro modo. Crea un campo nuovo, oppure cambia solo tra testo breve e lungo, numero e prezzo, scelta di uno o più valori.`;
+}
+
+// ── EDC: lettura veloce (Scheda, card, ricerca) ──────────────
+
+/** Campo con cui leggere un valore salvato: quello del registro, anche nel cestino (nome, icona, tipo, opzioni di
+ *  adesso: CAM-F6); la copia salvata col prodotto solo se il campo non c'è più (eliminato per sempre o importato). */
+export function liveField<F extends Pick<CustomField, 'id'>>(snapshot: F, registry: readonly F[]): F {
+  return registry.find((f) => f.id === snapshot.id) ?? snapshot;
+}
+
+/** Un campo che si può mostrare nella card (testi lunghi, foto e documenti no). */
+export const canShowInCard = (field: Pick<CustomField, 'type'>): boolean =>
+  field.type !== 'text_long' && field.type !== 'images' && field.type !== 'document';
+
+export const CARD_FIELDS_MAX = 2;
+
+/** Campi con «Mostra nella card», al massimo `CARD_FIELDS_MAX`, nell'ordine del registro. Spento per tutti i campi di
+ *  partenza: la card di sempre non cambia finché l'utente non ne accende uno. */
+export function cardFields<F extends Pick<CustomField, 'type' | 'showInCard' | 'deletedAt'>>(fields: readonly F[]): F[] {
+  return fields.filter((f) => f.showInCard && !f.deletedAt && canShowInCard(f)).slice(0, CARD_FIELDS_MAX);
+}
+
+/** Errore per accendere «Mostra nella card» su un campo, altrimenti null. */
+export function showInCardError(fields: readonly Pick<CustomField, 'id' | 'name' | 'type' | 'showInCard' | 'deletedAt'>[], field: Pick<CustomField, 'id' | 'type'>): string | null {
+  if (!canShowInCard(field)) return 'Testi lunghi, foto e documenti non stanno nella card.';
+  const others = cardFields(fields).filter((f) => f.id !== field.id);
+  if (others.length < CARD_FIELDS_MAX) return null;
+  return `Nella card ci stanno al massimo ${CARD_FIELDS_MAX} campi: spegni prima «Mostra nella card» in ${others.map((f) => `«${f.name}»`).join(' o ')}.`;
+}
+
+/**
+ * Testi dei campi in cui la ricerca dell'Inventario cerca: il testo mostrato (scelte con l'etichetta di adesso, numeri
+ * con la virgola e l'unità) dei testi brevi, dei numeri, dei prezzi e delle scelte scritte a mano. Non i campi collegati
+ * a Posizioni, Categorie e Tipi di pelle (la ricerca guarda già i loro nomi sul prodotto), i testi lunghi, le date, il
+ * Sì/No, le foto e i documenti.
+ */
+export function searchTexts(
+  customData: readonly { value: unknown; fieldSnapshot?: CustomField }[] | undefined,
+  registry: readonly CustomField[],
+): string[] {
+  const out: string[] = [];
+  for (const entry of customData || []) {
+    if (!entry.fieldSnapshot || isEmptyValue(entry.value)) continue;
+    const field = liveField(entry.fieldSnapshot, registry);
+    if (field.linkTo || !['text_short', 'number', 'currency', 'single_choice', 'multi_choice'].includes(field.type)) continue;
+    const text = valueText(field, entry.value, { options: fieldOptions(field), snapshot: entry.fieldSnapshot });
+    if (text) out.push(text);
+  }
+  return out;
 }

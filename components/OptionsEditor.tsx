@@ -3,14 +3,16 @@
 // prodotti resta lo stesso, quindi i prodotti seguono il nome nuovo), eliminare toglie un valore che nessuno usa.
 // I controlli (nome vuoto o doppio, valore usato, ultimo valore) li passa chi lo usa: per «Tipo di pelle» sono in
 // `utils/furTypes.ts`. Oggi lo usa Campi Personalizzati › Tipo di pelle; le fette VAL ed EDC lo riuseranno per le
-// opzioni dei campi a scelta. Colore e icona, se ci sono, si mostrano accanto al nome (Tipo di pelle non li ha).
+// opzioni dei campi a scelta. Colore e icona, se ci sono, si mostrano accanto al nome (Tipo di pelle non li ha); con
+// `onStyle` (EDC, campi a scelta) si scelgono toccando il valore, dalle file sotto il nome.
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { AppIcon } from './ui/AppIcon';
 import { GradientFill } from './ui/GradientFill';
-import { cardSurface } from './ui/surfaces';
+import { cardSurface, tileSurface } from './ui/surfaces';
 import { Text, TextInput } from './ui/Text';
 import { makeStyles, useTheme } from '../contexts/ThemeContext';
+import { OPTION_COLORS, OPTION_ICONS } from '../utils/fieldValues';
 
 export interface EditorOption {
   id: string;
@@ -34,9 +36,12 @@ interface Props {
   hint?: string;
   /** Dice a chi lo usa se c'è un nome scritto e non ancora aggiunto o salvato (VAL: la bozza del campo non lo perde). */
   onPendingChange?: (pending: boolean) => void;
+  /** Colore e icona del valore (EDC): con questa funzione, mentre si rinomina un valore, sotto il nome compaiono le file
+   *  dei colori e delle icone; il tocco vale subito (nella bozza di chi lo usa). */
+  onStyle?: (id: string, style: { color?: string; icon?: string }) => void;
 }
 
-export function OptionsEditor({ options, usedBy, nameError, deleteError, onAdd, onRename, onDelete, placeholder, hint, onPendingChange }: Props) {
+export function OptionsEditor({ options, usedBy, nameError, deleteError, onAdd, onRename, onDelete, placeholder, hint, onPendingChange, onStyle }: Props) {
   const styles = useStyles();
   const t = useTheme();
   const [name, setName] = useState('');
@@ -96,6 +101,54 @@ export function OptionsEditor({ options, usedBy, nameError, deleteError, onAdd, 
             <Text style={styles.saveButtonText}>{editing ? 'Salva nome' : 'Aggiungi valore'}</Text>
           </Pressable>
         </View>
+        {editing && onStyle && (
+          <>
+            <Text style={styles.styleLabel}>Colore di «{editing.label}»</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.styleRow}>
+              <Pressable
+                style={[styles.styleTile, !editing.color && styles.styleTileOn]}
+                onPress={() => onStyle(editing.id, { color: undefined, icon: editing.icon })}
+                accessibilityRole="button"
+                accessibilityLabel="Nessun colore"
+              >
+                <AppIcon name="block" size={18} color={t.colors.textMuted} />
+              </Pressable>
+              {OPTION_COLORS.map((c) => (
+                <Pressable
+                  key={c.color}
+                  style={[styles.styleTile, editing.color === c.color && styles.styleTileOn]}
+                  onPress={() => onStyle(editing.id, { color: c.color, icon: editing.icon })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Colore ${c.name}`}
+                >
+                  <View style={[styles.swatchBig, { backgroundColor: c.color }]} />
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Text style={styles.styleLabel}>Icona di «{editing.label}»</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.styleRow}>
+              <Pressable
+                style={[styles.styleTile, !editing.icon && styles.styleTileOn]}
+                onPress={() => onStyle(editing.id, { color: editing.color, icon: undefined })}
+                accessibilityRole="button"
+                accessibilityLabel="Nessuna icona"
+              >
+                <AppIcon name="block" size={18} color={t.colors.textMuted} />
+              </Pressable>
+              {OPTION_ICONS.map((icon) => (
+                <Pressable
+                  key={icon}
+                  style={[styles.styleTile, editing.icon === icon && styles.styleTileOn]}
+                  onPress={() => onStyle(editing.id, { color: editing.color, icon })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Icona ${icon}`}
+                >
+                  <AppIcon name={icon} size={20} color={editing.icon === icon ? t.colors.tileSelectedText : t.colors.textSecondary} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        )}
       </View>
 
       <Text style={styles.listTitle}>Valori ({options.length})</Text>
@@ -181,7 +234,13 @@ const useStyles = makeStyles((t) => ({
   item: { ...cardSurface(t), flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, marginBottom: 10 },
   itemMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
   itemEditing: { borderWidth: 1, borderColor: t.colors.accent },
-  swatch: { width: 14, height: 14, borderRadius: 7 },
+  swatch: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: t.colors.border },
+  // EDC: colore e icona del valore che si rinomina
+  styleLabel: { fontSize: t.label.size, fontWeight: t.label.weight, color: t.label.color, marginTop: 16, marginBottom: 8 },
+  styleRow: { gap: 8, paddingBottom: 4 },
+  styleTile: { ...tileSurface(t), width: 40, height: 40, borderRadius: t.radius.iconWrap, alignItems: 'center', justifyContent: 'center' },
+  styleTileOn: { backgroundColor: t.colors.tileSelected, borderColor: t.colors.tileSelectedBorder },
+  swatchBig: { width: 22, height: 22, borderRadius: 11, borderWidth: 1, borderColor: t.colors.border },
   // Un nome lungo va a capo invece di spingere fuori le icone
   itemInfo: { flex: 1, minWidth: 0 },
   itemLabel: { ...t.typography.cardTitle, fontSize: 16, fontWeight: t.weights.strong },

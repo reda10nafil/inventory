@@ -24,6 +24,11 @@ import { formatPrice } from '../../../utils/price';
 import { PhotoPlaceholder } from '../../../components/ui/PhotoPlaceholder';
 import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
 import { formatQty, isOutOfStock, isStocked, storedTotal } from '../../../utils/stock';
+import { useCustomFields } from '../../../contexts/CustomFieldsContext';
+import { useFieldOptions } from '../../../hooks/useFieldOptions';
+import { cardFields, optionOf, valueText } from '../../../utils/fieldValues';
+import { fieldIcon } from '../../../components/FieldInput';
+import { OptionMark, hasMark } from '../../../components/OptionMark';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
@@ -39,6 +44,8 @@ export default function HomeScreen() {
   const { furTypes } = useFurTypes();
   const kindOf = useProductKind();
   const { shelfOf } = useShelves();
+  const { customFields, allFieldsIncludingDeleted } = useCustomFields();
+  const optionsOf = useFieldOptions();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
@@ -81,8 +88,11 @@ export default function HomeScreen() {
 
   // 2. Then, apply Status Filter & Search on the Folder-filtered list
   // La ricerca vale in tutti i filtri, anche Cestino e Attenzione, e trova la posizione per nome (P14)
+  // EDC: anche il testo mostrato dei campi personalizzati (testi brevi, numeri, prezzi, scelte scritte a mano)
   const filteredProducts = folderFilteredProducts.filter((p) =>
-    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, furTypes, categoryLabels));
+    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, furTypes, categoryLabels, allFieldsIncludingDeleted));
+  // Campi con «Mostra nella card» (EDC, al massimo 2; nessuno nei campi di partenza: la card di sempre non cambia)
+  const onCard = cardFields(customFields);
 
   const filters: { id: FilterType; label: string; count: number }[] = [
     { id: 'all', label: 'Tutti', count: stats.total - stats.trash },
@@ -249,6 +259,23 @@ export default function HomeScreen() {
           {isStocked(product) && (
             <Text style={styles.qtyText} numberOfLines={1}>{formatQty(storedTotal(product), product.unit)}</Text>
           )}
+
+          {/* EDC: i campi con «Mostra nella card», con l'icona del campo e il colore e l'icona del valore */}
+          {onCard.map((field) => {
+            const entry = (product.customData || []).find((d: any) => d.fieldSnapshot?.id === field.id);
+            if (!entry) return null;
+            const options = optionsOf(field);
+            const text = valueText(field, entry.value, { options, snapshot: entry.fieldSnapshot });
+            if (!text) return null;
+            const option = field.type === 'single_choice' ? optionOf(entry.value, options, entry.fieldSnapshot) : undefined;
+            return (
+              <View key={field.id} style={styles.cardFieldRow} accessibilityLabel={`${field.name}: ${text}`}>
+                <AppIcon name={fieldIcon(field)} size={13} color={t.colors.fieldIcon} />
+                {hasMark(option) && <OptionMark option={option} size={8} />}
+                <Text style={styles.cardFieldText} numberOfLines={1}>{text}</Text>
+              </View>
+            );
+          })}
 
           {!!product.sellPrice && (
             <Text style={styles.priceText}>{formatPrice(product.sellPrice)}</Text>
@@ -798,6 +825,20 @@ const useStyles = makeStyles((t) => ({
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
     color: t.colors.textPrimary,
+  },
+  // EDC: campo con «Mostra nella card»
+  cardFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  cardFieldText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.colors.textSecondary,
   },
   priceText: {
     marginTop: 4,

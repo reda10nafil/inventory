@@ -607,6 +607,79 @@ const FETTE = {
       ['scaffale-azione-rapida', async (page) => { await page.goto(`${APP}/scanner-action?type=shelf&id=1732300000000-gen1`); await page.waitForTimeout(1800); }],
     ],
   },
+  // EDC (ticket 23): Campi raggruppati per tipo; Aggiungi con i binari orizzontali (Tipo di pelle, Posizione,
+  // Categoria); editor in tre domande (Colore con colori e icona per valore); Aggiungi con il binario di Colore, menu a
+  // tendina aperto (Lavorazione), ruota a scatti (Larghezza Base, 40-120 passo 10) e Sì/No; Scheda con icone e pillole
+  // colorate; card dell'Inventario con due campi accesi (Colore e Taglia). I colori dei valori sono quelli scelti
+  // dall'utente (pallino col bordo del tema), il resto viene dal tema.
+  edc: {
+    prepara: () => {
+      const cf = 'furinventory_custom_fields:local';
+      const fields = JSON.parse(localStorage.getItem(cf));
+      const byId = (id) => fields.find((f) => f.id === id);
+      const colori = { Nero: '#212121', Marrone: '#8D6E63', 'Grigio perla': '#3B82F6', Naturale: '#E2B93B', Bianco: '#F5F5F5' };
+      const colore = byId('field_cmp_colore');
+      colore.options = colore.options.map((o) => ({ ...o, color: colori[o.label], ...(o.label === 'Grigio perla' && { icon: 'star' }) }));
+      Object.assign(colore, { uiType: 'grid', look: 'chips', showInCard: true });
+      Object.assign(byId('field_cmp_taglia'), { showInCard: true });
+      Object.assign(byId('field_cmp_lav'), { uiType: 'picker', look: 'dropdown' });
+      Object.assign(byId('width'), { input: 'wheel', dataset: { min: 40, max: 120, step: 10 } });
+      fields.push({ id: 'field_edc_cappuccio', name: 'Con cappuccio', type: 'boolean', uiType: 'text', icon: 'checkroom', required: false, order: 40, defaultValue: false });
+      localStorage.setItem(cf, JSON.stringify(fields));
+      const lk = 'furinventory_layout_config:local';
+      const layout = JSON.parse(localStorage.getItem(lk));
+      const dopo = layout.fields.findIndex((f) => f.id === 'field_cmp_cond');
+      layout.fields.splice(dopo + 1, 0, { id: 'field_edc_cappuccio', type: 'custom', size: 'medium', visible: true });
+      localStorage.setItem(lk, JSON.stringify(layout));
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      const vis = list.find((p) => p.sku === 'VIS-0142');
+      vis.customData.push({ value: true, fieldSnapshot: fields[fields.length - 1] });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['campi-per-tipo', async (page) => { await page.goto(`${APP}/settings/fields`); await page.waitForTimeout(1800); }],
+      ['aggiungi-binari', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByText('Visone', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(200);
+        await page.getByText('Tipo di pelle', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['editor-tre-domande', async (page) => {
+        await page.goto(`${APP}/settings/fields`); await page.waitForTimeout(1800);
+        const card = page.getByText('Colore', { exact: true }).locator('visible=true').first().locator('xpath=ancestor::div[.//div[@tabindex="0"]][1]');
+        await card.locator('div[tabindex="0"]').first().click(); await page.waitForTimeout(900);
+      }],
+      ['editor-colore-del-valore', async (page) => {
+        await page.getByLabel('Rinomina Grigio perla', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+        await page.getByText('Colore di «Grigio perla»', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['editor-come-si-vede', async (page) => {
+        await page.getByText('3. Come si vede?', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      // In colonna (R1-R3 di UX0): Posizione tendina aperta; Larghezza a 1/3 apre la ruota in una finestra dal basso;
+      // Colore a 1/2 è una tendina col pallino del colore e la stella del valore
+      ['aggiungi-tendina-posizione', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByLabel('Posizione: Seleziona...', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+        await page.getByText('Tipo di pelle', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['aggiungi-ruota-in-finestra', async (page) => {
+        await page.getByText('Vetrina', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('Larghezza: nessun valore', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByLabel('Larghezza 90 cm', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      }],
+      ['aggiungi-tendina-colore', async (page) => {
+        await page.getByText('Fatto', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+        await page.getByLabel('Colore: Seleziona...', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+        await page.getByText('Misure', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['scheda-icone-colori', async (page) => {
+        await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800);
+        await page.getByText('Campi strutturati', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['card-con-due-campi', async (page) => { await page.goto(APP); await page.waitForTimeout(1800); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

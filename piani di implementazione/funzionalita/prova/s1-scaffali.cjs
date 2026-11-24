@@ -12,7 +12,7 @@
 // Uso: node s1-scaffali.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const fs = require('fs');
 const path = require('path');
-const { scenario } = require('./lib.cjs');
+const { scenario, apriTendinaCon } = require('./lib.cjs');
 const { press } = require('./a1-util.cjs');
 const { scan } = require('./a3-util.cjs');
 
@@ -243,8 +243,11 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await h.click('Visone'); // tipo di pelle
     await h.click('Magazzino');
     const soloGenerici = await pillole(h);
-    await label(h, 'Categoria Pellicce').click();
-    await label(h, 'Sottocategoria Visone').click();
+    // Da EDC la Categoria in colonna è una tendina: la scelta si cerca aprendola (`apriTendinaCon` di lib.cjs)
+    await apriTendinaCon(h.page, h.page.getByLabel('Categoria Pellicce', { exact: true }).locator('visible=true'));
+    await label(h, 'Categoria Pellicce').click(); await h.page.waitForTimeout(300);
+    await apriTendinaCon(h.page, h.page.getByLabel('Sottocategoria Visone', { exact: true }).locator('visible=true'));
+    await label(h, 'Sottocategoria Visone').click(); await h.page.waitForTimeout(300);
     const proposte = await pillole(h);
     await label(h, 'Scaffale P1').click();
     await h.click('M'); // Taglia, obbligatoria nel campionario
