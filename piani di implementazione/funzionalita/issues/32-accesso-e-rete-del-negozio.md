@@ -67,9 +67,9 @@ Fatta su `funzioni/scaffali` (worktree `inventory-scaffali`), dopo S3. Le parole
 **Permessi applicati oggi** (azione spenta col motivo, mai nascosta). La riga del motivo, col lucchetto, sta sopra il blocco: per esempio «Il ruolo Operatore non può eliminare. Lo decide il Titolare in Accesso.».
 - Aggiungere: «Aggiungi all'Inventario» in Aggiungi; «Importa prodotti CSV» e il riquadro di trascinamento in Impostazioni.
 - Modificare: «Modifica» e «Movimenta» della Scheda.
-- Vendere: «Venduto» dell'Azione rapida.
+- Vendere: «Venduto» dell'Azione rapida; causale «Vendita» di Movimenta (Scheda e Azione rapida).
 - Eliminare: Elimina della selezione in Home; «Elimina per sempre», «Svuota» e l'eliminazione dei campi nel Cestino.
-- Impostazioni: le voci di Configurazione hardware, Gestione inventario e Condivisione.
+- Impostazioni: le voci di Configurazione hardware, Gestione inventario (Cestino compreso) e Condivisione.
 - Gestire i ruoli: la tabella dei permessi in Accesso.
 
 **Fuori** (con chi le prende):

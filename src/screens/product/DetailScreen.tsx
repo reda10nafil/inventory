@@ -1278,6 +1278,8 @@ export default function ProductDetailScreen() {
             <Text style={[styles.qrButtonText, styles.pdfButtonText]}>Stampa scheda PDF</Text>
           </Pressable>
         </View>
+        {/* ACC1: la riga del motivo sopra la barra non copre l'ultimo pulsante */}
+        {!editPerm.allowed && <View style={{ height: 80 }} />}
       </ScrollView>
 
       {/* Bottom Actions */}

@@ -28,6 +28,8 @@ import { formStyles } from './ui/formStyles';
 import { GradientFill } from './ui/GradientFill';
 import { AppIcon } from './ui/AppIcon';
 import { Text, TextInput } from './ui/Text';
+import { PermissionNote } from './PermissionNote';
+import { usePermission } from '../contexts/ProfileContext';
 
 const KINDS: MovementKind[] = ['carico', 'scarico', 'trasferimento', 'rettifica'];
 /** Contatti proposti subito (poche pillole: la finestra resta corta); gli altri con «Altri N». */
@@ -58,6 +60,8 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
   const { locations } = useLocations();
   const { contacts } = useContacts();
   const { shelves } = useShelves();
+  // ACC1 (revisore): la causale «Vendita» è una vendita: spenta col motivo per un ruolo che non vende
+  const sellPerm = usePermission('vendere');
   // Un pezzo unico con uno scaffale che non torna si muove dalla sua posizione (come lo legge la Scheda, S1b)
   const product = withShelfRead(saved, shelves);
 
@@ -161,6 +165,7 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
 
   /** `overrideTo`: la chiave proposta dalla finestra del blocco (il tocco su «Metti in A2»). */
   const submit = (overrideTo?: string) => {
+    if (reason === 'vendita' && !sellPerm.allowed) return;
     const qty = parseQty(qtyText);
     const common = {
       ...(reason && { reason }),
@@ -311,14 +316,16 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
                 <View style={styles.chipWrap}>
                   {REASONS_BY_KIND[kind].map((r) => {
                     const active = reason === r;
+                    const off = r === 'vendita' && !sellPerm.allowed;
                     return (
-                      <Pressable key={r} style={[styles.chip, styles.chipSmall, active && styles.chipActive]} onPress={() => setReason(active ? undefined : r)} accessibilityLabel={`Causale ${REASON_LABELS[r]}`}>
+                      <Pressable key={r} style={[styles.chip, styles.chipSmall, active && styles.chipActive, off && styles.chipOff]} onPress={() => { if (!off) setReason(active ? undefined : r); }} accessibilityLabel={`Causale ${REASON_LABELS[r]}`}>
                         {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
                         <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]}>{REASON_LABELS[r]}</Text>
                       </Pressable>
                     );
                   })}
                 </View>
+                {REASONS_BY_KIND[kind].includes('vendita') && <PermissionNote text={sellPerm.reason} style={{ marginTop: 8, marginBottom: 0 }} />}
               </>
             )}
 
@@ -397,6 +404,7 @@ export function MovementSheet({ product: saved, visible, onClose, initialKind = 
 }
 
 const useStyles = makeStyles((t) => ({
+  chipOff: { opacity: 0.4 },
   ...formStyles(t),
   overlay: {
     flex: 1,

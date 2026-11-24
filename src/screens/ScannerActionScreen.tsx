@@ -100,6 +100,7 @@ export default function ScannerActionScreen() {
         }
         move(selectedLocation);
       } else if (selectedAction === 'sold') {
+        if (!sellPerm.allowed) return;
         if (!sellProduct(product.id, parseNumber(finalPrice))) {
           const refused = saleOf(product, parseNumber(finalPrice), 1, '');
           Alert.alert('Non venduto', refusalText(refused.ok ? 'not_allowed' : refused.reason, product.sku));

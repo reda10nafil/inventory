@@ -40,13 +40,16 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const profileRef = useRef(profile);
   const permissionsRef = useRef(permissions);
   const loadedRef = useRef(false);
+  // Lettura fallita (storage non leggibile o JSON rotto): il primo evento non riscrive il profilo salvato; una modifica
+  // esplicita in Accesso (profilo o tabella) invece sì, perché la sceglie chi la fa guardando ciò che è a video
+  const readFailedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
     Promise.all([AsyncStorage.getItem(PROFILE_KEY), AsyncStorage.getItem(PERMISSIONS_KEY)])
       .then(([p, t]) => {
         if (!active) return;
-        const parse = (s: string | null) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
+        const parse = (s: string | null) => { try { return s ? JSON.parse(s) : null; } catch { readFailedRef.current = true; return null; } };
         const nextProfile = normalizeProfile(parse(p));
         const nextTable = normalizePermissions(parse(t));
         profileRef.current = nextProfile;
@@ -54,7 +57,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         setProfile(nextProfile);
         setPermissions(nextTable);
       })
-      .catch(() => {})
+      .catch(() => { readFailedRef.current = true; })
       .finally(() => { if (active) { loadedRef.current = true; setLoaded(true); } });
     return () => { active = false; };
   }, []);
@@ -84,6 +87,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const stampAuthor = useCallback((): EventAuthor | undefined => {
     if (!loadedRef.current) return undefined;
+    if (readFailedRef.current) return profileRef.current.id ? authorOf(profileRef.current) : undefined;
     if (!profileRef.current.id) writeProfile({ ...profileRef.current, id: newProfileId() });
     return authorOf(profileRef.current);
   }, [writeProfile]);

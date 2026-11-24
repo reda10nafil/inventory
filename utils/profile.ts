@@ -25,11 +25,14 @@ const TEXT_MAX = 60;
 
 const text = (v: unknown, max = TEXT_MAX) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
+/** Foto salvabile: `data:image/png|jpeg|webp;base64,…` entro il limite (la lunghezza prima dell'espressione). */
+export const isProfilePhoto = (v: unknown): v is string =>
+  typeof v === 'string' && v.length <= PHOTO_MAX_CHARS && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
+
 export function normalizeProfile(raw: unknown): Profile {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...EMPTY_PROFILE };
   const r = raw as Record<string, unknown>;
-  const photo = typeof r.photo === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(r.photo) && r.photo.length <= PHOTO_MAX_CHARS
-    ? r.photo : '';
+  const photo = isProfilePhoto(r.photo) ? r.photo : '';
   return {
     id: text(r.id, 80),
     name: text(r.name),

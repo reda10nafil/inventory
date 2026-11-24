@@ -222,4 +222,43 @@ const eliminaDallaHome = async (h, sku) => {
       && righe.mario === 1 && righe.questoTelefono === 1 && righe.trattini === vecchi && out.supabase === 0;
     return out;
   }, { dialogs: ['ok', 'ok'] });
+
+  // 5. Dal revisore (fe5fd1f): con «Vendere» spento per Operatore la causale «Vendita» di Movimenta è spenta col motivo
+  // e non vende; da Solo lettura la riga del motivo sopra la barra della Scheda non copre «Stampa scheda PDF»
+  await run('acc1-revisore', async (h) => {
+    const sb = supabase(h);
+    await h.go('settings/access');
+    await h.page.getByRole('switch', { name: 'Vendere: Operatore' }).click(); await h.page.waitForTimeout(400);
+    const tabella = JSON.parse(await leggi(h, TK)).operatore.vendere;
+    await ruolo(h, 'Operatore');
+    const prima = (await h.timeline(0)).length;
+    await h.go('product/cmp-1');
+    const lab = (l) => h.page.locator(`[aria-label="${l}"]`).locator('visible=true').first();
+    await lab('Movimenta').click(); await h.page.waitForTimeout(600);
+    await lab('Tipo Scarico').click(); await h.page.waitForTimeout(300);
+    await h.page.getByPlaceholder('es. 2,5').locator('visible=true').first().fill('1'); await h.page.waitForTimeout(200);
+    const motivo = (await nota(h)).filter((t) => t.includes('non può vendere'));
+    await lab('Causale Vendita').click(); await h.page.waitForTimeout(300);
+    const prezzo = await h.has('Prezzo per unità (facoltativo)', true);
+    await lab('Registra movimento').click(); await h.page.waitForTimeout(1200);
+    // Solo lettura: fondo della Scheda
+    await ruolo(h, 'Solo lettura');
+    await h.go('product/cmp-1');
+    for (let i = 0; i < 12; i += 1) { await h.page.mouse.move(187, 400); await h.page.mouse.wheel(0, 2000); await h.page.waitForTimeout(150); }
+    await h.page.waitForTimeout(500);
+    const pdf = await h.page.evaluate(() => {
+      const t = [...document.querySelectorAll('div')].find((d) => d.innerText === 'Stampa scheda PDF' && d.offsetParent !== null);
+      const btn = t && t.closest('[tabindex]');
+      if (!btn) return 'manca';
+      const b = btn.getBoundingClientRect();
+      const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      return hit && btn.contains(hit) ? 'pulsante PDF' : 'coperto';
+    });
+    // la pillola «Vendita» non si accende: lo scarico resta senza causale (permesso a Operatore), nessuna vendita
+    const tl = await h.timeline(1200);
+    const nuovi = tl.slice(0, tl.length - prima).map((e) => `${e.type}${e.details && e.details.movement ? ` ${e.details.movement}` : ''}${e.details && e.details.reason ? ` ${e.details.reason}` : ''}`);
+    const out = { tabella, motivo, prezzo, nuovi, pdf, supabase: sb.length };
+    out.ok = tabella === false && motivo.length === 1 && !prezzo && !nuovi.some((e) => / vendita$|^sold/.test(e)) && pdf === 'pulsante PDF' && out.supabase === 0;
+    return out;
+  });
 })();

@@ -20,9 +20,9 @@ export const ROLES: readonly { id: Role; name: string; description: string }[] =
 export const ACTIONS: readonly { id: Action; name: string; verb: string; where: string }[] = [
   { id: 'aggiungere', name: 'Aggiungere prodotti', verb: 'aggiungere prodotti', where: 'Aggiungi e Importa prodotti CSV' },
   { id: 'modificare', name: 'Modificare e movimentare', verb: 'modificare i prodotti', where: 'Modifica e Movimenta nella Scheda' },
-  { id: 'vendere', name: 'Vendere', verb: 'vendere', where: "Venduto nell'Azione rapida" },
+  { id: 'vendere', name: 'Vendere', verb: 'vendere', where: "Venduto nell'Azione rapida e causale Vendita di Movimenta" },
   { id: 'eliminare', name: 'Eliminare', verb: 'eliminare', where: 'Elimina nella Home e nel Cestino' },
-  { id: 'impostazioni', name: 'Cambiare le impostazioni', verb: 'cambiare le impostazioni', where: 'Voci di Impostazioni che cambiano campi, categorie, posti e codici' },
+  { id: 'impostazioni', name: 'Cambiare le impostazioni', verb: 'cambiare le impostazioni', where: 'Voci di Impostazioni che cambiano campi, categorie, posti, codici e il Cestino' },
   { id: 'ruoli', name: 'Gestire i ruoli', verb: 'gestire i ruoli', where: 'Ruoli e permessi in Accesso' },
 ];
 

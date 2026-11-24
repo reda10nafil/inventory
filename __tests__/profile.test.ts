@@ -1,5 +1,5 @@
 // ACC1 (ticket 32): profilo dell'operatore di questo telefono e autore degli eventi della Cronologia.
-import { EMPTY_PROFILE, PHOTO_MAX_CHARS, authorOf, authorText, newProfileId, normalizeProfile, profileSubtitle } from '../utils/profile';
+import { EMPTY_PROFILE, PHOTO_MAX_CHARS, authorOf, authorText, isProfilePhoto, newProfileId, normalizeProfile, profileSubtitle } from '../utils/profile';
 
 describe('profilo di questo telefono (ACC1)', () => {
   it('vuoto o rotto: profilo di partenza, Titolare senza nome', () => {
@@ -18,6 +18,15 @@ describe('profilo di questo telefono (ACC1)', () => {
     expect(normalizeProfile({ photo: 'javascript:alert(1)' }).photo).toBe('');
     expect(normalizeProfile({ photo: `data:image/png;base64,${'A'.repeat(PHOTO_MAX_CHARS)}` }).photo).toBe('');
     expect(normalizeProfile({ name: 'x'.repeat(200) }).name).toHaveLength(60);
+  });
+
+  it('un solo controllo della foto per la scelta e per la lettura (revisore)', () => {
+    expect(isProfilePhoto('data:image/jpeg;base64,/9j/AA==')).toBe(true);
+    expect(isProfilePhoto('data:image/webp;base64,AAAA')).toBe(true);
+    expect(isProfilePhoto('data:image/gif;base64,AAAA')).toBe(false);
+    expect(isProfilePhoto('data:image/jpeg;base64,AA AA')).toBe(false);
+    expect(isProfilePhoto(`data:image/jpeg;base64,${'A'.repeat(PHOTO_MAX_CHARS)}`)).toBe(false);
+    expect(isProfilePhoto(42)).toBe(false);
   });
 
   it('id nuovo: diverso a ogni chiamata, con il prefisso del telefono', () => {

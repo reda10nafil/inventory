@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 import * as ImagePicker from './imagePicker';
 import * as ImageManipulator from './imageManipulator';
 import * as FileSystem from './fileSystem';
-import { PHOTO_MAX_CHARS } from '../../utils/profile';
+import { isProfilePhoto } from '../../utils/profile';
 
 const SIDE = 160;
 
@@ -60,7 +60,7 @@ export async function pickProfilePhoto(): Promise<PhotoResult> {
       // sul web l'indirizzo `blob:` della scelta non serve più
       if (Platform.OS === 'web' && uri.startsWith('blob:')) URL.revokeObjectURL(uri);
     }
-    if (!/^data:image\/jpeg;base64,/.test(photo) || photo.length > PHOTO_MAX_CHARS) return { error: 'Foto non salvata: prova con un\'altra immagine.' };
+    if (!isProfilePhoto(photo)) return { error: 'Foto non salvata: prova con un\'altra immagine.' };
     return { photo };
   } catch {
     return { error: 'Foto non letta: prova con un\'altra immagine.' };
