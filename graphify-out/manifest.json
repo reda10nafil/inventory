@@ -1854,9 +1854,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/FieldsScreen.tsx": {
-    "mtime": 1795510918.9883049,
-    "seen": 1795517808.7361422,
-    "ast_hash": "35f1bf340072519fb624780c9928519a",
+    "mtime": 1795521963.0580876,
+    "seen": 1795522581.783504,
+    "ast_hash": "14b920cb7339adf98b5405e42b77ded5",
     "semantic_hash": ""
   },
   "src/screens/settings/FoldersScreen.tsx": {
@@ -2394,9 +2394,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795521757.9461906,
-    "seen": 1795521778.3605225,
-    "ast_hash": "b0a9d8f2827e4f518099af080ec02bcc",
+    "mtime": 1795522000.9756763,
+    "seen": 1795522581.8204598,
+    "ast_hash": "d6222afa70a57374c2f77b6da134ba73",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2676,9 +2676,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795519180.3680427,
-    "seen": 1795521778.3605225,
-    "ast_hash": "a0a4d59e3fc962cef4cc962ce649054a",
+    "mtime": 1795521994.585379,
+    "seen": 1795522581.8204598,
+    "ast_hash": "eaeca1ba3d57124996513be9c2108e27",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {

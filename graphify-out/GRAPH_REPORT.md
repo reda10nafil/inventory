@@ -1,7 +1,7 @@
 # Graph Report - inventory-stili  (2026-11-24)
 
 ## Corpus Check
-- 592 files · ~1,592,261 words
+- 592 files · ~1,592,565 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 104 file(s) not represented in the graph (top: .xml 18, .ttf 16, (none) 11)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e7998180`
+- Built from commit: `ececb53e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1367,11 +1367,11 @@ Nodes (4): Difetti nuovi, Difetti precedenti ricontrollati, Esito a4: Impostazio
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `rgba()` connect `Audit del tema (misurato il 22 novembre 2026)` to `2. Opzioni per zittire`, `Text`, `genera_temi.py`?**
-  _High betweenness centrality (0.174) - this node is a cross-community bridge._
+  _High betweenness centrality (0.177) - this node is a cross-community bridge._
 - **Why does `22 novembre 2026 — UI/UX L1: fornitore del tema e aiuti` connect `Text` to `Audit del tema (misurato il 22 novembre 2026)`, `Cronologia aggiornabile`, `AppTheme`, `useTheme`, `react`?**
-  _High betweenness centrality (0.168) - this node is a cross-community bridge._
+  _High betweenness centrality (0.170) - this node is a cross-community bridge._
 - **Why does `shadow()` connect `genera_temi.py` to `Text`, `Temi dell'app`?**
-  _High betweenness centrality (0.151) - this node is a cross-community bridge._
+  _High betweenness centrality (0.152) - this node is a cross-community bridge._
 - **Are the 161 inferred relationships involving `Dove siamo` (e.g. with `CategoryPicker()` and `BottomSheet()`) actually correct?**
   _`Dove siamo` has 161 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 131 inferred relationships involving `Decisioni da rivedere` (e.g. with `SystemBars()` and `BarcodeScanner()`) actually correct?**
