@@ -41,6 +41,16 @@ Tipo: research (A0, fatta il 24 novembre 2026) + task. Stato: **piano pronto, se
 
 **Ordine proposto dall'orchestratore 5** (le richieste nominate dall'utente prima): … IMP → ETI → GS1 → N1 → N2 → **ACC1 → RETE0** → S2 → S3 → FLU1 → CON → FLU2 → RIO → RES → CHAT1 → RIC1 → RIC2 → VOCI → RETE1 → **RETE2a** → I1 → (branch di L1: L1 → L2 → I2 → I3 → **ACC3** → **RETE2b**) → RIC3. ACC1 e RETE0 partono solo dopo la conferma della separazione.
 
+## Allargamento del 24 novembre, secondo messaggio dell'utente
+
+Testo dell'utente in [`richieste-utente-24-b-novembre.md`](../richieste-utente-24-b-novembre.md).
+
+- **Separazione confermata nei fatti** dal secondo messaggio: da una parte profili, amministratore e permessi (Accesso), dall'altra collegamento e presenza (Rete del negozio). La Chat esce dalla Rete e va in Home (CHAT1).
+- **Rete del negozio, in più**: collegarsi in modo ovvio (niente codici da scrivere senza spiegazione); vedere **chi è collegato adesso**, **quanti sono online**, **da quanto** e **l'ultima volta online** di ognuno; stato della connessione in una riga («Collegato al centro», «Il centro non risponde da 2 min»). Fetta RETE0 (schermata e contesto, provati sul web con il centro finto), RETE1 (sul telefono).
+- **Accesso, in più**: **profilo dell'operatore** con foto, nome e dati (telefono, ruolo); **amministratore** che gestisce i **permessi** (che cosa può fare ogni ruolo). Senza login: profilo per telefono (chiave per telefono, foto locale) e ruoli applicati sul telefono; con il login (L1, ACC3) i profili e i ruoli vanno nello spazio dell'account. Fetta ACC1 (profilo e ruoli locali, sul web), ACC3 (inviti e ruoli veri col cloud).
+- **Cronologia con l'autore**: ogni evento nuovo porta **chi** l'ha fatto (profilo del telefono, poi l'account) e la Cronologia lo mostra («Mario · Banco 1 · 10:42»); gli eventi vecchi restano senza autore («—»). Fetta ACC1 (campo facoltativo negli eventi, nessuna riscrittura), RETE2a per gli eventi arrivati da un altro telefono.
+- **Ordine** (dal secondo messaggio): dopo le corsie A (campi), B (scaffali), C (codici e NFC): **ACC1 → RETE0 → CHAT1**, poi le automazioni (FLU1, CON, FLU2, RIO, RES), poi RIC1, RIC2, VOCI, RETE1, RETE2a e il branch di L1.
+
 ## Verifica
 
 - **ACC1**: Impostazioni con «Accesso» e «Rete del negozio» e senza «Team e spazi di lavoro»; nome del telefono salvato e riletto dopo una ricarica; «Spazio locale» e «Titolare»; «Backup Google Drive» spento col motivo; nessuna richiesta a `supabase.co`; `settings/access` dall'indirizzo, freccia verso Impostazioni.
