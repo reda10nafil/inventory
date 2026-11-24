@@ -30,6 +30,7 @@ import { useLoadBlock } from '../../components/LoadBlockSheet';
 import { LoadNotice } from '../../components/LoadNotice';
 import { loadWarningText } from '../../utils/shelves';
 import type { MovementKind } from '../../types';
+import { usePermission } from '../../contexts/ProfileContext';
 
 type ActionType = 'moved' | 'sold' | 'details' | 'audit' | 'batch-move' | null;
 
@@ -50,6 +51,8 @@ export default function ScannerActionScreen() {
   const placeName = usePlaceLabel();
   const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
+  // ACC1 (ticket 32): «Venduto» spento col motivo per un ruolo che non vende
+  const sellPerm = usePermission('vendere');
 
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -364,8 +367,9 @@ export default function ScannerActionScreen() {
             style={[
               styles.actionButton,
               selectedAction === 'sold' && styles.actionButtonActive,
+              !sellPerm.allowed && styles.actionButtonOff,
             ]}
-            onPress={() => setSelectedAction('sold')}
+            onPress={() => { if (sellPerm.allowed) setSelectedAction('sold'); }}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#10B981' }]}>
               <AppIcon name="sell" size={24} color={t.colors.onData} />
@@ -373,7 +377,7 @@ export default function ScannerActionScreen() {
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>VENDUTO</Text>
               <Text style={styles.actionDescription}>
-                {stocked ? `Scarica 1 ${unit} con causale vendita` : 'Segna come venduto e archivia'}
+                {!sellPerm.allowed ? sellPerm.reason : stocked ? `Scarica 1 ${unit} con causale vendita` : 'Segna come venduto e archivia'}
               </Text>
             </View>
             <AppIcon
@@ -587,6 +591,7 @@ const useStyles = makeStyles((t) => ({
     padding: 16,
     marginBottom: 12,
   },
+  actionButtonOff: { opacity: 0.5 },
   actionButtonActive: {
     backgroundColor: t.colors.tileSelected,
     borderColor: t.colors.tileSelectedBorder,

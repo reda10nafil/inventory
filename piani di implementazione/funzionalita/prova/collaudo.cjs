@@ -738,6 +738,44 @@ async function cfD5Tutto(h) {
   return { ...s2, ok, s3: { finestra, sullaSeconda: cappotti ? stock[`magazzino/${cappotti.id}`] : null }, daFare: undefined };
 }
 
+// CF-H4 (ACC1, ticket 32): Impostazioni › Persone e telefoni › Accesso; nome e nome del telefono scritti e riletti dopo
+// una ricarica; un Operatore vede le voci di Impostazioni spente col motivo (il tocco non apre nulla); di nuovo Titolare;
+// un evento nuovo porta l'autore «Mario · Banco 1» in Cronologia, i vecchi «—»; nessuna richiesta a supabase.co
+async function cfH4(h) {
+  const sb = [];
+  h.page.on('request', (r) => { if (/supabase\.co/.test(r.url())) sb.push(r.url().slice(0, 50)); });
+  const scrivi = async (label, valore) => { await h.page.getByLabel(label, { exact: true }).fill(valore); await h.page.waitForTimeout(300); };
+  const ruolo = async (nome) => { await h.go('settings/access'); await h.page.getByRole('radio', { name: `Ruolo ${nome}` }).click(); await h.page.waitForTimeout(500); };
+  const vecchi = (await h.timeline(0)).length;
+  await h.go('settings');
+  await h.click('Accesso');
+  const indirizzo = new URL(h.page.url()).pathname;
+  await scrivi("Nome dell'operatore", 'Mario');
+  await scrivi('Nome del telefono', 'Banco 1');
+  await h.page.reload(); await h.page.waitForTimeout(2500);
+  const riletti = [await h.page.getByLabel("Nome dell'operatore", { exact: true }).inputValue(), await h.page.getByLabel('Nome del telefono', { exact: true }).inputValue()];
+  await ruolo('Operatore');
+  await h.go('settings');
+  const motivi = await h.page.getByText('Il ruolo Operatore non può cambiare le impostazioni. Lo decide il Titolare in Accesso.', { exact: true }).locator('visible=true').count();
+  await h.click('Campi Personalizzati');
+  const restaInImpostazioni = new URL(h.page.url()).pathname === '/settings';
+  await ruolo('Titolare');
+  // evento nuovo: VIS-0142 nel cestino dalla Home
+  await h.go('');
+  await h.longPress('VIS-0142');
+  await h.page.locator('[aria-label="Elimina"]').locator('visible=true').first().click(); await h.page.waitForTimeout(800);
+  const tl = await h.timeline();
+  await h.tab('Cronologia');
+  const righe = {
+    mario: await h.page.getByText(/^Mario · Banco 1 · /).locator('visible=true').count(),
+    trattini: await h.page.getByText(/^— · /).locator('visible=true').count(),
+  };
+  const autore = tl[0] && tl[0].author ? `${tl[0].author.name}|${tl[0].author.device}` : null;
+  const ok = indirizzo === '/settings/access' && riletti.join('|') === 'Mario|Banco 1' && motivi === 3 && restaInImpostazioni
+    && autore === 'Mario|Banco 1' && tl.length === vecchi + 1 && righe.mario === 1 && righe.trattini === vecchi && sb.length === 0;
+  return { ok, indirizzo, riletti, motivi, restaInImpostazioni, autore, righe, supabase: sb.length };
+}
+
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
@@ -778,6 +816,8 @@ const PASSI = [
   ['CF-H2', 'Selezione › «Invia» a un collega › «Ricevuto, sposta»', 'RIC1'],
   ['CF-H3', 'Automazioni «Invia a collega», «Ricevi», condivise', 'RIC2, RIC3'],
   ['CF-Z', 'La catena intera (Borse, modello, campo, foto, scaffale, etichetta, codice, export, import)', 'MCAT, EDC, GAL, FOTO, S3, ETI, COD, ESE, EXP, IMP'],
+  // ACC1 (corsia B): passo nuovo, in fondo alla tabella per non scontrarsi con le altre corsie
+  ['CF-H4', 'Accesso: profilo riletto, Operatore con le voci spente col motivo, autore in Cronologia', 'ACC1', cfH4],
 ];
 const TELEFONO = [
   ['CF-T1', 'Tasto Indietro di sistema, link syncroflow:// ad app chiusa, icone su APK in modalità aereo', 'C2, IND'],

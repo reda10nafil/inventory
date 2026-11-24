@@ -6,6 +6,7 @@ import { isDormant, needsPromotion } from '../services/mockData';
 import { useAuth } from './AuthContext';
 import { useShelves } from './ShelvesContext';
 import { useFurTypes } from './FurTypesContext';
+import { useEventAuthor } from './ProfileContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { usage } from '../utils/productRules';
@@ -143,6 +144,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const { furTypes } = useFurTypes();
   const furTypesRef = useRef(furTypes);
   furTypesRef.current = furTypes;
+  // ACC1 (ticket 32): ogni evento nuovo porta chi l'ha fatto (il profilo di questo telefono); i vecchi restano senza
+  const stampAuthor = useEventAuthor();
+  const stampAuthorRef = useRef(stampAuthor);
+  stampAuthorRef.current = stampAuthor;
   const loadedOrganization = useRef<string | null>(null);
   const lastRemoteUpdate = useRef<string | null>(null);
   const uploadingMedia = useRef(new Set<string>());
@@ -594,8 +599,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addTimelineEvent = (event: Omit<TimelineEvent, 'id'>) => {
+    const author = event.author ?? stampAuthorRef.current();
     const newEvent: TimelineEvent = {
       ...event,
+      ...(author && { author }),
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
     setTimeline((prev) => [newEvent, ...prev]);

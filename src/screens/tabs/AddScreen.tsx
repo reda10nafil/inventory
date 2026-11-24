@@ -35,6 +35,8 @@ import { ShelfPicker } from '../../../components/ShelfPicker';
 import { useLoadCheck } from '../../../hooks/useLoadCheck';
 import { useLoadBlock } from '../../../components/LoadBlockSheet';
 import { LoadNotice } from '../../../components/LoadNotice';
+import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
+import { usePermission } from '../../../contexts/ProfileContext';
 import { stockKey } from '../../../utils/stock';
 
 export default function AddProductScreen() {
@@ -211,6 +213,8 @@ export default function AddProductScreen() {
 
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // ACC1 (ticket 32): «Aggiungi all'Inventario» spento col motivo per un ruolo che non aggiunge (blocco a sé)
+  const addPerm = usePermission('aggiungere');
 
   // Valori dei campi personalizzati: quelli scritti più il minimo dei contatori visibili non toccati, che è il valore
   // vero e si salva (VAL, CAM-F3). Calcolato a ogni disegno, così vale anche dopo lo svuotamento (D22) e quando i
@@ -223,6 +227,7 @@ export default function AddProductScreen() {
 
   const handleSubmit = () => {
     if (isSubmitting) return;
+    if (!addPerm.allowed) return; // ACC1: il motivo è scritto sopra il pulsante
 
     // D23: lo SKU vuoto si genera da solo al salvataggio (come dicono il suggerimento e la nota)
     // C1: il tipo di pelle è facoltativo (un prodotto che non è una pelliccia non ne ha uno)
@@ -874,6 +879,8 @@ export default function AddProductScreen() {
           </View>
 
           {/* Submit Button */}
+          <PermissionNote text={addPerm.reason} style={{ marginTop: 16, marginBottom: 0 }} />
+          <Dimmed off={!addPerm.allowed}>
           <Pressable
             style={[styles.primaryButton, styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
@@ -885,6 +892,7 @@ export default function AddProductScreen() {
               {isSubmitting ? 'Salvataggio...' : "Aggiungi all'Inventario"}
             </Text>
           </Pressable>
+          </Dimmed>
 
           <Text style={styles.footNote}>
             <Text style={styles.required}>*</Text> Campi obbligatori: Posizione (SKU auto-generato se vuoto)

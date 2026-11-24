@@ -60,11 +60,24 @@ export interface ProductCustomData {
 
 export type FieldUIType = 'grid' | 'stepper' | 'segmented' | 'text' | 'gps-link' | 'date' | 'images' | 'picker' | 'modal_list' | 'document';
 
+/** Chi ha fatto un evento (ACC1): istantanea del profilo di questo telefono quando l'evento nasce. Facoltativo: gli
+ *  eventi di prima non ce l'hanno e restano così (nessuna riscrittura). */
+export interface EventAuthor {
+  /** id del profilo del telefono (`device:v1:profile`), per riconoscere i telefoni quando gli eventi viaggeranno (RETE2a) */
+  id: string;
+  /** nome dell'operatore, se scritto */
+  name?: string;
+  /** nome del telefono («Banco 1»), se scritto */
+  device?: string;
+}
+
 export interface TimelineEvent {
   id: string;
   productId: string;
   type: 'created' | 'moved' | 'modified' | 'sold' | 'scanned' | 'photo_added' | 'deleted' | 'restored' | 'stock';
   timestamp: string;
+  /** ACC1: chi l'ha fatto; assente negli eventi di prima («—» in Cronologia) */
+  author?: EventAuthor;
   details: {
     from?: string;
     to?: string;

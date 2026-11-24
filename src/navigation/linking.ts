@@ -27,7 +27,8 @@ export const PARENT_TAB: Record<string, 'index' | 'automations' | 'settings'> = 
   SettingsShare: 'settings',
   SettingsAppearance: 'settings',
   SettingsSector: 'settings',
-  SettingsTeam: 'settings', // Impostazioni › Accesso Multi-Utente
+  SettingsTeam: 'settings', // Impostazioni › Persone e telefoni › Rete del negozio (ACC1; la rifà RETE0)
+  SettingsAccess: 'settings', // Impostazioni › Persone e telefoni › Accesso (ACC1)
   Chat: 'settings', // Team › Apri Chat
   SettingsAutomationBuilder: 'automations', // Automazioni › Crea Nuova; Flusso di un'automazione › modifica
   Audit: 'automations',
@@ -69,6 +70,7 @@ const config = {
     SettingsAppearance: 'settings/appearance',
     SettingsSector: 'settings/sector-templates',
     SettingsTeam: 'settings/team',
+    SettingsAccess: 'settings/access',
     Chat: 'chat',
     SettingsAutomationBuilder: 'settings/automation-builder',
     Audit: 'automations/audit',

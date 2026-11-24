@@ -82,7 +82,7 @@ async function esporta(h) {
     return { prodotti: list.length, nuovo: p && { furType: p.furType, location: p.location, status: p.status, sellPrice: p.sellPrice, note: p.technicalNotes, images: p.images }, eventi: ev };
   });
 
-  // 4. Backup Google Drive (login disattivato)
+  // 4. Backup Google Drive (login disattivato; da ACC1 spento col motivo, senza finestra)
   await scenario('a2-backup-drive', async (h) => {
     await h.tab('Impostazioni');
     const prima = await h.products(0);

@@ -716,6 +716,69 @@ FETTE.s3 = {
   ],
 };
 
+// ACC1 (corsia B, 24/11): Impostazioni con «Persone e telefoni», Accesso col profilo (foto nel cerchio da 56), ruoli e
+// permessi, Impostazioni viste da un Operatore (voci spente col motivo), Cronologia con l'autore («—» nei vecchi).
+// Aggiunta qui sotto (non dentro l'oggetto) per non scontrarsi con le altre corsie.
+FETTE.acc1 = {
+  prepara: () => {
+    // foto del profilo disegnata qui (un cerchio con le iniziali), come la salva l'app: data:image/jpeg piccola
+    const c = document.createElement('canvas');
+    c.width = 160; c.height = 160;
+    const g = c.getContext('2d');
+    g.fillStyle = '#8A6D3B'; g.fillRect(0, 0, 160, 160);
+    g.fillStyle = '#F3E9D2'; g.font = 'bold 64px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('MR', 80, 86);
+    const id = 'tel-stili-acc1';
+    localStorage.setItem('device:v1:profile', JSON.stringify({
+      id, name: 'Mario Rossi', phone: '333 123 4567', role: 'titolare', photo: c.toDataURL('image/jpeg', 0.82), device: 'Banco 1',
+    }));
+    const tk = 'inventory:v1:local:timeline';
+    const tl = JSON.parse(localStorage.getItem(tk) || '[]');
+    tl.unshift({
+      id: 'acc1-stili-1', productId: 'cmp-1', type: 'modified', timestamp: new Date().toISOString(),
+      details: { changes: ['Prezzo vendita: 4.200 € → 4.300 €'] }, author: { id, name: 'Mario Rossi', device: 'Banco 1' },
+    });
+    localStorage.setItem(tk, JSON.stringify(tl));
+  },
+  schermate: [
+    ['impostazioni-persone', async (page) => {
+      await page.goto(`${APP}/settings`); await page.waitForTimeout(1800);
+      await page.getByText('Persone e telefoni', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['accesso-profilo', async (page) => { await page.goto(`${APP}/settings/access`); await page.waitForTimeout(1800); }],
+    ['ruoli-permessi', async (page) => {
+      await page.getByText('Ruolo su questo telefono', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['tabella-permessi', async (page) => {
+      await page.getByText('Che cosa può fare ogni ruolo', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['cronologia-autore', async (page) => { await page.goto(`${APP}/timeline`); await page.waitForTimeout(1800); }],
+    ['operatore-impostazioni', async (page) => {
+      await page.goto(`${APP}/settings/access`); await page.waitForTimeout(1800);
+      await page.getByRole('radio', { name: 'Ruolo Operatore' }).click(); await page.waitForTimeout(500);
+      await page.goto(`${APP}/settings`); await page.waitForTimeout(1800);
+      await page.getByText('Configurazione hardware', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['operatore-permessi', async (page) => {
+      await page.goto(`${APP}/settings/access`); await page.waitForTimeout(1800);
+      await page.getByText('Che cosa può fare ogni ruolo', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    // Solo lettura: le azioni spente col motivo sopra le barre e i pulsanti (Home, Scheda, Aggiungi, Azione rapida)
+    ['lettura-home-elimina', async (page) => {
+      await page.getByRole('radio', { name: 'Ruolo Solo lettura' }).click(); await page.waitForTimeout(500);
+      await page.goto(APP); await page.waitForTimeout(1800);
+      const box = await page.getByText('VIS-0142', { exact: true }).first().boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down(); await page.waitForTimeout(700); await page.mouse.up(); await page.waitForTimeout(500);
+    }],
+    ['lettura-scheda', async (page) => { await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800); }],
+    ['lettura-aggiungi', async (page) => {
+      await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+      await page.getByText("Aggiungi all'Inventario", { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'end' }));
+    }],
+    ['lettura-azione-rapida', async (page) => { await page.goto(`${APP}/scanner-action?type=product&id=cmp-1`); await page.waitForTimeout(1800); }],
+  ],
+};
+
 (async () => {
   const fetta = FETTE[process.env.FETTA];
   if (!fetta) throw new Error(`FETTA sconosciuta: ${process.env.FETTA} (note: ${Object.keys(FETTE).join(', ')})`);
