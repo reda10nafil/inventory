@@ -16,7 +16,7 @@ import { useContacts } from '../../../contexts/ContactsContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { useLoadCheck } from '../../../hooks/useLoadCheck';
 import { overLimitText } from '../../../utils/shelves';
-import { stockKey } from '../../../utils/stock';
+import { placeOfKey, stockKey } from '../../../utils/stock';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { supabase } from '../../../backend-auth/supabase/client';
@@ -193,11 +193,18 @@ export default function SettingsScreen() {
         return;
       }
       seenSkus.add(normalizedSku);
-      // S3: posti che questa riga porta oltre il limite (scaffali con limiti, posizioni con capienza), prima di scrivere
+      // S3: posti che questa riga porta oltre il limite, prima di scrivere: ogni scaffale con la sua quantità, ogni
+      // posizione con capienza con la somma della riga (revisore: «X: 5; X/A1: 5» sono 10 pezzi in X)
       const { product } = parsed;
-      const loads = parsed.stock
-        ? Object.entries(parsed.stock).filter(([, qty]) => qty > 0).map(([key, qty]) => checkLoad(product, key, [{ qty }]))
-        : product.status === 'available' ? [checkLoad(product, stockKey(product.location, product.shelfId), [{ qty: 1 }])] : [];
+      const entries: [string, number][] = parsed.stock
+        ? Object.entries(parsed.stock).filter(([, qty]) => qty > 0)
+        : product.status === 'available' ? [[stockKey(product.location, product.shelfId), 1]] : [];
+      const perPlace = new Map<string, number>();
+      for (const [key, qty] of entries) perPlace.set(placeOfKey(key), (perPlace.get(placeOfKey(key)) ?? 0) + qty);
+      const loads = [
+        ...entries.filter(([key]) => key !== placeOfKey(key)).map(([key, qty]) => checkLoad(product, key, [{ qty }], { soloScaffale: true })),
+        ...[...perPlace].map(([place, qty]) => checkLoad(product, place, [{ qty }])),
+      ];
       const added = addProduct(parsed.product, parsed.stock ? { stock: parsed.stock } : undefined);
       if (added) {
         imported += 1;

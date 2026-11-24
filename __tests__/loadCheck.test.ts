@@ -2,8 +2,8 @@
 // scaffale come destinazione negli spostamenti (`moveOf`, `runStep`).
 import type { Product } from '../types';
 import {
-  checkPlaceCount, checkPlaceLoad, checkShelfLoad, fitCountText, fitsShelf, freeText, incomingLoad, loadOf, loadWarningText,
-  noProposalText, overLimitText, proposalLabel, shelfLoad, type Shelf,
+  checkLoadAt, checkPlaceCount, checkPlaceLoad, checkShelfLoad, fitCountText, fitsShelf, freeText, incomingLoad, loadOf, loadWarningText,
+  noProposalText, overLimitText, proposalLabel, shelfLoad, type LoadData, type Shelf,
 } from '../utils/shelves';
 import { moveOf, moveSources } from '../utils/inventoryOps';
 import { runStep, type RunContext } from '../utils/automationRun';
@@ -254,5 +254,63 @@ describe('scaffale come destinazione: moveOf e runStep (S3, da FLU1)', () => {
     expect(runStep(piece({ location: 'vetrina' }), step, ctx())).toEqual({ ok: true, op: 'move', to: 'magazzino', text: '📦 Spostato in Magazzino' });
     // una posizione fissa del passo non usa lo scaffale letto
     expect(runStep(piece(), { type: 'move_to', config: { locationId: 'vetrina' } }, ctx({ shelf: { id: A1, name: 'A1' } }))).toMatchObject({ op: 'move', to: 'vetrina' });
+  });
+});
+
+describe('checkLoadAt: il controllo delle schermate (correzioni del revisore di S3)', () => {
+  const data = (extra: Partial<LoadData>): LoadData => ({ products: [], shelves: [], categories, locations: [], ...extra });
+  it('la proposta di uno spostamento si ricontrolla con la merce che partirebbe davvero (prima: 11 pezzi su A2 da 5)', () => {
+    const a1 = shelf('ra1', 'A1', { maxPieces: 10 });
+    const a2 = shelf('ra2', 'A2', { maxPieces: 5 });
+    const a3 = shelf('ra3', 'A3', { maxPieces: 20 });
+    const art = piece({ unit: 'pz', stock: { magazzino: 1, [`magazzino/${a1.id}`]: 10 } });
+    const d = data({ products: [art], shelves: [a1, a2] });
+    const to = `magazzino/${a1.id}`;
+    const r = checkLoadAt(d, art, to, moveSources(art, to), { sourcesFor: (key) => moveSources(art, key) });
+    expect(r).toMatchObject({ level: 'blocco', reason: '11 pezzi, il massimo è 10' });
+    expect(r.proposal).toBeUndefined(); // A2 riceverebbe 11 pezzi: scartata
+    const conA3 = checkLoadAt({ ...d, shelves: [a1, a2, a3] }, art, to, moveSources(art, to), { sourcesFor: (key) => moveSources(art, key) });
+    expect(conA3.proposal?.name).toBe('A3'); // 11 su 20: entra (sotto l'80%)
+  });
+  it('scaffale e posizione bloccati: vince la posizione con la sua proposta, mai un altro scaffale della posizione piena', () => {
+    const y1 = shelf('ry1', 'Y1', { maxPieces: 1, locationId: 'y' });
+    const y2 = shelf('ry2', 'Y2', { maxPieces: 10, locationId: 'y' });
+    const there = [piece({ id: 'a', location: 'y', shelfId: y1.id }), piece({ id: 'b', location: 'y' })];
+    const locations = [{ id: 'y', label: 'Y', capacity: 2 }, { id: 'w', label: 'W' }];
+    const r = checkLoadAt(data({ products: there, shelves: [y1, y2], locations }), {}, `y/${y1.id}`, [{ qty: 1 }]);
+    expect(r).toMatchObject({ level: 'blocco', place: 'posizione', name: 'Y', reason: '3 pezzi, il massimo è 2', proposal: { name: 'W', key: 'w' } });
+    // senza un'altra posizione: il blocco della posizione, senza proposta
+    const sola = checkLoadAt(data({ products: there, shelves: [y1, y2], locations: [locations[0]] }), {}, `y/${y1.id}`, [{ qty: 1 }]);
+    expect(sola).toMatchObject({ level: 'blocco', place: 'posizione' });
+    expect(sola.proposal).toBeUndefined();
+  });
+  it('la proposta non è mai il posto di partenza (trasferimento da A1 verso A2 pieno; pezzo unico da W verso Y piena)', () => {
+    const a1 = shelf('pa1', 'A1', { maxPieces: 10 });
+    const a2 = shelf('pa2', 'A2', { maxPieces: 1 });
+    const art = piece({ unit: 'pz', stock: { [`magazzino/${a1.id}`]: 2, [`magazzino/${a2.id}`]: 1 } });
+    const from = `magazzino/${a1.id}`;
+    const r = checkLoadAt(data({ products: [art], shelves: [a1, a2] }), art, `magazzino/${a2.id}`, [{ from, qty: 1 }]);
+    expect(r.level).toBe('blocco');
+    expect(r.proposal).toBeUndefined(); // prima proponeva A1, da dove parte la merce
+    const unico = piece({ id: 'u', location: 'w' });
+    const locations = [{ id: 'y', label: 'Y', capacity: 1 }, { id: 'w', label: 'W' }];
+    const pieno = [piece({ id: 'x', location: 'y' }), unico];
+    const s = checkLoadAt(data({ products: pieno, locations }), unico, 'y', moveSources(unico, 'y'), { sourcesFor: (key) => moveSources(unico, key) });
+    expect(s.level).toBe('blocco');
+    expect(s.proposal).toBeUndefined(); // prima proponeva W, dove il pezzo già sta
+  });
+  it('un pezzo unico venduto non occupa posto: si sposta verso una posizione piena senza blocco', () => {
+    const venduto = piece({ id: 'v', location: 'w', status: 'sold' });
+    expect(moveSources(venduto, 'y')).toEqual([]);
+    const locations = [{ id: 'y', label: 'Y', capacity: 1 }];
+    expect(checkLoadAt(data({ products: [piece({ id: 'x', location: 'y' }), venduto], locations }), venduto, 'y', moveSources(venduto, 'y')).level).toBe('ok');
+  });
+  it('soloScaffale: senza la capienza della posizione; senza nulla in arrivo: ok col nome del posto', () => {
+    const a = shelf('sa', 'A', { maxPieces: 10 });
+    const locations = [{ id: 'magazzino', label: 'Magazzino', capacity: 1 }];
+    const d = data({ products: [piece({ id: 'x' })], shelves: [a], locations });
+    expect(checkLoadAt(d, {}, `magazzino/${a.id}`, [{ qty: 1 }]).level).toBe('blocco');
+    expect(checkLoadAt(d, {}, `magazzino/${a.id}`, [{ qty: 1 }], { soloScaffale: true }).level).toBe('ok');
+    expect(checkLoadAt(d, {}, `magazzino/${a.id}`, [])).toEqual({ level: 'ok', name: 'A', place: 'scaffale', fill: null });
   });
 });

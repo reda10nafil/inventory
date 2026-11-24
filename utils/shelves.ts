@@ -765,7 +765,7 @@ export function checkShelfLoad(
   shelf: Shelf,
   products: readonly Loaded[],
   incoming: Incoming,
-  others: { shelves: readonly Shelf[]; categories: readonly CategoryNode[] },
+  others: { shelves: readonly Shelf[]; categories: readonly CategoryNode[]; accept?: (proposal: LoadProposal) => boolean },
 ): LoadCheck {
   const base = { name: shelf.name, place: 'scaffale' as const };
   if (!hasMeasures(shelf)) return { ...base, level: 'ok', fill: null };
@@ -781,13 +781,14 @@ export function checkShelfLoad(
  * Scaffale proposto (ticket 15, «Scaffale proposto»): tra gli altri scaffali della stessa posizione in cui il prodotto
  * entra e che restano sotto l'80% dopo il carico, prima quelli della sua categoria (o di una sopra), poi i generici;
  * a parità quello con più spazio libero; quelli senza limiti dopo quelli con i limiti (non si sa quanto spazio
- * hanno), per nome. Nessuno adatto: `undefined`.
+ * hanno), per nome. Nessuno adatto: `undefined`. `accept` (revisore di S3) scarta una proposta che col carico vero non
+ * va: `checkLoadAt` la ricontrolla con la merce che ci arriverebbe davvero e con la capienza della posizione.
  */
 export function proposeShelf(
   shelf: Shelf,
   products: readonly Loaded[],
   incoming: Incoming,
-  { shelves, categories }: { shelves: readonly Shelf[]; categories: readonly CategoryNode[] },
+  { shelves, categories, accept }: { shelves: readonly Shelf[]; categories: readonly CategoryNode[]; accept?: (proposal: LoadProposal) => boolean },
 ): LoadProposal | undefined {
   const { product } = incoming;
   const own = product.libraryId ? [product.libraryId, ...categoryAncestors(categories, product.libraryId).map((c) => c.id)] : [];
@@ -805,17 +806,19 @@ export function proposeShelf(
     || Number(!a.fill) - Number(!b.fill)
     || (a.fill && b.fill ? a.fill.percent - b.fill.percent : 0)
     || byName(a.s, b.s));
-  const best = candidates[0];
-  if (!best) return undefined;
-  const free = freeAfter(best.fill);
-  return {
-    key: stockKey(best.s.locationId, best.s.id),
-    locationId: best.s.locationId,
-    shelfId: best.s.id,
-    name: best.s.name,
-    ...(free != null && { freePercent: free }),
-    why: fitCountText(fitCount(best.s, product, best.now), best.s.name),
-  };
+  for (const best of candidates) {
+    const free = freeAfter(best.fill);
+    const proposal: LoadProposal = {
+      key: stockKey(best.s.locationId, best.s.id),
+      locationId: best.s.locationId,
+      shelfId: best.s.id,
+      name: best.s.name,
+      ...(free != null && { freePercent: free }),
+      why: fitCountText(fitCount(best.s, product, best.now), best.s.name),
+    };
+    if (!accept || accept(proposal)) return proposal;
+  }
+  return undefined;
 }
 
 /** Posizione con la capienza in pezzi (`Location.capacity`, Impostazioni › Posizioni). */
@@ -831,7 +834,13 @@ const placeCapacity = (place: CappedPlace): ShelfCapacity => {
  * proposta è la prima posizione dopo questa nell'elenco (poi quelle prima) dove entra e resta sotto l'80%; una
  * posizione senza capienza entra sempre.
  */
-export function checkPlaceLoad(place: CappedPlace, products: readonly Loaded[], incoming: Incoming, places: readonly CappedPlace[]): LoadCheck {
+export function checkPlaceLoad(
+  place: CappedPlace,
+  products: readonly Loaded[],
+  incoming: Incoming,
+  places: readonly CappedPlace[],
+  accept?: (proposal: LoadProposal) => boolean,
+): LoadCheck {
   const base = { name: place.label, place: 'posizione' as const };
   const cap = placeCapacity(place);
   if (!positive(cap.maxPieces)) return { ...base, level: 'ok', fill: null };
@@ -850,9 +859,85 @@ export function checkPlaceLoad(place: CappedPlace, products: readonly Loaded[], 
       key: other.id, locationId: other.id, name: other.label, ...(free != null && { freePercent: free }),
       why: fitCountText(fitCount(otherCap, incoming.product, now), other.label),
     };
-    return { ...base, ...result, proposal };
+    if (!accept || accept(proposal)) return { ...base, ...result, proposal };
   }
   return { ...base, ...result };
+}
+
+/** Da dove arriva la merce: la chiave di partenza (assente per un carico) e la quantità. */
+export type LoadSource = { from?: string; qty: number };
+/** Il prodotto che arriva: salvato (con `id`) o nuovo (Aggiungi), con misure, unità e categoria. */
+export type LoadProduct = Incoming['product'] & Partial<Pick<Product, 'id'>>;
+/** I dati per il controllo: prodotti salvati (la copia più recente), scaffali, categorie e posizioni. */
+export interface LoadData {
+  products: readonly (Loaded & Partial<Pick<Product, 'id'>>)[];
+  shelves: readonly Shelf[];
+  categories: readonly CategoryNode[];
+  locations: readonly CappedPlace[];
+}
+const RANK: Record<LoadLevel, number> = { ok: 0, avviso: 1, blocco: 2 };
+
+/** Quanto arriva davvero in `to` da `sources`: per uno scaffale la merce che non è già lì, per una posizione quella
+ *  che viene da fuori. 0 = non si sposta nulla (la partenza è già lì). */
+function arrivingAt(to: string, sources: readonly LoadSource[]): number {
+  const { place, shelfId } = splitStockKey(to);
+  const from = (s: LoadSource) => (shelfId ? s.from !== to : !s.from || splitStockKey(s.from).place !== place);
+  return round3(sources.filter(from).reduce((a, s) => a + (s.qty > 0 ? s.qty : 0), 0));
+}
+
+/**
+ * Il controllo completo di un carico verso `to` (una posizione o `posizione/idScaffale`), quello che chiamano tutte le
+ * schermate (`hooks/useLoadCheck.ts`): lo scaffale (`checkShelfLoad`) e, se la posizione ha una capienza, la posizione
+ * (`checkPlaceLoad`, con la merce che arriva da fuori). Vale il più grave; a parità quello con una proposta, poi la
+ * posizione (revisore di S3: la proposta di un altro scaffale non deve scavalcare una posizione piena). Ogni proposta
+ * si ricontrolla con la merce che ci arriverebbe davvero (`sourcesFor`, per uno spostamento `moveSources` verso quel
+ * posto) e deve dare ok: niente proposta che porta oltre un limite, né il posto di partenza (nulla da spostare).
+ * `soloScaffale`: senza la posizione (l'import la controlla a parte, con la somma della riga).
+ */
+export function checkLoadAt(
+  data: LoadData,
+  product: LoadProduct,
+  to: string,
+  sources: readonly LoadSource[],
+  opts: { sourcesFor?: (key: string) => readonly LoadSource[]; soloScaffale?: boolean } = {},
+): LoadCheck {
+  const sourcesFor = opts.sourcesFor ?? (() => sources);
+  const results = (key: string, from: readonly LoadSource[], accept?: (p: LoadProposal) => boolean, soloScaffale = false): LoadCheck[] => {
+    const saved = product.id ? data.products.find((p) => p.id === product.id) : undefined;
+    const { place, shelfId } = splitStockKey(key);
+    const location = data.locations.find((l) => l.id === place);
+    const shelf = shelfId ? data.shelves.find((s) => s.id === shelfId && s.locationId === place) : undefined;
+    const out: LoadCheck[] = [];
+    if (shelf) {
+      const add = arrivingAt(key, from);
+      if (add > 0) {
+        out.push(checkShelfLoad(shelf, data.products, { product, before: saved ? qtyAt(saved, key) : 0, add }, { shelves: data.shelves, categories: data.categories, accept }));
+      }
+    }
+    if (!soloScaffale && location?.capacity) {
+      const add = arrivingAt(place, from);
+      if (add > 0) {
+        out.push(checkPlaceLoad(location, data.products, { product, before: saved ? qtyAt(saved, place) : 0, add }, data.locations, accept));
+      }
+    }
+    return out;
+  };
+  // Una proposta va bene se lì arriva davvero qualcosa e il carico vero (scaffale e posizione) dà ok
+  const accept = (p: LoadProposal): boolean => {
+    const from = sourcesFor(p.key);
+    if (!(arrivingAt(p.key, from) > 0)) return false;
+    return results(p.key, from, () => false).every((r) => r.level === 'ok');
+  };
+  const found = results(to, sources, accept, opts.soloScaffale);
+  if (!found.length) {
+    const { place, shelfId } = splitStockKey(to);
+    const shelf = shelfId ? data.shelves.find((s) => s.id === shelfId) : undefined;
+    return { level: 'ok', name: shelf ? shelf.name : data.locations.find((l) => l.id === place)?.label ?? place, place: shelf ? 'scaffale' : 'posizione', fill: null };
+  }
+  const worst = Math.max(...found.map((r) => RANK[r.level]));
+  const top = found.filter((r) => RANK[r.level] === worst);
+  return top.find((r) => r.proposal && r.place === 'posizione') ?? top.find((r) => r.proposal)
+    ?? top.find((r) => r.place === 'posizione') ?? top[0];
 }
 
 /**

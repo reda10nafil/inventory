@@ -10,7 +10,8 @@
 // - Spostamento rapido: il codice di R2 è la destinazione «Magazzino › R2» (pezzo unico con `shelfId`, articolo a
 //   quantità sulla chiave `magazzino/<R2>`), avviso, blocco e proposta; capienza di Vetrina in pezzi, non in prodotti;
 // - esecuzione: «Scansiona Posizione» sul codice di R2, poi «Sposta nella posizione letta» porta su R2; il 3° bloccato;
-// - Conta, Audit «Sposta qui» e import CSV: solo l'informazione «oltre il limite», nessun blocco;
+// - Conta, Audit «Sposta qui» e import CSV: solo l'informazione «oltre il limite», nessun blocco; nell'import la
+//   capienza di una posizione con la somma della riga (revisore);
 // - barra appendiabiti da 15 grucce: il 16° capo bloccato con la proposta (CF-D5).
 // Uso: node s3-avvisi.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const { scenario } = require('./lib.cjs');
@@ -304,6 +305,25 @@ const OK = Array(12).fill('ok');
         && visti[0] === 'Importazione completata | 1 prodotti importati. 0 saltati (SKU vuoto o già presente, o giacenza non valida). A1 è oltre il limite: 25 pezzi, il massimo è 20.'
         && visti[1] === 'Importazione completata | 1 prodotti importati. 0 saltati (SKU vuoto o già presente, o giacenza non valida).',
       uno, due, finestre: visti,
+    };
+  }, { dialogs: OK });
+
+  // 10b. Import CSV con Magazzino da 8 pezzi (già VIS-0098): una riga «magazzino:4; SCAF-MAG-G1:4» porta Magazzino a 9
+  //      pezzi; ogni chiave da sola starebbe dentro (revisore di S3): l'informazione dice la somma della riga
+  await run('s3-import-somma', async (h) => {
+    const locations = LOCATIONS.map((l) => (l.id === 'magazzino' ? { ...l, capacity: 8 } : l));
+    await prepara(h, { locations });
+    const visti = finestre(h);
+    await h.tab('Impostazioni');
+    const csv = ['SKU,Tipo di pelle,Posizione,Unità,Giacenza', 'S3-IMP-3,visone,magazzino,pz,magazzino:4; SCAF-MAG-G1:4'].join('\r\n');
+    const dt = await h.page.evaluateHandle(([text]) => { const d = new DataTransfer(); d.items.add(new File([text], 'somma.csv', { type: 'text/csv' })); return d; }, [csv]);
+    await h.page.locator('[aria-label="Importa CSV trascinando un file qui"]').dispatchEvent('drop', { dataTransfer: dt });
+    await h.page.waitForTimeout(1500);
+    const tre = await stato(h, 'S3-IMP-3', 600);
+    return {
+      ok: tre?.stock.magazzino === 4 && tre.stock['magazzino/G1'] === 4 && tre.coincide
+        && visti[0] === 'Importazione completata | 1 prodotti importati. 0 saltati (SKU vuoto o già presente, o giacenza non valida). Magazzino è oltre il limite: 9 pezzi, il massimo è 8.',
+      tre, finestre: visti,
     };
   }, { dialogs: OK });
 

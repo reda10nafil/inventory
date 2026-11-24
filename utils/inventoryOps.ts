@@ -94,11 +94,12 @@ function moveToShelf(product: Product, place: string, shelfId: string, now: stri
 
 /**
  * Che cosa arriva in `to` con `moveOf` (S3, per il controllo del carico): le chiavi da cui parte la merce, con la
- * quantità. Pezzo unico: 1 dalla sua chiave; articolo a quantità: le chiavi della posizione principale tranne `to`.
- * Vuoto se non si sposta nulla.
+ * quantità. Pezzo unico disponibile: 1 dalla sua chiave; articolo a quantità: le chiavi della posizione principale tranne
+ * `to`. Vuoto se non si sposta nulla (anche un pezzo unico venduto o nel cestino, che non occupa posto).
  */
 export function moveSources(product: Product, to: string): { from: string; qty: number }[] {
-  if (!isStocked(product)) return [{ from: stockKey(product.location, product.shelfId), qty: 1 }];
+  // Un pezzo unico venduto o nel cestino non occupa posto (revisore di S3: prima bloccava un venduto spostato)
+  if (!isStocked(product)) return product.status === 'available' && !product.deletedAt ? [{ from: stockKey(product.location, product.shelfId), qty: 1 }] : [];
   return keysAt(product, product.location).filter(([key]) => key !== to).map(([from, qty]) => ({ from, qty }));
 }
 
