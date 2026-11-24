@@ -21,8 +21,7 @@ const driver: NfcDriver = {
     NfcEvents.StateChanged,
     listener ? (event: { state?: string } | string) => listener(typeof event === 'string' ? event : event?.state ?? '') : null,
   ),
-  onSessionClosed: (listener) => NfcManager.setEventListener(NfcEvents.SessionClosed, listener ? () => listener() : null),
-  requestNdef: async (options) => { await NfcManager.requestTechnology(NfcTech.Ndef, options); },
+  requestNdef: async (options) => (await NfcManager.requestTechnology(NfcTech.Ndef, options)) != null,
   getTag: async () => asTag(await NfcManager.getTag()),
   ndefStatus: async () => {
     const s = await NfcManager.ndefHandler.getNdefStatus();

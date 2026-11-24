@@ -34,6 +34,8 @@ Richiesta dell'utente del 24 (secondo messaggio, punto 2): «si avvicina il tag,
 
 **File**: logica pura in `utils/nfcTag.ts` (jest `nfcTag.test.ts`) e `utils/nfcCore.ts` (servizio con un driver passato da fuori, jest `nfcCore.test.ts` con un driver finto); `utils/nfcService.ts` (driver vero, niente all'import; i nomi di prima `isSupported`, `cleanTag`, `writeGS1Uri` restano solo per i file residui di `app/`) e `utils/nfcService.web.ts`; `tagOwners` in `utils/codes.ts`; `components/NfcSheet.tsx`, `hooks/useTagLinks.ts`, `hooks/useTagOffer.tsx`. Prova `prova/n1-nfc.cjs` (sul web), collaudo CF-E6.
 
+**Correzioni del revisore** (dopo `553b84b`): con il silenziatore spento il reader mode lo registra il servizio solo per l'operazione e lo toglie subito (se lo lasciava a `requestTechnology`, la libreria lo toglieva un secondo dopo l'annullamento di una scrittura e la lettura subito dopo restava sorda); su iOS la lettura usa `requestTechnology` + `getTag`, che dà l'UID (la sessione di `registerTagEvent` no: senza, «Collega un tag» non si poteva fare); il pannello di iOS chiuso dall'utente vale Annulla; dopo «Sostituisci» su iOS la decisione si rifà sul tag riavvicinato (mai un tag diverso coi dati del primo); un codice che non ci sta sul tag si dice prima. **Limite noto**, da provare: con il silenziatore spento, alla fine di una lettura il reader mode si toglie col tag ancora appoggiato e Android può riscoprirlo (un tag col link aprirebbe il browser); con il silenziatore acceso no.
+
 **Da provare sul telefono** (CF-T2, CF-T3): vedi `../collaudo-finale.md`.
 
 ## Come si torna indietro

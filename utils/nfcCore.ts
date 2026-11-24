@@ -6,7 +6,11 @@
 // - **Silenziatore** (N0, decisione 1; interruttore «Zittisci Android con l'app aperta»): reader mode registrato una
 //   volta, con i flag A, B, F, V e senza suoni di sistema, nessun ascoltatore a riposo: Android consegna il tag
 //   all'app (niente browser per un tag col link) e l'app lo scarta. Solo Android; mai tolto finché è acceso;
-//   riapplicato quando l'NFC si riaccende. Spento, la lettura usa il reader mode solo mentre legge.
+//   riapplicato quando l'NFC si riaccende. Spento, lettura e scrittura registrano il reader mode solo per sé e lo
+//   tolgono subito alla fine: mai lasciato a `requestTechnology`, che lo toglierebbe un secondo dopo l'annullamento e
+//   renderebbe sorda la lettura dopo (rilievo del revisore su 553b84b).
+// - iOS: la lettura passa da `requestTechnology` + `getTag`, che dà anche l'UID (la sessione di `registerTagEvent`
+//   no); il pannello di sistema chiuso dall'utente vale Annulla.
 // - **Scrittura in un tocco** (NG14, decisione 2): `openForWrite` aspetta il tag e dice che cosa c'è (per la conferma
 //   del tag pieno), `write` scrive il messaggio intero una volta sola; la sessione si chiude sempre.
 // Restituisce solo dati: non vende, non sposta, non tocca i contesti (ticket 18).
@@ -31,9 +35,8 @@ export interface NfcDriver {
   unregisterTagEvent(): Promise<void>;
   onTag(listener: ((tag: NfcTagEvent) => void) | null): void;
   onStateChange(listener: ((state: string) => void) | null): void;
-  /** iOS: il pannello di sistema chiuso dall'utente. */
-  onSessionClosed?(listener: (() => void) | null): void;
-  requestNdef(options: ReaderOptions): Promise<void>;
+  /** Vero se il tag si è collegato con la tecnologia Ndef (la libreria dà `null` per un tag che non la sa). */
+  requestNdef(options: ReaderOptions): Promise<boolean>;
   getTag(): Promise<NfcTagEvent | null>;
   ndefStatus(): Promise<{ writable: boolean; capacity: number }>;
   writeNdef(bytes: number[]): Promise<void>;
@@ -49,7 +52,7 @@ const IOS_PROMPT = 'Avvicina il tag al telefono';
 export type NfcState = 'assente' | 'spento' | 'attivo';
 export type NfcOutcome =
   | { esito: 'letto'; tag: NfcTagEvent }
-  | { esito: 'pronto'; tag: NfcTagEvent; writable: boolean }
+  | { esito: 'pronto'; tag: NfcTagEvent; writable: boolean; capacity?: number }
   | { esito: 'scritto'; id: string | null }
   | NfcFailure;
 
@@ -67,6 +70,8 @@ export interface NfcService {
 }
 
 const message = (error: unknown) => String((error as { message?: string } | null)?.message ?? error ?? '');
+// iOS: il pannello di sistema chiuso dall'utente rifiuta la richiesta («UserCancel»): non è un errore da dire
+const failure = (error: unknown): NfcOutcome => (/cancel/i.test(message(error)) ? { esito: 'annullato' } : { esito: 'errore', messaggio: message(error) });
 // Android: un tag senza la tecnologia Ndef (mai formattato, o di un altro tipo) non si collega alla richiesta di scrittura
 const isNonNdef = (tag: NfcTagEvent) => !!tag.techTypes?.length && !tag.techTypes.some((t) => /(^|\.)Ndef$/.test(t));
 
@@ -74,6 +79,7 @@ export function createNfcService(driver: NfcDriver): NfcService {
   let started: Promise<boolean> | null = null;
   let silencerWanted = false;
   let registered = false; // il silenziatore è registrato (solo Android)
+  let own = false; // reader mode registrato solo per l'operazione in corso (silenziatore spento, Android)
   let applying: Promise<void> | null = null;
   let busy = false;
   let finishRead: ((outcome: NfcOutcome) => void) | null = null;
@@ -127,12 +133,59 @@ export function createNfcService(driver: NfcDriver): NfcService {
 
   const notReady = (state: NfcState): NfcOutcome => ({ esito: state === 'spento' ? 'nfc-spento' : 'assente' });
 
+  // Silenziatore spento: il reader mode lo registra il servizio per l'operazione e lo toglie subito dopo
+  const holdReader = async () => {
+    if (driver.os !== 'android' || registered || own) return;
+    await driver.registerTagEvent(SILENCER);
+    own = true;
+  };
+  const releaseReader = async () => {
+    if (!own) return;
+    own = false;
+    try { await driver.unregisterTagEvent(); } catch { /* già tolto */ }
+  };
+  // Finita un'operazione, il silenziatore torna come vuole l'interruttore (spento durante l'operazione: si toglie ora)
+  const settle = async () => {
+    if (busy) return;
+    if (!silencerWanted && registered) {
+      registered = false;
+      try { await driver.unregisterTagEvent(); } catch { /* già tolto */ }
+    } else await applySilencer();
+  };
+
   const closeSession = async () => {
     if (sessionTimer) { clearTimeout(sessionTimer); sessionTimer = null; }
     writeTag = null;
     await safeCancel();
+    await releaseReader();
     busy = false;
-    void applySilencer();
+    void settle();
+  };
+
+  // iOS: lettura con `requestTechnology` + `getTag` (l'UID c'è), chiusa sempre
+  const readIos = async (timeoutMs: number): Promise<NfcOutcome> => {
+    let reason: NfcOutcome | null = null;
+    const stop = (o: NfcOutcome) => { reason = reason ?? o; return safeCancel(); };
+    stopWaiting = () => stop({ esito: 'annullato' });
+    const timer = setTimeout(() => { void stop({ esito: 'tempo-scaduto' }); }, timeoutMs);
+    try {
+      const state = await status();
+      if (state !== 'attivo') return notReady(state);
+      if (reason) return reason;
+      try {
+        await driver.requestNdef({ alertMessage: IOS_PROMPT });
+      } catch (error) {
+        return reason ?? failure(error);
+      }
+      if (reason) return reason;
+      return { esito: 'letto', tag: (await driver.getTag()) ?? {} };
+    } catch (error) {
+      return reason ?? failure(error);
+    } finally {
+      clearTimeout(timer);
+      stopWaiting = null;
+      await safeCancel();
+    }
   };
 
   return {
@@ -148,32 +201,27 @@ export function createNfcService(driver: NfcDriver): NfcService {
       if (on) {
         try { if (!(await driver.isSupported())) return; } catch { return; }
         await applySilencer();
-      } else if (registered && !busy) {
-        registered = false;
-        try { await driver.unregisterTagEvent(); } catch { /* già tolto */ }
-      }
+      } else await settle(); // durante un'operazione si toglie alla sua fine
     },
 
     async read(options) {
       if (busy) return { esito: 'occupato' };
       busy = true;
+      if (driver.os === 'ios') {
+        try { return await readIos(options?.timeoutMs ?? NFC_TIMEOUT_MS); } finally { busy = false; }
+      }
       let outcome: NfcOutcome | null = null;
       let resolve!: (o: NfcOutcome) => void;
       const done = new Promise<NfcOutcome>((r) => { resolve = r; });
       const finish = (o: NfcOutcome) => { if (!outcome) { outcome = o; resolve(o); } };
       finishRead = finish;
       const timer = setTimeout(() => finish({ esito: 'tempo-scaduto' }), options?.timeoutMs ?? NFC_TIMEOUT_MS);
-      let temporary = false;
       try {
         const state = await status();
         if (state !== 'attivo') finish(notReady(state));
         if (!outcome) {
           driver.onTag((tag) => finish({ esito: 'letto', tag }));
-          driver.onSessionClosed?.(() => finish({ esito: 'annullato' }));
-          if (!(driver.os === 'android' && registered)) {
-            await driver.registerTagEvent(driver.os === 'android' ? SILENCER : { alertMessage: IOS_PROMPT, invalidateAfterFirstRead: true });
-            temporary = true;
-          }
+          await holdReader(); // col silenziatore la registrazione c'è già
         }
         return await done;
       } catch (error) {
@@ -183,11 +231,10 @@ export function createNfcService(driver: NfcDriver): NfcService {
         clearTimeout(timer);
         finishRead = null;
         driver.onTag(null);
-        driver.onSessionClosed?.(null);
         // Senza silenziatore il reader mode serviva solo a questa lettura (col silenziatore non si toglie mai)
-        if (temporary) { try { await driver.unregisterTagEvent(); } catch { /* già tolto */ } }
+        await releaseReader();
         busy = false;
-        void applySilencer();
+        void settle();
       }
     },
 
@@ -206,29 +253,38 @@ export function createNfcService(driver: NfcDriver): NfcService {
         if (driver.os === 'android') {
           // In reader mode la libreria manda l'evento di ogni tag: uno senza Ndef non si collegherebbe mai, lo si dice
           driver.onTag((tag) => { if (isNonNdef(tag)) void stop({ esito: 'non-ndef', id: tag.id ?? null }); });
+          await holdReader(); // la registrazione è del servizio, non di `requestTechnology`
         }
+        let connected: boolean;
         try {
-          await driver.requestNdef(driver.os === 'android' ? SILENCER : { alertMessage: IOS_PROMPT });
+          connected = await driver.requestNdef(driver.os === 'android' ? SILENCER : { alertMessage: IOS_PROMPT });
         } catch (error) {
-          return reason ?? { esito: 'errore', messaggio: message(error) };
+          return reason ?? failure(error);
         }
         if (reason) { await safeCancel(); return reason; }
+        if (!connected) { await safeCancel(); return { esito: 'non-ndef', id: null }; }
         const tag = (await driver.getTag()) ?? {};
         let writable = true;
-        try { writable = (await driver.ndefStatus()).writable; } catch { /* stato non letto: si prova a scrivere */ }
+        let capacity: number | undefined;
+        try { ({ writable, capacity } = await driver.ndefStatus()); } catch { /* stato non letto: si prova a scrivere */ }
+        if (reason) { await safeCancel(); return reason; } // tempo scaduto mentre si leggeva il tag
         open = true;
         writeTag = tag;
         sessionTimer = setTimeout(() => { void closeSession(); }, SESSION_MS);
         (sessionTimer as { unref?: () => void }).unref?.();
-        return { esito: 'pronto', tag, writable };
+        return { esito: 'pronto', tag, writable, ...(capacity != null && { capacity }) };
       } catch (error) {
         await safeCancel();
-        return { esito: 'errore', messaggio: message(error) };
+        return reason ?? failure(error);
       } finally {
         clearTimeout(timer);
         stopWaiting = null;
         driver.onTag(null);
-        if (!open) { busy = false; void applySilencer(); }
+        if (!open) {
+          await releaseReader();
+          busy = false;
+          void settle();
+        }
       }
     },
 

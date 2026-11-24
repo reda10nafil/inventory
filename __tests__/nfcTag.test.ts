@@ -185,6 +185,15 @@ describe('«Scrivi tag NFC»: il codice in un tocco, tag pieno con conferma', ()
     expect(writeStep(emptyTag('04112233'), 'VIS-0142', VIS, sources, { writable: true }).clear).toEqual([VETRINA]);
   });
 
+  it('tag troppo piccolo per il codice: lo dice prima di scrivere (non «tieni fermo il tag»)', () => {
+    const code = 'SCAF-MAGAZZINO-RIPIANO-PELLICCE-LUNGHE';
+    const step = writeStep(emptyTag('04CAFE09'), code, A1, sources, { writable: true, capacity: 20 });
+    expect(step.kind).toBe('readonly');
+    expect(step.kind === 'readonly' && step.text).toMatch(/non ci sta/);
+    expect(writeStep(emptyTag('04CAFE09'), code, A1, sources, { writable: true, capacity: 137 }).kind).toBe('write');
+    expect(writeStep(emptyTag('04CAFE09'), code, A1, sources, { writable: true }).kind).toBe('write'); // capacità non letta
+  });
+
   it('tag bloccato: non si scrive; per le cose con il tag la via è «Collega un tag»', () => {
     const step = writeStep(textTag('XYZ', '04CAFE08'), 'SCAF-MAG-A1', A1, sources, { writable: false });
     expect(step.kind).toBe('readonly');

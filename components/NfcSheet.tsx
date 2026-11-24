@@ -76,6 +76,30 @@ export function NfcSheet({ visible, mode, onClose, code = '', self, onRead, onDo
     finish(id, `Tag scritto: ${code}.`, 'Tag scritto');
   };
 
+  // «Scrivi tag NFC» col tag aperto: la decisione si rifà sempre sul tag che c'è davvero. `confirmed` = UID del tag per
+  // cui l'utente ha già detto «Sostituisci» (iOS: il pannello si chiude per la domanda e il tag si riavvicina; se è un
+  // altro tag si chiede di nuovo, mai scritto un tag diverso con i dati del primo)
+  const handleOpened = async (id: number, opened: NfcOutcome, confirmed: string | null | undefined): Promise<void> => {
+    if (failed(opened)) return fail(id, opened);
+    // chiusa mentre aspettava il tag: niente scrittura
+    if (opened.esito !== 'pronto' || !current(id)) { await nfcService.cancel(); return; }
+    // un prodotto appena aggiunto può non essere ancora nell'elenco: si scrive lo stesso il suo SKU
+    const me = self ?? { kind: 'product' as const, id: '' };
+    const step = writeStep(opened.tag, code, me, sources, { writable: opened.writable, capacity: opened.capacity }, canLink);
+    if (step.kind === 'readonly') { await nfcService.cancel(); return show(id, { kind: 'fine', text: step.text, retry: true }); }
+    if (step.kind === 'write' || (confirmed !== undefined && step.uid === confirmed)) return doWrite(id, step.uid, step.clear);
+    if (!nfcService.holdsTagWhileAsking) await nfcService.cancel(); // iOS: il pannello di sistema coprirebbe la domanda
+    show(id, {
+      kind: 'conferma',
+      text: step.text,
+      apply: async () => {
+        setPhase({ kind: 'attesa' });
+        if (nfcService.holdsTagWhileAsking) return doWrite(id, step.uid, step.clear);
+        return handleOpened(id, await nfcService.openForWrite(), step.uid);
+      },
+    });
+  };
+
   const start = useCallback(async () => {
     const id = ++run.current;
     setPhase({ kind: 'attesa' });
@@ -83,27 +107,7 @@ export function NfcSheet({ visible, mode, onClose, code = '', self, onRead, onDo
 
     if (mode === 'scrivi') {
       const opened = await nfcService.openForWrite();
-      if (failed(opened)) return fail(id, opened);
-      // chiusa mentre aspettava il tag: niente scrittura
-      if (opened.esito !== 'pronto' || !current(id)) { await nfcService.cancel(); return; }
-      // un prodotto appena aggiunto può non essere ancora nell'elenco: si scrive lo stesso il suo SKU
-      const step = writeStep(opened.tag, code, self ?? { kind: 'product', id: '' }, sources, { writable: opened.writable }, canLink);
-      if (step.kind === 'readonly') { await nfcService.cancel(); return show(id, { kind: 'fine', text: step.text, retry: true }); }
-      if (step.kind === 'write') return doWrite(id, step.uid, step.clear);
-      if (!nfcService.holdsTagWhileAsking) await nfcService.cancel(); // iOS: il pannello di sistema coprirebbe la domanda
-      show(id, {
-        kind: 'conferma',
-        text: step.text,
-        apply: async () => {
-          setPhase({ kind: 'attesa' });
-          if (!nfcService.holdsTagWhileAsking) {
-            const again = await nfcService.openForWrite();
-            if (failed(again)) return fail(id, again);
-          }
-          await doWrite(id, step.uid, step.clear);
-        },
-      });
-      return;
+      return handleOpened(id, opened, undefined);
     }
 
     const read = await nfcService.read();

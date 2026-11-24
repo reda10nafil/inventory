@@ -204,9 +204,13 @@ export type WriteStep =
  * link GS1 di prima) si scrive subito; con altro si mostra il contenuto e si chiede; bloccato non si scrive (per le
  * cose che hanno il tag salvato la via è «Collega un tag»). `canLink` = `self` può avere il tag salvato.
  */
-export function writeStep(tag: TagData, code: string, self: CodeRef, sources: CodeSources, status: { writable: boolean }, canLink = self.kind !== 'product'): WriteStep {
+export function writeStep(tag: TagData, code: string, self: CodeRef, sources: CodeSources, status: { writable: boolean; capacity?: number }, canLink = self.kind !== 'product'): WriteStep {
   if (!status.writable) {
     return { kind: 'readonly', text: canLink ? 'Questo tag non si può scrivere: usa «Collega un tag».' : 'Questo tag non si può scrivere: usane un altro.' };
+  }
+  // Capacità letta dal tag: un codice che non ci sta si dice prima (la scrittura fallirebbe con «tieni fermo il tag»)
+  if (status.capacity && textMessage(code).length > status.capacity) {
+    return { kind: 'readonly', text: canLink ? 'Il codice non ci sta su questo tag: usane uno più grande o «Collega un tag».' : 'Il codice non ci sta su questo tag: usane uno più grande.' };
   }
   const { uid, clear, byText, content } = otherOwners(tag, self, sources);
   if (clear.length) return { kind: 'confirm', uid, clear, text: `Questo tag è di ${ownersText(clear, sources)}: sostituirlo?` };

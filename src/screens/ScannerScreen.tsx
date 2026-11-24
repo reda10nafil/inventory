@@ -271,7 +271,7 @@ export default function ScannerScreen() {
           style={styles.camera}
           facing="back"
           enableTorch={flashOn}
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          onBarcodeScanned={scanned || readingTag ? undefined : handleBarCodeScanned}
           barcodeScannerSettings={{
             barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39'],
           }}
