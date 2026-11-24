@@ -1,6 +1,6 @@
 # Mappa Wayfinder 3 — richieste dell'utente del 23 novembre
 
-Terza mappa di `funzioni/magazzino`, dopo [`map.md`](map.md) (fase B, ticket 01-10) e [`map-2.md`](map-2.md) (ticket 11-20). Tracker locale: questa mappa e un file per ticket in `issues/` (21-30), più gli aggiornamenti dei ticket 14, 15, 16 e 18. Scritta dall'orchestratore 3 il 23 novembre 2026 mattina, dopo sei verifiche in sola lettura (resoconti in [`ricerche/verifiche-23/`](ricerche/verifiche-23/)) e le risposte dell'utente.
+Terza mappa di `funzioni/magazzino`, dopo [`map.md`](map.md) (fase B, ticket 01-10) e [`map-2.md`](map-2.md) (ticket 11-20). Tracker locale: questa mappa e un file per ticket in `issues/` (21-32), più gli aggiornamenti dei ticket 14, 15, 16 e 18. Scritta dall'orchestratore 3 il 23 novembre 2026 mattina, dopo sei verifiche in sola lettura (resoconti in [`ricerche/verifiche-23/`](ricerche/verifiche-23/)) e le risposte dell'utente. Il 24 mattina l'utente ha aggiunto richieste nuove ([`richieste-utente-24-novembre.md`](richieste-utente-24-novembre.md)): ticket 31 (Modelli di settore, fetta MSET), ticket 32 (Accesso e Rete del negozio, ricerca A0), export e import con le foto (EXP, IMP), ordine nuovo.
 
 ## Destination
 
@@ -19,7 +19,7 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
   - `IND-1…IND-9` difetti del tasto Indietro, `IND-P1…P9` proposte;
   - `CT01…` Chat e Team.
   Restano come sono D.. e P.. (prova del 22), C01-C15 (correzioni), M01-M10, C1, C2, S1a, S1b, S2, S3, N0-N2, I1-I3, L0-L2.
-- **Nomi delle fette nuove** (nessuna collisione): GAL, FOTO, COD, ESE, VAL, IND, EDC, MOD, MCAT, EXP, IMP, ETI, GS1, FLU1, CON, FLU2, RIO, RES, VOCI, CHAT1, RIC1, RIC2, RETE1, RETE2, RIC3.
+- **Nomi delle fette nuove** (nessuna collisione): GAL, FOTO, COD, ESE, VAL, IND, EDC, MOD, MCAT, EXP, IMP, ETI, GS1, FLU1, CON, FLU2, RIO, RES, VOCI, CHAT1, RIC1, RIC2, RETE1, RETE2, RIC3; dal 24: MSET (ticket 31), ACC1, RETE0, ACC3, RETE2a, RETE2b (ticket 32, RETE2 divisa in due). Difetti di A0: `AR01…AR23`.
 - **Vincoli tra le fette** (dai resoconti):
   1. **non alzare `version` del layout**: `LayoutContext.tsx:122-127` sostituirebbe il modulo dell'utente con il predefinito; correggere quel caricamento (fetta MOD) prima di qualunque cambio di forma;
   2. **mai rinumerare gli id delle opzioni né cambiare gli id dei campi** (valori, allegati, lotto GS1, cronologia ci puntano);
@@ -45,10 +45,15 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
 - [Indietro e icone](issues/28-indietro-e-icone.md) (proposta): resto del tasto Indietro (**IND fatta il 23**: X nello Scanner, Conta col tasto di sistema, «Prodotto non trovato» con il pulsante); icone non riprodotte, solo collaudo.
 - [Automazioni](issues/29-automazioni.md) (proposta): prima l'esecuzione corretta, poi ricevimento, uscita, trasferimento, conta, passi nuovi, riordino, reso.
 - [Chat e Team](issues/30-chat-e-team.md) (utente, 23, quattro risposte): restano, con le icone in Home vicino alla ricerca; inventario comune; si manda merce con una **Richiesta «Trasferisci»** eseguita una volta sola da chi la accetta; **rete locale del negozio (modem, nodi in magazzino e negozio) come canale principale anche senza internet, internet quando c'è, con un interruttore**; prima le automazioni che inviano e ricevono merce, poi quelle condivise.
+- [Modelli di settore modificabili](issues/31-modelli-di-settore.md) (utente, 24): si modificano, si creano, pulsante «Modello» in Aggiungi (MSET, dopo MCAT).
+- [Accesso e Rete del negozio](issues/32-accesso-e-rete-del-negozio.md) (utente, 24; ricerca A0 fatta): «Accesso Multi-Utente» rifatto da zero e diviso in «Accesso» e «Rete del negozio» (proposta, **separazione da confermare**); fette ACC1, RETE0, ACC3, RETE2a, RETE2b.
+- [CSV](issues/26-csv-import-export.md) (utente, 24): «Esporta con le foto» in uno ZIP con il CSV e la cartella `immagini/` (EXP), che IMP sa reimportare; i link web pubblici delle foto arrivano con il cloud (I2).
 
 ## Fette da eseguire
 
 **Ordine confermato dall'utente il 23 mattina** («Sì, prima i difetti»): dopo C2 le correzioni dei difetti che rovinano dati (GAL, COD, ESE, VAL, IND), poi gli scaffali, poi il resto. Le fette di `map-2.md` (S1b, S2, S3, N1, N2, I1, L1, L2, I2, I3) restano con i loro ticket; qui sono rimesse in fila con le nuove.
+
+**Ordine nuovo dal 24 novembre** (richiesta dell'utente: prima le cose che ha nominato; i numeri della tabella non cambiano): dopo S1b, EDC → MOD → MCAT → **MSET** → FOTO → EXP → IMP → ETI → GS1 → N1 → N2 → **ACC1 → RETE0** → S2 → S3 → FLU1 → CON → FLU2 → RIO → RES → CHAT1 → RIC1 → RIC2 → VOCI → RETE1 → **RETE2a** → I1 → (branch di L1: L1 → L2 → I2 → I3 → **ACC3** → **RETE2b**) → RIC3. ACC1 e RETE0 partono dopo la conferma della separazione (ticket 32).
 
 | # | Fetta | Ticket | Cosa | Dipende da | Prova nuova |
 | --- | --- | --- | --- | --- | --- |
@@ -65,12 +70,15 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
 | 11 | **EDC** | 23 | Editor del campo in tre domande, valori pronti, aspetti nuovi, Sì/No, colori e icone, lettura in Scheda, card, ricerca; via `DynamicFieldRenderer` (CAM-F6-F10) | VAL | `edc-editor.cjs` |
 | 12 | **MOD** | 24 | Scheda «Modulo» con bozza (P12 = CAM-L1, L2), migrazione senza sovrascrivere (CAM-L11), Posizione non nascondibile (CAM-L3), Modifica e Scheda che seguono il modulo (CAM-L4-L8, L12) | EDC | `mod-modulo.cjs` |
 | 13 | **MCAT** | 25 | Moduli per categoria (`byCategory`), categoria in testa ad Aggiungi, Modelli di settore per categoria, un elenco solo, «Salva come modello» (CAM-L9, L10) | MOD | `mcat-moduli.cjs` |
-| 14 | **EXP** | 26 | Export leggibile: colonna per campo, BOM, avviso foto, backup Drive allineato (CSV-E1-E5) | VAL | `exp-export.cjs` |
-| 15 | **IMP** | 26 | Schermata d'import: separatore, abbinamento, anteprima, rifiutate col motivo, «+ Crea campo», link delle immagini (CSV-I1-I5, I9, I10) | EDC, EXP (MCAT se fatta) | `imp-import.cjs` |
+| 13b | **MSET** | 31 | Modelli di settore modificabili e creabili (copia dei 15 pronti, «+ Nuovo modello», ripristino), pulsante «Modello» in Aggiungi accanto alla categoria | MCAT | `mset-modelli.cjs` |
+| 14 | **EXP** | 26 | Export leggibile: colonna per campo, BOM, avviso foto per il solo CSV, **«Esporta con le foto» in ZIP** (CSV + `immagini/`, chiesto il 24), backup Drive allineato (CSV-E1-E5) | VAL | `exp-export.cjs` |
+| 15 | **IMP** | 26 | Schermata d'import: separatore, abbinamento, anteprima, rifiutate col motivo, «+ Crea campo», link delle immagini (CSV-I1-I5, I9, I10), **lo ZIP di EXP con le foto** | EDC, EXP (MCAT se fatta) | `imp-import.cjs` |
 | 16 | **ETI** | 22, 29 | Etichette locali e finestra «Codice ed etichetta» per prodotti, posizioni, categorie, scaffali; etichette in serie (AU-A8); P27, D16, D07, NG21-NG23, NG26, AU-V16 | COD | `eti-etichette.cjs` |
 | 17 | **GS1** | 22 | Impostazioni «Codici ed etichette»: modo «codice» predefinito, link conforme solo da «Avanzate» (NG03-NG09) | ETI | `gs1-codici.cjs` |
 | 18 | **N1** | 16, 18, 22 | NFC su richiesta (`map-2.md`) + schermata «Scanner e NFC» semplice (NG11-NG13, D19), tag col codice e UID in un tocco (NG14-NG18), «Non disponibile sul web» (NG19) | COD, ETI | sul telefono |
 | 19 | **N2** | 17 | «Leggi più tag» (`map-2.md`) | N1 | sul telefono |
+| 19b | **ACC1** | 32 | Impostazioni con «Accesso» e «Rete del negozio»; `AccessScreen` (nome del telefono, account onesto, spazio, ruoli spiegati); `utils/roles.ts`; testi veri (AR09, AR12, AR13) | – (dopo la conferma) | `acc1-accesso.cjs` |
+| 19c | **RETE0** | 32, 30 | «Rete del negozio» al posto di `TeamScreen`: scelta esplicita, niente Host da solo né sul web, esiti ed errori veri (AR01-AR08, AR11, CT09, CT11, CT13, CT14); prende il punto 3 di CHAT1 | ACC1 | `rete0-rete.cjs` (centro finto in Node) |
 | 20 | **FLU1** | 29 | Ricevimento da fornitore, uscita a cliente, trasferimento con quantità (AU-A1-A3, AU-V10; resto di M10) | S3, ESE | `flu1-flussi.cjs` |
 | 21 | **CON** | 29 | Conta col lettore, Audit salvato (P23), posizioni da verificare (AU-A5), scaffali in Conta e Audit | FLU1, S1b | `con-conte.cjs` |
 | 22 | **FLU2** | 29 | Passi nuovi del costruttore: carico, scarico, trasferimento, chiedi conferma (AU-A4) | FLU1 | `flu2-passi.cjs` |
@@ -82,7 +90,7 @@ Un elenco di fette pronte da eseguire, ognuna con il **piano di implementazione*
 | 28 | **VOCI** | 29 | Voci «Prossimamente» (P30), secondo la risposta | – | da definire |
 | 29 | **RETE1** | 30 | La rete del negozio si collega sul telefono (CT12), messaggi tra telefoni (CT02-CT04) | CHAT1 | due telefoni |
 | 30-34 | I1, L1, L2, I2, I3 | 11, 12, 20 | Foto WebP, login, dati locali nell'account, link pubblici nel CSV, Drive (`map-2.md`) | come in `map-2.md` (I2 anche FOTO) | come in `map-2.md` |
-| 35 | **RETE2** | 30, 10 | Un solo spazio di lavoro su rete locale e internet, con l'interruttore; `utils/merge.ts`, giacenze dagli eventi (CT18, CT19); identità dell'operatore (CT07) | RETE1, L1, L2 | `merge.test.ts` + due telefoni |
+| 35 | **RETE2** | 30, 10 | Un solo spazio di lavoro su rete locale e internet, con l'interruttore; `utils/merge.ts`, giacenze dagli eventi (CT18, CT19); identità dell'operatore (CT07). **Dal 24 divisa** (ticket 32): **RETE2a** inventario comune sulla sola rete locale, senza login (dopo RETE1); **RETE2b** internet e interruttore (dopo L1, L2, **ACC3** operatori, ruoli e inviti veri) | RETE1, L1, L2 | `merge.test.ts` + due telefoni |
 | 36 | **RIC3** | 30 | Automazioni condivise tra operatori | RETE2 | `ric3-condivise.cjs` |
 
 Ogni fetta chiude come in `map-2.md`: `controllo.sh` verde, la sua prova, le regressioni del ticket, il foglio dei 5 stili, commit, `CRONOLOGIA.md`, push. Alla chiusura **aggiunge i suoi passi a `prova/collaudo.cjs`** (vedi `collaudo-finale.md`).
@@ -93,7 +101,8 @@ Ogni fetta chiude come in `map-2.md`: `controllo.sh` verde, la sua prova, le reg
 - S2: barra appendiabiti in grucce (proposta) o in centimetri di barra.
 - S3: niente blocco in Conta, Audit «Sposta qui» e import (la merce è già lì); posizioni con capienza con la stessa regola degli scaffali.
 - EDC: icone e colori nella card dell'Inventario (1-2 campi) o solo nella Scheda.
-- EXP: basta l'avviso «N foto non esportate» o serve un backup con le foto prima del cloud.
+- ~~EXP: basta l'avviso «N foto non esportate» o serve un backup con le foto prima del cloud~~: **risposto** il 24: export con le foto (ZIP), l'avviso resta solo per il CSV.
+- Ticket 32: le due funzioni da separare sono «Accesso» e «Rete del negozio»? (domande in `side-session-notes/local_e2f2734a…/a0/serve-dall-utente.md`; le altre quando arriva la loro fetta).
 - IMP: SKU già presenti saltati o aggiornati; link delle immagini tenuti come link o scaricati; «crea campo» con andata e ritorno (come l'ha descritto l'utente) o in una finestra dentro l'import.
 - ETI: stampante (A4 o etichettatrice) e misura delle etichette.
 - GS1: codici EAN/GTIN ufficiali sì o no.
@@ -142,7 +151,7 @@ Le richieste sono quelle di [`richieste-utente-23-novembre.md`](richieste-utente
 | 3 · capire come funzionano e migliorarli (CAM-F1-F11) | 23 | VAL, EDC | `val-campi.cjs`, `edc-editor.cjs` | CF-B3, CF-C4 |
 | 4 · layout builder che non funziona bene (P12, CAM-L1-L12) | 24 | MOD | `mod-modulo.cjs` | CF-B4 |
 | 5 · selettori = campi per categoria, preprogrammati | 25 | MCAT | `mcat-moduli.cjs` | CF-B2, CF-B4 |
-| 6 · export con i link delle immagini | 26, 11 | EXP (avviso), I2 (link pubblici) | `exp-export.cjs` | CF-G1 |
+| 6 · export con i link delle immagini | 26, 11 | EXP (ZIP con le foto, dal 24), I2 (link pubblici) | `exp-export.cjs` | CF-G1 |
 | 6 · import con la corrispondenza delle colonne | 26 | IMP | `imp-import.cjs` | CF-G2 |
 | 6 · «crea campo» dall'import e ritorno | 26 | IMP | `imp-import.cjs` | CF-G2 |
 | 6 · link delle immagini all'import | 26 | IMP (link), FOTO (download, se scelto) | `imp-import.cjs` | CF-G2 |
@@ -180,6 +189,10 @@ Le richieste sono quelle di [`richieste-utente-23-novembre.md`](richieste-utente
 | C1 · `DynamicFieldRenderer` morto | 23 | EDC | `controllo.sh` | – |
 | M10 · vendita rapida senza contatto | 29 | FLU1 | `flu1-flussi.cjs` | CF-F2 |
 | M10 · contatti solo locali | 10, 20 | L2 | come in `map-2.md` | – |
+| 24/11 · Modelli di settore modificabili, creabili, pulsante «Modello» in Aggiungi | 31 | MSET | `mset-modelli.cjs` | CF-B6 |
+| 24/11 · caricare e scaricare i prodotti con le immagini (sito, gestionale) | 26, 11 | EXP (ZIP), IMP (ZIP), I2 (link pubblici) | `exp-export.cjs`, `imp-import.cjs` | CF-G1, CF-G3 |
+| 24/11 · «Accesso e molti utenti» rifatto da zero, due funzioni separate | 32 | A0 (fatta), ACC1, RETE0, ACC3, RETE2a, RETE2b | `acc1-accesso.cjs`, `rete0-rete.cjs`, due telefoni | CF-A (nuovi passi con ACC1), CF-T6, CF-T8 |
+| 24/11 · scanner, NFC, GS1, campi, layout, categorie prima del resto | 22, 23, 24, 25 | ordine nuovo: EDC, MOD, MCAT, ETI, GS1, N1, N2 | come sopra | come sopra |
 
 **Già chiusi e riconfermati nelle verifiche del 23** (nessuna fetta): D03, D12, D13, D14, D15, D24, P01 (in parte: il resto è NG27 → COD), P02, P05, P06, P10, P11, P18, P22, P25. P08 è citato solo come esempio (posizione orfana, simile ad AU-V05 → ESE).
 
