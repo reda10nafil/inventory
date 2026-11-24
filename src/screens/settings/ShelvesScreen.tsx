@@ -2,7 +2,7 @@
 // è generico o di una categoria e ha un codice (QR) e un tag NFC facoltativi. Elenco per posizione con i prodotti
 // che ci stanno; uno scaffale con prodotti non si elimina, come una posizione. Logica in utils/shelves.ts.
 import React, { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { useShelves } from '../../../contexts/ShelvesContext';
@@ -22,6 +22,7 @@ import { cardSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
+import { CodeSheet } from '../../../components/CodeSheet'; // ETI: finestra «Codice ed etichetta»
 
 const productsText = (n: number) => (n === 0 ? 'Nessun prodotto' : n === 1 ? '1 prodotto' : `${n} prodotti`);
 
@@ -83,8 +84,9 @@ export default function ShelvesScreen() {
       await updateShelf(editingId, data);
       Alert.alert(warning ? 'Scaffale aggiornato' : 'Fatto', warning || 'Scaffale aggiornato');
     } else {
-      await addShelf({ ...data, locationId });
-      Alert.alert('Fatto', `Scaffale "${name.trim()}" creato in ${placeLabel(locationId)}`);
+      const created = await addShelf({ ...data, locationId });
+      // ETI: al «OK» si apre «Codice ed etichetta» dello scaffale nuovo, per stamparne subito l'etichetta (CF-D1)
+      Alert.alert('Fatto', `Scaffale "${name.trim()}" creato in ${placeLabel(locationId)}`, [{ text: 'OK', onPress: () => setQrShelf(created) }]);
     }
     resetForm();
   };
@@ -301,18 +303,30 @@ export default function ShelvesScreen() {
         </View>
       )}
 
-      <Modal visible={!!qrShelf} transparent animationType="fade" onRequestClose={() => setQrShelf(null)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setQrShelf(null)}>
-          {qrShelf?.barcode ? (
-            <View style={styles.qrCard}>
-              <Text style={styles.qrTitle}>Codice scaffale</Text>
-              <QRCode value={qrShelf.barcode} size={200} />
-              <Text style={styles.qrBigText}>{qrShelf.barcode}</Text>
-              <Text style={styles.qrHint}>{placeLabel(qrShelf.locationId)} › {qrShelf.name}</Text>
-            </View>
-          ) : null}
-        </Pressable>
-      </Modal>
+      {/* ETI: «Codice ed etichetta» dello scaffale (dalla riga e dopo la creazione), con lo scaffale salvato più recente.
+          «Cambia codice» riscrive tutto lo scaffale salvato col solo codice nuovo (misure e limiti di S2 restano). */}
+      {(() => {
+        const shelf = qrShelf ? shelves.find((s) => s.id === qrShelf.id) : undefined;
+        if (!shelf) return null;
+        const self = { kind: 'shelf' as const, id: shelf.id };
+        return (
+          <CodeSheet
+            visible
+            onClose={() => setQrShelf(null)}
+            kind="scaffale"
+            items={[{ code: shelf.barcode ?? '', name: `${placeLabel(shelf.locationId)} › ${shelf.name}` }]}
+            changeCode={{
+              check: (code) => codeCheck(code, shelf.barcode, sources, self),
+              suggest: () => suggestShelfCode(placeLabel(shelf.locationId), shelf.name, (c) => codeOwner(c, sources, self) !== null),
+              save: async (code) => {
+                const { id, createdAt: _created, locationId: _place, ...rest } = shelf;
+                await updateShelf(id, { ...rest, barcode: code });
+                if (editingId === id) setBarcode(code); // il modulo aperto non riscrive il codice di prima
+              },
+            }}
+          />
+        );
+      })()}
     </SafeAreaView>
   );
 }
@@ -439,40 +453,6 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     lineHeight: 18,
     marginBottom: 6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: withAlpha(t.colors.shadow, 0.85),
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  qrCard: {
-    backgroundColor: t.colors.qrPaper,
-    padding: 32,
-    borderRadius: t.radius.card,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 320,
-  },
-  qrTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: t.colors.qrInk,
-  },
-  qrBigText: {
-    marginTop: 16,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: t.colors.qrInk,
-    textAlign: 'center',
-  },
-  qrHint: {
-    fontSize: 14,
-    color: withAlpha(t.colors.qrInk, 0.7),
-    marginTop: 8,
-    textAlign: 'center',
   },
   // COD: avviso sotto il codice mentre lo si scrive (già usato: rosso, si rifiuta; doppione di prima: si segnala)
   codeHint: {

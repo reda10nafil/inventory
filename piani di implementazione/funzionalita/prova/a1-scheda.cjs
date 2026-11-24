@@ -1,6 +1,7 @@
 // A1 - Scheda prodotto: pesi, visore delle foto, condividi, PDF, etichetta, copia link GS1, NFC.
 const { scenario, APP } = require('./lib.cjs');
 const { dump, press, textOf, clickAt } = require('./a1-util.cjs');
+const { chiudiCodice } = require('./eti-util.cjs');
 
 // Foto in primo piano in un punto: lunghezza della data-URI (identifica quale delle foto salvate si vede)
 const topImg = (page, x, y) => page.evaluate(([x, y]) => {
@@ -69,38 +70,53 @@ const share = async (page) => {
     return { condivisioni: sh };
   }, { dialogs: ['1', '1', '2'] });
 
-  // 3. PDF, copia link GS1, NFC (VIS-0142 ha il link GS1)
+  // 3. PDF, copia link GS1, NFC (VIS-0142 ha il link GS1). ETI (ticket 22): «Copia link» e «Programma tag» stanno in
+  //    «Codice ed etichetta» › Avanzate; il PDF si apre in una finestra sua (`stampeFinestra` conta le stampe della
+  //    pagina dell'app, che non si stampa più); `pulsanteEtichetta` = l'etichetta si raggiunge anche per VIS-0142 (P27)
   await scenario('a1-scheda-pdf-gs1', async (h) => {
     const { page } = h;
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: APP });
+    await page.context().addInitScript(() => { window.print = () => {}; }); // la finestra della stampa (ETI)
     await openDetail(h, 'VIS-0142');
     await stubs(page);
     const link = (await h.products(0)).find((p) => p.sku === 'VIS-0142').gs1DigitalLink;
+    const codice = page.getByLabel('Codice ed etichetta', { exact: true }).locator('visible=true');
+    const avanzate = async () => { if (await codice.count()) { await codice.first().click(); await page.waitForTimeout(700); await page.getByLabel('Avanzate', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400); } };
+    await avanzate();
     await press(page, 'Copia link');
     const copied = await page.evaluate(() => navigator.clipboard.readText());
+    await chiudiCodice(h);
     await press(page, 'Stampa scheda PDF');
     await page.waitForTimeout(2500);
     const prints = await page.evaluate(() => window.__prints);
-    const legacy = await h.has('Mostra SKU QR');
+    const legacy = (await h.has('Mostra SKU QR')) || (await codice.count()) > 0;
+    await avanzate();
     await press(page, 'Programma tag');
     await page.waitForTimeout(2500);
     return { link, copiato: copied, uguale: copied === link, stampeFinestra: prints, pulsanteEtichetta: legacy };
   }, { dialogs: ['ok', 'ok', 'ok', 'ok'] });
 
-  // 4. Etichetta: solo per i prodotti senza link GS1 (PUZ-0012); QR e Barcode
+  // 4. Etichetta. ETI (ticket 22): per ogni prodotto, dalla riga «Codice ed etichetta» (prima «Mostra SKU QR», solo
+  //    senza link); la stampa apre una finestra sua (`finestreStampa`) e non la pagina dell'app (`stampeFinestra`);
+  //    la seconda volta nel formato «Foglio A4». Il binario QR/Barcode non c'è più.
   await scenario('a1-scheda-etichetta', async (h) => {
     const { page } = h;
+    const nuove = [];
+    page.context().on('page', (p) => nuove.push(p));
+    await page.context().addInitScript(() => { window.print = () => {}; });
     await openDetail(h, 'PUZ-0012');
     await stubs(page);
-    const out = { pulsante: await h.has('Mostra SKU QR') };
-    await press(page, 'Mostra SKU QR');
-    out.finestra = await h.has('Codice Prodotto', true);
-    await press(page, 'Stampa Etichetta', true);
+    const out = { pulsante: await h.has('Codice ed etichetta', true) };
+    await page.getByLabel('Codice ed etichetta', { exact: true }).locator('visible=true').first().click();
+    await page.waitForTimeout(700);
+    out.finestra = await h.has('Stampa etichetta', true);
+    await press(page, 'Stampa etichetta', true);
     await page.waitForTimeout(1500);
-    await press(page, /^Barcode$/, true);
-    out.barcodeSvg = await page.evaluate(() => document.querySelectorAll('svg rect, svg path').length);
-    await press(page, 'Stampa Etichetta', true);
+    await page.getByLabel('Formato Foglio A4', { exact: true }).locator('visible=true').first().click();
+    await page.waitForTimeout(400);
+    await press(page, 'Stampa etichetta', true);
     await page.waitForTimeout(1500);
+    out.finestreStampa = nuove.length;
     out.stampeFinestra = await page.evaluate(() => window.__prints);
     await h.shot('etichetta');
     return out;

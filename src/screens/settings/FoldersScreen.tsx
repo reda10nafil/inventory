@@ -1,29 +1,27 @@
 // Impostazioni › Categorie (C1, ticket 19; CAT1, ticket 33): le categorie dei prodotti sono le cartelle di prima, con
 // le sottocategorie (un genitore facoltativo, un solo livello). In cima si crea una categoria principale col solo nome;
 // l'elenco è l'albero: ogni principale ha la freccia che apre le sue sottocategorie e «+ Sottocategoria». Toccando una
-// riga si apre la finestra della categoria (nome, icona, «Dove sta», codice, Elimina). Elimina dice che cosa succede:
+// riga si apre la finestra della categoria (nome, icona, «Dove sta», «Codice ed etichetta», Elimina). Elimina dice che cosa succede:
 // con dei prodotti chiede dove spostarli («Sposta ed elimina»), con sottocategorie o scaffali si rifiuta come prima.
 // Indirizzo `settings/folders` come prima. Nessun dato cambia forma: `libraries`, `parentId`, `libraryId`.
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, ScrollView, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Pressable, ScrollView, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import QRCode from 'react-native-qrcode-svg';
 import { useInventory, Library } from '../../../contexts/InventoryContext';
-import BarcodeScanner from '../../../components/BarcodeScanner';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
 import { cardSurface, tileSurface } from '../../../components/ui/surfaces';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
-import { withAlpha } from '../../../utils/color';
 import {
-  categoryDeleteStep, categoryMoveTargets, categoryName, categoryNameError, categoryPath, categoryTree, childrenOf,
+  categoryAncestors, categoryDeleteStep, categoryMoveTargets, categoryName, categoryNameError, categoryPath, categoryTree, childrenOf,
   moveQuestion, parentIdOf, placeChoices, productsInCategory, savedParentId,
 } from '../../../utils/categories';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { useLocations } from '../../../contexts/LocationsContext';
-import { codeCheck } from '../../../utils/codes';
+import { codeCheck, codeTaken, suggestCode } from '../../../utils/codes';
+import { CodeSheet } from '../../../components/CodeSheet';
 
 // Icone della categoria, con il nome che legge chi non vede l'icona
 const ICON_OPTIONS: { name: string; label: string }[] = [
@@ -64,18 +62,17 @@ export default function ManageFoldersScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('folder');
-  const [barcode, setBarcode] = useState('');
   const [parentId, setParentId] = useState('');
   // «Dove sta» toccato: senza tocco si salva il genitore di adesso (un albero vecchio a più livelli non si appiattisce)
   const [parentTouched, setParentTouched] = useState(false);
   const chooseParent = (id: string) => { setParentId(id); setParentTouched(true); };
-  const [showScanner, setShowScanner] = useState(false);
 
   // «Dove li sposto?» (stessa finestra, al posto della modifica)
   const [deleting, setDeleting] = useState<Deleting | null>(null);
 
-  // Codice della finestra grande del QR: uno stato suo, non il campo della finestra (NG24)
-  const [qrCode, setQrCode] = useState<string | null>(null);
+  // ETI: finestra «Codice ed etichetta» di una categoria (dalla riga, dalla finestra della categoria o dopo la
+  // creazione). Uno stato suo, non il campo della finestra (NG24); il codice si cambia lì, con `codeCheck`
+  const [codeSheet, setCodeSheet] = useState<{ id: string; notice?: string } | null>(null);
 
   // Prodotti (non nel cestino) direttamente nella categoria
   const getItemCount = (libraryId: string): number => productsInCategory(products, libraryId).length;
@@ -83,9 +80,10 @@ export default function ManageFoldersScreen() {
   const editingHasChildren = !!editingId && childrenOf(libraries, editingId).length > 0;
   const editingParent = editingId ? parentIdOf(libraries, editingId) : undefined;
 
-  // COD (NG25): il codice scritto, controllato mentre lo si scrive e al salvataggio
-  const codeHint = codeCheck(barcode, editingId ? libraries.find((l) => l.id === editingId)?.barcode : undefined,
-    { products, locations, categories: libraries, shelves }, editingId ? { kind: 'category', id: editingId } : undefined);
+  // COD (NG25) ed ETI: dove si controlla che un codice non sia già usato
+  const sources = { products, locations, categories: libraries, shelves };
+  // Nomi del percorso di una categoria («Pellicce», «Visone»), per il codice che nasce da solo
+  const pathNames = (id: string) => [...categoryAncestors(libraries, id), ...libraries.filter((l) => l.id === id)].map((c) => c.name);
 
   // ---- In cima: crea una categoria principale ----
   const handleCreate = () => {
@@ -94,8 +92,12 @@ export default function ManageFoldersScreen() {
       Alert.alert('Errore', error);
       return;
     }
-    addLibrary(newName.trim(), 'folder');
-    Alert.alert('Successo', `Categoria "${newName.trim()}" creata`);
+    const created = addLibrary(newName.trim(), 'folder');
+    // ETI: il codice nasce da solo (stessa regola degli scaffali), poi al «OK» si apre «Codice ed etichetta»
+    const code = suggestCode('LIB', [newName], codeTaken(sources));
+    if (code) updateLibrary(created.id, { barcode: code });
+    const notice = `Categoria "${newName.trim()}" creata.`;
+    Alert.alert('Successo', `Categoria "${newName.trim()}" creata`, [{ text: 'OK', onPress: () => setCodeSheet({ id: created.id, notice }) }]);
     setNewName('');
   };
 
@@ -117,7 +119,11 @@ export default function ManageFoldersScreen() {
       setSubError(error);
       return;
     }
-    addLibrary(subName.trim(), 'folder', addingUnder);
+    const created = addLibrary(subName.trim(), 'folder', addingUnder);
+    // ETI: anche la sottocategoria nasce col suo codice («LIB-PELLICCE-VISONE»); la finestra non si apre, per
+    // aggiungerne altre di fila (il codice e l'etichetta stanno sulla sua riga)
+    const code = suggestCode('LIB', [...pathNames(addingUnder), subName], codeTaken(sources));
+    if (code) updateLibrary(created.id, { barcode: code });
     setOpenFor(addingUnder, true);
     closeSub();
   };
@@ -126,7 +132,6 @@ export default function ManageFoldersScreen() {
   const openEdit = (lib: Library) => {
     setName(lib.name);
     setSelectedIcon(lib.icon);
-    setBarcode(lib.barcode || '');
     setParentId(parentIdOf(libraries, lib.id) ?? '');
     setParentTouched(false);
     setEditingId(lib.id);
@@ -134,10 +139,9 @@ export default function ManageFoldersScreen() {
   };
   const closeEdit = () => {
     setEditingId(null);
-    setShowScanner(false);
+    setCodeSheet(null);
     setName('');
     setSelectedIcon('folder');
-    setBarcode('');
     setParentId('');
     setParentTouched(false);
   };
@@ -146,40 +150,21 @@ export default function ManageFoldersScreen() {
     if (!editingId) return;
     // «Dove sta» non toccato: resta dov'è; toccato, un genitore che nel frattempo non si può più scegliere vale «principale»
     const parent = savedParentId(libraries, editingId, parentId, parentTouched);
-    // COD (NG25): un codice nuovo già usato da un prodotto, una posizione, una categoria o uno scaffale si rifiuta; un
-    // doppione già salvato prima non blocca il salvataggio, ma si segnala
-    const check = codeHint;
-    const error = categoryNameError(libraries, name, parent, editingId) ?? check.error;
+    const error = categoryNameError(libraries, name, parent, editingId);
     if (error) {
       Alert.alert('Errore', error);
       return;
     }
+    // ETI: il codice non passa più di qui (si cambia in «Codice ed etichetta», con il suo controllo): resta quello salvato
     updateLibrary(editingId, {
       name: name.trim(),
       icon: selectedIcon,
-      barcode: barcode || undefined,
       parentId: parent,
     });
     // La categoria spostata sotto un'altra si vede subito, con l'albero aperto lì
     if (parent) setOpenFor(parent, true);
-    if (check.warning) Alert.alert('Categoria aggiornata', check.warning);
-    else Alert.alert('Successo', 'Categoria aggiornata');
+    Alert.alert('Successo', 'Categoria aggiornata');
     closeEdit();
-  };
-
-  const generateBarcode = () => {
-    const baseName = editingId || name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    if (!baseName) {
-      Alert.alert('Errore', 'Inserisci un nome prima.');
-      return;
-    }
-    setBarcode(`LIB-${baseName.toUpperCase().substring(0, 10)}-${Date.now().toString().slice(-4)}`);
-  };
-
-  const handleBarCodeScanned = ({ data }: { type: string, data: string }) => {
-    setBarcode(data);
-    setShowScanner(false);
-    Alert.alert('Scansionato', `Codice acquisito: ${data}`);
   };
 
   // ---- Elimina (dalla riga o dalla finestra) ----
@@ -197,7 +182,6 @@ export default function ManageFoldersScreen() {
       return;
     }
     if (step.kind === 'move') {
-      setShowScanner(false);
       setDeleting({ id, target: undefined, missing: false });
       return;
     }
@@ -263,8 +247,7 @@ export default function ManageFoldersScreen() {
 
   // Chiudere la finestra: da «Dove li sposto?» si torna alla modifica (se c'era), altrimenti si chiude tutto
   const closeSheet = () => {
-    if (showScanner) setShowScanner(false); // prima il lettore, poi la finestra
-    else if (deleting) setDeleting(null);
+    if (deleting) setDeleting(null);
     else closeEdit();
   };
 
@@ -297,11 +280,10 @@ export default function ManageFoldersScreen() {
           </Text>
         </View>
         <View style={styles.rowActions}>
-          {library.barcode && (
-            <Pressable onPress={() => setQrCode(library.barcode!)} style={styles.rowAction} accessibilityLabel={`Codice di ${library.name}`} hitSlop={4}>
-              <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
-            </Pressable>
-          )}
+          {/* ETI: «Codice ed etichetta» su ogni riga (senza codice lo si crea lì) */}
+          <Pressable onPress={() => setCodeSheet({ id: library.id })} style={styles.rowAction} accessibilityLabel={`Codice di ${library.name}`} hitSlop={4}>
+            <AppIcon name="qr-code" size={20} color={t.colors.textPrimary} />
+          </Pressable>
           <Pressable onPress={() => handleDelete(library.id)} style={styles.rowAction} accessibilityLabel={`Elimina ${library.name}`} hitSlop={4}>
             <AppIcon name="delete" size={20} color={t.colors.error} />
           </Pressable>
@@ -345,6 +327,23 @@ export default function ManageFoldersScreen() {
 
   const editing = editingId ? libraries.find((l) => l.id === editingId) : undefined;
   const deletingLib = deleting ? libraries.find((l) => l.id === deleting.id) : undefined;
+
+  // ETI: la finestra del codice di una categoria (nome completo sull'etichetta, «Cambia codice» con `codeCheck`)
+  const sheetLib = codeSheet ? libraries.find((l) => l.id === codeSheet.id) : undefined;
+  const codeSheetView = sheetLib ? (
+    <CodeSheet
+      visible
+      onClose={() => setCodeSheet(null)}
+      kind="categoria"
+      notice={codeSheet?.notice}
+      items={[{ code: sheetLib.barcode ?? '', name: categoryPath(libraries, sheetLib.id) }]}
+      changeCode={{
+        check: (code) => codeCheck(code, sheetLib.barcode, sources, { kind: 'category', id: sheetLib.id }),
+        suggest: () => suggestCode('LIB', pathNames(sheetLib.id), codeTaken(sources, { kind: 'category', id: sheetLib.id })),
+        save: (code) => updateLibrary(sheetLib.id, { barcode: code }),
+      }}
+    />
+  ) : null;
 
   const editSheet = (
     <>
@@ -405,31 +404,19 @@ export default function ManageFoldersScreen() {
           </>
         )}
 
-        {/* Codice: il blocco di prima, così com'è (ETI e N1 lo sostituiscono) */}
-        <Text style={styles.label}>Barcode / NFC (Opzionale)</Text>
-        <View style={styles.barcodeRow}>
-          <TextInput
-            style={[styles.input, { flex: 1, minWidth: 0, marginBottom: 0 }]}
-            placeholder="Scansiona o Genera..."
-            placeholderTextColor={t.colors.placeholder}
-            value={barcode}
-            onChangeText={setBarcode}
-          />
-          <Pressable style={styles.iconButton} onPress={() => setShowScanner(true)}>
-            <AppIcon name="qr-code-scanner" size={24} color={t.colors.accentInk} />
+        {/* ETI: «Codice ed etichetta» al posto del blocco Codice di prima (campo, lettore, genera): QR, stampa e
+            «Cambia codice» stanno nella finestra del codice */}
+        {editing ? (
+          <Pressable style={styles.codeRow} onPress={() => setCodeSheet({ id: editing.id })} accessibilityRole="button" accessibilityLabel="Codice ed etichetta">
+            <View style={styles.codeRowIcon}>
+              <AppIcon name="qr-code-2" size={20} color={t.colors.accentInk} />
+            </View>
+            <View style={styles.codeRowText}>
+              <Text style={styles.codeRowTitle}>Codice ed etichetta</Text>
+              <Text style={styles.codeRowSub} numberOfLines={1}>{editing.barcode || 'Nessun codice'}</Text>
+            </View>
+            <AppIcon name="chevron-right" size={22} color={t.colors.textMuted} />
           </Pressable>
-          <Pressable style={styles.iconButton} onPress={generateBarcode}>
-            <AppIcon name="autorenew" size={24} color={t.colors.accentInk} />
-          </Pressable>
-        </View>
-        {barcode ? (
-          <View style={styles.qrPreview}>
-            <QRCode value={barcode} size={60} />
-            <Text style={styles.qrText}>{barcode}</Text>
-          </View>
-        ) : null}
-        {codeHint.error || codeHint.warning ? (
-          <Text style={[styles.codeHint, codeHint.error ? styles.codeHintError : styles.codeHintWarning]}>{codeHint.error ?? codeHint.warning}</Text>
         ) : null}
 
         {editing ? (
@@ -558,25 +545,13 @@ export default function ManageFoldersScreen() {
           <View style={styles.sheet}>
             {moveSheet ?? editSheet}
           </View>
-          {showScanner && (
-            <View style={StyleSheet.absoluteFill}>
-              <BarcodeScanner onScan={handleBarCodeScanned} onClose={() => setShowScanner(false)} />
-            </View>
-          )}
+          {/* Sopra la finestra della categoria, dentro il suo albero (così si apre anche su iOS) */}
+          {editingId !== null ? codeSheetView : null}
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Large QR Modal */}
-      <Modal visible={qrCode !== null} transparent animationType="fade" onRequestClose={() => setQrCode(null)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setQrCode(null)}>
-          <View style={styles.qrCard}>
-            <Text style={styles.qrTitle}>Codice Categoria</Text>
-            <QRCode value={qrCode || 'empty'} size={200} />
-            <Text style={styles.qrBigText}>{qrCode}</Text>
-            <Text style={styles.qrHint}>Scansiona per filtrare prodotti di questa categoria</Text>
-          </View>
-        </Pressable>
-      </Modal>
+      {/* ETI: «Codice ed etichetta» aperta dalla riga o dopo la creazione */}
+      {editingId === null ? codeSheetView : null}
 
     </SafeAreaView>
   );
@@ -942,36 +917,6 @@ const useStyles = makeStyles((t) => ({
     fontWeight: '600',
     color: t.colors.chipActiveText,
   },
-  barcodeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconButton: {
-    width: t.input.height,
-    height: t.input.height,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: t.colors.buttonSecondary,
-    borderRadius: t.radius.input,
-    borderWidth: 1,
-    borderColor: t.colors.buttonSecondaryBorder,
-  },
-  qrPreview: {
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: t.colors.qrPaper,
-    borderRadius: t.radius.tile,
-    marginBottom: 12,
-    alignSelf: 'center',
-  },
-  qrText: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: t.colors.qrInk,
-  },
   deleteLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -985,51 +930,39 @@ const useStyles = makeStyles((t) => ({
     fontWeight: t.weights.strong,
     color: t.colors.error,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: withAlpha(t.colors.shadow, 0.85),
+  // ETI: riga «Codice ed etichetta» nella finestra della categoria (UX0 R9)
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 56,
+    paddingVertical: 8,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: t.colors.borderLight,
+  },
+  codeRowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: t.radius.iconWrap,
+    backgroundColor: t.colors.iconWrap,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
   },
-  qrCard: {
-    backgroundColor: t.colors.qrPaper,
-    padding: 32,
-    borderRadius: t.radius.card,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 320,
+  codeRowText: {
+    flex: 1,
+    minWidth: 0,
   },
-  qrTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: t.colors.qrInk,
+  codeRowTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600',
+    color: t.colors.textPrimary,
   },
-  qrBigText: {
-    marginTop: 16,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: t.colors.qrInk,
-    textAlign: 'center',
-  },
-  qrHint: {
-    fontSize: 14,
-    color: withAlpha(t.colors.qrInk, 0.7),
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  // COD: avviso sotto il codice mentre lo si scrive (già usato: rosso, si rifiuta; doppione di prima: si segnala)
-  codeHint: {
+  codeRowSub: {
     fontSize: 13,
     lineHeight: 18,
-    marginTop: -4,
-    marginBottom: 8,
-  },
-  codeHintError: {
-    color: t.colors.error,
-  },
-  codeHintWarning: {
-    color: t.colors.warningText,
+    color: t.colors.textSecondary,
   },
 }));

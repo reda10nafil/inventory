@@ -637,6 +637,55 @@ FETTE.cat1 = {
     }],
   ],
 };
+// ETI (ticket 22, corsia C): riga «Codice ed etichetta» della Scheda, la finestra di un prodotto (e le sue Avanzate col
+// link GS1), di uno scaffale e di una posizione con «tutte le etichette», e l'anteprima dell'etichetta stampata (la
+// pagina della finestra di stampa messa al posto dell'app per la foto). Aggiunta in fondo, come CAT1.
+FETTE.eti = {
+  prepara: () => {
+    localStorage.setItem('furinventory_locations:local', JSON.stringify([
+      { id: 'magazzino', label: 'Magazzino', color: '#3B82F6', barcode: 'LOC-MAGAZZINO' },
+      { id: 'vetrina', label: 'Vetrina', color: '#D4AF37', barcode: 'LOC-VETRINA' },
+      { id: 'stand_a', label: 'Stand A', color: '#10B981' }, { id: 'stand_b', label: 'Stand B', color: '#10B981' },
+      { id: 'stand_c', label: 'Stand C', color: '#10B981' }, { id: 'sartoria', label: 'Sartoria', color: '#8B5CF6' },
+    ]));
+    localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+      { id: '1732300000000-gen1', name: 'A1', locationId: 'magazzino', barcode: 'SCAF-MAG-A1', createdAt: '2026-11-24T09:00:00.000Z' },
+    ]));
+  },
+  schermate: [
+    ['scheda-riga', async (page) => {
+      await page.getByText('VIS-0142', { exact: true }).first().click(); await page.waitForTimeout(1200);
+      await page.getByLabel('Codice ed etichetta', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['prodotto', async (page) => {
+      await page.getByLabel('Codice ed etichetta', { exact: true }).first().click(); await page.waitForTimeout(800);
+    }],
+    ['avanzate', async (page) => {
+      await page.getByLabel('Avanzate', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+      await page.getByText('Programma tag', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'end' }));
+    }],
+    ['scaffale', async (page) => {
+      await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+      await page.getByLabel('Codice QR di A1', { exact: true }).first().click(); await page.waitForTimeout(800);
+      await page.getByLabel('Formato Etichettatrice', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+    }],
+    ['posizione-serie', async (page) => {
+      await page.goto(`${APP}/settings/locations`); await page.waitForTimeout(1800);
+      await page.getByLabel('Codice ed etichetta di Magazzino', { exact: true }).first().click(); await page.waitForTimeout(800);
+      await page.getByLabel('Formato Foglio A4', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+      await page.getByLabel('Stampa tutte le etichette di questa posizione', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+    }],
+    ['anteprima', async (page) => {
+      await page.context().addInitScript(() => { window.print = () => {}; });
+      const [pop] = await Promise.all([
+        page.context().waitForEvent('page'),
+        page.getByLabel('Stampa etichette', { exact: true }).locator('visible=true').first().click(),
+      ]);
+      await pop.waitForLoadState(); await page.waitForTimeout(600);
+      await page.setContent(await pop.content()); await pop.close();
+    }],
+  ],
+};
 
 (async () => {
   const fetta = FETTE[process.env.FETTA];
