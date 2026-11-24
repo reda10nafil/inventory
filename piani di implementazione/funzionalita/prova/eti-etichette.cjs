@@ -227,6 +227,7 @@ async function prodotto(h, sku) {
       extra: () => localStorage.setItem('furinventory_shelves:local', JSON.stringify([
         { id: '1732300000000-gen1', name: 'A1', locationId: 'magazzino', barcode: 'SCAF-MAG-A1' },
         { id: '1732300000000-gen2', name: 'B1', locationId: 'magazzino', libraryId: 'pellicce' },
+        { id: '1732300000000-gen3', name: '★★', locationId: 'magazzino' },
       ])),
     });
     await h.go('settings/shelves');
@@ -238,7 +239,16 @@ async function prodotto(h, sku) {
       const b1 = ((await h.store(SK, 400)) || []).find((s) => s.name === 'B1');
       out.b1 = b1 && { codice: b1.barcode, categoria: b1.libraryId, aVideo: await h.has('SCAF-MAGAZZINO-B1', true) };
       await e.chiudiCodice(h);
+      // secondo giro del revisore: un nome senza lettere latine né cifre ha comunque un codice
+      await e.apri(h, 'Codice QR di ★★');
+      await e.apri(h, 'Crea il codice', 700);
+      out.stelle = ((await h.store(SK, 400)) || []).find((s) => s.name === '★★')?.barcode;
+      await e.chiudiCodice(h);
     }
+    // secondo giro del revisore: «genera» con il nome vuoto chiede il nome (non scrive «LOC-1»)
+    await h.go('settings/locations');
+    await h.page.locator('[tabindex="0"]:visible:not(a)').nth(11).click(); await h.page.waitForTimeout(400);
+    out.generaSenzaNome = await h.page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().inputValue();
     await h.go('settings/locations');
     await h.page.getByPlaceholder('Es. Magazzino A, Scaffale 1').fill('Deposito');
     await h.click('Crea Posizione');

@@ -316,7 +316,9 @@ export default function ShelvesScreen() {
             items={[{ code: shelf.barcode ?? '', name: `${placeLabel(shelf.locationId)} › ${shelf.name}` }]}
             changeCode={{
               check: (code) => codeCheck(code, shelf.barcode, sources, self),
-              suggest: () => suggestShelfCode(placeLabel(shelf.locationId), shelf.name, (c) => codeOwner(c, sources, self) !== null),
+              // un nome senza lettere latine né cifre («★★») dà il codice numerato della posizione («SCAF-MAGAZZINO-1»)
+              suggest: () => suggestShelfCode(placeLabel(shelf.locationId), shelf.name, (c) => codeOwner(c, sources, self) !== null)
+                || suggestShelfCode(placeLabel(shelf.locationId), '1', (c) => codeOwner(c, sources, self) !== null),
               save: async (code) => {
                 const { id, createdAt: _created, locationId: _place, ...rest } = shelf;
                 await updateShelf(id, { ...rest, barcode: code });

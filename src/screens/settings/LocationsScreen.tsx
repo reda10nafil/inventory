@@ -181,13 +181,12 @@ export default function ManageLocationsScreen() {
   };
 
   const generateBarcode = () => {
-    // ETI: stessa regola del codice che nasce da solo («LOC-DEPOSITO-NORD»), mai uno già usato da altro
-    const code = suggestCode('LOC', [name], codeTaken(sources, editingId ? { kind: 'location', id: editingId } : undefined));
-    if (!code) {
+    if (!name.trim()) {
       Alert.alert('Errore', 'Inserisci prima un nome per generare il codice.');
       return;
     }
-    setBarcode(code);
+    // ETI: stessa regola del codice che nasce da solo («LOC-DEPOSITO-NORD»), mai uno già usato da altro
+    setBarcode(suggestCode('LOC', [name], codeTaken(sources, editingId ? { kind: 'location', id: editingId } : undefined)));
   };
 
   const handleBarCodeScanned = ({ type, data }: { type: string, data: string }) => {
