@@ -191,6 +191,27 @@ export function categoryMoveTargets(list: readonly CategoryNode[], id: string): 
     .map(({ category }) => ({ id: category.id, label: categoryPath(list, category.id) }));
 }
 
+/**
+ * Scelte di «Dove sta» nella finestra di una categoria: le principali (`parentOptions`) più il genitore che ha già, se
+ * non è una principale (dati vecchi a più livelli: «Dentro Pellicce › Visone»), così salvare senza toccare la scelta
+ * non sposta niente.
+ */
+export function placeChoices<T extends CategoryNode>(list: readonly T[], id: string): T[] {
+  const options = parentOptions(list, id);
+  const current = parentIdOf(list, id);
+  const node = current ? list.find((c) => c.id === current) : undefined;
+  return node && !options.some((c) => c.id === current) ? [...options, node] : options;
+}
+
+/**
+ * Genitore da salvare dalla finestra: se «Dove sta» non è stato toccato resta quello di adesso (anche per una
+ * categoria con sottocategorie in un albero vecchio); toccato, la scelta se è ancora possibile, altrimenti principale.
+ */
+export function savedParentId(list: readonly CategoryNode[], id: string, chosen: string, touched: boolean): string | undefined {
+  if (!touched) return parentIdOf(list, id);
+  return chosen && placeChoices(list, id).some((c) => c.id === chosen) ? chosen : undefined;
+}
+
 /** Frase del conteggio per «Dove li sposto?»: «Pellicce ha 3 prodotti.» */
 export function moveQuestion(name: string, count: number): string {
   return `${name} ha ${count === 1 ? '1 prodotto' : `${count} prodotti`}. Dove li sposto?`;

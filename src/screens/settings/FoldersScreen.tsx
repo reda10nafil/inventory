@@ -19,7 +19,7 @@ import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { withAlpha } from '../../../utils/color';
 import {
   categoryDeleteStep, categoryMoveTargets, categoryName, categoryNameError, categoryPath, categoryTree, childrenOf,
-  moveQuestion, parentIdOf, parentOptions, productsInCategory,
+  moveQuestion, parentIdOf, placeChoices, productsInCategory, savedParentId,
 } from '../../../utils/categories';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { useLocations } from '../../../contexts/LocationsContext';
@@ -66,6 +66,9 @@ export default function ManageFoldersScreen() {
   const [selectedIcon, setSelectedIcon] = useState('folder');
   const [barcode, setBarcode] = useState('');
   const [parentId, setParentId] = useState('');
+  // «Dove sta» toccato: senza tocco si salva il genitore di adesso (un albero vecchio a più livelli non si appiattisce)
+  const [parentTouched, setParentTouched] = useState(false);
+  const chooseParent = (id: string) => { setParentId(id); setParentTouched(true); };
   const [showScanner, setShowScanner] = useState(false);
 
   // «Dove li sposto?» (stessa finestra, al posto della modifica)
@@ -76,8 +79,9 @@ export default function ManageFoldersScreen() {
 
   // Prodotti (non nel cestino) direttamente nella categoria
   const getItemCount = (libraryId: string): number => productsInCategory(products, libraryId).length;
-  const parents = parentOptions(libraries, editingId ?? undefined);
+  const parents = editingId ? placeChoices(libraries, editingId) : [];
   const editingHasChildren = !!editingId && childrenOf(libraries, editingId).length > 0;
+  const editingParent = editingId ? parentIdOf(libraries, editingId) : undefined;
 
   // COD (NG25): il codice scritto, controllato mentre lo si scrive e al salvataggio
   const codeHint = codeCheck(barcode, editingId ? libraries.find((l) => l.id === editingId)?.barcode : undefined,
@@ -124,6 +128,7 @@ export default function ManageFoldersScreen() {
     setSelectedIcon(lib.icon);
     setBarcode(lib.barcode || '');
     setParentId(parentIdOf(libraries, lib.id) ?? '');
+    setParentTouched(false);
     setEditingId(lib.id);
     closeSub();
   };
@@ -134,12 +139,13 @@ export default function ManageFoldersScreen() {
     setSelectedIcon('folder');
     setBarcode('');
     setParentId('');
+    setParentTouched(false);
   };
 
   const handleSave = () => {
     if (!editingId) return;
-    // Un genitore che nel frattempo non si può più scegliere vale «principale»
-    const parent = parents.some((p) => p.id === parentId) ? parentId : undefined;
+    // «Dove sta» non toccato: resta dov'è; toccato, un genitore che nel frattempo non si può più scegliere vale «principale»
+    const parent = savedParentId(libraries, editingId, parentId, parentTouched);
     // COD (NG25): un codice nuovo già usato da un prodotto, una posizione, una categoria o uno scaffale si rifiuta; un
     // doppione già salvato prima non blocca il salvataggio, ma si segnala
     const check = codeHint;
@@ -226,6 +232,19 @@ export default function ManageFoldersScreen() {
       return;
     }
     const { id, target } = deleting;
+    // Si ricontrolla prima di spostare: nel frattempo (dati arrivati da un altro telefono) la categoria può essere
+    // sparita, avere una sottocategoria o uno scaffale; allora non si sposta niente
+    if (!libraries.some((l) => l.id === id)) {
+      setDeleting(null);
+      return;
+    }
+    const step = categoryDeleteStep(libraries, products, id, shelves);
+    if (step.kind === 'refused') {
+      setDeleting(null);
+      if (step.reason === 'children') setOpenFor(id, true);
+      Alert.alert('Attenzione', step.message, [{ text: 'OK' }]);
+      return;
+    }
     const from = categoryName(libraries, id);
     const to = target ? categoryPath(libraries, target) : null;
     const moved = productsInCategory(products, id);
@@ -244,13 +263,14 @@ export default function ManageFoldersScreen() {
 
   // Chiudere la finestra: da «Dove li sposto?» si torna alla modifica (se c'era), altrimenti si chiude tutto
   const closeSheet = () => {
-    if (deleting) setDeleting(null);
+    if (showScanner) setShowScanner(false); // prima il lettore, poi la finestra
+    else if (deleting) setDeleting(null);
     else closeEdit();
   };
 
   // ---- Pezzi della schermata ----
   const choiceChip = (key: string, label: string, active: boolean, onPress: () => void, a11y: string) => (
-    <Pressable key={key} style={[styles.chip, active && styles.chipActive]} onPress={onPress} accessibilityLabel={a11y} accessibilityState={{ selected: active }}>
+    <Pressable key={key} style={[styles.chip, active && styles.chipActive]} onPress={onPress} accessibilityLabel={a11y} accessibilityRole="radio" aria-checked={active}>
       {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
       {active && <AppIcon name="check" size={16} color={t.colors.chipActiveText} />}
       <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{label}</Text>
@@ -356,7 +376,7 @@ export default function ManageFoldersScreen() {
               style={[styles.iconOption, selectedIcon === icon.name && styles.iconOptionSelected]}
               onPress={() => setSelectedIcon(icon.name)}
               accessibilityLabel={`Icona ${icon.label}`}
-              accessibilityState={{ selected: selectedIcon === icon.name }}
+              aria-selected={selectedIcon === icon.name}
             >
               <AppIcon
                 name={icon.name}
@@ -369,14 +389,18 @@ export default function ManageFoldersScreen() {
 
         {/* «Dove sta» (C1 «Sottocategoria di»): principale o dentro un'altra principale, un solo livello */}
         {editingHasChildren ? (
-          <Text style={styles.hint}>Ha delle sottocategorie: resta principale.</Text>
+          <Text style={styles.hint}>
+            {editingParent ? `Ha delle sottocategorie: resta dentro ${categoryPath(libraries, editingParent)}.` : 'Ha delle sottocategorie: resta principale.'}
+          </Text>
         ) : (
           <>
             <Text style={styles.label}>Dove sta</Text>
             <View style={styles.chipWrap}>
-              {choiceChip('root', 'Categoria principale', parentId === '', () => setParentId(''), 'Dove sta: Categoria principale')}
-              {parents.map((p) => choiceChip(p.id, `Dentro ${p.name}`, parentId === p.id,
-                () => setParentId(parentId === p.id ? '' : p.id), `Dove sta: Dentro ${p.name}`))}
+              {choiceChip('root', 'Categoria principale', parentId === '', () => chooseParent(''), 'Dove sta: Categoria principale')}
+              {parents.map((p) => {
+                const label = `Dentro ${categoryPath(libraries, p.id)}`;
+                return choiceChip(p.id, label, parentId === p.id, () => chooseParent(parentId === p.id ? '' : p.id), `Dove sta: ${label}`);
+              })}
             </View>
           </>
         )}
@@ -495,7 +519,7 @@ export default function ManageFoldersScreen() {
                   style={styles.chevron}
                   onPress={() => setOpenFor(root.id, !opened)}
                   accessibilityLabel={`${opened ? 'Chiudi' : 'Apri'} ${root.name}`}
-                  accessibilityState={{ expanded: opened }}
+                  aria-expanded={opened}
                 >
                   <AppIcon name={opened ? 'expand-more' : 'chevron-right'} size={26} color={t.colors.textSecondary} />
                 </Pressable>
@@ -529,10 +553,10 @@ export default function ManageFoldersScreen() {
       </ScrollView>
 
       {/* Finestra della categoria, sopra l'elenco nel punto dove si è (D3); «Dove li sposto?» nella stessa finestra */}
-      <Modal visible={editingId !== null || deleting !== null} transparent animationType="fade" onRequestClose={closeSheet}>
+      <Modal visible={editingId !== null || moveSheet !== null} transparent animationType="fade" onRequestClose={closeSheet}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.sheet}>
-            {deleting ? moveSheet : editSheet}
+            {moveSheet ?? editSheet}
           </View>
           {showScanner && (
             <View style={StyleSheet.absoluteFill}>

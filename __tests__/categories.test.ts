@@ -16,8 +16,10 @@ import {
   parentIdOf,
   parentOptions,
   productKind,
+  placeChoices,
   productsInCategory,
   rootCategories,
+  savedParentId,
 } from '../utils/categories';
 import { usage } from '../utils/productRules';
 
@@ -222,5 +224,27 @@ describe('Elimina con la via d\'uscita (CAT1)', () => {
   it('la domanda', () => {
     expect(moveQuestion('Pellicce', 3)).toBe('Pellicce ha 3 prodotti. Dove li sposto?');
     expect(moveQuestion('Visone', 1)).toBe('Visone ha 1 prodotto. Dove li sposto?');
+  });
+});
+
+describe('«Dove sta» senza spostare per sbaglio (CAT1, rilievo del revisore)', () => {
+  // Albero vecchio a tre livelli (dati importati): Pellicce › Visone › Lungo
+  const VECCHIO = [...CON_SOTTO, { id: 'visone-lungo', name: 'Lungo', parentId: 'pellicce-visone' }];
+  it('scelte: le principali, più il genitore di adesso se non è una principale', () => {
+    expect(placeChoices(VECCHIO, 'visone-lungo').map((c) => c.id)).toEqual(['pellicce', 'collezione-inverno', 'usato-e-permute', 'pellicce-visone']);
+    expect(placeChoices(VECCHIO, 'pellicce-volpe').map((c) => c.id)).toEqual(['pellicce', 'collezione-inverno', 'usato-e-permute']);
+    expect(placeChoices(VECCHIO, 'pellicce-visone').map((c) => c.id)).toEqual(['pellicce']); // ha sottocategorie: solo dov'è
+    expect(placeChoices(VECCHIO, 'pellicce')).toEqual([]); // principale con sottocategorie: nessuna scelta
+  });
+  it('non toccato: resta il genitore di adesso, anche con le sottocategorie o sotto una sottocategoria', () => {
+    expect(savedParentId(VECCHIO, 'pellicce-visone', 'pellicce', false)).toBe('pellicce');
+    expect(savedParentId(VECCHIO, 'visone-lungo', 'pellicce-visone', false)).toBe('pellicce-visone');
+    expect(savedParentId(VECCHIO, 'pellicce', '', false)).toBeUndefined();
+  });
+  it('toccato: la scelta se possibile, altrimenti principale', () => {
+    expect(savedParentId(VECCHIO, 'pellicce-volpe', 'usato-e-permute', true)).toBe('usato-e-permute');
+    expect(savedParentId(VECCHIO, 'pellicce-volpe', '', true)).toBeUndefined();
+    expect(savedParentId(VECCHIO, 'pellicce-volpe', 'sparita', true)).toBeUndefined();
+    expect(savedParentId(VECCHIO, 'pellicce-volpe', 'pellicce-volpe', true)).toBeUndefined();
   });
 });

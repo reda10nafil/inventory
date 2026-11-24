@@ -100,7 +100,7 @@ const crea = async (h, nome) => {
     await h.click('Annulla');
     const chiusa = !(await h.has('Modifica categoria', true));
     await row(h, 'visone').click(); await pause(h);
-    const scelte = await h.page.getByLabel(/^Dove sta: /).locator('visible=true').evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label').replace('Dove sta: ', '')}${e.getAttribute('aria-selected') === 'true' ? ' *' : ''}`));
+    const scelte = await h.page.getByLabel(/^Dove sta: /).locator('visible=true').evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label').replace('Dove sta: ', '')}${e.getAttribute('aria-checked') === 'true' ? ' *' : ''}`));
     await label(h, 'Dove sta: Dentro Usato e permute').click(); await pause(h, 300);
     await h.click('Salva Modifiche');
     const dopoSposta = { libs: ids(await h.store(L)), vis: (await h.products(0)).find((p) => p.sku === 'VIS-0098').libraryId };
@@ -135,7 +135,7 @@ const crea = async (h, nome) => {
     await label(h, 'Elimina Pellicce').click(); await pause(h);
     const finestra = {
       titolo: await h.has('Elimina Pellicce', true), domanda: await h.has('Pellicce ha 3 prodotti. Dove li sposto?', true),
-      pillole: await h.page.getByLabel(/^Sposta in /).locator('visible=true').evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label').replace('Sposta in ', '')}${e.getAttribute('aria-selected') === 'true' ? ' *' : ''}`)),
+      pillole: await h.page.getByLabel(/^Sposta in /).locator('visible=true').evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label').replace('Sposta in ', '')}${e.getAttribute('aria-checked') === 'true' ? ' *' : ''}`)),
     };
     await h.click('Sposta ed elimina');
     const senzaScelta = { messaggio: await h.has('Scegli dove spostare i prodotti.', true), libs: ids(await h.store(L, 600)) };
@@ -233,5 +233,42 @@ const crea = async (h, nome) => {
     const salva = await box(h.page.getByText('Salva Modifiche', { exact: true }).first());
     await h.shot('finestra');
     return { scorrimento: scorrimento > 0, titoloY: titolo?.y, dentro: !!titolo && titolo.y >= 0 && titolo.y < 812, nome, salvaDentro: !!salva && salva.y < 812 };
+  });
+
+  // Rilievo del revisore (6b54ab6): albero vecchio a tre livelli (Pellicce › Visone › Lungo, dati importati). Salvare
+  // Lungo e Visone cambiando solo l'icona non li sposta; Visone dice «resta dentro Pellicce», Lungo ha la sua scelta
+  await run('cat1-albero-vecchio', async (h) => {
+    await h.page.evaluate((lk) => {
+      const libs = JSON.parse(localStorage.getItem(lk));
+      libs.push({ id: 'visone', name: 'Visone', icon: 'folder', createdAt: '2026-11-24T09:00:00.000Z', parentId: 'pellicce' });
+      libs.push({ id: 'lungo', name: 'Lungo', icon: 'folder', createdAt: '2026-11-24T09:00:00.000Z', parentId: 'visone' });
+      libs.push({ id: 'lungo-2', name: 'Lungo', icon: 'folder', createdAt: '2026-11-24T09:00:00.000Z' });
+      localStorage.setItem(lk, JSON.stringify(libs));
+    }, L);
+    await h.go('settings/folders');
+    const prima = ids(await h.store(L, 0));
+    await row(h, 'lungo').click(); await pause(h);
+    const sceltaLungo = await h.page.getByLabel(/^Dove sta: /).locator('visible=true').evaluateAll((els) => els.filter((e) => e.getAttribute('aria-checked') === 'true').map((e) => e.getAttribute('aria-label')));
+    await label(h, 'Icona Magazzino').click();
+    await h.click('Salva Modifiche');
+    const dopoLungo = ids(await h.store(L));
+    await row(h, 'visone').click(); await pause(h);
+    const frase = await h.page.getByText(/^Ha delle sottocategorie/).first().innerText();
+    await label(h, 'Icona Magazzino').click();
+    await h.click('Salva Modifiche');
+    const dopoVisone = ids(await h.store(L));
+    return { prima, sceltaLungo, dopoLungo, frase, dopoVisone };
+  }, { dialogs: ['ok', 'ok'] });
+
+  // Rilievo del revisore: con il lettore aperto dentro la finestra, il tasto indietro (sul web Esc) chiude solo il lettore
+  await run('cat1-lettore-indietro', async (h) => {
+    await h.go('settings/folders');
+    await row(h, 'pellicce').click(); await pause(h);
+    await label(h, 'Nome della categoria').fill('Pellicce nuove');
+    await h.page.getByPlaceholder('Scansiona o Genera...').locator('xpath=following-sibling::*[1]').click(); await pause(h, 800);
+    const lettore = await h.has('Scrivi il codice', true);
+    await h.page.keyboard.press('Escape'); await pause(h, 600);
+    const finestra = await h.has('Modifica categoria', true);
+    return { lettore, lettoreChiuso: !(await h.has('Scrivi il codice', true)), finestra, nome: finestra ? await label(h, 'Nome della categoria').inputValue() : null };
   });
 })();

@@ -24,7 +24,9 @@ Lettura (CAT0, D1-D4): «Sottocategoria di» sembrava l'elenco delle sottocatego
 
 ## Dentro (CAT1)
 
-Casi 1-11 di `cat0/proposta.md`, in `src/screens/settings/FoldersScreen.tsx` e `utils/categories.ts` (`productsInCategory`, `categoryDeleteStep`, `categoryMoveTargets`, `moveQuestion`; test in `__tests__/categories.test.ts`). Prova `prova/cat1-categorie.cjs` (10 scenari), collaudo **CF-B1** in `prova/collaudo.cjs`, foglio `prova/stili-cat1.jpg`.
+Casi 1-11 di `cat0/proposta.md`, in `src/screens/settings/FoldersScreen.tsx` e `utils/categories.ts` (`productsInCategory`, `categoryDeleteStep`, `categoryMoveTargets`, `moveQuestion`, `placeChoices`, `savedParentId`; test in `__tests__/categories.test.ts`). Prova `prova/cat1-categorie.cjs` (12 scenari), collaudo **CF-B1** in `prova/collaudo.cjs`, foglio `prova/stili-cat1.jpg`.
+
+Dopo il parere del revisore (secondo commit): «Dove sta» non toccato lascia la categoria dov'è, così un albero vecchio a più livelli (dati importati) non si appiattisce salvando la sola icona, e la frase dice «resta dentro Pellicce» quando serve; il tasto Indietro con il lettore aperto chiude solo il lettore; «Sposta ed elimina» ricontrolla sottocategorie e scaffali prima di spostare.
 
 ## Fuori (annotato)
 
