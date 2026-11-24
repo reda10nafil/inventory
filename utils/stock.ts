@@ -8,6 +8,13 @@
 // - articolo a quantità (`stock` presente, anche se a 0): la giacenza salvata è la verità e si cambia solo con
 //   `applyMovement`, che restituisce anche gli eventi `stock` della Cronologia da salvare insieme.
 // I conti si fanno in millesimi interi: 0,1 + 0,2 fa 0,3 e uno scarico di 0,3 non viene rifiutato.
+//
+// Scaffali (S1b, ticket 13): una chiave di `stock` è una posizione (`magazzino`) oppure una posizione con uno dei
+// suoi scaffali (`magazzino/<idScaffale>`, forma 2 scelta con i test di `__tests__/stockKeyForm.test.ts`). Così il
+// totale di una posizione si calcola dal solo prodotto, senza l'elenco degli scaffali: `isAt` e `qtyAt` di una
+// posizione sommano i suoi scaffali, `qtyIn` legge una chiave esatta; `positionsOf` e `mainLocation` danno sempre una
+// posizione, e `location` del prodotto resta sempre una posizione. Gli eventi di prima, senza scaffale, si rigiocano
+// come prima. Un pezzo unico con `shelfId` sta su `posizione/scaffale`.
 import type { MovementKind, MovementReason, Product, TimelineEvent } from '../types';
 import { formatNumber, parseNumber } from './number';
 import { formatPrice } from './price';
@@ -34,7 +41,7 @@ export const MOVEMENT_LABELS: Record<MovementKind, string> = {
 };
 
 type Stock = Record<string, number>;
-type StockProduct = Pick<Product, 'location' | 'status' | 'deletedAt' | 'stock'>;
+type StockProduct = Pick<Product, 'location' | 'status' | 'deletedAt' | 'stock' | 'shelfId'>;
 
 const toMilli = (value: number) => Math.round(value * 1000);
 const fromMilli = (milli: number) => milli / 1000;
@@ -42,14 +49,35 @@ const fromMilli = (milli: number) => milli / 1000;
 /** Quantità a 3 decimali (0,1 + 0,2 → 0,3). */
 export const round3 = (value: number): number => fromMilli(toMilli(value));
 
+/** Separatore tra posizione e scaffale nelle chiavi di `stock` (S1b): non compare negli id di posizioni e scaffali. */
+export const SHELF_KEY_SEPARATOR = '/';
+
+/** Chiave della giacenza: la posizione, oppure la posizione con uno dei suoi scaffali (`magazzino/<id>`). */
+export const stockKey = (place: string, shelfId?: string): string => (shelfId ? `${place}${SHELF_KEY_SEPARATOR}${shelfId}` : place);
+
+/**
+ * Posizione e scaffale di una chiave. La posizione è tutto prima dell'**ultimo** separatore (gli id degli scaffali
+ * non lo contengono mai); senza separatore, o con un lato vuoto, la chiave è una posizione così com'è.
+ */
+export function splitStockKey(key: string): { place: string; shelfId?: string } {
+  const at = key.lastIndexOf(SHELF_KEY_SEPARATOR);
+  return at > 0 && at < key.length - 1 ? { place: key.slice(0, at), shelfId: key.slice(at + 1) } : { place: key };
+}
+
+/** Posizione di una chiave della giacenza. */
+export const placeOfKey = (key: string): string => splitStockKey(key).place;
+
+/** Id di una posizione nuova dal nome (Impostazioni › Posizioni): solo a-z, 0-9 e `_`, quindi mai il separatore. */
+export const newLocationId = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
 /** Articolo a quantità: ha `stock`, anche vuoto o a 0 (un articolo esaurito non torna pezzo unico). */
 export const isStocked = (product: Pick<Product, 'stock'>): boolean => product.stock != null;
 
-/** Giacenza in millesimi, solo le posizioni con quantità positiva e valida. */
+/** Giacenza in millesimi, solo le chiavi con quantità positiva e valida. Un pezzo unico sta sul suo scaffale (S1b). */
 function milliOf(product: StockProduct): Record<string, number> {
   if (product.deletedAt) return {};
   if (!isStocked(product)) {
-    return product.status === 'available' && product.location ? { [product.location]: 1000 } : {};
+    return product.status === 'available' && product.location ? { [stockKey(product.location, product.shelfId)]: 1000 } : {};
   }
   const out: Record<string, number> = {};
   for (const [place, qty] of Object.entries(product.stock ?? {})) {
@@ -99,32 +127,107 @@ export function isLowStock(product: StockProduct & Pick<Product, 'minStock'>): b
   return Object.values(milliOf(product)).reduce((a, b) => a + b, 0) < toMilli(min);
 }
 
-/** Il prodotto è in questa posizione: è la sua posizione principale o ci ha giacenza. Sostituisce `p.location === x`. */
+/** Millesimi per `place`: una posizione somma anche i suoi scaffali, una chiave con lo scaffale vale da sola. */
+function milliAt(milli: Readonly<Record<string, number>>, place: string): number {
+  if (splitStockKey(place).shelfId) return milli[place] ?? 0;
+  let sum = 0;
+  for (const [key, m] of Object.entries(milli)) if (placeOfKey(key) === place) sum += m;
+  return sum;
+}
+
+/** Il prodotto è in questa posizione: è la sua posizione principale o ci ha giacenza (anche su uno dei suoi scaffali).
+ *  Sostituisce `p.location === x`. */
 export function isAt(product: StockProduct, place: string): boolean {
-  return product.location === place || (milliOf(product)[place] ?? 0) > 0;
+  return product.location === place || milliAt(milliOf(product), place) > 0;
 }
 
-/** Quantità in una posizione (0 se non c'è, se è venduto o nel cestino). Per «che cosa c'è qui» (Audit, capienza). */
+/** Quantità in una posizione, **scaffali compresi** (0 se non c'è, se è venduto o nel cestino); con una chiave
+ *  `posizione/scaffale`, solo quello scaffale. Per «che cosa c'è qui» (Audit, Conta, capienza). */
 export function qtyAt(product: StockProduct, place: string): number {
-  return fromMilli(milliOf(product)[place] ?? 0);
+  return fromMilli(milliAt(milliOf(product), place));
 }
 
-/** Tutte le posizioni scritte sul prodotto, anche nel cestino o a 0: per non eliminare una posizione in uso. */
+/** Quantità di una chiave esatta (`magazzino` = solo la parte senza scaffale): per scegliere da dove muovere. */
+export function qtyIn(product: StockProduct, key: string): number {
+  return fromMilli(milliOf(product)[key] ?? 0);
+}
+
+/** Tutte le posizioni scritte sul prodotto, anche nel cestino o a 0: per non eliminare una posizione in uso. Una
+ *  chiave con lo scaffale vale la sua posizione. */
 export function positionsOf(product: Pick<Product, 'location' | 'stock'>): string[] {
   const places = new Set<string>(product.location ? [product.location] : []);
-  for (const [place, qty] of Object.entries(product.stock ?? {})) if (place && typeof qty === 'number' && qty > 0) places.add(place);
+  for (const [place, qty] of Object.entries(product.stock ?? {})) if (place && typeof qty === 'number' && qty > 0) places.add(placeOfKey(place));
   return [...places];
 }
 
-/** Posizione principale dopo un movimento: resta se ha ancora giacenza, altrimenti quella con più quantità. */
+/** Posizione principale dopo un movimento: resta se ha ancora giacenza (scaffali compresi), altrimenti quella con più
+ *  quantità. È sempre una posizione, mai una chiave con lo scaffale. */
 export function mainLocation(stock: Readonly<Record<string, number>>, current: string): string {
-  if ((stock[current] ?? 0) > 0) return current;
+  const totals: Record<string, number> = {};
+  for (const [key, qty] of Object.entries(stock)) {
+    const place = placeOfKey(key);
+    totals[place] = (totals[place] ?? 0) + (qty > 0 ? qty : 0);
+  }
+  if ((totals[current] ?? 0) > 0) return current;
   let best = current;
   let bestQty = 0;
-  for (const [place, qty] of Object.entries(stock)) {
+  for (const [place, qty] of Object.entries(totals)) {
     if (qty > bestQty) { best = place; bestQty = qty; }
   }
   return best;
+}
+
+/** Chiavi di una posizione con giacenza: prima quella senza scaffale, poi gli scaffali in ordine di chiave. */
+export function keysAt(product: StockProduct, place: string): [string, number][] {
+  return Object.entries(milliOf(product))
+    .filter(([key]) => placeOfKey(key) === place)
+    .sort(([a], [b]) => Number(b === place) - Number(a === place) || (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, m]) => [key, fromMilli(m)]);
+}
+
+/**
+ * Da dove prendere `qty` in una posizione (vendita, spostamento, calo della Conta): prima dalla parte senza scaffale,
+ * poi dagli scaffali (`keysAt`). `null` se la quantità non è valida o la posizione non ne ha abbastanza.
+ */
+export function drawsAt(product: StockProduct, place: string, qty: number): [string, number][] | null {
+  let left = Number.isFinite(qty) ? toMilli(qty) : 0;
+  if (left <= 0) return null;
+  const out: [string, number][] = [];
+  for (const [key, have] of keysAt(product, place)) {
+    if (left <= 0) break;
+    const take = Math.min(left, toMilli(have));
+    out.push([key, fromMilli(take)]);
+    left -= take;
+  }
+  return left > 0 ? null : out;
+}
+
+export type StockGroup = { place: string; qty: number; keys: { key: string; shelfId?: string; qty: number }[] };
+
+/**
+ * Giacenza per posizione con i suoi scaffali (Scheda): posizioni dalla più grande; dentro, prima la parte senza
+ * scaffale, poi gli scaffali dal più grande. Solo le chiavi con quantità.
+ */
+export function stockGroups(stock: Readonly<Record<string, number>>): StockGroup[] {
+  const groups = new Map<string, { place: string; milli: number; keys: { key: string; shelfId?: string; milli: number }[] }>();
+  for (const [key, qty] of Object.entries(stock)) {
+    const milli = typeof qty === 'number' && Number.isFinite(qty) ? toMilli(qty) : 0;
+    if (!key || milli <= 0) continue;
+    const { place, shelfId } = splitStockKey(key);
+    const group = groups.get(place) ?? { place, milli: 0, keys: [] };
+    group.milli += milli;
+    group.keys.push({ key, ...(shelfId && { shelfId }), milli });
+    groups.set(place, group);
+  }
+  return [...groups.values()]
+    .sort((a, b) => b.milli - a.milli)
+    .map((g) => ({
+      place: g.place,
+      qty: fromMilli(g.milli),
+      keys: g.keys
+        .sort((a, b) => Number(!!a.shelfId) - Number(!!b.shelfId) || b.milli - a.milli)
+        .map(({ milli, ...k }) => ({ ...k, qty: fromMilli(milli) })),
+    }));
 }
 
 /** Quantità scritta dall'utente («2,5», «3») a 3 decimali; vuota, negativa o non valida → undefined. */
@@ -185,7 +288,8 @@ export function movementErrorText(result: { error: MovementError; available?: nu
  * Applica un movimento a un prodotto e restituisce il prodotto nuovo più gli eventi da salvare, oppure il
  * motivo del rifiuto (in quel caso nulla cambia). Non modifica `product`.
  * Il primo movimento di un pezzo unico lo rende articolo a quantità: prima dell'evento chiesto si registra un
- * carico «iniziale» di 1 nella sua posizione, così gli eventi `stock` da soli ridanno la giacenza salvata.
+ * carico «iniziale» di 1 nella sua posizione (sul suo scaffale, se ne ha uno: S1b), così gli eventi `stock` da soli
+ * ridanno la giacenza salvata. `from`, `to` e `at` sono chiavi: una posizione oppure `posizione/scaffale`.
  */
 export function applyMovement(product: Product, movement: Movement, now: string): MovementResult {
   if (product.deletedAt || product.status !== 'available') return { ok: false, error: 'not_allowed' };
@@ -219,17 +323,20 @@ export function applyMovement(product: Product, movement: Movement, now: string)
   if (to) next[to] = (next[to] ?? 0) + qty;
 
   const location = mainLocation(next, product.location);
+  // La posizione principale resta come chiave a 0 solo se non ha giacenza su un suo scaffale (S1b): niente zeri in più
+  const shelved = Object.entries(next).some(([key, milli]) => milli > 0 && key !== location && placeOfKey(key) === location);
   const stock: Stock = {};
-  for (const [place, milli] of Object.entries(next)) if (milli > 0 || place === location) stock[place] = fromMilli(Math.max(0, milli));
-  if (!(location in stock)) stock[location] = 0;
+  for (const [place, milli] of Object.entries(next)) if (milli > 0 || (place === location && !shelved)) stock[place] = fromMilli(Math.max(0, milli));
+  if (!Object.keys(stock).some((key) => placeOfKey(key) === location)) stock[location] = 0;
 
   const events: NewEvent[] = [];
-  if (!isStocked(product) && start[product.location]) {
+  const home = stockKey(product.location, product.shelfId);
+  if (!isStocked(product) && start[home]) {
     events.push({
       productId: product.id,
       type: 'stock',
       timestamp: now,
-      details: { movement: 'carico', qty: 1, to: product.location, reason: 'iniziale', before: 0, after: 1 },
+      details: { movement: 'carico', qty: 1, to: home, reason: 'iniziale', before: 0, after: 1 },
     });
   }
   const details: TimelineEvent['details'] = {

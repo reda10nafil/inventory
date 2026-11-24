@@ -20,7 +20,7 @@ Lo scaffale è la posizione (che ha già capienza, codice e tag), un livello sot
 
 - Uno scaffale è un **posto dentro una posizione**: `shelf.locationId`. Contesto proprio `ShelvesContext`, chiave `furinventory_shelves:{org}`, come Categorie e Contatti, fuori dall'elenco di chiavi di `InventoryContext`.
 - Un pezzo unico ha `location` più uno `shelfId` facoltativo.
-- Per un articolo a quantità la giacenza può stare su uno scaffale. `isAt` e `qtyAt` di una posizione sommano anche i suoi scaffali; un trasferimento tra scaffali è un trasferimento normale. La forma delle chiavi di `stock` **non è decisa**: vedi S1b.
+- Per un articolo a quantità la giacenza può stare su uno scaffale. `isAt` e `qtyAt` di una posizione sommano anche i suoi scaffali; un trasferimento tra scaffali è un trasferimento normale. Forma delle chiavi di `stock` decisa in S1b: **`posizione/idScaffale`** (forma 2).
 - Alternativa scartata: una seconda mappa `shelfStock` accanto a `stock`, con il rischio che le due non tornino.
 - Uno scaffale con prodotti non si elimina, come le posizioni.
 
@@ -61,6 +61,30 @@ Tre domande decidono:
 
 Poi tutte le letture e scritture di `stock` (Movimenta, Conta, Audit, Spostamento rapido, Azione rapida, CSV, report) in un solo commit.
 
+Stato: **fatto** il 24 novembre 2026 (vedi `git log` e `../../CRONOLOGIA.md`; decisioni prese al posto dell'utente nelle righe S1b di `../../DECISIONI_DA_RIVEDERE.md`; prova `../prova/s1b-giacenza.cjs`).
+
+**Forma delle chiavi: forma 2, `posizione/idScaffale`** (`magazzino/1732…-a1`). Test in `__tests__/stockKeyForm.test.ts`, che confronta un lettore di prova della forma 1 con le funzioni dell'app:
+
+| Domanda | Forma 1 (id dello scaffale da solo) | Forma 2 (`posizione/idScaffale`) |
+| --- | --- | --- |
+| Il totale di una posizione si calcola dal solo prodotto? | no: senza l'elenco degli scaffali Magazzino conta 5 invece di 8 | sì |
+| Se uno scaffale cambia posizione, la giacenza si sposta senza un evento? | sì: 3 pezzi passerebbero a Vetrina senza evento (oggi non succede solo perché la posizione dello scaffale è fissa) | no: la posizione sta nella chiave |
+| Scaffale che un altro dispositivo non conosce? | la chiave sembra una posizione sconosciuta, Magazzino perde i pezzi | la giacenza resta in Magazzino, «scaffale sconosciuto» come nome |
+
+Il separatore `/` non compare negli id delle posizioni (`newLocationId`: solo a-z, 0-9, `_`; posizioni predefinite) né degli scaffali (`newShelfId`); la posizione è tutto prima dell'ultimo `/`, senza `/` o con un lato vuoto la chiave è una posizione. Costo trovato: una chiave `a/b` scritta prima di S1b da un CSV a mano si leggerebbe come posizione `a` con uno scaffale sconosciuto (totale ed eventi uguali, cambia solo il nome); da S1b l'import rifiuta il `/` nella posizione. Criterio dell'orchestratore: vince la forma che risponde senza leggere l'elenco degli scaffali.
+
+**Confine** (decisione dell'orchestratore, notte del 23): in un commit tutte le scritture (`applyMovement` e le cinque funzioni di `inventoryOps`, Movimenta con lo scaffale di partenza e di destinazione, Aggiungi per la giacenza iniziale, Conta, Spostamento rapido, Azione rapida, Audit, esecuzione delle automazioni, import CSV) e le letture (`isAt`, `qtyAt`, `positionsOf`, `mainLocation`, export CSV, avvisi, filtri, Scheda con la giacenza per scaffale, Home, Impostazioni, Vendita flash, `shelfUsage`). Fuori: capacità e riempimento (S2), avvisi e blocchi (S3), scaffale come destinazione e quantità in automazioni e Spostamento rapido (FLU1), scelta e lettura dello scaffale in Conta e Audit (CON).
+
+Che cosa fa S1b:
+
+- `utils/stock.ts`: `stockKey`, `splitStockKey`, `placeOfKey`, `SHELF_KEY_SEPARATOR`, `newLocationId`; `isAt` e `qtyAt` di una posizione sommano i suoi scaffali, `qtyIn` legge la chiave esatta; `positionsOf` e `mainLocation` danno sempre una posizione; `keysAt` (prima la parte senza scaffale, poi gli scaffali) e `drawsAt` (da dove prendere una quantità); `stockGroups` per la Scheda. Un pezzo unico con `shelfId` vale 1 su `posizione/scaffale` e al primo movimento la giacenza resta lì. La posizione principale non resta come chiave a 0 se ha giacenza su un suo scaffale.
+- `utils/inventoryOps.ts`: `moveOf` sposta tutta la posizione principale, scaffali compresi (un trasferimento per chiave); `saleOf` vende prima dalla parte senza scaffale, poi dagli scaffali; Conta: «Registrata» è il totale della posizione, un calo scende dalla parte senza scaffale e poi dagli scaffali, un aumento va sulla parte senza scaffale (`countMoves`); `withInitialStock` carica sullo scaffale scelto in Aggiungi.
+- `shelfId` resta dei soli pezzi unici: per un articolo a quantità lo scaffale è nella chiave (`keptShelfId` e `productShelfId` non cambiano).
+- `utils/shelves.ts`: `shelfUsage` conta anche gli articoli a quantità con giacenza sullo scaffale (anche nel cestino), quindi lo scaffale non si elimina; `stockPlaceLabel` («Magazzino › A1», `UNKNOWN_SHELF`); `stockKeyFromCsv`. `hooks/usePlaceLabel.ts` per tutte le schermate.
+- Schermate: Movimenta (fila «Scaffale» con «Nessuno» e gli scaffali, solo per una posizione con scaffali), Scheda (posizione e sotto «Senza scaffale», «Scaffale A1»), Aggiungi (scaffale anche con la quantità), Azione rapida di uno scaffale (anche gli articoli a quantità con la quantità), Cronologia, Fornitori e clienti, report.
+- CSV: la Giacenza esporta le chiavi salvate (`magazzino/<id>:3`); l'import accetta `posizione/<id o nome>` e l'id o il codice di uno scaffale; scaffale sconosciuto o `/` nella posizione → riga saltata.
+- Dati: nessuna migrazione; gli eventi di prima si rigiocano come prima (`replayStock` è per chiave).
+
 ## Come si torna indietro
 
-`shelfId` è facoltativo: senza la schermata e il campo, i prodotti restano nella loro posizione. Le chiavi di `stock` che sono scaffali si riportano alla posizione dello scaffale.
+`shelfId` è facoltativo: senza la schermata e il campo, i prodotti restano nella loro posizione. Le chiavi `posizione/scaffale` di `stock` si riportano alla loro posizione con un trasferimento per chiave (eventi, così la giacenza salvata resta quella degli eventi rigiocati); anche senza farlo, le funzioni di prima di S1b le leggerebbero come posizioni sconosciute.

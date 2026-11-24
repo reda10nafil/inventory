@@ -67,11 +67,12 @@ export default function AddProductScreen() {
   const [unit, setUnit] = useState<string>(DEFAULT_UNIT);
   // Scorta minima (M06): solo per gli articoli a quantità, compare quando c'è una quantità
   const [minText, setMinText] = useState('');
-  // Scaffale (S1a): solo per i pezzi unici (quantità vuota), tra quelli della posizione e della categoria scelte
+  // Scaffale (S1a), tra quelli della posizione e della categoria scelte: per un pezzo unico è il suo scaffale, con una
+  // quantità (S1b) è dove va la giacenza iniziale (`withInitialStock`, chiave `posizione/scaffale`)
   const { shelves } = useShelves();
   const [shelfId, setShelfId] = useState('');
   const shelfChoices = shelvesFor(shelves, libraries, { location: formData.location, libraryId: formData.libraryId || undefined });
-  const chosenShelf = !qtyText.trim() && shelfChoices.some((s) => s.id === shelfId) ? shelfId : '';
+  const chosenShelf = shelfChoices.some((s) => s.id === shelfId) ? shelfId : '';
 
   const [images, setImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -278,7 +279,7 @@ export default function AddProductScreen() {
         status: 'available',
         ...(qty != null && { unit }),
         ...(minStock != null && { minStock }),
-        ...(qty == null && chosenShelf && { shelfId: chosenShelf }),
+        ...(chosenShelf && { shelfId: chosenShelf }), // con la quantità il contesto lo mette nella chiave della giacenza
         images, // senza foto resta vuoto: le schermate mostrano un riquadro (D18, prima un'immagine d'esempio da internet)
         purchasePrice: parseNumber(formData.purchasePrice),
         sellPrice: parseNumber(formData.sellPrice),
@@ -802,13 +803,15 @@ export default function AddProductScreen() {
                 </Text>
               </View>
             ) : null}
-            {/* Scaffale (S1a): solo per un pezzo unico, se la posizione scelta ne ha di adatti */}
-            {!qtyText.trim() && shelfChoices.length > 0 ? (
+            {/* Scaffale (S1a): se la posizione scelta ne ha di adatti; con una quantità (S1b) la giacenza parte da lì */}
+            {shelfChoices.length > 0 ? (
               <View>
                 <Text style={styles.label}>Scaffale</Text>
                 <ShelfPicker shelves={shelfChoices} categories={libraries} value={chosenShelf} onChange={setShelfId} />
                 <Text style={styles.stockHint}>
-                  Facoltativo: gli scaffali di questa posizione generici o della categoria scelta.
+                  {qtyText.trim()
+                    ? 'Facoltativo: la quantità iniziale va sullo scaffale scelto, generico o della categoria scelta.'
+                    : 'Facoltativo: gli scaffali di questa posizione generici o della categoria scelta.'}
                 </Text>
               </View>
             ) : null}

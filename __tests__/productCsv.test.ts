@@ -307,12 +307,41 @@ describe('Scaffale nel CSV dei prodotti (S1a)', () => {
     expect('shelfId' in (productFromCsvRow(['A', 'visone', 'vetrina', '', ''], cols, lists)?.product ?? {})).toBe(false);
   });
 
-  it('import: una riga con la posizione o una chiave della giacenza che è uno scaffale si salta (niente giacenza sugli scaffali in S1a)', () => {
+  it('import (S1b): la Giacenza accetta lo scaffale (chiave esportata, posizione/nome, id o codice); la posizione no', () => {
     const cols = productCsvColumns(['SKU', 'Tipo di pelle', 'Posizione', 'Giacenza']);
-    expect(productFromCsvRow(['A', 'visone', 'vetrina', 'vetrina:1; 1700000000000-bbb:2'], cols, lists)).toBeNull();
-    expect(productFromCsvRow(['A', 'visone', 'vetrina', 'SCAF-B2:2'], cols, lists)).toBeNull();
+    const B2 = 'magazzino/1700000000000-bbb';
+    // In S1a queste righe si saltavano: ora la giacenza va sullo scaffale, nella sua posizione
+    expect(productFromCsvRow(['A', 'visone', 'vetrina', 'vetrina:1; 1700000000000-bbb:2'], cols, lists)?.stock).toEqual({ vetrina: 1, [B2]: 2 });
+    expect(productFromCsvRow(['A', 'visone', 'vetrina', 'SCAF-B2:2'], cols, lists)?.stock).toEqual({ [B2]: 2 });
+    expect(productFromCsvRow(['A', 'visone', 'magazzino', `${B2}:2; magazzino/b2:1`], cols, lists)?.stock).toEqual({ [B2]: 3 });
+    // Scaffale sconosciuto o di un'altra posizione, chiave rovinata: riga saltata
+    expect(productFromCsvRow(['A', 'visone', 'magazzino', 'magazzino/Z9:1'], cols, lists)).toBeNull();
+    expect(productFromCsvRow(['A', 'visone', 'magazzino', 'magazzino/A1:1'], cols, lists)).toBeNull();
+    expect(productFromCsvRow(['A', 'visone', 'magazzino', 'magazzino/:1'], cols, lists)).toBeNull();
+    // Posizione del prodotto: mai uno scaffale né con il separatore
     expect(productFromCsvRow(['A', 'visone', '1700000000000-aaa', ''], cols, lists)).toBeNull();
+    expect(productFromCsvRow(['A', 'visone', 'mag/azzino', ''], cols, lists)).toBeNull();
     expect(productFromCsvRow(['A', 'visone', 'vetrina', 'vetrina:1; magazzino:2'], cols, lists)?.stock).toEqual({ vetrina: 1, magazzino: 2 });
+  });
+
+  it('export e reimport della giacenza sugli scaffali: la cella porta le chiavi salvate e torna uguale', () => {
+    const B2 = 'magazzino/1700000000000-bbb';
+    const p = product({ sku: 'Q', location: 'magazzino', stock: { magazzino: 5, [B2]: 3 }, unit: 'pz' });
+    expect(stockCell(p)).toBe(`magazzino:5; ${B2}:3`);
+    expect(stockCell(product({ location: 'magazzino', stock: { [B2]: 3 }, unit: 'pz' }))).toBe(`${B2}:3`);
+    const rows = parseCsv(stringifyCsv(productCsvRows([p], libraries, shelves)));
+    const back = productFromCsvRow(rows[1], productCsvColumns(rows[0]), lists);
+    expect(back?.stock).toEqual({ magazzino: 5, [B2]: 3 });
+    expect(back?.product.location).toBe('magazzino');
+  });
+
+  it('report delle giacenze: una riga per scaffale col suo nome', () => {
+    const B2 = 'magazzino/1700000000000-bbb';
+    const place = (key: string) => (key === B2 ? 'Magazzino › B2' : key === 'magazzino' ? 'Magazzino' : key);
+    const rows = stockCsvRows([product({ sku: 'Q', location: 'magazzino', stock: { [B2]: 3, magazzino: 5 }, unit: 'pz' })], {
+      place, category: () => '', furType: (id) => id,
+    });
+    expect(rows.slice(1).map((r) => [r[3], r[4]])).toEqual([['Magazzino', 5], ['Magazzino › B2', 3]]);
   });
 
   it('esporta e reimporta: lo scaffale torna', () => {

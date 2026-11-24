@@ -22,7 +22,8 @@ import { parseNumber } from '../../utils/number';
 import { PhotoPlaceholder } from '../../components/ui/PhotoPlaceholder';
 import { moveOf, refusalText, saleOf } from '../../utils/inventoryOps';
 import { canMoveStock } from '../../utils/productRules';
-import { describeStockEvent, formatQty, isOutOfStock, isStocked, totalStock, type Movement } from '../../utils/stock';
+import { describeStockEvent, formatQty, isOutOfStock, isStocked, qtyAt, stockKey, totalStock, type Movement } from '../../utils/stock';
+import { usePlaceLabel } from '../../hooks/usePlaceLabel';
 import { MovementSheet } from '../../components/MovementSheet';
 import type { MovementKind } from '../../types';
 
@@ -41,6 +42,8 @@ export default function ScannerActionScreen() {
   const { getProductById, moveProduct, sellProduct, libraries, products } = useInventory();
   const { locations } = useLocations();
   const { shelves } = useShelves();
+  // S1b: «Magazzino › A1» per i movimenti da e verso uno scaffale
+  const placeName = usePlaceLabel();
   const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
 
@@ -181,10 +184,14 @@ export default function ScannerActionScreen() {
     );
   }
 
-  // Scaffale letto dallo Scanner (S1a): dove sta, di che categoria, e i pezzi unici che ci stanno (tocco = Scheda)
+  // Scaffale letto dallo Scanner (S1a): dove sta, di che categoria, e i prodotti che ci stanno (tocco = Scheda): i pezzi
+  // unici e, da S1b, gli articoli a quantità con giacenza sullo scaffale, con la quantità
   if (type === 'shelf' && shelf) {
     const place = locations.find((l) => l.id === shelf.locationId);
-    const onShelf = products.filter((p) => !p.deletedAt && productShelfId(p, shelves) === shelf.id).sort((a, b) => a.sku.localeCompare(b.sku));
+    const key = stockKey(shelf.locationId, shelf.id);
+    const onShelf = products
+      .filter((p) => !p.deletedAt && (productShelfId(p, shelves) === shelf.id || (isStocked(p) && qtyAt(p, key) > 0)))
+      .sort((a, b) => a.sku.localeCompare(b.sku));
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
         <Backdrop />
@@ -207,6 +214,7 @@ export default function ScannerActionScreen() {
                 <View style={styles.actionContent}>
                   <Text style={styles.actionTitle}>{p.sku}</Text>
                   {!!kind.line && <Text style={styles.actionDescription}>{kind.line}</Text>}
+                  {isStocked(p) && <Text style={styles.actionDescription}>{formatQty(qtyAt(p, key), p.unit)} su questo scaffale</Text>}
                 </View>
                 <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
               </Pressable>
@@ -225,7 +233,6 @@ export default function ScannerActionScreen() {
   // Explicit check for Product Render
   if (type === 'product' && product) {
     const unit = product.unit || 'pz';
-    const placeName = (placeId: string) => locations.find((l) => l.id === placeId)?.label ?? placeId;
     const stocked = isStocked(product);
     const where = !stocked ? placeName(product.location)
       : isOutOfStock(product) ? `${placeName(product.location)} · Esaurito`

@@ -13,7 +13,7 @@ import { childrenOf } from '../utils/categories';
 import { describeChanges } from '../utils/productChanges';
 import { countOf, editableUpdates, moveOf, movementOf, saleOf, withInitialStock, withStartingStock, type CountResult } from '../utils/inventoryOps';
 import { lowStockAlert, mergeAlerts } from '../utils/alerts';
-import { shelfPatch, shelvesOfCategory, withKeptShelf } from '../utils/shelves';
+import { shelfPatch, shelvesOfCategory, withKeptShelf, withShelfRead } from '../utils/shelves';
 import type { Movement, MovementError } from '../utils/stock';
 
 /** Categoria dei prodotti (C1: la cartella di prima) - ID uses slug format for Google Sheets compatibility */
@@ -432,8 +432,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       createdAt: now,
       updatedAt: now,
     };
+    // Scaffale (S1a) solo se è nella posizione del prodotto; con una quantità (S1b) è dove va il carico iniziale
+    newProduct = withKeptShelf(newProduct, shelvesRef.current);
     // Quantità scritta in Aggiungi (M03) o giacenza per posizione dall'import CSV (M08): articolo a quantità,
-    // con un carico iniziale come evento per ogni posizione
+    // con un carico iniziale come evento per ogni posizione (o scaffale, chiave `posizione/scaffale`)
     let stockEvents: Omit<TimelineEvent, 'id'>[] = [];
     if (options?.stock != null || options?.qty != null) {
       const r = options.stock != null
@@ -443,7 +445,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       newProduct = r.product;
       stockEvents = r.events;
     }
-    // Scaffale (S1a): solo per un pezzo unico e solo se è nella sua posizione
+    // `shelfId` resta solo a un pezzo unico (un articolo a quantità ha lo scaffale nella chiave della giacenza)
     newProduct = withKeptShelf(newProduct, shelvesRef.current);
 
     productsRef.current = [newProduct, ...productsRef.current];
@@ -529,7 +531,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   // Restituisce false se non sposta: prodotto inesistente o nel cestino, già in quella posizione, oppure
   // articolo a quantità esaurito. Pezzo unico: evento «spostato»; articolo a quantità: trasferimento di tutta la
-  // giacenza della posizione principale, evento `stock` (M03, `utils/inventoryOps.ts`).
+  // giacenza della posizione principale, scaffali compresi (S1b), eventi `stock` (M03, `utils/inventoryOps.ts`).
   const moveProduct = (id: string, newLocation: string): boolean => {
     const result = moveOf(productsRef.current.find((p) => p.id === id), newLocation, new Date().toISOString());
     if (!result.ok) return false;
@@ -550,7 +552,9 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   // Movimento dalla Scheda (M04): calcolato sulla copia più recente, nello stato solo i campi del movimento.
   const moveStock = (id: string, movement: Movement): { ok: true } | { ok: false; error: MovementError; available?: number } => {
-    const result = movementOf(productsRef.current.find((p) => p.id === id), movement, new Date().toISOString());
+    // Un pezzo unico con uno scaffale che non torna parte dalla sua posizione (S1b, `withShelfRead`)
+    const found = productsRef.current.find((p) => p.id === id);
+    const result = movementOf(found && withShelfRead(found, shelvesRef.current), movement, new Date().toISOString());
     if (!result.ok) return result;
     patchProduct(id, result.patch);
     result.events.forEach(addTimelineEvent);

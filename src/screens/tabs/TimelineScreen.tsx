@@ -4,7 +4,7 @@ import { View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
 import { useInventory } from '../../../contexts/InventoryContext';
-import { useLocations } from '../../../contexts/LocationsContext';
+import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { describeStockEvent } from '../../../utils/stock';
 import { TimelineEvent } from '../../../types';
@@ -43,8 +43,8 @@ export default function TimelineScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { timeline, getProductById } = useInventory();
-  const { locations } = useLocations();
-  const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
+  // Nome della posizione, con lo scaffale per la giacenza sugli scaffali (S1b): «Magazzino › A1»
+  const placeLabel = usePlaceLabel();
   // Fornitore o cliente del movimento (M10): «· Fornitore Rossi» in fondo al testo
   const { labelOf: contactLabel } = useContacts();
   const [filterType, setFilterType] = useState<FilterType>('all');

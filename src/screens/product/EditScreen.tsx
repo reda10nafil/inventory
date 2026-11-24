@@ -27,6 +27,7 @@ import { missingRequiredFields } from '../../../utils/formValidation';
 import { fieldError, formValue, invalidNumberFields, NO_FLAGS, savedValue, type FlaggedFields } from '../../../utils/fieldValues';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
+import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { shelvesFor } from '../../../utils/shelves';
 import { ShelfPicker } from '../../../components/ShelfPicker';
 import { PhotoGallery } from '../../../components/PhotoGallery';
@@ -55,7 +56,8 @@ function EditProductForm({ product }: { product: Product }) {
   const { furTypes } = useFurTypes();
   // Articolo a quantità (M03): posizione e giacenza non si modificano qui
   const stocked = isStocked(product);
-  const placeLabel = (place: string) => locations.find((l) => l.id === place)?.label ?? place;
+  // S1b: «Magazzino › A1» per la giacenza sugli scaffali (la posizione che non c'è più resta col suo id)
+  const placeLabel = usePlaceLabel();
 
   const { customFields } = useCustomFields();
   const { layout, getVisibleFields } = useLayout();

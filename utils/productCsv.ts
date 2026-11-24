@@ -6,12 +6,18 @@
 // C1 (ticket 19): «Categoria» è la cartella, col nome completo «Pellicce › Visone», e «Tipo di pelle» è `furType`.
 // Le intestazioni sono cambiate tre volte; l'import riconosce il file dall'intestazione (`productCsvFormat`).
 // S1a (ticket 13): colonna «Scaffale» in fondo, col nome dello scaffale (unico dentro la posizione del prodotto).
+// S1b: la giacenza sugli scaffali sta nella colonna Giacenza, con le chiavi salvate (`magazzino/<idScaffale>:3`).
 import type { Product, TimelineEvent } from '../types';
 import { categoryPath, categoryTree, type CategoryNode } from './categories';
 import { furTypeFromCsv, type FurType } from './furTypes';
 import { parseStoredNumber } from './number';
-import { isShelfPlace, productShelf, shelfIdFromCsv, type Shelf } from './shelves';
-import { DEFAULT_UNIT, isLowStock, isStocked, MOVEMENT_LABELS, REASON_LABELS, round3, stockOf } from './stock';
+import { isShelfPlace, productShelf, shelfIdFromCsv, stockKeyFromCsv, type Shelf } from './shelves';
+import {
+  DEFAULT_UNIT, isLowStock, isStocked, MOVEMENT_LABELS, placeOfKey, REASON_LABELS, round3, SHELF_KEY_SEPARATOR, stockOf,
+} from './stock';
+
+/** Ordine delle chiavi nel CSV: la posizione principale, poi i suoi scaffali, poi le altre (come erano). */
+const mainFirst = (location: string) => (key: string) => (key === location ? 2 : placeOfKey(key) === location ? 1 : 0);
 
 // Stesse posizioni delle colonne di prima di C1: cambiano solo i nomi della seconda («Categoria» → «Tipo di pelle»)
 // e della sedicesima («Cartella» → «Categoria»). «Scaffale» (S1a) è l'ultima: le altre restano dove erano.
@@ -19,15 +25,17 @@ export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status'
 
 /**
  * Giacenza di un articolo a quantità per il CSV: «magazzino:12; vetrina:2.5», con la posizione principale per
- * prima e anche a 0 (così un esaurito resta articolo a quantità). Pezzo unico: vuota.
+ * prima e anche a 0 (così un esaurito resta articolo a quantità). Pezzo unico: vuota. Gli scaffali (S1b) con la
+ * chiave salvata, «magazzino/<idScaffale>:3», che l'import rilegge uguale.
  */
 export function stockCell(product: Pick<Product, 'location' | 'stock'>): string {
   if (!isStocked(product)) return '';
   const entries = Object.entries(product.stock ?? {})
     .filter(([place, qty]) => place && typeof qty === 'number' && Number.isFinite(qty) && (qty > 0 || place === product.location))
     .map(([place, qty]) => [place, round3(Math.max(0, qty))] as const);
-  if (!entries.some(([place]) => place === product.location)) entries.push([product.location, 0]);
-  entries.sort(([a], [b]) => Number(b === product.location) - Number(a === product.location));
+  if (!entries.some(([place]) => placeOfKey(place) === product.location)) entries.push([product.location, 0]);
+  const rank = mainFirst(product.location);
+  entries.sort(([a], [b]) => rank(b) - rank(a));
   return entries.map(([place, qty]) => `${place}:${qty}`).join('; ');
 }
 
@@ -150,10 +158,12 @@ export type ProductCsvColumns = ReturnType<typeof productCsvColumns>;
 
 /**
  * Una riga del CSV → dati del prodotto da aggiungere, con la giacenza per `addProduct(dati, { stock })`.
- * `null` se la riga si salta: SKU vuoto, giacenza scritta ma non valida, oppure posizione o giacenza su uno scaffale
- * (S1a: nessuna chiave di `stock` è uno scaffale; lo SKU già presente lo controlla chi importa). Tipo di pelle e
- * categoria si cercano per id o nome; la categoria anche col nome completo. Lo scaffale si cerca per nome tra quelli
- * della posizione del prodotto, solo per i pezzi unici; uno sconosciuto si perde, come una categoria.
+ * `null` se la riga si salta: SKU vuoto, giacenza scritta ma non valida, posizione che è uno scaffale o contiene il
+ * separatore `/`, giacenza su uno scaffale sconosciuto (lo SKU già presente lo controlla chi importa). La giacenza
+ * può stare su uno scaffale (S1b, `stockKeyFromCsv`: chiave esportata, posizione/nome, id o codice dello scaffale).
+ * Tipo di pelle e categoria si cercano per id o nome; la categoria anche col nome completo. La colonna Scaffale si
+ * cerca per nome tra quelli della posizione del prodotto, solo per i pezzi unici; uno sconosciuto si perde, come una
+ * categoria (per un articolo a quantità lo scaffale è nella Giacenza).
  */
 export function productFromCsvRow(
   row: readonly string[],
@@ -169,11 +179,20 @@ export function productFromCsvRow(
   const sku = valueAt(cols.sku);
   if (!sku) return null;
   // Giacenza vuota: pezzo unico come prima; scritta ma non valida: riga saltata (non diventa 1 pezzo)
-  const stock = parseStockCell(valueAt(cols.stock));
-  if (stock === undefined) return null;
+  const written = parseStockCell(valueAt(cols.stock));
+  if (written === undefined) return null;
   const shelves = lists.shelves ?? [];
   const location = valueAt(cols.location);
-  if (isShelfPlace(shelves, [location, ...Object.keys(stock ?? {})])) return null;
+  if (location.includes(SHELF_KEY_SEPARATOR) || isShelfPlace(shelves, [location])) return null;
+  let stock: Record<string, number> | null = null;
+  if (written) {
+    stock = {};
+    for (const [place, qty] of Object.entries(written)) {
+      const key = stockKeyFromCsv(place, shelves);
+      if (!key) return null;
+      stock[key] = round3((stock[key] ?? 0) + qty);
+    }
+  }
   const shelfId = stock ? undefined : shelfIdFromCsv(valueAt(cols.shelf), location, shelves);
   const minStock = numberAt(cols.minStock);
 
@@ -235,7 +254,9 @@ export function stockCsvRows(products: readonly Product[], labels: Labels): unkn
     const stocked = isStocked(product);
     const stock = Object.entries(stockOf(product));
     if (stocked && !stock.length) stock.push([product.location, 0]);
-    stock.sort(([a], [b]) => Number(b === product.location) - Number(a === product.location));
+    // Gli scaffali (S1b) hanno una riga ciascuno col loro nome («Magazzino › A1», da `labels.place`)
+    const rank = mainFirst(product.location);
+    stock.sort(([a], [b]) => rank(b) - rank(a));
     const low = stocked && product.minStock != null ? (isLowStock(product) ? 'sì' : 'no') : '';
     for (const [place, qty] of stock) {
       rows.push([

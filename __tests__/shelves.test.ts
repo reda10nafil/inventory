@@ -2,8 +2,10 @@ import type { Product } from '../types';
 import {
   GENERIC_SHELF, isShelfPlace, keptShelfId, locationShelvesError, newShelfId, parseShelves, placeWithShelf,
   productShelf, productShelfId, shelfData, shelfDeleteError, shelfIdFromCsv, shelfKind, shelfNameError, shelfPatch,
-  shelfUsage, shelvesByLocation, shelvesFor, shelvesOfCategory, suggestShelfCode, withKeptShelf, type Shelf,
+  shelfUsage, shelvesByLocation, shelvesFor, shelvesOfCategory, stockKeyFromCsv, stockPlaceLabel, suggestShelfCode,
+  UNKNOWN_SHELF, withKeptShelf, withShelfRead, type Shelf,
 } from '../utils/shelves';
+import { movementOf } from '../utils/inventoryOps';
 import { codeError, codeOwner } from '../utils/codes';
 
 const categories = [
@@ -238,5 +240,69 @@ describe('CSV', () => {
     expect(isShelfPlace(shelves, ['SCAF-A10'])).toBe(true);
     expect(isShelfPlace(shelves, ['magazzino', 'vetrina', 'A1'])).toBe(false);
     expect(isShelfPlace(shelves, [''])).toBe(false);
+  });
+});
+
+// S1b (ticket 13): giacenza degli articoli a quantità sugli scaffali, chiavi «posizione/idScaffale»
+describe('giacenza sugli scaffali (S1b)', () => {
+  const K1 = `magazzino/${a1.id}`;
+  const label = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
+
+  it('shelfUsage conta anche gli articoli a quantità con giacenza sullo scaffale, anche nel cestino', () => {
+    const usage = shelfUsage([
+      piece({ stock: { [K1]: 3 } }),
+      piece({ id: 'p2', stock: { magazzino: 1, [K1]: 2 }, deletedAt: NOW }),
+      piece({ id: 'p3', stock: { [K1]: 0, magazzino: 4 } }),
+      piece({ id: 'p4', stock: { [`magazzino/sparito`]: 1 } }),
+      piece({ id: 'p5', shelfId: a1.id }),
+      piece({ id: 'p6', stock: { [`vetrina/${a1.id}`]: 2 }, location: 'vetrina' }),
+    ], shelves);
+    expect(usage).toEqual({ [a1.id]: { active: 2, trashed: 1 } });
+  });
+
+  it('uno scaffale con giacenza non si elimina', () => {
+    const usage = shelfUsage([piece({ stock: { [K1]: 3 } })], shelves);
+    expect(shelfDeleteError(a1, usage[a1.id])).toMatch(/^Lo scaffale "A1" ha 1 prodotto\./);
+  });
+
+  it('stockPlaceLabel: «Magazzino», «Magazzino › A1», scaffale che questo dispositivo non conosce', () => {
+    expect(stockPlaceLabel('magazzino', label, shelves)).toBe('Magazzino');
+    expect(stockPlaceLabel(K1, label, shelves)).toBe('Magazzino › A1');
+    expect(stockPlaceLabel('magazzino/sparito', label, shelves)).toBe(`Magazzino › ${UNKNOWN_SHELF}`);
+    expect(stockPlaceLabel('deposito', label, shelves)).toBe('deposito');
+    // A1 è di Magazzino: in una chiave di Vetrina (dato arrivato da fuori) non si nomina
+    expect(stockPlaceLabel(`vetrina/${a1.id}`, label, shelves)).toBe(`Vetrina › ${UNKNOWN_SHELF}`);
+  });
+
+  it('withShelfRead: un pezzo unico con uno scaffale che non torna si legge senza; gli altri uguali', () => {
+    const stray = piece({ location: 'vetrina', shelfId: a1.id });
+    expect('shelfId' in withShelfRead(stray, shelves)).toBe(false);
+    expect('shelfId' in withShelfRead(piece({ shelfId: 'sparito' }), shelves)).toBe(false);
+    const good = piece({ shelfId: a1.id });
+    expect(withShelfRead(good, shelves)).toBe(good);
+    const stocked = piece({ shelfId: a1.id, stock: { [K1]: 1 } });
+    expect(withShelfRead(stocked, shelves)).toBe(stocked);
+    // Il primo movimento parte allora dalla posizione: nessuna chiave «vetrina/<A1>»
+    const r = movementOf(withShelfRead(stray, shelves), { kind: 'carico', qty: 2, to: 'vetrina' }, NOW);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.patch.stock).toEqual({ vetrina: 3 });
+  });
+
+  it('stockKeyFromCsv: la chiave esportata, posizione/nome, id o codice da solo; sconosciuto o rovinato → undefined', () => {
+    expect(stockKeyFromCsv(K1, shelves)).toBe(K1);
+    expect(stockKeyFromCsv('magazzino/ a10 ', shelves)).toBe(`magazzino/${a10.id}`);
+    expect(stockKeyFromCsv(a1.id, shelves)).toBe(K1);
+    expect(stockKeyFromCsv('SCAF-A10', shelves)).toBe(`magazzino/${a10.id}`);
+    expect(stockKeyFromCsv('vetrina', shelves)).toBe('vetrina');
+    expect(stockKeyFromCsv('A1', shelves)).toBe('A1'); // un nome da solo resta una posizione (sconosciuta), come prima
+    expect(stockKeyFromCsv('magazzino/Z9', shelves)).toBeUndefined();
+    expect(stockKeyFromCsv('vetrina/A1', shelves)).toBeUndefined(); // A1 è di Magazzino
+    expect(stockKeyFromCsv('magazzino/', shelves)).toBeUndefined();
+    expect(stockKeyFromCsv('/A1', shelves)).toBeUndefined();
+  });
+
+  it('productShelfId resta dei soli pezzi unici: lo scaffale di un articolo a quantità sta nella chiave', () => {
+    expect(productShelfId(piece({ shelfId: a1.id, stock: { [K1]: 2 } }), shelves)).toBeUndefined();
+    expect(keptShelfId(shelves, piece({ shelfId: a1.id, stock: { [K1]: 2 } }))).toBeUndefined();
   });
 });

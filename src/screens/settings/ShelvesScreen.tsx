@@ -288,7 +288,7 @@ export default function ShelvesScreen() {
         ))}
         {shelves.length === 0 && <Text style={styles.empty}>Nessuno scaffale: crea il primo qui sopra.</Text>}
         <Text style={styles.hint}>
-          Lo scaffale si sceglie in Aggiungi e Modifica per i pezzi unici, tra quelli della loro posizione; lo Scanner riconosce il suo codice.
+          Lo scaffale si sceglie tra quelli della posizione: in Aggiungi e Modifica per i pezzi unici, in Aggiungi e Movimenta per la giacenza degli articoli a quantità. Lo Scanner riconosce il suo codice.
         </Text>
       </ScrollView>
 

@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { useInventory } from '../../../contexts/InventoryContext';
-import { useLocations } from '../../../contexts/LocationsContext';
+import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import {
   CONTACT_KINDS, CONTACT_KIND_ICONS, CONTACT_KIND_LABELS, contactDeleteError, contactEvents, contactNameError, contactUsage, filterContacts,
   type Contact, type ContactFilter, type ContactKind,
@@ -35,7 +35,6 @@ export default function ContactsScreen() {
   const t = useTheme();
   const { contacts, loading, addContact, updateContact, deleteContact } = useContacts();
   const { timeline, getProductById } = useInventory();
-  const { locations } = useLocations();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -53,7 +52,8 @@ export default function ContactsScreen() {
   const shown = useMemo(() => filterContacts(contacts, filter), [contacts, filter]);
   const open = contacts.find((c) => c.id === openId);
   const openEvents = useMemo(() => (openId ? contactEvents(timeline, openId) : []), [timeline, openId]);
-  const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
+  // S1b: «Magazzino › A1» per la giacenza sugli scaffali
+  const placeLabel = usePlaceLabel();
   const countFor = (f: ContactFilter) => (f === 'tutti' ? contacts.length : contacts.filter((c) => c.kind === f).length);
   // Senza contatti il modulo è già aperto: è la prima cosa da fare
   const showForm = formOpen || contacts.length === 0;

@@ -9,6 +9,7 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { usage } from '../../../utils/productRules';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { locationShelvesError } from '../../../utils/shelves';
+import { newLocationId } from '../../../utils/stock';
 import { codeCheck } from '../../../utils/codes';
 import { useAutomations } from '../../../contexts/AutomationsContext';
 import { automationsUsing, locationInUseText } from '../../../utils/automationRun';
@@ -97,7 +98,8 @@ export default function ManageLocationsScreen() {
       resetForm();
     } else {
       // Create new
-      const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      // Mai il separatore delle chiavi della giacenza (`/`, S1b): `newLocationId` tiene solo a-z, 0-9 e _
+      const newId = newLocationId(name);
 
       if (locations.some((l) => l.id === newId)) {
         Alert.alert('Errore', 'Esiste già una posizione con questo ID (basato sul nome)');

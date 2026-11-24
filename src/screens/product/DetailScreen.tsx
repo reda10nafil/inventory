@@ -34,10 +34,12 @@ import { withAlpha } from '../../../utils/color';
 import { formatPrice } from '../../../utils/price';
 import { PhotoGallery } from '../../../components/PhotoGallery';
 import { formatNumber } from '../../../utils/number';
-import { describeStockEvent, formatQty, isLowStock, isOutOfStock, isStocked, round3, storedStock, totalStock } from '../../../utils/stock';
+import { describeStockEvent, formatQty, isLowStock, isOutOfStock, isStocked, round3, stockGroups, storedStock, totalStock } from '../../../utils/stock';
 import { MovementSheet } from '../../../components/MovementSheet';
 import { canMoveStock as canMoveStockRule } from '../../../utils/productRules';
 import { useShelves } from '../../../contexts/ShelvesContext';
+import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
+import { UNKNOWN_SHELF } from '../../../utils/shelves';
 
 export default function ProductDetailScreen() {
   const styles = useStyles();
@@ -49,7 +51,9 @@ export default function ProductDetailScreen() {
   const { locations } = useLocations();
   const kindOf = useProductKind();
   const { labelOf: contactLabel } = useContacts();
-  const { shelfOf } = useShelves();
+  const { shelfOf, shelves } = useShelves();
+  // S1b: «Magazzino › A1» per le chiavi della giacenza con lo scaffale (movimenti, Cronologia dettagliata)
+  const placeLabel = usePlaceLabel();
   const { customFields, allFieldsIncludingDeleted } = useCustomFields();
   // VAL: le etichette delle opzioni dal registro (rinominate, il prodotto segue), nome e icona dalla copia (EDC)
   const optionsOf = useFieldOptions();
@@ -90,12 +94,13 @@ export default function ProductDetailScreen() {
   const kind = kindOf(product);
   /** «Categoria · Tipo - testo», senza separatori in più quando mancano. */
   const withKind = (text: string) => [kind.full, text].filter(Boolean).join(' - ');
-  // Articolo a quantità (M03): giacenza per posizione, dalla più grande; il nome della posizione o, se non c'è più, l'id
+  // Articolo a quantità (M03): giacenza per posizione, dalla più grande; il nome della posizione o, se non c'è più, l'id.
+  // S1b: una posizione con giacenza sugli scaffali ha sotto una riga per scaffale col nome e «Senza scaffale».
   const stocked = isStocked(product);
-  const placeLabel = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
   // Nel cestino si mostra la giacenza salvata (torna col ripristino), così non sembra vuoto (M04)
-  const stockRows = Object.entries(storedStock(product)).sort((a, b) => b[1] - a[1]);
-  const stockTotal = round3(stockRows.reduce((sum, [, qty]) => sum + qty, 0));
+  const stockRows = stockGroups(storedStock(product));
+  const stockTotal = round3(stockRows.reduce((sum, row) => sum + row.qty, 0));
+  const shelfName = (shelfId: string, place: string) => shelves.find((s) => s.id === shelfId && s.locationId === place)?.name ?? UNKNOWN_SHELF;
   // Sotto la scorta minima (M06): stessa regola dell'avviso «Attenzione»
   const lowStock = isLowStock(product);
   // «Movimenta» (M04): prodotti disponibili e non nel cestino; un pezzo unico diventa articolo a quantità
@@ -892,11 +897,19 @@ export default function ProductDetailScreen() {
                     </View>
                     {stockRows.length === 0 ? (
                       <Text style={styles.stockPlace}>Esaurito: nessuna posizione con giacenza</Text>
-                    ) : stockRows.map(([place, qty]) => (
-                      <View key={place} style={styles.stockRow}>
-                        <Text style={styles.stockPlace} numberOfLines={1}>{placeLabel(place)}</Text>
-                        <Text style={styles.stockQty}>{formatQty(qty, product.unit)}</Text>
-                      </View>
+                    ) : stockRows.map((row) => (
+                      <React.Fragment key={row.place}>
+                        <View style={styles.stockRow}>
+                          <Text style={styles.stockPlace} numberOfLines={1}>{placeLabel(row.place)}</Text>
+                          <Text style={styles.stockQty}>{formatQty(row.qty, product.unit)}</Text>
+                        </View>
+                        {row.keys.some((k) => k.shelfId) && row.keys.map((k) => (
+                          <View key={k.key} style={[styles.stockRow, styles.stockShelfRow]}>
+                            <Text style={styles.stockShelf} numberOfLines={1}>{k.shelfId ? `Scaffale ${shelfName(k.shelfId, row.place)}` : 'Senza scaffale'}</Text>
+                            <Text style={styles.stockShelfQty}>{formatQty(k.qty, product.unit)}</Text>
+                          </View>
+                        ))}
+                      </React.Fragment>
                     ))}
                     {/* Scorta minima (M06): sotto, il prodotto ha l'avviso «Attenzione» */}
                     {product.minStock != null && product.minStock > 0 && (
@@ -1513,6 +1526,22 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     fontSize: 15,
     lineHeight: 20,
+    color: t.colors.textSecondary,
+  },
+  // Scaffali di una posizione (S1b): rientrati sotto la posizione, un gradino più piccoli
+  stockShelfRow: {
+    paddingLeft: 14,
+  },
+  stockShelf: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.colors.textSecondary,
+  },
+  stockShelfQty: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontVariant: ['tabular-nums'],
     color: t.colors.textSecondary,
   },
   moveStockButton: {

@@ -2,17 +2,22 @@
 // posizioni, causale e nota. Il calcolo e i rifiuti sono in `applyMovement` (utils/stock.ts); qui solo la scelta.
 // M10 (ticket 07): per carico e scarico si può scegliere un fornitore o un cliente (solo se l'anagrafica ne ha);
 // lo scarico con causale vendita ha anche un prezzo per unità facoltativo (vuoto = listino, come la Vendita flash).
+// S1b (ticket 13): dopo la posizione, se ha scaffali, la fila «Nessuno» + gli scaffali (anche quelli che questo
+// dispositivo non conosce, se il prodotto ci ha giacenza); il movimento usa la chiave `posizione/scaffale`. Una
+// posizione senza scaffali si sceglie come prima.
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import type { MovementKind, MovementReason, Product } from '../types';
 import { useInventory } from '../contexts/InventoryContext';
 import { useLocations } from '../contexts/LocationsContext';
 import { useContacts } from '../contexts/ContactsContext';
+import { useShelves } from '../contexts/ShelvesContext';
 import { makeStyles, useTheme } from '../contexts/ThemeContext';
 import {
-  MOVEMENT_LABELS, REASON_LABELS, formatQty, movementErrorText, parseQty, parseSalePrice, qtyAt, takesContact, takesPrice,
-  type Movement,
+  MOVEMENT_LABELS, REASON_LABELS, formatQty, keysAt, movementErrorText, parseQty, parseSalePrice, placeOfKey, qtyAt, qtyIn,
+  splitStockKey, stockKey, takesContact, takesPrice, type Movement,
 } from '../utils/stock';
+import { UNKNOWN_SHELF, withShelfRead } from '../utils/shelves';
 import { salePrice } from '../utils/inventoryOps';
 import { CONTACT_KIND_ICONS, CONTACT_KIND_LABELS, contactsForMovement } from '../utils/contacts';
 import { formatNumber } from '../utils/number';
@@ -37,7 +42,7 @@ export const REASONS_BY_KIND: Record<MovementKind, MovementReason[]> = {
  * `initialKind`: tipo già scelto all'apertura (Azione rapida, M09). `onDone`: chiamata solo dopo un movimento
  * registrato (Annulla e chiusura non la chiamano).
  */
-export function MovementSheet({ product, visible, onClose, initialKind = 'carico', onDone }: {
+export function MovementSheet({ product: saved, visible, onClose, initialKind = 'carico', onDone }: {
   product: Product;
   visible: boolean;
   onClose: () => void;
@@ -49,30 +54,60 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
   const { moveStock } = useInventory();
   const { locations } = useLocations();
   const { contacts } = useContacts();
+  const { shelves } = useShelves();
+  // Un pezzo unico con uno scaffale che non torna si muove dalla sua posizione (come lo legge la Scheda, S1b)
+  const product = withShelfRead(saved, shelves);
 
   const [kind, setKind] = useState<MovementKind>(initialKind);
   const [qtyText, setQtyText] = useState('');
   const [place, setPlace] = useState(product.location);
+  // Scaffale della posizione scelta ('' = nessuno, la parte senza scaffale) per «Da»/«In» e per «A» (S1b)
+  const [placeShelf, setPlaceShelf] = useState('');
   const [to, setTo] = useState('');
+  const [toShelf, setToShelf] = useState('');
   const [reason, setReason] = useState<MovementReason | undefined>();
   const [note, setNote] = useState('');
   const [contactId, setContactId] = useState<string | undefined>();
   const [priceText, setPriceText] = useState('');
   const [allContacts, setAllContacts] = useState(false);
 
+  /** Scaffale proposto in una posizione: nessuno se lì c'è giacenza senza scaffale (o niente), altrimenti quello con
+   *  più giacenza (un pezzo unico sul suo scaffale: quello). */
+  const defaultShelf = (pos: string) => {
+    const keys = keysAt(product, pos);
+    if (!keys.length || keys.some(([key]) => key === pos)) return '';
+    return splitStockKey([...keys].sort((a, b) => b[1] - a[1])[0][0]).shelfId ?? '';
+  };
+
   // Ogni apertura riparte pulita dal tipo chiesto e dalla posizione principale del prodotto
   useEffect(() => {
     if (!visible) return;
-    setKind(initialKind); setQtyText(''); setPlace(product.location); setTo(''); setReason(undefined); setNote('');
-    setContactId(undefined); setPriceText(''); setAllContacts(false);
+    setKind(initialKind); setQtyText(''); setPlace(product.location); setPlaceShelf(defaultShelf(product.location)); setTo(''); setToShelf('');
+    setReason(undefined); setNote(''); setContactId(undefined); setPriceText(''); setAllContacts(false);
   }, [visible, product.location, initialKind]);
 
   const unit = product.unit || 'pz';
-  // Posizioni dell'elenco più quelle che il prodotto ha ancora ma non sono più in elenco (si mostrano con l'id)
+  // Posizioni dell'elenco più quelle che il prodotto ha ancora ma non sono più in elenco (si mostrano con l'id); una
+  // chiave con lo scaffale vale la sua posizione
   const known = new Set(locations.map((l) => l.id));
-  const orphan = [...new Set([product.location, ...Object.keys(product.stock ?? {})])].filter((id) => id && !known.has(id)).map((id) => ({ id, label: id }));
+  const orphan = [...new Set([product.location, ...Object.keys(product.stock ?? {}).map(placeOfKey)])].filter((id) => id && !known.has(id)).map((id) => ({ id, label: id }));
   const places = [...locations.map((l) => ({ id: l.id, label: l.label })), ...orphan];
   const labelOf = (id: string) => places.find((p) => p.id === id)?.label ?? id;
+
+  /** Scaffali di una posizione: quelli in elenco, più quelli dove il prodotto ha giacenza ma che qui non si conoscono. */
+  const shelvesAt = (pos: string) => {
+    const here = shelves
+      .filter((s) => s.locationId === pos)
+      .sort((a, b) => a.name.localeCompare(b.name, 'it', { numeric: true, sensitivity: 'base' }))
+      .map((s) => ({ id: s.id, name: s.name }));
+    const unknown = keysAt(product, pos)
+      .map(([key]) => splitStockKey(key).shelfId)
+      .filter((id): id is string => !!id && !here.some((s) => s.id === id))
+      .map((id) => ({ id, name: UNKNOWN_SHELF }));
+    return [...here, ...unknown];
+  };
+  const fromKey = stockKey(place, placeShelf);
+  const toKey = stockKey(to, toShelf);
 
   // Fornitori e clienti (M10): prima quelli del tipo suggerito, poi gli altri; nessuno per trasferimento e rettifica
   const contactChoices = contactsForMovement(contacts, kind);
@@ -85,8 +120,13 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
     // Causale, contatto e prezzo sono del tipo scelto: cambiando tipo si riparte senza
     setContactId(undefined);
     setPriceText('');
-    if (k === 'trasferimento' && to === place) setTo('');
+    if (k === 'trasferimento' && toKey === fromKey) { setTo(''); setToShelf(''); }
   };
+
+  // Un'altra posizione: lo scaffale riparte da quello proposto («Da»/«In») o da nessuno («A»)
+  const pickPlace = (id: string) => { setPlace(id); setPlaceShelf(defaultShelf(id)); };
+  // Nella stessa posizione partendo dalla parte senza scaffale, la destinazione proposta è il primo scaffale
+  const pickTo = (id: string) => { setTo(id); setToShelf(id === place && !placeShelf ? (shelvesAt(id)[0]?.id ?? '') : ''); };
 
   const submit = () => {
     const qty = parseQty(qtyText);
@@ -98,7 +138,7 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
     let movement: Movement;
     if (kind === 'rettifica') {
       if (qty == null) { Alert.alert('Movimento non registrato', 'Scrivi la quantità contata (anche 0).'); return; }
-      movement = { kind, at: place, counted: qty, ...common };
+      movement = { kind, at: fromKey, counted: qty, ...common };
     } else {
       if (qty == null) { Alert.alert('Movimento non registrato', movementErrorText({ error: 'bad_qty' })); return; }
       // Vendita: prezzo per unità scritto, altrimenti il listino (stesso evento della Vendita flash)
@@ -108,9 +148,9 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
         if (written === null) { Alert.alert('Movimento non registrato', 'Scrivi un prezzo valido (es. 120 o 12,50) oppure lascia il campo vuoto.'); return; }
         price = salePrice(product, written);
       }
-      movement = kind === 'carico' ? { kind, qty, to: place, ...common }
-        : kind === 'scarico' ? { kind, qty, from: place, ...common, ...(price != null && { finalPrice: price }) }
-          : { kind, qty, from: place, to, ...common };
+      movement = kind === 'carico' ? { kind, qty, to: fromKey, ...common }
+        : kind === 'scarico' ? { kind, qty, from: fromKey, ...common, ...(price != null && { finalPrice: price }) }
+          : { kind, qty, from: fromKey, to: to ? toKey : '', ...common };
     }
     const result = moveStock(product.id, movement);
     if (!result.ok) {
@@ -138,8 +178,44 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
     </View>
   );
 
+  // Scaffali della posizione scelta (S1b): «Nessuno» (la parte senza scaffale) e gli scaffali, con la quantità di
+  // ognuno. Etichetta accessibile «Da Magazzino › A1», «A Magazzino › Nessuno scaffale».
+  const shelfChips = (title: string, pos: string, value: string, onPick: (id: string) => void, excludeKey?: string) => {
+    const list = pos ? shelvesAt(pos) : [];
+    if (!list.length) return null;
+    const options = [{ id: '', name: 'Nessuno' }, ...list].filter((s) => stockKey(pos, s.id) !== excludeKey);
+    return (
+      <>
+        <Text style={styles.label}>Scaffale</Text>
+        <View style={styles.chipWrap}>
+          {options.map((s) => {
+            const active = value === s.id;
+            const here = qtyIn(product, stockKey(pos, s.id));
+            return (
+              <Pressable
+                key={s.id || 'none'}
+                style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
+                onPress={() => onPick(s.id)}
+                accessibilityLabel={`${title} ${labelOf(pos)} › ${s.id ? s.name : 'Nessuno scaffale'}`}
+              >
+                {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                <AppIcon name={s.id ? 'shelves' : 'layers-clear'} size={14} color={active ? t.colors.chipActiveText : t.colors.chipText} />
+                <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>
+                  {s.name}{here > 0 ? ` · ${formatQty(here, unit)}` : ''}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </>
+    );
+  };
+
   const placeTitle = kind === 'carico' ? 'In' : kind === 'rettifica' ? 'Posizione contata' : 'Da';
-  const recorded = qtyAt(product, place);
+  const recorded = qtyIn(product, fromKey);
+  // In «A» la posizione di partenza manca solo se non ha scaffali (come prima); con gli scaffali si può spostare dalla
+  // posizione a un suo scaffale e viceversa, e manca la sola chiave di partenza
+  const placeHasShelves = shelvesAt(place).length > 0;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -165,12 +241,14 @@ export function MovementSheet({ product, visible, onClose, initialKind = 'carico
             </View>
 
             <Text style={styles.label}>{placeTitle}</Text>
-            {placeChips(placeTitle, place, setPlace)}
+            {placeChips(placeTitle, place, pickPlace)}
+            {shelfChips(placeTitle, place, placeShelf, setPlaceShelf)}
 
             {kind === 'trasferimento' && (
               <>
                 <Text style={styles.label}>A</Text>
-                {placeChips('A', to, setTo, place)}
+                {placeChips('A', to, pickTo, placeHasShelves ? undefined : place)}
+                {shelfChips('A', to, toShelf, setToShelf, fromKey)}
               </>
             )}
 

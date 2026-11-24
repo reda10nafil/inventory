@@ -10,7 +10,7 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
 import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
 import { categoryPath } from '../../../utils/categories';
-import { useLocations } from '../../../contexts/LocationsContext';
+import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
@@ -30,7 +30,8 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { products, timeline, addProduct, getProductBySku, libraries } = useInventory();
-  const { getLocation } = useLocations();
+  // S1b: nei report le chiavi con lo scaffale si leggono «Magazzino › A1»
+  const placeLabel = usePlaceLabel();
   const { furTypes, labelOf } = useFurTypes();
   const { nameOf: contactName } = useContacts();
   // S1a: colonna «Scaffale» nel CSV dei prodotti (nome dello scaffale dentro la posizione)
@@ -38,7 +39,7 @@ export default function SettingsScreen() {
   // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
   // C1: nel report delle giacenze «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo
   const reportLabels = {
-    place: (id: string) => getLocation(id)?.label ?? id,
+    place: placeLabel,
     category: (id: string | undefined) => categoryPath(libraries, id),
     furType: labelOf,
     contact: contactName,

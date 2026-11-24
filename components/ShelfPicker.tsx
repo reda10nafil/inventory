@@ -1,6 +1,7 @@
 // Scelta dello scaffale di un pezzo unico (S1a, ticket 13) in Aggiungi e Modifica: «Nessuno» e gli scaffali proposti
 // (`shelvesFor`: della posizione, della categoria del prodotto o di una sopra, poi i generici). Il valore è l'id dello
-// scaffale ('' = nessuno). Chi lo usa non lo mostra per gli articoli a quantità.
+// scaffale ('' = nessuno). Modifica non lo mostra per gli articoli a quantità (posizione e giacenza cambiano solo coi
+// movimenti); Aggiungi sì (S1b): con una quantità lo scaffale scelto è dove va la giacenza iniziale.
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { AppIcon } from './ui/AppIcon';

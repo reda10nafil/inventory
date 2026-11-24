@@ -45,7 +45,7 @@ Tra gli scaffali della stessa posizione in cui il prodotto **entra** (`fitsShelf
    - Aggiungi (blocco Magazzino), Modifica (cambio di scaffale), Movimenta (carico e trasferimento), Azione rapida («Spostato», Carico), Spostamento rapido (conto aggiornato a ogni articolo, in pezzi, peso e volume; il controllo di oggi diventa la prima chiamata), esecuzione delle automazioni (passo «Sposta»): **avviso e blocco**;
    - Conta, Audit «Sposta qui», import CSV: solo informazione (vedi sopra, da confermare);
    - Chat: secondo la fetta CHAT (ticket 30).
-4. Lo scaffale come destinazione nelle automazioni: la lettura del codice di uno scaffale dà `{ locationId, shelfId }` (lettore unico della fetta COD, ticket 22); la posa sullo scaffale degli articoli a quantità segue la forma delle chiavi decisa in S1b.
+4. Lo scaffale come destinazione nelle automazioni: la lettura del codice di uno scaffale dà `{ locationId, shelfId }` (lettore unico della fetta COD, ticket 22); la posa sullo scaffale degli articoli a quantità segue la forma delle chiavi decisa in S1b: **`stockKey(locationId, shelfId)` = `posizione/idScaffale`** (ticket 13). Per S3: la quantità di un prodotto su uno scaffale è `qtyAt(prodotto, stockKey(posizione, scaffale))` (esatta), quella di una posizione `qtyAt(prodotto, posizione)` somma già i suoi scaffali; un pezzo unico su uno scaffale vale 1 su quella chiave; `shelfUsage` conta già i prodotti con giacenza sullo scaffale.
 5. Messaggio del blocco: motivo in una riga, scaffale proposto con il pulsante «Usa A2», «Annulla». Colori dai ruoli del tema.
 
 ## Piano di verifica

@@ -5,8 +5,9 @@
 //   nella Scheda e nella card; spostare il prodotto in un'altra posizione lo toglie (Modifica e Azione rapida);
 // - eliminazioni rifiutate: posizione con scaffali, categoria usata da uno scaffale, scaffale con prodotti;
 // - lo Scanner riconosce il codice (e l'id) di uno scaffale;
-// - articolo a quantità: niente selettore e **nessuna chiave di `stock` è uno scaffale** dopo Aggiungi, Movimenta,
-//   Conta, Spostamento rapido, Audit, Azione rapida e import (`invariante`, letto dallo stato salvato);
+// - articolo a quantità: dopo Aggiungi, Movimenta, Conta, Spostamento rapido, Audit, Azione rapida e import ogni chiave
+//   di `stock` è una posizione o «posizione/scaffale» di quella posizione (`invariante`, letto dallo stato salvato; in
+//   S1a era «nessuna chiave è uno scaffale»: da S1b la giacenza può stare su uno scaffale, prova s1b-giacenza.cjs);
 // - export e import del CSV con la colonna «Scaffale»; i CSV di prima (C1) si leggono come prima.
 // Uso: node s1-scaffali.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const fs = require('fs');
@@ -56,14 +57,31 @@ async function prepara(h, { shelves = SHELVES, products = {}, extra } = {}) {
   await h.go('');
 }
 
-/** Nessuna chiave di `stock` (né la posizione) è uno scaffale, per id o per codice; nessun articolo a quantità ha `shelfId`. */
+/**
+ * Da S1b (forma 2 delle chiavi): ogni chiave di `stock` è una posizione oppure «posizione/idScaffale» di uno scaffale di
+ * quella posizione, mai l'id o il codice di uno scaffale da solo (`chiaviNonValide`); quelle sugli scaffali si elencano
+ * col nome (`chiaviSuScaffale`). La posizione del prodotto non è uno scaffale né composta; nessun articolo a quantità
+ * ha `shelfId` (lo scaffale sta nella chiave). In S1a l'invariante era «nessuna chiave di `stock` è uno scaffale».
+ */
 async function invariante(h) {
   const products = await h.products(1500);
   const shelves = (await h.store(S, 0)) || [];
   const ids = new Set(shelves.flatMap((s) => [s.id, s.barcode].filter(Boolean)));
+  const bad = [];
+  const onShelf = [];
+  for (const p of products) {
+    for (const k of Object.keys(p.stock || {})) {
+      const at = k.lastIndexOf('/');
+      if (at <= 0) { if (ids.has(k)) bad.push(`${p.sku}:${k}`); continue; }
+      const s = shelves.find((x) => x.id === k.slice(at + 1));
+      if (!s || s.locationId !== k.slice(0, at)) bad.push(`${p.sku}:${k}`);
+      else onShelf.push(`${p.sku}:${s.locationId}/${s.name}`);
+    }
+  }
   return {
-    chiaviScaffale: products.flatMap((p) => Object.keys(p.stock || {}).filter((k) => ids.has(k)).map((k) => `${p.sku}:${k}`)),
-    posizioniScaffale: products.filter((p) => ids.has(p.location)).map((p) => p.sku),
+    chiaviNonValide: bad,
+    chiaviSuScaffale: onShelf.sort(),
+    posizioniScaffale: products.filter((p) => ids.has(p.location) || (p.location || '').includes('/')).map((p) => p.sku),
     aQuantitaConScaffale: products.filter((p) => p.stock && p.shelfId).map((p) => p.sku),
   };
 }

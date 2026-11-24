@@ -1,6 +1,7 @@
 // Scaffali per spazio (S1a, ticket 13). Contesto piccolo e separato come Fornitori e clienti, fuori dall'elenco di
 // chiavi di InventoryContext; sta sopra InventoryProvider, che lo legge per tenere lo scaffale dei prodotti dentro
-// la loro posizione (`keptShelfId`). Nei prodotti resta solo l'id dello scaffale (`shelfId`).
+// la loro posizione (`keptShelfId`). Nei pezzi unici resta solo l'id dello scaffale (`shelfId`); la giacenza degli
+// articoli a quantità sta nelle chiavi `posizione/idScaffale` di `stock` (S1b).
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';

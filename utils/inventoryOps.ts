@@ -4,11 +4,14 @@
 // - Pezzo unico (senza `stock`): come prima, eventi `moved` e `sold`, stato «venduto».
 // - Articolo a quantità: tutto passa da `applyMovement` ed eventi `stock`; lo stato resta «disponibile», il prezzo
 //   della vendita sta nell'evento e `sellPrice` (prezzo di listino) non si sovrascrive.
+// S1b (ticket 13): la giacenza può stare sugli scaffali (chiavi `posizione/scaffale`). Spostare prende tutta la
+// posizione principale, scaffali compresi; vendere e il calo della Conta prendono prima dalla parte senza scaffale,
+// poi dagli scaffali (`drawsAt`), con un evento per chiave.
 import type { Product } from '../types';
 import { canMove, canSell } from './productRules';
 import {
-  applyMovement, DEFAULT_UNIT, isAt, isOutOfStock, isStocked, movementErrorText, qtyAt, round3,
-  type Movement, type MovementError, type NewEvent,
+  applyMovement, DEFAULT_UNIT, drawsAt, isAt, isOutOfStock, isStocked, keysAt, movementErrorText, placeOfKey, qtyAt, qtyIn,
+  round3, stockKey, type Movement, type MovementError, type NewEvent,
 } from './stock';
 
 export type OpRefusal = 'missing' | 'trash' | 'same_place' | 'sold' | 'out_of_stock' | 'over_stock' | 'bad_qty' | 'not_allowed';
@@ -18,13 +21,29 @@ export type OpResult = { ok: true; patch: Partial<Product>; events: NewEvent[] }
 const noShelf = (p: Pick<Product, 'shelfId'>): Partial<Product> => (p.shelfId !== undefined ? { shelfId: undefined } : {});
 
 /** I campi che un movimento cambia: solo questi entrano nello stato, il resto del prodotto non si tocca. Un articolo
- *  a quantità non ha scaffale (S1a, ticket 13): un pezzo unico che diventa articolo a quantità lo perde. */
+ *  a quantità non ha `shelfId`: il suo scaffale sta nella chiave della giacenza (S1b). Un pezzo unico che diventa
+ *  articolo a quantità perde il campo, ma la sua giacenza resta sullo scaffale (`applyMovement`). */
 const stockPatch = (p: Product): Partial<Product> => ({
   stock: p.stock, unit: p.unit, location: p.location, updatedAt: p.updatedAt, lastScannedAt: p.lastScannedAt, ...noShelf(p),
 });
 
+/** Movimenti in fila sullo stesso prodotto (uno per chiave): il prodotto alla fine e tutti gli eventi, oppure il
+ *  primo rifiuto (in quel caso nulla cambia). */
+function applyAll(product: Product, movements: readonly Movement[], now: string):
+  { ok: true; product: Product; events: NewEvent[] } | { ok: false; error: MovementError; available?: number } {
+  let current = product;
+  const events: NewEvent[] = [];
+  for (const movement of movements) {
+    const r = applyMovement(current, movement, now);
+    if (!r.ok) return r;
+    current = r.product;
+    events.push(...r.events);
+  }
+  return { ok: true, product: current, events };
+}
+
 /** Sposta il prodotto: un pezzo unico cambia posizione, un articolo a quantità trasferisce tutta la giacenza
- *  della posizione principale. */
+ *  della posizione principale, scaffali compresi (un trasferimento per chiave, S1b). */
 export function moveOf(product: Product | undefined, to: string, now: string): OpResult {
   if (!product) return { ok: false, reason: 'missing' };
   if (product.deletedAt) return { ok: false, reason: 'trash' };
@@ -37,9 +56,9 @@ export function moveOf(product: Product | undefined, to: string, now: string): O
       events: [{ productId: product.id, type: 'moved', timestamp: now, details: { from: product.location, to } }],
     };
   }
-  const qty = qtyAt(product, product.location);
-  if (qty <= 0) return { ok: false, reason: 'out_of_stock' };
-  const r = applyMovement(product, { kind: 'trasferimento', qty, from: product.location, to }, now);
+  const keys = keysAt(product, product.location);
+  if (!keys.length) return { ok: false, reason: 'out_of_stock' };
+  const r = applyAll(product, keys.map(([from, qty]) => ({ kind: 'trasferimento' as const, qty, from, to })), now);
   if (!r.ok) return { ok: false, reason: r.error === 'over_stock' ? 'over_stock' : 'not_allowed' };
   return { ok: true, patch: stockPatch(r.product), events: r.events };
 }
@@ -52,7 +71,8 @@ export function moveOf(product: Product | undefined, to: string, now: string): O
 export const salePrice = (product: Pick<Product, 'sellPrice'>, written: number | undefined): number | undefined =>
   written ?? product.sellPrice;
 
-/** Vende: un pezzo unico diventa «venduto»; un articolo a quantità scarica `qty` dalla posizione principale. */
+/** Vende: un pezzo unico diventa «venduto»; un articolo a quantità scarica `qty` dalla posizione principale, prima
+ *  dalla parte senza scaffale e poi dagli scaffali (S1b: uno scarico per chiave, ognuno col prezzo per unità). */
 export function saleOf(product: Product | undefined, finalPrice: number | undefined, qty: number, now: string): OpResult {
   if (!product) return { ok: false, reason: 'missing' };
   if (product.deletedAt) return { ok: false, reason: 'trash' };
@@ -69,9 +89,12 @@ export function saleOf(product: Product | undefined, finalPrice: number | undefi
   }
   if (isOutOfStock(product)) return { ok: false, reason: 'out_of_stock' };
   const price = salePrice(product, finalPrice);
-  const r = applyMovement(product, {
-    kind: 'scarico', qty, from: product.location, reason: 'vendita', ...(price != null && { finalPrice: price }),
-  }, now);
+  const sale = (from: string, q: number): Movement => ({
+    kind: 'scarico', qty: q, from, reason: 'vendita', ...(price != null && { finalPrice: price }),
+  });
+  // Quantità non valida o posizione principale che non basta: il rifiuto di prima (scarico dalla posizione)
+  const draws = drawsAt(product, product.location, qty) ?? [[product.location, qty]];
+  const r = applyAll(product, draws.map(([from, q]) => sale(from, q)), now);
   if (!r.ok) return { ok: false, reason: r.error === 'over_stock' ? 'over_stock' : r.error === 'bad_qty' ? 'bad_qty' : 'not_allowed' };
   return { ok: true, patch: stockPatch(r.product), events: r.events };
 }
@@ -87,8 +110,10 @@ export function withStartingStock(product: Product, stock: Readonly<Record<strin
   const entries = Object.entries(stock);
   if (entries.some(([place, qty]) => !place || !Number.isFinite(qty) || qty < 0)) return { ok: false, reason: 'bad_qty' };
   const loads = entries.filter(([, qty]) => round3(qty) > 0);
-  loads.sort(([a], [b]) => Number(b === product.location) - Number(a === product.location));
-  // Articolo a quantità: nessuno scaffale (S1a)
+  // Prima la posizione del prodotto, poi i suoi scaffali (S1b), poi le altre
+  const rank = (key: string) => (key === product.location ? 2 : placeOfKey(key) === product.location ? 1 : 0);
+  loads.sort(([a], [b]) => rank(b) - rank(a));
+  // Articolo a quantità: nessun `shelfId`, lo scaffale sta nella chiave della giacenza (S1b)
   const base: Product = { ...product };
   delete base.shelfId;
   let current: Product = { ...base, unit: product.unit || DEFAULT_UNIT, stock: {} };
@@ -101,7 +126,7 @@ export function withStartingStock(product: Product, stock: Readonly<Record<strin
   }
   if (!loads.length) {
     if (product.deletedAt || product.status !== 'available') return { ok: false, reason: 'not_allowed' };
-    const location = product.location || entries[0]?.[0] || '';
+    const location = product.location || placeOfKey(entries[0]?.[0] ?? '') || '';
     return { ok: true, product: { ...current, location, stock: { [location]: 0 } }, events: [] };
   }
   // Il carico iniziale non è una scansione: date del prodotto come per un pezzo unico appena creato
@@ -110,10 +135,11 @@ export function withStartingStock(product: Product, stock: Readonly<Record<strin
 
 /**
  * Prodotto nuovo con una quantità (Aggiungi): diventa articolo a quantità con un carico «iniziale» nella sua
- * posizione, così gli eventi ridanno la giacenza salvata. Quantità 0: articolo a quantità esaurito, senza eventi.
+ * posizione, sullo scaffale scelto se c'è (S1b), così gli eventi ridanno la giacenza salvata. Quantità 0: articolo
+ * a quantità esaurito, senza eventi.
  */
 export function withInitialStock(product: Product, qty: number, now: string): StartResult {
-  return withStartingStock(product, { [product.location]: qty }, now);
+  return withStartingStock(product, { [stockKey(product.location, product.shelfId)]: qty }, now);
 }
 
 /**
@@ -141,6 +167,7 @@ const countable = (p: Product) => isStocked(p) && !p.deletedAt && p.status === '
  * Articoli da contare in una posizione, in ordine di SKU: articoli a quantità che sono qui (`isAt`), anche
  * esauriti con la posizione principale qui (previsti 0). I pezzi unici non entrano: si verificano con l'Audit,
  * perché un conteggio diverso da 1 li trasformerebbe in articoli a quantità (vedi `uniqueAt`).
+ * S1b: la quantità prevista è il totale della posizione, scaffali compresi (la Conta per scaffale arriva con CON).
  */
 export function countRows(products: readonly Product[], at: string): CountRow[] {
   return products
@@ -168,6 +195,21 @@ export function countDiffs(rows: readonly CountRow[], counts: Readonly<Record<st
   return out;
 }
 
+/**
+ * Rettifiche «conta» per portare la posizione `at` (scaffali compresi) a `counted`. Con un rifiuto da dire (prodotto
+ * non disponibile, posizione mancante, quantità non valida) o nessuna differenza, una rettifica sola della parte senza
+ * scaffale, che `applyMovement` rifiuta col motivo di prima (`no_change` quando il totale è già quello).
+ */
+function countMoves(product: Product, at: string, counted: number): Movement[] {
+  const plain = (value: number): Movement[] => [{ kind: 'rettifica', at, counted: value, reason: 'conta' }];
+  if (!at || !Number.isFinite(counted) || counted < 0 || product.deletedAt || product.status !== 'available') return plain(counted);
+  const delta = round3(counted - qtyAt(product, at));
+  if (delta >= 0) return plain(round3(qtyIn(product, at) + delta));
+  return (drawsAt(product, at, -delta) ?? []).map(([key, take]) => ({
+    kind: 'rettifica' as const, at: key, counted: round3(qtyIn(product, key) - take), reason: 'conta' as const,
+  }));
+}
+
 export type CountRefusal = MovementError | 'missing' | 'unique';
 export type CountResult = {
   patches: { id: string; patch: Partial<Product> }[];
@@ -183,6 +225,8 @@ export type CountResult = {
  * con causale «conta» nella posizione `at`, calcolata sui prodotti più recenti. La quantità contata è assoluta,
  * quindi vale anche se la giacenza è cambiata dopo aver aperto la conta. Uguale alla registrata: nessun evento.
  * Prodotto sparito, pezzo unico o non più disponibile: rifiutato e detto, gli altri si rettificano lo stesso.
+ * S1b: si conta il totale della posizione, scaffali compresi. Un aumento va sulla parte senza scaffale; un calo
+ * prende prima da lì e poi dagli scaffali (`drawsAt`), con una rettifica per chiave. Senza scaffali, come prima.
  */
 export function countOf(products: readonly Product[], at: string, counts: Readonly<Record<string, number>>, now: string): CountResult {
   const result: CountResult = { patches: [], events: [], adjusted: [], unchanged: [], refused: [] };
@@ -190,7 +234,7 @@ export function countOf(products: readonly Product[], at: string, counts: Readon
     const product = products.find((p) => p.id === id);
     if (!product) { result.refused.push({ sku: id, reason: 'missing' }); continue; }
     if (!isStocked(product)) { result.refused.push({ sku: product.sku, reason: 'unique' }); continue; }
-    const r = applyMovement(product, { kind: 'rettifica', at, counted, reason: 'conta' }, now);
+    const r = applyAll(product, countMoves(product, at, counted), now);
     if (!r.ok) {
       if (r.error === 'no_change') result.unchanged.push(product.sku);
       else result.refused.push({ sku: product.sku, reason: r.error });

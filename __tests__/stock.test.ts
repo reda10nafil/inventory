@@ -6,13 +6,23 @@ import {
   isLowStock,
   isOutOfStock,
   isStocked,
+  drawsAt,
+  keysAt,
   mainLocation,
   movementErrorText,
+  newLocationId,
   parseQty,
   parseSalePrice,
+  placeOfKey,
   positionsOf,
+  qtyAt,
+  qtyIn,
   replayStock,
   round3,
+  SHELF_KEY_SEPARATOR,
+  splitStockKey,
+  stockGroups,
+  stockKey,
   stockOf,
   takesContact,
   takesPrice,
@@ -281,5 +291,123 @@ describe('isLowStock (ticket 05)', () => {
     expect(isLowStock(s({ vetrina: 0 }, { minStock: 0 }))).toBe(false);
     expect(isLowStock(item({ minStock: 5 }))).toBe(false);
     expect(isLowStock(s({ vetrina: 0 }, { minStock: 5, deletedAt: '2026-11-22' }))).toBe(false);
+  });
+});
+
+// S1b (ticket 13): giacenza sugli scaffali con la forma 2 delle chiavi, «posizione/idScaffale»
+describe('scaffali nella giacenza (S1b)', () => {
+  const S1 = '1732300000000-gen1';
+  const K1 = `magazzino/${S1}`;
+  const K2 = `magazzino/${S1}-2`;
+  const s = (stock: Record<string, number>, extra: Partial<Product> = {}) => item({ stock, unit: 'pz', location: 'magazzino', ...extra });
+
+  it('chiavi: la posizione da sola, oppure posizione e scaffale; la posizione è tutto prima dell\'ultimo «/»', () => {
+    expect(SHELF_KEY_SEPARATOR).toBe('/');
+    expect(stockKey('magazzino')).toBe('magazzino');
+    expect(stockKey('magazzino', S1)).toBe(K1);
+    expect(splitStockKey(K1)).toEqual({ place: 'magazzino', shelfId: S1 });
+    expect(splitStockKey('magazzino')).toEqual({ place: 'magazzino' });
+    expect(splitStockKey(`a/b/${S1}`)).toEqual({ place: 'a/b', shelfId: S1 });
+    expect(splitStockKey('magazzino/')).toEqual({ place: 'magazzino/' });
+    expect(splitStockKey(`/${S1}`)).toEqual({ place: `/${S1}` });
+    expect(placeOfKey(K1)).toBe('magazzino');
+  });
+
+  it('id di una posizione nuova dal nome: mai il separatore', () => {
+    expect(newLocationId('Stand A/B')).toBe('stand_a_b');
+    expect(newLocationId('Magazzino')).toBe('magazzino');
+    expect(newLocationId('Retro / Scala')).not.toContain('/');
+  });
+
+  it('5 in Magazzino e 3 su A1: totale 8, Magazzino 8 (scaffali compresi), senza scaffale 5, A1 3', () => {
+    const p = s({ magazzino: 5, [K1]: 3 });
+    expect(totalStock(p)).toBe(8);
+    expect(qtyAt(p, 'magazzino')).toBe(8);
+    expect(qtyIn(p, 'magazzino')).toBe(5);
+    expect(qtyAt(p, K1)).toBe(3);
+    expect(qtyIn(p, K1)).toBe(3);
+    expect(isAt(s({ [K1]: 3 }, { location: 'vetrina' }), 'magazzino')).toBe(true);
+    expect(isAt(s({ [K1]: 0, vetrina: 1 }, { location: 'vetrina' }), 'magazzino')).toBe(false);
+  });
+
+  it('positionsOf dà sempre posizioni, anche per la giacenza su uno scaffale (anche nel cestino)', () => {
+    expect(positionsOf(s({ [K1]: 3 }, { location: 'vetrina', deletedAt: NOW })).sort()).toEqual(['magazzino', 'vetrina']);
+    expect(positionsOf(s({ [K1]: 0 }, { location: 'vetrina' }))).toEqual(['vetrina']);
+  });
+
+  it('mainLocation somma gli scaffali della posizione e dà sempre una posizione', () => {
+    expect(mainLocation({ [K1]: 3 }, 'magazzino')).toBe('magazzino');
+    expect(mainLocation({ [K1]: 3, vetrina: 2 }, 'stand_a')).toBe('magazzino');
+    expect(mainLocation({ [K1]: 1, [K2]: 2, vetrina: 2.5 }, 'vetrina')).toBe('vetrina');
+    expect(mainLocation({ [K1]: 1, [K2]: 2, vetrina: 2.5 }, 'stand_a')).toBe('magazzino');
+  });
+
+  it('trasferimento dalla posizione al suo scaffale: permesso, nessuno zero in più, la posizione principale resta', () => {
+    const r = applyMovement(s({ magazzino: 2 }), { kind: 'trasferimento', qty: 2, from: 'magazzino', to: K1 }, NOW);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.product.stock).toEqual({ [K1]: 2 });
+    expect(r.product.location).toBe('magazzino');
+    expect(applyMovement(s({ [K1]: 2 }), { kind: 'trasferimento', qty: 1, from: K1, to: K1 }, NOW)).toEqual({ ok: false, error: 'same_place' });
+  });
+
+  it('dallo scaffale a un\'altra posizione e scarico fino a 0: la posizione resta una posizione', () => {
+    const { p } = run(s({ [K1]: 3 }), [{ kind: 'trasferimento', qty: 3, from: K1, to: 'stand_b' }]);
+    expect(p.stock).toEqual({ stand_b: 3 });
+    expect(p.location).toBe('stand_b');
+    const { p: q } = run(s({ [K1]: 1 }), [{ kind: 'scarico', qty: 1, from: K1 }]);
+    expect(q.stock).toEqual({ magazzino: 0 });
+    expect(q.location).toBe('magazzino');
+    expect(isOutOfStock(q)).toBe(true);
+    expect(applyMovement(s({ magazzino: 5, [K1]: 3 }), { kind: 'scarico', qty: 4, from: K1 }, NOW)).toEqual({ ok: false, error: 'over_stock', available: 3 });
+  });
+
+  it('pezzo unico su uno scaffale: vale 1 su quello scaffale; al primo movimento la giacenza resta lì', () => {
+    const piece = item({ location: 'magazzino', shelfId: S1 });
+    expect(stockOf(piece)).toEqual({ [K1]: 1 });
+    expect(qtyAt(piece, 'magazzino')).toBe(1);
+    const { p, events } = run(piece, [{ kind: 'carico', qty: 2, to: K1 }]);
+    expect(p.stock).toEqual({ [K1]: 3 });
+    expect(events[0].details).toMatchObject({ movement: 'carico', qty: 1, to: K1, reason: 'iniziale' });
+    expect(replayStock(events)).toEqual(p.stock);
+  });
+
+  it('rettifica di uno scaffale: solo quella chiave', () => {
+    const { p } = run(s({ magazzino: 5, [K1]: 3 }), [{ kind: 'rettifica', at: K1, counted: 1 }]);
+    expect(p.stock).toEqual({ magazzino: 5, [K1]: 1 });
+  });
+
+  it('keysAt e drawsAt: prima la posizione senza scaffale, poi gli scaffali; null se non basta', () => {
+    const p = s({ [K2]: 1, magazzino: 5, vetrina: 4, [K1]: 3 });
+    expect(keysAt(p, 'magazzino')).toEqual([['magazzino', 5], [K1, 3], [K2, 1]]);
+    expect(drawsAt(p, 'magazzino', 7)).toEqual([['magazzino', 5], [K1, 2]]);
+    expect(drawsAt(p, 'magazzino', 9)).toEqual([['magazzino', 5], [K1, 3], [K2, 1]]);
+    expect(drawsAt(p, 'magazzino', 9.5)).toBeNull();
+    expect(drawsAt(p, 'magazzino', 0)).toBeNull();
+    expect(drawsAt(s({ [K1]: 0.3 }), 'magazzino', 0.1 + 0.2)).toEqual([[K1, 0.3]]);
+  });
+
+  it('stockGroups: per posizione dalla più grande, con la parte senza scaffale e gli scaffali', () => {
+    expect(stockGroups({ vetrina: 9, magazzino: 5, [K1]: 3 })).toEqual([
+      { place: 'vetrina', qty: 9, keys: [{ key: 'vetrina', qty: 9 }] },
+      { place: 'magazzino', qty: 8, keys: [{ key: 'magazzino', qty: 5 }, { key: K1, shelfId: S1, qty: 3 }] },
+    ]);
+    expect(stockGroups({ [K1]: 3 })).toEqual([{ place: 'magazzino', qty: 3, keys: [{ key: K1, shelfId: S1, qty: 3 }] }]);
+  });
+
+  it('giacenza salvata = eventi rigiocati, con eventi di prima (senza scaffale) e nuovi (con lo scaffale)', () => {
+    const moves: Movement[] = [
+      { kind: 'carico', qty: 5, to: 'magazzino' },
+      { kind: 'trasferimento', qty: 3, from: 'magazzino', to: K1 },
+      { kind: 'trasferimento', qty: 2, from: K1, to: 'stand_b' },
+      { kind: 'scarico', qty: 1, from: K1, reason: 'vendita' },
+      { kind: 'rettifica', at: 'magazzino', counted: 1 },
+    ];
+    const { p, events } = run(item({ location: 'magazzino' }), moves);
+    const salvata = Object.fromEntries(Object.entries(p.stock!).filter(([, q]) => q !== 0));
+    expect(replayStock(events)).toEqual(salvata);
+    expect(p.location).toBe('magazzino');
+    // pezzo unico 1 + 5 in Magazzino; 3 su A1, 2 di questi a Stand B, 1 venduto; Magazzino senza scaffale 3 → 1
+    expect(p.stock).toEqual({ magazzino: 1, stand_b: 2 });
+    expect(totalStock(p)).toBe(3);
   });
 });

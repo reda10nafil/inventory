@@ -1,19 +1,20 @@
 // Scaffali (S1a, ticket 13): un posto dentro una posizione, generico o di una categoria, con un codice (QR) e un
 // tag NFC solo memorizzato. Funzioni pure: il contesto degli scaffali, quello dell'inventario e le schermate le
-// chiamano. In S1a lo scaffale vale **solo per i pezzi unici** (`shelfId` del prodotto): nessuna chiave di `stock`
-// è uno scaffale e un articolo a quantità non ha `shelfId` (la giacenza sugli scaffali è la fetta S1b).
+// chiamano. Un pezzo unico ha lo scaffale in `shelfId`; un articolo a quantità (S1b) lo ha nelle chiavi della sua
+// giacenza, `posizione/idScaffale` (`stockKey` di utils/stock.ts), e mai in `shelfId`.
 // Due regole tengono i dati coerenti senza riscriverli:
 // - lettura (`productShelfId`): uno `shelfId` che non torna (scaffale sconosciuto, di un'altra posizione, prodotto a
 //   quantità) si ignora;
 // - scrittura (`keptShelfId` / `shelfPatch`): lo scaffale resta solo se è nella posizione del prodotto.
 import type { Product } from '../types';
 import { categoryAncestors, categoryPath, type CategoryNode } from './categories';
+import { SHELF_KEY_SEPARATOR, splitStockKey, stockKey } from './stock';
 
 export interface Shelf {
   /** Opaco e per sempre (`newShelfId`): gli id di posizioni e categorie sono parole e non devono scontrarsi. */
   id: string;
   name: string;
-  /** Posizione in cui sta. Si sceglie alla creazione e poi non cambia (S1b potrà contarci). */
+  /** Posizione in cui sta. Si sceglie alla creazione e poi non cambia (la giacenza la porta anche nella chiave, S1b). */
   locationId: string;
   /** Categoria (id di `libraries`); assente = scaffale generico. */
   libraryId?: string;
@@ -116,6 +117,18 @@ export function productShelfId(product: Holder, shelves: readonly ShelfRef[]): s
   return shelf && shelf.locationId === product.location ? shelf.id : undefined;
 }
 
+/**
+ * Il prodotto come lo leggono le schede (S1b): un pezzo unico con uno `shelfId` che non torna (scaffale sconosciuto o
+ * di un'altra posizione, arrivato da fuori) torna senza, così il suo primo movimento e Movimenta non scrivono una
+ * chiave `posizione/scaffale` sbagliata. Gli altri prodotti tornano uguali.
+ */
+export function withShelfRead<T extends Holder>(product: T, shelves: readonly ShelfRef[]): T {
+  if (product.stock != null || !product.shelfId || productShelfId(product, shelves) === product.shelfId) return product;
+  const rest = { ...product };
+  delete rest.shelfId;
+  return rest;
+}
+
 export function productShelf<T extends ShelfRef>(product: Holder, shelves: readonly T[]): T | undefined {
   const id = productShelfId(product, shelves);
   return id ? shelves.find((s) => s.id === id) : undefined;
@@ -209,19 +222,47 @@ export function shelvesByLocation<T extends Shelf>(
   return groups.filter((g) => g.shelves.length > 0);
 }
 
-/** Quanti prodotti stanno su ogni scaffale (id → attivi e nel cestino), con la stessa lettura delle schede. */
+/**
+ * Quanti prodotti stanno su ogni scaffale (id → attivi e nel cestino): i pezzi unici con la stessa lettura delle
+ * schede, gli articoli a quantità con giacenza salvata su `posizione/scaffale` di quella posizione (S1b, anche nel
+ * cestino: ripristinati tornerebbero lì).
+ */
 export function shelfUsage(
   products: readonly (Holder & Pick<Product, 'deletedAt'>)[],
   shelves: readonly ShelfRef[],
 ): Record<string, { active: number; trashed: number }> {
   const out: Record<string, { active: number; trashed: number }> = {};
   for (const product of products) {
-    const id = productShelfId(product, shelves);
-    if (!id) continue;
-    const entry = out[id] ?? (out[id] = { active: 0, trashed: 0 });
-    if (product.deletedAt) entry.trashed += 1; else entry.active += 1;
+    const ids = new Set<string>();
+    const unique = productShelfId(product, shelves);
+    if (unique) ids.add(unique);
+    for (const [key, qty] of Object.entries(product.stock ?? {})) {
+      const { place, shelfId } = splitStockKey(key);
+      if (!shelfId || typeof qty !== 'number' || !(qty > 0)) continue;
+      const shelf = shelves.find((s) => s.id === shelfId);
+      if (shelf && shelf.locationId === place) ids.add(shelf.id);
+    }
+    for (const id of ids) {
+      const entry = out[id] ?? (out[id] = { active: 0, trashed: 0 });
+      if (product.deletedAt) entry.trashed += 1; else entry.active += 1;
+    }
   }
   return out;
+}
+
+/** Nome mostrato per uno scaffale che questo dispositivo non conosce (S1b: la giacenza resta nella sua posizione). */
+export const UNKNOWN_SHELF = 'scaffale sconosciuto';
+
+/**
+ * Nome di una chiave della giacenza per schede, Cronologia e report: «Magazzino» oppure «Magazzino › A1»; uno
+ * scaffale che non è in elenco dice «Magazzino › scaffale sconosciuto» (l'id non si mostra mai).
+ */
+export function stockPlaceLabel(key: string, placeLabel: (id: string) => string, shelves: readonly Pick<Shelf, 'id' | 'name' | 'locationId'>[]): string {
+  const { place, shelfId } = splitStockKey(key);
+  if (!shelfId) return placeLabel(key);
+  // Uno scaffale di un'altra posizione (dato arrivato da fuori) non si nomina: sarebbe un posto che non c'è
+  const shelf = shelves.find((s) => s.id === shelfId && s.locationId === place);
+  return placeWithShelf(placeLabel(place), { name: shelf?.name ?? UNKNOWN_SHELF });
 }
 
 /**
@@ -277,7 +318,25 @@ export function shelfIdFromCsv(value: string, locationId: string, shelves: reado
   return (here.find((s) => fold(s.name) === v) ?? here.find((s) => s.id === value.trim()))?.id;
 }
 
-/** Vero se una di queste posizioni (posizione del prodotto o chiavi della giacenza) è uno scaffale, per id o per
- *  codice: in S1a non si accetta (l'import salta la riga), la giacenza sugli scaffali è la fetta S1b. */
+/** Vero se una di queste posizioni è uno scaffale, per id o per codice. Per la colonna Posizione del CSV, che deve
+ *  essere una posizione (l'import salta la riga); la giacenza sugli scaffali passa da `stockKeyFromCsv` (S1b). */
 export const isShelfPlace = (shelves: readonly Pick<Shelf, 'id' | 'barcode'>[], places: readonly string[]): boolean =>
   places.some((place) => !!place && shelves.some((s) => s.id === place || (!!s.barcode && s.barcode === place)));
+
+/**
+ * Posto scritto nella colonna Giacenza del CSV → chiave di `stock` (S1b). Una posizione resta com'è (anche se non è
+ * in elenco, come prima); `posizione/scaffale` con l'id (come esporta l'app) o il nome di uno scaffale di quella
+ * posizione; l'id o il codice di uno scaffale da solo vale la sua posizione. `undefined` (riga da saltare): scaffale
+ * sconosciuto o di un'altra posizione, separatore con un lato vuoto.
+ */
+export function stockKeyFromCsv(value: string, shelves: readonly Shelf[]): string | undefined {
+  const text = value.trim();
+  const { place, shelfId } = splitStockKey(text);
+  if (shelfId) {
+    const id = shelfIdFromCsv(shelfId, place, shelves);
+    return id ? stockKey(place, id) : undefined;
+  }
+  if (text.includes(SHELF_KEY_SEPARATOR)) return undefined;
+  const shelf = shelves.find((s) => s.id === text || (!!s.barcode && s.barcode === text));
+  return shelf ? stockKey(shelf.locationId, shelf.id) : text;
+}

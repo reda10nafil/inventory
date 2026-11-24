@@ -567,6 +567,46 @@ const FETTE = {
       ['modifica-non-trovata', async (page) => { await page.goto(`${APP}/product/edit/inesistente`); await page.waitForTimeout(1800); }],
     ],
   },
+  // S1b: giacenza sugli scaffali. VIS-0098 con 5 pezzi in Magazzino e 3 su A1: Scheda per scaffale, Movimenta con la
+  // fila «Scaffale» in «Da» e in «A», eliminazione di A1 rifiutata (finestra del browser: il testo si stampa), Aggiungi
+  // con la quantità e lo scaffale, Azione rapida dello scaffale con la quantità.
+  s1b: {
+    prepara: () => {
+      const pk = 'inventory:v1:local:products';
+      localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+        { id: '1732300000000-gen1', name: 'A1', locationId: 'magazzino', barcode: 'SCAF-MAG-A1' },
+        { id: '1732300000000-gen2', name: 'Ripiano giacche lunghe', locationId: 'magazzino' },
+      ]));
+      const list = JSON.parse(localStorage.getItem(pk));
+      Object.assign(list.find((p) => p.sku === 'VIS-0098'), { unit: 'pz', location: 'magazzino', stock: { magazzino: 5, 'magazzino/1732300000000-gen1': 3 } });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['scheda', async (page) => {
+        await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
+        await page.getByText('Giacenza', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['movimenta', async (page) => {
+        await page.getByLabel('Movimenta', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByLabel('Tipo Trasferimento', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('Da Magazzino › A1', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('A Magazzino', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+      }],
+      ['scaffali-elimina-rifiutata', async (page) => {
+        await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+        await page.getByLabel('Elimina scaffale A1', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      }],
+      ['aggiungi-quantita', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByText('Visone', { exact: true }).first().click(); await page.waitForTimeout(200);
+        await page.getByText('Magazzino', { exact: true }).first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('Quantità', { exact: true }).first().fill('4');
+        await page.getByLabel('Scaffale A1', { exact: true }).first().click(); await page.waitForTimeout(300);
+        await page.getByText('Scaffale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['scaffale-azione-rapida', async (page) => { await page.goto(`${APP}/scanner-action?type=shelf&id=1732300000000-gen1`); await page.waitForTimeout(1800); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;

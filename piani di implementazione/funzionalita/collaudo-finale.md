@@ -46,6 +46,8 @@ Piano per controllare, alla fine delle fette di [`map-3.md`](map-3.md), che ogni
 | CF-D4 | Stesso carico da Aggiungi, Movimenta, Azione rapida, Spostamento rapido, esecuzione di un'automazione | Stesso avviso e stesso blocco ovunque; in Conta e Audit solo l'informazione | S3 |
 | CF-D5 | Creare una barra appendiabiti da 15 grucce, appendere il 16° capo | Blocco con la proposta | S2, S3 |
 
+Da S1b (24/11; nota per chi scrive CF-D1…D5, nessun passo scritto): su A1 si mettono anche **articoli a quantità**. Aggiungi ha lo scaffale anche con la quantità (il carico iniziale va su `magazzino/<idA1>`); Movimenta ha la fila «Scaffale» per «In», «Da» e «A» (etichette `In Magazzino › A1`, `A Magazzino › A1`); l'Azione rapida usa la stessa finestra per Carico e Scarico. Spostamento rapido ed esecuzione delle automazioni portano ancora in una posizione senza scaffale: lo scaffale come destinazione è di FLU1. La prova `prova/s1b-giacenza.cjs` (`prepara`, `invariante`, `movimento`) è il punto di partenza per riempire A1 in CF-D2.
+
 ## E · Codici, etichette, NFC
 
 | Passo | Che cosa | Atteso | Fetta |
