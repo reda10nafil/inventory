@@ -6,6 +6,7 @@
 // riconoscono, anche rinominate, grazie alla copia del campo nel prodotto, `snapshot`); il contatore mostra il valore
 // che si salva («–» se non c'è). I numeri restano il testo scritto finché la schermata non salva (`savedValue`).
 // `size` è la misura nel modulo di Aggiungi (a 1/3 diciture e icone più corte); Modifica disegna a tutta larghezza.
+// UX1-0: una scelta col binario in una colonna si disegna su una riga intera (`choiceRowSize`), come a tutta larghezza.
 // Etichetta e controllo sono fratelli nel contenitore (le prove cercano il campo dall'etichetta); `error` è una riga
 // rossa sotto il controllo dopo un salvataggio rifiutato.
 // EDC: le scelte in ogni aspetto con `ChoicePicker` (binario orizzontale, a capo, riquadri, elenco verticale, menu a
@@ -21,8 +22,9 @@ import * as DocumentPicker from '../src/lib/documentPicker';
 import * as Sharing from '../src/lib/sharing';
 import { Image } from '../src/lib/ExpoImage';
 import BarcodeScanner from './BarcodeScanner';
-import { BottomSheet, ChoicePicker, Wheel, effectiveLook, isWideLook } from './ChoicePicker';
+import { ChoicePicker, Wheel, effectiveLook, isWideLook } from './ChoicePicker';
 import { AppIcon } from './ui/AppIcon';
+import { Sheet, SheetButton } from './ui/Sheet';
 import { GradientFill } from './ui/GradientFill';
 import { Text, TextInput } from './ui/Text';
 import { formStyles } from './ui/formStyles';
@@ -32,7 +34,7 @@ import { useInventory } from '../contexts/InventoryContext';
 import { useFieldOptions } from '../hooks/useFieldOptions';
 import type { CustomField } from '../types';
 import {
-  choiceLabel, choiceList, choiceLook, freeText, inputMode, isChoiceField, isSelected, numberOf, optionNameError, optionOf, retiredNameError,
+  choiceLabel, choiceList, choiceLook, choiceRowSize, freeText, inputMode, isChoiceField, isSelected, numberOf, optionNameError, optionOf, retiredNameError,
   savesLabel, SHORT_TEXT_MAX, stepFrom, stepperRange, toggleOption, typedChoice, wheelValues, type FieldOption,
 } from '../utils/fieldValues';
 import { formatNumber } from '../utils/number';
@@ -74,12 +76,14 @@ interface Props {
   placeholder?: string;
 }
 
-export function FieldInput({ field, value, onChange, snapshot, size = 'full', icon, tileWidth, style, error, label, placeholder }: Props) {
+export function FieldInput({ field, value, onChange, snapshot, size: layoutSize = 'full', icon, tileWidth, style, error, label, placeholder }: Props) {
   const styles = useStyles();
   const t = useTheme();
   const optionsOf = useFieldOptions();
   const [dateOpen, setDateOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  // Misura con cui si disegna: una scelta col binario in una colonna prende la riga intera (UX1-0)
+  const size = isChoiceField(field) ? choiceRowSize(layoutSize, choiceLook(field)) : layoutSize;
   const small = size === 'small';
   const full = size === 'full';
   const iconName = icon ?? fieldIcon(field);
@@ -106,7 +110,8 @@ export function FieldInput({ field, value, onChange, snapshot, size = 'full', ic
     const shown = multi
       ? (chosen.length ? `${chosen.length} ${small ? 'scelti' : 'selezionati'}` : placeholderText)
       : (chosen.length ? choiceLabel(chosen[0], options, snapshot) : placeholderText);
-    // In una colonna (1/2, 1/3) binario, a capo, elenco e ruota diventano tendina (R1 di UX0); i riquadri restano interi
+    // In una colonna (1/2, 1/3) a capo, elenco e ruota diventano tendina (R1 di UX0); binario (UX1-0) e riquadri prendono
+    // la riga intera
     wide = isWideLook(effectiveLook(look, !full));
     const choices = (
       <ChoicePicker
@@ -471,7 +476,9 @@ function NumberWheel({ field, value, onChange, small, narrow, placeholder, icon 
         </Text>
         <AppIcon name="keyboard-arrow-down" size={20} color={t.colors.textMuted} />
       </Pressable>
-      <BottomSheet title={field.name} open={open} onClose={() => setOpen(false)}>{wheel}</BottomSheet>
+      <Sheet title={field.name} visible={open} onClose={() => setOpen(false)} footer={<SheetButton label="Fatto" onPress={() => setOpen(false)} />}>
+        {wheel}
+      </Sheet>
     </>
   );
 }

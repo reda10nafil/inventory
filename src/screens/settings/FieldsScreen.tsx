@@ -670,7 +670,7 @@ export default function CustomFieldsScreen() {
               <>
                 <Text style={styles.modalSectionTitle}>Come si vede?</Text>
                 <Text style={styles.subtextLarge}>
-                  Campo Base: nome e valori restano quelli di Impostazioni › Posizioni. Vale in Aggiungi e in Modifica. In una colonna da 1/2 o 1/3 del modulo di Aggiungi binario, a capo, elenco verticale e ruota si vedono come menu a tendina.
+                  Campo Base: nome e valori restano quelli di Impostazioni › Posizioni. Vale in Aggiungi e in Modifica. In una colonna da 1/2 o 1/3 del modulo di Aggiungi il binario prende la riga intera; a capo, elenco verticale e ruota si vedono come menu a tendina.
                 </Text>
                 <View style={styles.chipWrap}>
                   {LOOKS.filter((l) => BASE_LOOKS.includes(l.id)).map((l) => pill(l.id, l.label, look === l.id, () => setLook(l.id)))}
@@ -817,7 +817,7 @@ export default function CustomFieldsScreen() {
                     <View style={styles.chipWrap}>
                       {LOOKS.filter((l) => l.id !== 'wheel' || selectedBaseType === 'single_choice').map((l) => pill(l.id, l.label, look === l.id, () => setLook(l.id)))}
                     </View>
-                    <Text style={styles.subtextLarge}>In una colonna da 1/2 o 1/3 del modulo di Aggiungi binario, a capo, elenco verticale e ruota si vedono come menu a tendina.</Text>
+                    <Text style={styles.subtextLarge}>In una colonna da 1/2 o 1/3 del modulo di Aggiungi il binario prende la riga intera; a capo, elenco verticale e ruota si vedono come menu a tendina.</Text>
                   </>
                 )}
                 <Text style={styles.inputLabel}>Scegli un'icona</Text>
@@ -927,7 +927,7 @@ export default function CustomFieldsScreen() {
             <View style={[styles.chipWrap, { marginBottom: 8 }]}>
               {LOOKS.filter((l) => BASE_LOOKS.includes(l.id)).map((l) => pill(l.id, l.label, baseLook(furTypeField) === l.id, () => setFurTypeLook(l.id), `Tipo di pelle: ${l.label}`))}
             </View>
-            <Text style={[styles.subtextLarge, { marginTop: 0, marginBottom: 16 }]}>In una colonna da 1/2 o 1/3 del modulo di Aggiungi binario, a capo, elenco verticale e ruota si vedono come menu a tendina.</Text>
+            <Text style={[styles.subtextLarge, { marginTop: 0, marginBottom: 16 }]}>In una colonna da 1/2 o 1/3 del modulo di Aggiungi il binario prende la riga intera; a capo, elenco verticale e ruota si vedono come menu a tendina.</Text>
             {/* Finché la lista salvata non è letta si aspetta: un valore aggiunto partirebbe dai predefiniti */}
             {furTypesLoading ? <ActivityIndicator size="large" color={t.colors.accentInk} /> : <OptionsEditor
               options={furTypes}

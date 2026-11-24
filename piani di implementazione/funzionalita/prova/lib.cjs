@@ -55,7 +55,8 @@ async function scenario(name, fn, { dialogs = [] } = {}) {
   return { name, result, dialogs: seenDialogs, errors: realErrors };
 }
 
-// EDC (R1 di UX0): in Aggiungi Posizione, Categoria e i campi a scelta in una colonna da 1/2 o 1/3 sono tendine. Una
+// EDC (R1 di UX0): in Aggiungi i campi a scelta in una colonna da 1/2 o 1/3 possono essere tendine (da UX1-0 non più
+// Posizione e Categoria col binario, che prendono la riga intera, ma sì Posizione con «Menu a tendina»). Una
 // scelta che non si vede può stare in una tendina chiusa: come l'utente, si aprono una alla volta le tendine chiuse
 // (`aria-expanded="false"`) finché la scelta compare; quelle che non la contengono si richiudono. Conta solo una scelta
 // che si tocca (dentro un pulsante): lo stesso testo può essere un titolo («Magazzino» è anche la sezione di Aggiungi).

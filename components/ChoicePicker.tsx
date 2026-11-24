@@ -2,76 +2,43 @@
 // disegno solo per i campi a scelta (`FieldInput`), per i campi Base Posizione e Tipo di pelle in Aggiungi e Modifica e
 // per la Categoria in colonna (`CategoryPicker`).
 // - `chips` **binario orizzontale** (predefinito delle pillole, R1): una riga sola che scorre, **solo a larghezza
-//   intera**; pillole alte 36 (44 da toccare), la scelta ha la spunta, all'apertura la scelta entra in vista, l'ultima
-//   pillola resta tagliata e una sfumatura col fondo del tema dice che continua;
+//   intera** (`ChoiceRail` di `components/ui/`, UX1-0: all'apertura la scelta entra in vista, l'ultima pillola a vista
+//   è tagliata, una sfumatura col fondo del tema dice che continua); pillole alte 36 (44 da toccare), la scelta ha la
+//   spunta;
 // - `wrap` a capo; `tiles` riquadri (tre per riga); `list` elenco verticale; `dropdown` **tendina** in linea (R2: fino
-//   a 5 righe da 48 a vista, le altre scorrono); `sheet` elenco dal basso (finestra);
+//   a 5 righe da 48 a vista, le altre scorrono); `sheet` elenco dal basso (`Sheet` di `components/ui/`, la finestra
+//   dal basso unica delle scelte, UX1-0);
 // - `wheel` **ruota** «stile orologio» (R3): rullo verticale di 5 righe da 36, la fascia al centro è il valore; lo
 //   scorrere (dito, rotella, trascinamento) si ferma da solo sul valore più vicino; ogni riga si può anche toccare; la
 //   prima voce «–» è «nessuno».
-// **In una colonna (1/2, 1/3, `narrow`) binario, a capo, elenco verticale e ruota diventano tendina** (R1, R2): mai un
-// binario stretto o pillole a capo (D09). Chi lo usa dice quali opzioni sono scelte (`selected`) e che cosa fa un tocco
-// (`onPick`); `onClear` toglie la scelta (voce «–» della ruota). Colore e icona delle opzioni con `OptionMark`.
+// **In una colonna (1/2, 1/3, `narrow`) a capo, elenco verticale e ruota diventano tendina** (R1, R2): mai un binario
+// stretto o pillole a capo (D09). Il binario in colonna non c'è più: da UX1-0 (richiesta dell'utente del 24) il campo
+// col binario prende la riga intera nel modulo (`choiceRowSize` in `utils/fieldValues.ts`) e arriva qui senza `narrow`.
+// Chi lo usa dice quali opzioni sono scelte (`selected`) e che cosa fa un tocco (`onPick`); `onClear` toglie la scelta
+// (voce «–» della ruota). Colore e icona delle opzioni con `OptionMark`.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { OptionMark, hasMark } from './OptionMark';
 import { AppIcon } from './ui/AppIcon';
+import { ChoiceRail, RAIL_HIT_SLOP, RAIL_PILL } from './ui/ChoiceRail';
 import { GradientFill } from './ui/GradientFill';
+import { Sheet, SheetButton } from './ui/Sheet';
 import { Text } from './ui/Text';
 import { formStyles } from './ui/formStyles';
-import { LinearGradient } from '../src/lib/LinearGradient';
 import { makeStyles, useTheme } from '../contexts/ThemeContext';
-import { withAlpha } from '../utils/color';
 import type { ChoiceLook, FieldOption } from '../utils/fieldValues';
 
 /** Opzione da disegnare; `a11y` è l'etichetta per lo screen reader (Categoria: «Categoria Pellicce»). */
 export type PickOption = FieldOption & { a11y?: string };
 
-/** Aspetto che si disegna davvero: in una colonna binario, a capo, elenco verticale e ruota diventano tendina (R1). */
+/** Aspetto che si disegna davvero: in una colonna binario, a capo, elenco verticale e ruota diventano tendina (R1). Il
+ *  binario non ci arriva più in colonna: il campo prende la riga intera (`choiceRowSize`, UX1-0). */
 export function effectiveLook(look: ChoiceLook, narrow: boolean): ChoiceLook {
   return narrow && (look === 'chips' || look === 'wrap' || look === 'list' || look === 'wheel') ? 'dropdown' : look;
 }
 
 /** Aspetti a tutta larghezza nel modulo di Aggiungi (i riquadri lo sono sempre). */
 export const isWideLook = (look: ChoiceLook): boolean => look === 'tiles' || look === 'chips' || look === 'wrap' || look === 'list' || look === 'wheel';
-
-// ── Binario orizzontale ─────────────────────────────────────
-
-/** Riga sola di pillole che scorre in orizzontale, con la sfumatura a destra finché continua. `scrollRef` per portare
- *  in vista la pillola scelta. */
-export function ChipRail({ children, label, scrollRef }: { children: React.ReactNode; label?: string; scrollRef?: React.RefObject<ScrollView | null> }) {
-  const styles = useStyles();
-  const t = useTheme();
-  const [width, setWidth] = useState(0);
-  const [content, setContent] = useState(0);
-  const [x, setX] = useState(0);
-  const more = content > width + 1 && x + width < content - 4;
-  return (
-    <View style={styles.rail} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.railRow}
-        onContentSizeChange={(w) => setContent(w)}
-        onScroll={(e) => setX(e.nativeEvent.contentOffset.x)}
-        scrollEventThrottle={32}
-        accessibilityLabel={label}
-      >
-        {children}
-      </ScrollView>
-      {more && (
-        <LinearGradient
-          pointerEvents="none"
-          colors={[withAlpha(t.colors.background, 0), t.colors.background]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.railFade}
-        />
-      )}
-    </View>
-  );
-}
 
 // ── Ruota ────────────────────────────────────────────────────
 
@@ -150,32 +117,6 @@ export function Wheel({ items, index, onSelect, name }: {
   );
 }
 
-/** Finestra dal basso con un contenuto (la ruota nelle colonne, R3) e «Fatto». */
-export function BottomSheet({ title, open, onClose, children }: { title: string; open: boolean; onClose: () => void; children: React.ReactNode }) {
-  const styles = useStyles();
-  const t = useTheme();
-  if (!open) return null;
-  return (
-    <Modal visible={true} transparent={true} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.sheetScrim}>
-        <View style={styles.sheet}>
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>{title}</Text>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Chiudi">
-              <AppIcon name="close" size={24} color={t.colors.textPrimary} />
-            </Pressable>
-          </View>
-          {children}
-          <Pressable style={[styles.primaryButton, styles.sheetConfirm]} onPress={onClose} accessibilityRole="button">
-            <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-            <Text style={styles.primaryButtonText}>Fatto</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 // ── Scelte ───────────────────────────────────────────────────
 
 interface Props {
@@ -189,7 +130,7 @@ interface Props {
   onClear?: () => void;
   multi?: boolean;
   small?: boolean;
-  /** In una colonna da 1/2 o 1/3: binario, a capo, elenco verticale e ruota diventano tendina (R1). */
+  /** In una colonna da 1/2 o 1/3: a capo, elenco verticale e ruota diventano tendina (R1). */
   narrow?: boolean;
   /** Larghezza di un riquadro (tre per riga). */
   tileWidth?: number;
@@ -208,8 +149,6 @@ export function ChoicePicker({ name, look: chosenLook, options, selected, onPick
   const look = effectiveLook(chosenLook, narrow);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
-  const railRef = useRef<ScrollView>(null);
-  const focused = useRef(false);
   const chosen = options.filter(selected);
   const chosenOne = !multi ? chosen[0] : undefined;
 
@@ -220,14 +159,8 @@ export function ChoicePicker({ name, look: chosenLook, options, selected, onPick
         key={opt.id || '__none'}
         style={[styles.chip, styles.railChip, on && styles.chipActive]}
         onPress={() => onPick(opt)}
-        hitSlop={{ top: 4, bottom: 4 }}
+        hitSlop={RAIL_HIT_SLOP}
         accessibilityLabel={opt.a11y}
-        // All'apertura la scelta entra in vista (R1), una volta sola
-        onLayout={on && !focused.current ? (e) => {
-          focused.current = true;
-          const x = e.nativeEvent.layout.x;
-          if (x > 0) railRef.current?.scrollTo({ x: Math.max(0, x - 24), animated: false });
-        } : undefined}
       >
         {on && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
         {multi
@@ -239,7 +172,8 @@ export function ChoicePicker({ name, look: chosenLook, options, selected, onPick
     );
   };
 
-  if (look === 'chips') return <ChipRail label={`Scelte di ${name}`} scrollRef={railRef}>{options.map(pill)}</ChipRail>;
+  // Binario (R1): all'apertura la scelta entra in vista (`ChoiceRail`)
+  if (look === 'chips') return <ChoiceRail label={`Scelte di ${name}`} selected={options.findIndex(selected)}>{options.map(pill)}</ChoiceRail>;
   if (look === 'wrap') return <View style={styles.wrapRow}>{options.map(pill)}</View>;
 
   if (look === 'list') {
@@ -276,7 +210,7 @@ export function ChoicePicker({ name, look: chosenLook, options, selected, onPick
   }
 
   if (look === 'sheet') {
-    // === Elenco dal basso. A 1/3 testo in 13 px e diciture corte; un valore lungo finisce con «…» ===
+    // === Elenco dal basso (`Sheet`, UX1-0). A 1/3 testo in 13 px e diciture corte; un valore lungo finisce con «…» ===
     return (
       <>
         <Pressable style={[styles.inputBox, small && styles.inputBoxSmall, styles.bottom]} onPress={() => setSheetOpen(true)}>
@@ -285,43 +219,28 @@ export function ChoicePicker({ name, look: chosenLook, options, selected, onPick
           <Text style={[styles.valueText, small && styles.valueTextSmall, empty && styles.valuePlaceholder]} numberOfLines={1}>{shown}</Text>
           <AppIcon name="keyboard-arrow-down" size={20} color={t.colors.textMuted} />
         </Pressable>
-        {sheetOpen && (
-          <Modal visible={true} transparent={true} animationType="slide" onRequestClose={() => setSheetOpen(false)}>
-            <View style={styles.sheetScrim}>
-              <View style={styles.sheet}>
-                <View style={styles.sheetHeader}>
-                  <Text style={styles.sheetTitle}>{name}</Text>
-                  <Pressable onPress={() => setSheetOpen(false)}>
-                    <AppIcon name="close" size={24} color={t.colors.textPrimary} />
-                  </Pressable>
-                </View>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {options.map((opt) => {
-                    const on = selected(opt);
-                    return (
-                      <Pressable
-                        key={opt.id || '__none'}
-                        style={styles.sheetRow}
-                        onPress={() => { onPick(opt); if (!multi) setSheetOpen(false); }}
-                        accessibilityLabel={opt.a11y}
-                      >
-                        {hasMark(opt) && <OptionMark option={opt} size={12} />}
-                        <Text style={[styles.sheetRowText, on && styles.sheetRowTextSelected]}>{opt.label}</Text>
-                        {on && <AppIcon name="check" size={24} color={t.colors.accentInk} />}
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-                {multi && (
-                  <Pressable style={[styles.primaryButton, styles.sheetConfirm]} onPress={() => setSheetOpen(false)}>
-                    <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-                    <Text style={styles.primaryButtonText}>Conferma Selezione</Text>
-                  </Pressable>
-                )}
-              </View>
-            </View>
-          </Modal>
-        )}
+        <Sheet
+          title={name}
+          visible={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          footer={multi ? <SheetButton label="Conferma Selezione" onPress={() => setSheetOpen(false)} /> : undefined}
+        >
+          {options.map((opt) => {
+            const on = selected(opt);
+            return (
+              <Pressable
+                key={opt.id || '__none'}
+                style={styles.sheetRow}
+                onPress={() => { onPick(opt); if (!multi) setSheetOpen(false); }}
+                accessibilityLabel={opt.a11y}
+              >
+                {hasMark(opt) && <OptionMark option={opt} size={12} />}
+                <Text style={[styles.sheetRowText, on && styles.sheetRowTextSelected]}>{opt.label}</Text>
+                {on && <AppIcon name="check" size={24} color={t.colors.accentInk} />}
+              </Pressable>
+            );
+          })}
+        </Sheet>
       </>
     );
   }
@@ -395,11 +314,8 @@ export function ChoicePicker({ name, look: chosenLook, options, selected, onPick
 
 const useStyles = makeStyles((t) => ({
   ...formStyles(t),
-  // Binario (R1): pillole da 36, margine interno 14, 8 tra l'una e l'altra; sfumatura col fondo della schermata
-  rail: { position: 'relative', width: '100%' },
-  railRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4, paddingRight: 24 },
-  railChip: { height: 36, paddingHorizontal: 14 },
-  railFade: { position: 'absolute', top: 0, bottom: 0, right: 0, width: 36 },
+  // Binario (R1): pillole da 36, margine interno 14 (`ChoiceRail`)
+  railChip: RAIL_PILL,
   wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tileMark: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   // Elenco verticale e tendina (righe da 48)

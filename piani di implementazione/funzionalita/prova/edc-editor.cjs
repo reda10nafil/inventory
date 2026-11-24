@@ -219,7 +219,10 @@ const forma = (f) => f && { type: f.type, uiType: f.uiType, input: f.input, look
     const cardVol = await e.card(h.page, 'VOL-0087');
     const puntoCard = await e.puntoColore(h.page, 'Grigio perla', BLU);
     await e.prepara(h);
-    await e.visibile(h, '[aria-label="Colore: Seleziona..."]').click(); await h.page.waitForTimeout(400);
+    // Da UX1-0 Colore col binario (a 1/2 nel campionario) prende la riga intera: le pillole sono già a vista; la tendina
+    // si apre solo se c'è
+    const tendinaColore = h.page.locator('[aria-label="Colore: Seleziona..."]').locator('visible=true');
+    if (await tendinaColore.count()) { await tendinaColore.first().click(); await h.page.waitForTimeout(400); }
     const pilloleAggiungi = await e.puntoColore(h.page, 'Grigio perla', BLU);
     const out = {
       opzione: (colore.options || []).find((o) => o.label === 'Grigio perla'), look: colore.look, uiType: colore.uiType, registro, rifiuto,
@@ -357,8 +360,9 @@ const forma = (f) => f && { type: f.type, uiType: f.uiType, input: f.input, look
   });
 
   // 11. Binario orizzontale (richiesta del 24, R1 di UX0): solo a larghezza intera, una riga sola che scorre, con la
-  // spunta sulla scelta che entra in vista all'apertura; in una colonna (Posizione e Categoria a 1/2 nel campionario, un
-  // campo nuovo a 1/2) è una tendina, mai un binario stretto né pillole a capo
+  // spunta sulla scelta che entra in vista all'apertura. Da UX1-0 (richiesta dell'utente del 24) un binario in una
+  // colonna (Posizione e Categoria a 1/2 nel campionario, un campo nuovo a 1/2) prende la riga intera: mai un binario
+  // stretto né pillole a capo, e nemmeno la tendina di EDC
   await run('edc-binario', async (h) => {
     await e.crea(h, { tipo: 'scelta', nome: 'EDC Finiture', valori: ['Finitura uno', 'Finitura due', 'Finitura tre', 'Finitura quattro', 'Finitura cinque'] });
     const finiture = await e.campo(h, 'EDC Finiture', 0);
@@ -398,8 +402,7 @@ const forma = (f) => f && { type: f.type, uiType: f.uiType, input: f.input, look
     });
     const out = { look: finiture.look, inColonna, intera, inVista };
     const ok = finiture.look === 'chips'
-      && Object.values(inColonna.binari).filter(Boolean).length === 1 && !!inColonna.binari['Scelte di Tipo di pelle']
-      && inColonna.tendine.join() === 'Posizione,Categoria,EDC Finiture'
+      && Object.values(inColonna.binari).every((b) => b && b.scorre && b.righe === 1 && b.larghezza >= 300) && inColonna.tendine.length === 0
       && Object.values(intera.binari).every((b) => b && b.scorre && b.righe === 1 && b.larghezza >= 300) && intera.tendine.length === 0
       && inVista && inVista.dentro && inVista.spunta && inVista.altezza === 36;
     return { ok, ...out };

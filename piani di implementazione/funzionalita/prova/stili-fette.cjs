@@ -661,7 +661,9 @@ const FETTE = {
       // Colore a 1/2 è una tendina col pallino del colore e la stella del valore
       ['aggiungi-tendina-posizione', async (page) => {
         await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
-        await page.getByLabel('Posizione: Seleziona...', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+        // Da UX1-0 Posizione col binario prende la riga intera: la tendina c'è solo con «Menu a tendina» scelto in Campi
+        const casella = page.getByLabel('Posizione: Seleziona...', { exact: true }).locator('visible=true');
+        if (await casella.count()) { await casella.first().click(); await page.waitForTimeout(300); }
         await page.getByText('Tipo di pelle', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
       }],
       ['aggiungi-ruota-in-finestra', async (page) => {
@@ -768,6 +770,44 @@ FETTE.cat1 = {
       await page.getByText('Annulla', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
       await page.getByLabel('Elimina Usato e permute', { exact: true }).first().click(); await page.waitForTimeout(500);
       await page.getByLabel('Sposta in Pellicce › Visone', { exact: true }).first().click(); await page.waitForTimeout(300);
+    }],
+  ],
+};
+
+// UX1-0 (ticket 34): in Aggiungi Posizione e Categoria (con la sottocategoria) binari a tutta riga, la ruota di
+// Larghezza nella finestra dal basso unica, l'«Elenco dal basso» di Colore, la categoria dello scaffale nella stessa
+// finestra, campi e pillole col bordo (Minimal: #E7E6E3). Si aggiunge qui, fuori dalla tabella, come S2 e CAT1.
+FETTE.ux10 = {
+  prepara: () => {
+    const lk = 'inventory:v1:local:libraries';
+    const libs = JSON.parse(localStorage.getItem(lk));
+    libs.push({ id: 'giacche-lunghe', name: 'Giacche lunghe', icon: 'folder', createdAt: '2026-11-24T09:00:00.000Z', parentId: 'pellicce' });
+    localStorage.setItem(lk, JSON.stringify(libs));
+    const ck = 'furinventory_custom_fields:local';
+    const fields = JSON.parse(localStorage.getItem(ck));
+    Object.assign(fields.find((f) => f.id === 'width'), { input: 'wheel', dataset: { min: 40, max: 120, step: 10 } });
+    localStorage.setItem(ck, JSON.stringify(fields));
+  },
+  schermate: [
+    ['aggiungi-binari', async (page) => {
+      await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+      await page.getByLabel('Categoria Pellicce', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+      await page.getByText('Tipo di pelle', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['aggiungi-bordi', async (page) => {
+      await page.getByText('Prezzo Acquisto', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['finestra-ruota', async (page) => {
+      await page.getByLabel('Larghezza: nessun valore', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+      await page.getByLabel('Larghezza 90 cm', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+    }],
+    ['elenco-dal-basso', async (page) => {
+      await page.getByText('Fatto', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+      await page.locator('xpath=//div[normalize-space()="Colore"]/following-sibling::div[1]').locator('visible=true').first().click(); await page.waitForTimeout(700);
+    }],
+    ['finestra-categoria', async (page) => {
+      await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+      await page.getByLabel('Categoria dello scaffale', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(700);
     }],
   ],
 };

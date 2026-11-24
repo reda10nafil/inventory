@@ -24,7 +24,7 @@ import { formStyles } from '../../../components/ui/formStyles';
 import { FieldInput, fieldIcon } from '../../../components/FieldInput';
 import { ChoicePicker } from '../../../components/ChoicePicker';
 import { useFieldOptions } from '../../../hooks/useFieldOptions';
-import { baseLook, baseMeasureField, fieldError, initialValues, invalidNumberFields, isChoiceField, MEASURE_PLACEHOLDERS, measureText, NO_FLAGS, savedValue, valueText, type FlaggedFields } from '../../../utils/fieldValues';
+import { baseLook, baseMeasureField, choiceRowSize, fieldError, initialValues, invalidNumberFields, isChoiceField, MEASURE_PLACEHOLDERS, measureText, NO_FLAGS, savedValue, valueText, type FlaggedFields } from '../../../utils/fieldValues';
 import { PhotoGallery } from '../../../components/PhotoGallery';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { DEFAULT_UNIT, parseQty, UNITS } from '../../../utils/stock';
@@ -570,7 +570,9 @@ export default function AddProductScreen() {
         );
 
       // Tipo di pelle e Posizione (richiesta dell'utente del 24): nell'aspetto scelto in Campi (`baseLook`), di solito il
-      // binario orizzontale (una riga che scorre, con la sfumatura dove continua) al posto delle pillole a capo di D09
+      // binario orizzontale (una riga che scorre, con la sfumatura dove continua) al posto delle pillole a capo di D09.
+      // UX1-0: col binario Posizione prende la riga intera anche se nel modulo sta in una colonna (`choiceRowSize`); con
+      // la tendina resta nella colonna. Il modulo salvato non cambia
       case 'furType': {
         const furTypeField = customFields.find((c) => c.id === 'furType');
         const chosen = furTypes.find((ft) => ft.id === formData.furType);
@@ -597,21 +599,23 @@ export default function AddProductScreen() {
       case 'location': {
         const locationField = customFields.find((c) => c.id === 'location');
         const chosen = locationOptions.find((l) => l.id === formData.location);
+        const look = baseLook(locationField);
+        const drawn = choiceRowSize(field.size, look);
         return (
-          <View key="location" style={sizeStyle}>
+          <View key="location" style={getSizeStyle(drawn)}>
             {renderLabel(undefined, true)}
             <ChoicePicker
               name={getFieldLabel('location')}
-              look={baseLook(locationField)}
+              look={look}
               options={locationOptions}
               selected={(o) => formData.location === o.id}
               onPick={(o) => updateField('location', o.id)}
               onClear={() => updateField('location', '')}
               icon={getFieldIcon('location')}
-              shown={chosen?.label ?? (small ? 'Scegli' : 'Seleziona...')}
+              shown={chosen?.label ?? (drawn === 'small' ? 'Scegli' : 'Seleziona...')}
               empty={!chosen}
-              small={small}
-              narrow={!full}
+              small={drawn === 'small'}
+              narrow={drawn !== 'full'}
               tileWidth={tileWidth}
             />
           </View>
@@ -619,11 +623,12 @@ export default function AddProductScreen() {
       }
 
       case 'folder':
+        // UX1-0: la Categoria ha solo il binario, quindi prende sempre la riga intera (`choiceRowSize`)
         return (
-          <View key="folder" style={sizeStyle}>
+          <View key="folder" style={getSizeStyle(choiceRowSize(field.size, 'chips'))}>
             {renderLabel()}
             {/* C1: categoria e, se ne ha, sottocategoria (la cartella di prima) */}
-            <CategoryPicker categories={libraries} value={formData.libraryId} onChange={(id) => updateField('libraryId', id)} narrow={!full} />
+            <CategoryPicker categories={libraries} value={formData.libraryId} onChange={(id) => updateField('libraryId', id)} />
           </View>
         );
 

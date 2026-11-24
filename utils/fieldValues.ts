@@ -469,6 +469,17 @@ export function lookFields(look: ChoiceLook, current?: Pick<CustomField, 'uiType
   return { uiType: look === 'dropdown' || look === 'wheel' ? 'picker' : 'grid', look };
 }
 
+/**
+ * Larghezza con cui si **disegna** nel modulo di Aggiungi un campo a scelta (UX1-0, richiesta dell'utente del 24: Tipo
+ * di pelle, Posizione e Categoria tornano binario): col **binario** in una colonna da 1/2 o 1/3 prende la riga intera
+ * (gli altri campi della riga restano della loro larghezza e vanno a capo da soli); gli altri aspetti restano nella
+ * colonna come prima (tendina; a capo, elenco verticale e ruota in colonna si vedono come tendina, `effectiveLook`; i
+ * riquadri sono già larghi da soli). Solo presentazione: il modulo salvato non cambia (vincolo 1 di `map-3.md`).
+ */
+export function choiceRowSize<S extends 'small' | 'medium' | 'full'>(size: S, look: ChoiceLook): S | 'full' {
+  return look === 'chips' ? 'full' : size;
+}
+
 /** Campi Base con l'aspetto scelto nell'editor (richiesta dell'utente del 24): Posizione e Tipo di pelle. */
 export const BASE_LOOK_FIELDS: readonly string[] = ['location', 'furType'];
 /** Aspetti dei campi Base: binario (predefinito), a capo, elenco verticale, menu a tendina, ruota. */
