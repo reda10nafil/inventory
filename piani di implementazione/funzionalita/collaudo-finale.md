@@ -63,7 +63,7 @@ Dall'Unione 2 (25/11): CF-D è tutto verde. CF-D1 non ha più «da fare» (la fi
 | CF-E3 | Le 5 automazioni con lo stesso codice di prodotto | Riconosciuto in tutte; un prodotto nel cestino rifiutato col messaggio | COD, ESE |
 | CF-E4 | «Codice ed etichetta» di un prodotto con link e di A1: Stampa | Etichetta con QR e codice fatti in locale (nessun indirizzo esterno nell'HTML); sul web si apre la finestra dell'etichetta | ETI (fatta, 24/11: `cfE4` in `prova/collaudo.cjs`, verde) |
 | CF-E5 | Impostazioni › Codici ed etichette con lo storage vuoto, poi con una configurazione GS1 vecchia | Modo «Il codice del prodotto», Avanzate chiuse; con la configurazione vecchia modo «Link» con lo stesso dominio | GS1 |
-| CF-E6 | Impostazioni › Scanner e NFC sul web | Nessuna scelta NFC, una riga «L'NFC si usa dal telefono» (anche in «Codice ed etichetta»), nessun «Errore»; la configurazione salvata resta | N1 (fatta, 24/11: `cfE6` in `prova/collaudo.cjs`, verde) |
+| CF-E6 | Impostazioni › Scanner e NFC sul web | Nessuna scelta NFC, una riga «L'NFC si usa dal telefono»; in «Codice ed etichetta» (dall'Unione 2, richiesta dell'utente del 25/11) le righe «Scrivi tag NFC» e «Collega un tag» spente con «Funziona dal telefono»; nessun «Errore»; la configurazione salvata resta | N1 (fatta, 24/11: `cfE6` in `prova/collaudo.cjs`, verde) |
 
 ## F · Magazzino e automazioni
 
