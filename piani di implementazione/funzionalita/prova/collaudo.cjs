@@ -1004,6 +1004,80 @@ async function cfH5(h) {
   } finally { await centro.spegni(); }
 }
 
+// DATI (EXP + IMP, corsia B, 25/11): CF-G1 export, CF-G2 import d'altri con «+ Crea campo», CF-G3 andata e ritorno
+const imp = require('./imp-util.cjs');
+const datiCsv = (n) => require('fs').readFileSync(require('path').join(__dirname, 'imp-csv', n), 'utf8');
+async function datiScarica(h, voce) {
+  const dl = h.page.waitForEvent('download', { timeout: 15000 });
+  await h.click(voce);
+  return require('fs').readFileSync(await (await dl).path());
+}
+function datiRighe(testo) {
+  const rows = []; let row = []; let f = ''; let q = false;
+  for (let i = 0; i < testo.length; i++) {
+    const ch = testo[i];
+    if (q) { if (ch === '"' && testo[i + 1] === '"') { f += '"'; i++; } else if (ch === '"') q = false; else f += ch; }
+    else if (ch === '"' && !f) q = true; else if (ch === ',') { row.push(f); f = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && testo[i + 1] === '\n') i++; row.push(f); if (row.some(Boolean)) rows.push(row); row = []; f = ''; } else f += ch;
+  }
+  row.push(f); if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+async function cfG1(h) {
+  await h.tab('Impostazioni');
+  const testo = (await datiScarica(h, 'Esporta Inventario')).toString('utf8');
+  const [testa, ...dati] = datiRighe(testo.replace(/^﻿/, ''));
+  const vis = dati.find((r) => r[0] === 'VIS-0142');
+  const val = (c) => vis[testa.indexOf(c)];
+  await h.page.waitForTimeout(500);
+  const avviso = await h.page.locator('[data-testid="export-avviso"]').innerText().catch(() => '');
+  const cloud = await h.has('Per avere i link delle foto serve il cloud (in arrivo)', true);
+  const r = { bom: testo.charCodeAt(0) === 0xfeff, taglia: val('Taglia'), colore: val('Colore'), dettagli: val('Dettagli'), giacenza: testa.includes('Giacenza'), scaffale: testa.includes('Scaffale'), avviso, cloud };
+  return { ok: r.bom && r.taglia === 'M' && r.colore === 'Grigio perla' && /; /.test(r.dettagli) && r.giacenza && r.scaffale && /^\d+ foto non esportate: sono solo su questo dispositivo/.test(avviso) && cloud, ...r };
+}
+async function cfG2(h) {
+  await h.tab('Impostazioni');
+  const prima = await h.page.evaluate(() => JSON.stringify(Object.keys(localStorage).filter((k) => !/import_draft/.test(k)).sort().map((k) => [k, localStorage.getItem(k)])));
+  await imp.trascina(h, datiCsv('altro-gestionale-pv.csv'), 'altro-gestionale-pv.csv');
+  const abbinate = await h.page.locator('[aria-label^="Colonna "]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  const intatto = prima === await h.page.evaluate(() => JSON.stringify(Object.keys(localStorage).filter((k) => !/import_draft/.test(k)).sort().map((k) => [k, localStorage.getItem(k)])));
+  await h.page.locator('[aria-label^="Colonna Materiale:"]').click(); await h.page.waitForTimeout(500);
+  await h.click('+ Crea campo'); await h.page.waitForTimeout(1500);
+  await h.click('Salva Campo'); await h.page.waitForTimeout(1800);
+  const ritorno = await h.page.locator('[aria-label^="Colonna Materiale:"]').getAttribute('aria-label').catch(() => null);
+  const fileAncora = await h.page.locator('[data-testid="import-file"]').innerText().catch(() => null);
+  await h.click('Posizione');
+  await h.page.locator('[aria-modal="true"]').last().getByText('Magazzino', { exact: true }).first().click();
+  await h.page.waitForTimeout(500);
+  const rifiutate = await h.page.getByText(/^Riga \d+ · /).count();
+  const n = await imp.chiudiImport(h);
+  const campi = await h.store('furinventory_custom_fields:local', 0);
+  const materiale = campi.find((f) => f.name === 'Materiale');
+  const b = (await h.products()).find((p) => p.sku === 'BOR-001');
+  const mat = b && b.customData.find((c) => c.fieldSnapshot.id === materiale?.id);
+  const r = { abbinate: abbinate.slice(0, 3), intatto, ritorno, fileAncora, rifiutate, importati: n, materiale: mat && (materiale.options || []).find((o) => o.id === mat.value)?.label, foto: b && b.images, giacenza: b && b.stock };
+  return { ok: abbinate[0] === 'Colonna Codice articolo: SKU' && intatto && ritorno === 'Colonna Materiale: Materiale' && fileAncora === 'altro-gestionale-pv.csv' && rifiutate === 0 && n === 2
+    && r.materiale === 'Pelle' && JSON.stringify(r.foto) === '["https://img.prova.test/borsa1.png"]' && r.giacenza?.magazzino === 3, ...r };
+}
+async function cfG3(h) {
+  await h.tab('Impostazioni');
+  const originali = (await h.products(0)).filter((p) => !p.deletedAt);
+  const zip = await datiScarica(h, 'Esporta con le foto');
+  await h.page.evaluate(() => { localStorage.setItem('inventory:v1:local:products', '[]'); localStorage.setItem('inventory:v1:local:timeline', '[]'); });
+  await h.go('settings'); await h.page.waitForTimeout(800);
+  await imp.trascina(h, zip, 'inventario.zip', 'application/zip');
+  const n = await imp.chiudiImport(h);
+  const dopo = await h.products();
+  const diversi = originali.filter((o) => {
+    const p = dopo.find((x) => x.sku === o.sku);
+    if (!p) return true;
+    const campi = (x) => JSON.stringify((x.customData || []).filter((c) => !['images', 'document'].includes(c.fieldSnapshot.type)).map((c) => [c.fieldSnapshot.id, c.value]));
+    return ['furType', 'location', 'status', 'sellPrice', 'libraryId', 'unit', 'shelfId'].some((k) => JSON.stringify(o[k] ?? null) !== JSON.stringify(p[k] ?? null))
+      || JSON.stringify(o.images) !== JSON.stringify(p.images) || JSON.stringify(o.stock ?? null) !== JSON.stringify(p.stock ?? null) || campi(o) !== campi(p);
+  }).map((o) => o.sku);
+  return { ok: n === originali.length && diversi.length === 0, importati: n, prodotti: originali.length, diversi };
+}
+
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
@@ -1037,9 +1111,9 @@ const PASSI = [
   ['CF-F6', 'Reso di un articolo a quantità e di un pezzo unico venduto', 'RES'],
   ['CF-F7', 'Automazione personale [Scansiona, Tag, Tag, Imposta campo, Vendi]', 'ESE', cfF7],
   ['CF-F8', 'Costruttore: passi Carico e «Chiedi conferma», riordino', 'FLU2, ESE'],
-  ['CF-G1', 'Esporta inventario: BOM, una colonna per campo, avviso foto', 'EXP'],
-  ['CF-G2', 'Import di un CSV «;» con abbinamento, «+ Crea campo», rifiutate', 'IMP'],
-  ['CF-G3', 'Esportare e reimportare in uno spazio vuoto', 'EXP, IMP'],
+  ['CF-G1', 'Esporta inventario: BOM, una colonna per campo, avviso foto', 'EXP', cfG1],
+  ['CF-G2', 'Import di un CSV «;» con abbinamento, «+ Crea campo», rifiutate', 'IMP', cfG2],
+  ['CF-G3', 'Esportare e reimportare in uno spazio vuoto (ZIP con le foto)', 'EXP, IMP', cfG3],
   ['CF-H1', 'Home con Team e Chat; Chat senza colleghi; card giuste', 'CHAT1'],
   ['CF-H2', 'Selezione › «Invia» a un collega › «Ricevuto, sposta»', 'RIC1'],
   ['CF-H3', 'Automazioni «Invia a collega», «Ricevi», condivise', 'RIC2, RIC3'],

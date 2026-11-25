@@ -18,12 +18,9 @@ function parseCsv(input) {
 }
 const toCsv = (rows) => rows.map((r) => r.map((v) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)).join(',')).join('\r\n');
 const DROP = '[aria-label="Importa CSV trascinando un file qui"]';
+// IMP (DATI): il riquadro è nella schermata Importa prodotti; si importa con l'abbinamento proposto e si torna
 async function drop(h, csv, name = 'prova.csv') {
-  const dt = await h.page.evaluateHandle(([text, n]) => {
-    const d = new DataTransfer(); d.items.add(new File([text], n, { type: 'text/csv' })); return d;
-  }, [csv, name]);
-  await h.page.locator(DROP).dispatchEvent('drop', { dataTransfer: dt });
-  await h.page.waitForTimeout(1200);
+  await require('./imp-util.cjs').importaCsv(h, csv, name);
 }
 async function esporta(h) {
   const dl = h.page.waitForEvent('download', { timeout: 8000 });
@@ -60,13 +57,10 @@ async function esporta(h) {
   // 2. Importa col pulsante (scelta del file del browser)
   await scenario('a2-csv-importa-pulsante', async (h) => {
     await h.tab('Impostazioni');
-    const chooser = h.page.waitForEvent('filechooser', { timeout: 6000 }).catch(() => null);
-    await h.click('Importa prodotti CSV');
-    const fc = await chooser;
-    if (fc) await fc.setFiles({ name: 'nuovo.csv', mimeType: 'text/csv', buffer: Buffer.from('SKU,Tipo Pelle,Posizione\r\nA2-BTN-001,volpe,stand_a\r\n') });
-    await h.page.waitForTimeout(2000);
+    // IMP (DATI): «Importa prodotti CSV» apre la schermata; la finestra dei file è «Scegli file»
+    const { filechooser } = await require('./imp-util.cjs').importaConPulsante(h, Buffer.from('SKU,Tipo Pelle,Posizione\r\nA2-BTN-001,volpe,stand_a\r\n'), 'nuovo.csv');
     const p = (await h.products()).find((x) => x.sku === 'A2-BTN-001');
-    return { filechooser: !!fc, importato: !!p };
+    return { filechooser, importato: !!p };
   });
 
   // 3. Trascina un CSV: una riga nuova, uno SKU già presente, uno SKU vuoto

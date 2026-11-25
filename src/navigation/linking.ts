@@ -30,6 +30,7 @@ export const PARENT_TAB: Record<string, 'index' | 'automations' | 'settings'> = 
   SettingsNetwork: 'settings', // Impostazioni › Persone e telefoni › Rete del negozio (RETE0)
   SettingsTeam: 'settings', // indirizzo vecchio della Rete del negozio (RETE0: stessa schermata)
   SettingsAccess: 'settings', // Impostazioni › Persone e telefoni › Accesso (ACC1)
+  SettingsImport: 'settings', // Impostazioni › Dati e backup › Importa prodotti (IMP)
   Chat: 'settings', // Rete del negozio › Apri la Chat
   SettingsAutomationBuilder: 'automations', // Automazioni › Crea Nuova; Flusso di un'automazione › modifica
   Audit: 'automations',
@@ -73,6 +74,7 @@ const config = {
     SettingsNetwork: 'settings/network',
     SettingsTeam: 'settings/team',
     SettingsAccess: 'settings/access',
+    SettingsImport: 'settings/import',
     Chat: 'chat',
     SettingsAutomationBuilder: 'settings/automation-builder',
     Audit: 'automations/audit',

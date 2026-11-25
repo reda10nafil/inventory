@@ -11,7 +11,7 @@
 import React, { useState } from 'react';
 import { View, Pressable, ScrollView, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCustomFields, FieldType, FIELD_TYPE_INFO } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
@@ -242,6 +242,28 @@ export default function CustomFieldsScreen() {
     setDefaultPick(null);
   };
 
+  // IMP (DATI, ticket 26): «+ Crea campo» dall'import. L'import apre questa schermata col nome della colonna, il tipo
+  // proposto dai valori e le opzioni (`nuovoCampo`, `tipo`, `valori`, `ritorno`): l'editor si apre già compilato e dopo
+  // «Salva Campo» si torna all'import, che abbina la colonna al campo nuovo.
+  const navigation = useNavigation();
+  const importParams = (route.params ?? {}) as { nuovoCampo?: string; tipo?: FieldType; valori?: string; ritorno?: string };
+  const fromImport = importParams.ritorno === 'import';
+  const importOpened = React.useRef(false);
+  React.useEffect(() => {
+    if (!importParams.nuovoCampo || importOpened.current) return;
+    importOpened.current = true;
+    const type: FieldType = importParams.tipo && FIELD_TYPE_INFO[importParams.tipo] ? importParams.tipo : 'text_short';
+    pickType(type);
+    setFieldName(String(importParams.nuovoCampo));
+    if (type === 'single_choice' || type === 'multi_choice') {
+      try {
+        const labels: unknown[] = JSON.parse(importParams.valori || '[]');
+        setOptions(labels.map((label, i) => ({ id: `opt_${i}`, label: String(label) })));
+      } catch { /* nessun valore proposto */ }
+    }
+    setShowAddModal(true);
+  }, [importParams.nuovoCampo]);
+
   const openEditModal = (field: CustomField) => {
     setEditingField(field);
     setFieldName(field.name);
@@ -419,6 +441,8 @@ export default function CustomFieldsScreen() {
       const created = await addField(payload);
       await appendToLayout([created.id]);
       Alert.alert('Successo', `Campo "${name}" creato e aggiunto in fondo al modulo Aggiungi. Puoi spostarlo da Configura Layout Aggiungi.`);
+      // IMP (DATI): dall'import si torna lì, con la colonna abbinata al campo nuovo
+      if (fromImport) { closeModal(); navigation.goBack(); return; }
     }
 
     closeModal();

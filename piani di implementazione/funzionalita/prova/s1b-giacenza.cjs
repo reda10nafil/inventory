@@ -141,12 +141,9 @@ function parseCsv(input) {
   return rows;
 }
 const toCsv = (rows) => rows.map((r) => r.map((v) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)).join(',')).join('\r\n');
+// IMP (DATI): il riquadro è nella schermata Importa prodotti; si importa con l'abbinamento proposto e si torna
 async function drop(h, csv, name = 'prova.csv') {
-  const dt = await h.page.evaluateHandle(([text, n]) => {
-    const d = new DataTransfer(); d.items.add(new File([text], n, { type: 'text/csv' })); return d;
-  }, [csv, name]);
-  await h.page.locator('[aria-label="Importa CSV trascinando un file qui"]').dispatchEvent('drop', { dataTransfer: dt });
-  await h.page.waitForTimeout(1500);
+  await require('./imp-util.cjs').importaCsv(h, csv, name);
 }
 async function scarica(h, voce) {
   const dl = h.page.waitForEvent('download', { timeout: 8000 });

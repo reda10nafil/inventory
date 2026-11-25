@@ -5,10 +5,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from '../../navigation/compat';
 import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
-import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
-import { parseCsv, stringifyCsv } from '../../../utils/csv';
-import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
+import { stringifyCsv } from '../../../utils/csv';
+import { movementCsvRows, productCsvRows, stockCsvRows } from '../../../utils/productCsv';
 // EXP (DATI, ticket 26): colonne dei campi, avviso delle foto ed «Esporta con le foto»
 import { photoFiles, photosWarning, rowsWithImageFiles, ZIP_CSV_NAME, ZIP_IMAGES_DIR } from '../../../utils/productExport';
 import { base64ToBytes, bytesToBase64, dataUrlBytes, makeZip, utf8 } from '../../../utils/zip';
@@ -19,15 +18,12 @@ import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
-import { useLoadCheck } from '../../../hooks/useLoadCheck';
-import { overLimitText } from '../../../utils/shelves';
-import { placeOfKey, stockKey } from '../../../utils/stock';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { cardSurface } from '../../../components/ui/surfaces';
-import { Text, fontStyle } from '../../../components/ui/Text';
+import { Text } from '../../../components/ui/Text';
 import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
 import { usePermission, useProfile } from '../../../contexts/ProfileContext';
 import { profileSubtitle } from '../../../utils/profile';
@@ -40,15 +36,13 @@ export default function SettingsScreen() {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { products, timeline, addProduct, getProductBySku, libraries } = useInventory();
+  const { products, timeline, libraries } = useInventory();
   // S1b: nei report le chiavi con lo scaffale si leggono «Magazzino › A1»
   const placeLabel = usePlaceLabel();
   const { furTypes, labelOf } = useFurTypes();
   const { nameOf: contactName } = useContacts();
   // S1a: colonna «Scaffale» nel CSV dei prodotti (nome dello scaffale dentro la posizione)
   const { shelves } = useShelves();
-  // S3 (ticket 15): l'import registra merce che è già lì: niente blocco, solo l'informazione «oltre il limite»
-  const { check: checkLoad } = useLoadCheck();
   // EXP (DATI): campi personalizzati nell'ordine del modulo Aggiungi, per le colonne dei campi dell'export
   const { customFields } = useCustomFields();
   const { layout } = useLayout();
@@ -183,85 +177,8 @@ export default function SettingsScreen() {
     }
   };
 
-  const importCsvContent = (content: string) => {
-    const rows = parseCsv(content.replace(/^\uFEFF/, ''));
-    if (rows.length < 2) throw new Error('Il CSV non contiene prodotti.');
-    // C1: colonne e formato (prima di M01, M01-M10, da C1) dall'intestazione; una riga → un prodotto in `productFromCsvRow`
-    const cols = productCsvColumns(rows[0]);
-    if (cols.sku < 0) throw new Error('Manca la colonna SKU. Esporta prima un CSV dall’app per vedere il formato supportato.');
-
-    let imported = 0;
-    let skipped = 0;
-    const over = new Map<string, string>(); // S3: nome del posto → «A1 è oltre il limite: …» (l'ultima riga vince)
-    const seenSkus = new Set(products.map((product) => product.sku.trim().toLocaleLowerCase()));
-    rows.slice(1).forEach((row) => {
-      // SKU vuoto, giacenza scritta ma non valida o su uno scaffale (S1a): `null`, la riga si salta
-      const parsed = productFromCsvRow(row, cols, { categories: libraries, furTypes, shelves });
-      const normalizedSku = parsed ? parsed.product.sku.toLocaleLowerCase() : '';
-      if (!parsed || seenSkus.has(normalizedSku) || getProductBySku(parsed.product.sku)) {
-        skipped += 1;
-        return;
-      }
-      seenSkus.add(normalizedSku);
-      // S3: posti che questa riga porta oltre il limite, prima di scrivere: ogni scaffale con la sua quantità, ogni
-      // posizione con capienza con la somma della riga (revisore: «X: 5; X/A1: 5» sono 10 pezzi in X)
-      const { product } = parsed;
-      const entries: [string, number][] = parsed.stock
-        ? Object.entries(parsed.stock).filter(([, qty]) => qty > 0)
-        : product.status === 'available' ? [[stockKey(product.location, product.shelfId), 1]] : [];
-      const perPlace = new Map<string, number>();
-      for (const [key, qty] of entries) perPlace.set(placeOfKey(key), (perPlace.get(placeOfKey(key)) ?? 0) + qty);
-      const loads = [
-        ...entries.filter(([key]) => key !== placeOfKey(key)).map(([key, qty]) => checkLoad(product, key, [{ qty }], { soloScaffale: true })),
-        ...[...perPlace].map(([place, qty]) => checkLoad(product, place, [{ qty }])),
-      ];
-      const added = addProduct(parsed.product, parsed.stock ? { stock: parsed.stock } : undefined);
-      if (added) {
-        imported += 1;
-        for (const l of loads) if (l.level === 'blocco') over.set(l.name, overLimitText(l));
-      } else skipped += 1;
-    });
-
-    return { imported, skipped, over: [...over.values()] };
-  };
-
-  /** Messaggio finale dell'import (S3: con i posti oltre il limite, se ce ne sono; altrimenti quello di prima). */
-  const importText = (outcome: { imported: number; skipped: number; over: string[] }) =>
-    `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`
-    + (outcome.over.length ? ` ${outcome.over.join('. ')}.` : '');
-
-  const importFromCSV = async () => {
-    if (!addPerm.allowed) return;
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/csv', 'text/comma-separated-values', 'application/vnd.ms-excel'],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
-      const outcome = importCsvContent(content);
-      Alert.alert('Importazione completata', importText(outcome));
-    } catch (error) {
-      Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
-    }
-  };
-
-  const handleCsvDrop = async (event: any) => {
-    event.preventDefault();
-    if (!addPerm.allowed) return;
-    const file = event.dataTransfer?.files?.[0];
-    if (!file || !/\.csv$/i.test(file.name || '')) {
-      Alert.alert('Formato non supportato', 'Trascina un file .csv.');
-      return;
-    }
-    try {
-      const outcome = importCsvContent(await file.text());
-      Alert.alert('Importazione completata', importText(outcome));
-    } catch (error) {
-      Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
-    }
-  };
+  // IMP (DATI): l'import è nella schermata «Importa prodotti» (`settings/import`), con abbinamento e anteprima
+  const openImport = () => { if (addPerm.allowed) router.push('/settings/import'); };
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
@@ -634,7 +551,7 @@ export default function SettingsScreen() {
 
         <PermissionNote text={addPerm.reason} />
         <Dimmed off={!addPerm.allowed}>
-        <Pressable style={styles.settingRow} onPress={importFromCSV}>
+        <Pressable style={styles.settingRow} onPress={openImport}>
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
               <AppIcon name="file-upload" size={24} color={t.colors.onData} />
@@ -642,32 +559,13 @@ export default function SettingsScreen() {
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Importa prodotti CSV</Text>
               <Text style={styles.settingDescription}>
-                Seleziona un CSV; gli SKU già presenti vengono saltati
+                CSV o ZIP con le foto: abbini le colonne e vedi l'anteprima
               </Text>
             </View>
           </View>
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
-        {Platform.OS === 'web' && React.createElement('div', {
-          role: 'region',
-          'aria-label': 'Importa CSV trascinando un file qui',
-          onDragOver: (event: any) => event.preventDefault(),
-          onDrop: handleCsvDrop,
-          style: {
-            ...fontStyle(t, '400'),
-            fontSize: 13,
-            lineHeight: '18px',
-            border: `1px dashed ${t.colors.dash}`,
-            borderRadius: t.radius.card,
-            padding: 18,
-            marginBottom: 10,
-            color: t.colors.textSecondary,
-            background: t.colors.surface,
-            textAlign: 'center',
-          },
-          children: 'Trascina qui un file CSV per importare prodotti. Per esportare usa “Esporta Inventario”.',
-        })}
         </Dimmed>
 
         {/* ACC1 (AR12): col login spento la voce resta, attenuata e senza effetto, con il motivo */}

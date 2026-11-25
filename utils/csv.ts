@@ -1,18 +1,19 @@
 /** RFC 4180 compatible CSV helpers for the product import/export workflow. */
-export function stringifyCsv(rows: readonly (readonly unknown[])[]): string {
+// IMP (DATI): il separatore si sceglie («;» di Excel in italiano, riconosciuto da `detectDelimiter` di `csvImport.ts`)
+export function stringifyCsv(rows: readonly (readonly unknown[])[], delimiter = ','): string {
   return rows
     .map((row) =>
       row
         .map((value) => {
           const text = value == null ? '' : String(value);
-          return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+          return /["\r\n]/.test(text) || text.includes(delimiter) ? `"${text.replace(/"/g, '""')}"` : text;
         })
-        .join(','),
+        .join(delimiter),
     )
     .join('\r\n');
 }
 
-export function parseCsv(input: string): string[][] {
+export function parseCsv(input: string, delimiter = ','): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -31,7 +32,7 @@ export function parseCsv(input: string): string[][] {
       }
     } else if (char === '"' && field.length === 0) {
       quoted = true;
-    } else if (char === ',') {
+    } else if (char === delimiter) {
       row.push(field);
       field = '';
     } else if (char === '\n' || char === '\r') {

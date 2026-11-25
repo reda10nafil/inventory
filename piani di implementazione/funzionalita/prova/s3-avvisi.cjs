@@ -291,11 +291,8 @@ const OK = Array(12).fill('ok');
     await prepara(h);
     const visti = finestre(h);
     await h.tab('Impostazioni');
-    const drop = async (csv, name) => {
-      const dt = await h.page.evaluateHandle(([text, n]) => { const d = new DataTransfer(); d.items.add(new File([text], n, { type: 'text/csv' })); return d; }, [csv, name]);
-      await h.page.locator('[aria-label="Importa CSV trascinando un file qui"]').dispatchEvent('drop', { dataTransfer: dt });
-      await h.page.waitForTimeout(1500);
-    };
+    // IMP (DATI): dalla schermata Importa prodotti, con «Importa» e «Fatto»
+    const drop = (csv, name) => require('./imp-util.cjs').importaCsv(h, csv, name);
     await drop(['SKU,Tipo di pelle,Posizione,Unità,Giacenza', 'S3-IMP-1,visone,magazzino,pz,SCAF-MAG-A1:25'].join('\r\n'), 'oltre.csv');
     await drop(['SKU,Tipo di pelle,Posizione,Unità,Giacenza', 'S3-IMP-2,visone,magazzino,pz,SCAF-MAG-G1:3'].join('\r\n'), 'dentro.csv');
     const uno = await stato(h, 'S3-IMP-1', 600);
@@ -316,9 +313,7 @@ const OK = Array(12).fill('ok');
     const visti = finestre(h);
     await h.tab('Impostazioni');
     const csv = ['SKU,Tipo di pelle,Posizione,Unità,Giacenza', 'S3-IMP-3,visone,magazzino,pz,magazzino:4; SCAF-MAG-G1:4'].join('\r\n');
-    const dt = await h.page.evaluateHandle(([text]) => { const d = new DataTransfer(); d.items.add(new File([text], 'somma.csv', { type: 'text/csv' })); return d; }, [csv]);
-    await h.page.locator('[aria-label="Importa CSV trascinando un file qui"]').dispatchEvent('drop', { dataTransfer: dt });
-    await h.page.waitForTimeout(1500);
+    await require('./imp-util.cjs').importaCsv(h, csv, 'somma.csv'); // IMP (DATI)
     const tre = await stato(h, 'S3-IMP-3', 600);
     return {
       ok: tre?.stock.magazzino === 4 && tre.stock['magazzino/G1'] === 4 && tre.coincide
