@@ -12,6 +12,7 @@
 const fs = require('fs');
 const { scenario } = require('./lib.cjs');
 const { press } = require('./a1-util.cjs');
+const { chiudiCodice } = require('./eti-util.cjs'); // Unione 2: dopo «Crea scaffale» si apre «Codice ed etichetta» (ETI)
 
 const P = 'inventory:v1:local:products';
 const T = 'inventory:v1:local:timeline';
@@ -132,6 +133,7 @@ async function scarica(h, voce) {
     await field(h, 'Peso massimo').fill('10');
     await field(h, 'Pezzi massimi').fill('20');
     await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(700);
+    await chiudiCodice(h);
     const creato = senzaId(((await h.store(S)) || [])[0]);
     const elenco = await riga(h, 'A1');
     const barra = await barre(h);
@@ -165,6 +167,7 @@ async function scarica(h, voce) {
     await field(h, 'Grucce massime').fill('15');
     await field(h, 'Altezza libera').fill('150');
     await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(700);
+    await chiudiCodice(h);
     const salvata = senzaId(((await h.store(S)) || [])[0]);
     const elenco = await riga(h, 'Barra giacche');
     // Grucce non intere: rifiutate

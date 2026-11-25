@@ -170,7 +170,8 @@ async function prodotto(h, sku) {
     await e.apri(h, 'Nuovo scaffale', 300);
     await h.page.getByLabel('Nome', { exact: true }).locator('visible=true').first().fill('B2');
     await e.apri(h, 'Posizione Magazzino', 200);
-    await e.apri(h, 'Categoria Pellicce', 200);
+    await e.apri(h, 'Categoria dello scaffale', 400); // Unione 2: con S2 la categoria dello scaffale è una tendina (finestra dal basso)
+    await e.apri(h, 'Categoria Pellicce', 300);
     await e.apri(h, 'Crea scaffale', 700);
     const conCodice = await h.has('SCAF-MAGAZZINO-B2', true);
     out.scaffaleSenzaCodice = { finestra: await e.aperta(h), vuoto: await h.has('Questo scaffale non ha ancora un codice.', true), codiceGiaNato: conCodice };

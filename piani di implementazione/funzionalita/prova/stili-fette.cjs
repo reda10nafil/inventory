@@ -845,7 +845,7 @@ FETTE.n1 = {
     ['scaffale-codice', async (page) => {
       await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
       await page.getByLabel('Codice QR di A1', { exact: true }).first().click(); await page.waitForTimeout(800);
-      await page.getByText('L\'NFC si usa dal telefono', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      await page.getByText('Funziona dal telefono', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
     }],
     ['scaffali-modulo', async (page) => {
       await page.getByLabel('Chiudi Codice ed etichetta', { exact: true }).locator('visible=true').last().click(); await page.waitForTimeout(400);
@@ -860,7 +860,7 @@ FETTE.n1 = {
       await page.goto(APP); await page.getByText('VIS-0142', { exact: true }).first().waitFor();
       await page.getByText('VIS-0142', { exact: true }).first().click(); await page.waitForTimeout(1200);
       await page.getByLabel('Codice ed etichetta', { exact: true }).first().click(); await page.waitForTimeout(800);
-      await page.getByText('L\'NFC si usa dal telefono', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      await page.getByText('Funziona dal telefono', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
     }],
   ],
 };
@@ -939,6 +939,15 @@ FETTE.s3 = {
     ['blocco-proposta', async (page) => {
       await page.locator('input[placeholder^="es. 2,5"]').first().fill('2'); await page.waitForTimeout(300);
       await page.getByLabel('Registra movimento', { exact: true }).first().click(); await page.waitForTimeout(900);
+    }],
+    // Unione 2: l'avviso sotto lo Scaffale in Aggiungi (Posizione a binario di UX1-0, blocco Magazzino di oggi)
+    ['aggiungi-avviso', async (page) => {
+      await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+      await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+      await page.locator('[aria-label="Scelte di Posizione"]').getByText('Magazzino', { exact: true }).first().click(); await page.waitForTimeout(400);
+      await page.getByLabel('Scaffale R2', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.locator('[data-testid="avviso-carico"]').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      await page.waitForTimeout(300);
     }],
     ['spostamento-scaffale', async (page) => {
       await page.goto(`${APP}/automations/batch-move`); await page.waitForTimeout(1800);

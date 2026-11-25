@@ -293,8 +293,10 @@ export default function ProductDetailScreen() {
       // Campi personalizzati: lo stesso testo della Scheda, nell'ordine del modulo (`pdfFieldOrder`, un punto solo)
       const fields = pdfFieldRows(product.customData, pdfFieldOrder(layout, product), (item) => {
         const snapshot = item.fieldSnapshot;
-        const field = allFieldsIncludingDeleted.find((f) => f.id === snapshot?.id) ?? snapshot;
-        return { name: field?.name ?? snapshot?.name ?? '', value: valueText(snapshot, item.value, { options: optionsOf(field), snapshot }) };
+        // Unione 2: come la Scheda (EDC), nome, tipo e opzioni dal registro con `liveField`; la copia salvata col
+        // prodotto solo se il campo non c'è più, e per riconoscere le etichette di prima
+        const field = liveField(snapshot, allFieldsIncludingDeleted);
+        return { name: field.name, value: valueText(field, item.value, { options: optionsOf(field), snapshot }) };
       });
 
       const html = productPdfHtml({

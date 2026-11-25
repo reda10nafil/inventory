@@ -476,8 +476,8 @@ async function cfE4(h) {
 }
 
 // CF-D1 (parte ETI): il ripiano «A1» creato dal modulo (Magazzino): al «OK» si apre «Codice ed etichetta» con il codice
-// SCAF-MAGAZZINO-A1 e «Stampa etichetta» lo stampa in una finestra sua. Il codice nasce al salvataggio con S2 (corsia B);
-// su un branch senza S2 la finestra lo crea con «Crea il codice» (stessa regola) e lo dice in `daFare`
+// SCAF-MAGAZZINO-A1 e «Stampa etichetta» lo stampa in una finestra sua. Il codice nasce al salvataggio con S2 (corsia B,
+// unita con l'Unione 2): se la finestra chiedesse ancora «Crea il codice» il passo è rosso
 async function cfD1Eti(h) {
   const st = await eti.guardaStampe(h);
   await h.go('settings/shelves');
@@ -494,9 +494,8 @@ async function cfD1Eti(h) {
   const s = await eti.ultimaStampa(st);
   const stampa = s && { qr: JSON.stringify(eti.qrHtml(s.html)) === JSON.stringify(eti.qrAtteso('SCAF-MAGAZZINO-A1')), pulita: etiPulita(s.html), stampata: s.stampe };
   const paginaApp = await h.page.evaluate(() => window.__prints);
-  const ok = finestra && salvato === 'SCAF-MAGAZZINO-A1' && aVideo && !!stampa && stampa.qr && stampa.pulita && stampa.stampata === 1 && paginaApp === 0 && st.esterne.length === 0;
-  return { ok, finestra, codiceDa: daCreare ? 'Crea il codice' : 'salvataggio', salvato, aVideo, stampa, paginaApp, esterne: st.esterne,
-    ...(daCreare ? { daFare: 'il codice nasce da solo al salvataggio con S2 (corsia B, all\'unione)' } : {}) };
+  const ok = finestra && !daCreare && salvato === 'SCAF-MAGAZZINO-A1' && aVideo && !!stampa && stampa.qr && stampa.pulita && stampa.stampata === 1 && paginaApp === 0 && st.esterne.length === 0;
+  return { ok, finestra, codiceDa: daCreare ? 'Crea il codice' : 'salvataggio', salvato, aVideo, stampa, paginaApp, esterne: st.esterne };
 }
 
 // CF-E6 (N1): Impostazioni › Scanner e NFC sul web, con una configurazione salvata prima («NFC», proponi il tag): una
@@ -520,12 +519,14 @@ async function cfE6(h) {
   await eti.apri(h, 'Codice ed etichetta', 900);
   await eti.apri(h, 'Avanzate', 400);
   const finestra = {
-    riga: await h.page.getByText('L\'NFC si usa dal telefono', { exact: true }).locator('visible=true').count(),
+    // Unione 2 (richiesta dell'utente del 25/11): in «Codice ed etichetta» «Scrivi tag NFC» c'è, spenta, con sotto «Funziona dal telefono»
+    riga: await h.page.getByLabel('Scrivi tag NFC: funziona dal telefono', { exact: true }).locator('visible=true').count(),
+    motivo: await h.page.getByText('Funziona dal telefono', { exact: true }).locator('visible=true').count(),
     programma: await h.page.getByText('Programma tag', { exact: true }).locator('visible=true').count(),
     scrivi: await h.page.getByLabel('Scrivi tag NFC', { exact: true }).locator('visible=true').count(),
   };
   const ok = impostazioni.riga && !impostazioni.scelte && !impostazioni.interruttori && !impostazioni.errore
-    && JSON.stringify(chiave) === JSON.stringify(salvata) && finestra.riga === 1 && !finestra.programma && !finestra.scrivi;
+    && JSON.stringify(chiave) === JSON.stringify(salvata) && finestra.riga === 1 && finestra.motivo === 1 && !finestra.programma && !finestra.scrivi;
   return { ok, impostazioni, chiaveUguale: JSON.stringify(chiave) === JSON.stringify(salvata), finestra };
 }
 
@@ -710,7 +711,8 @@ async function cfD1(h) {
     && salvato.length === 50 && salvato.depth === 50 && salvato.height === 30 && salvato.maxWeight === 10 && salvato.maxPieces === 20 && !salvato.kind
     && salvato.barcode === 'SCAF-MAGAZZINO-A1' && riga.includes('Base 50 × 50 cm, alta 30 cm · fino a 10 kg · fino a 20 pezzi')
     && barre.length === 1 && barre[0].etichetta === 'Riempimento A1: 0%' && barre[0].fascia === 'verde';
-  return { ok, salvato: { ...salvato, id: undefined, createdAt: undefined }, riga, barre, daFare: 'finestra «Codice ed etichetta» con Stampa dopo la creazione (ETI)' };
+  // Unione 2: la finestra «Codice ed etichetta» con Stampa dopo la creazione è il passo CF-D1-ETI (`cfD1Eti`)
+  return { ok, salvato: { ...salvato, id: undefined, createdAt: undefined }, riga, barre };
 }
 
 // CF-D2: su A1 (20 pezzi) si caricano con Movimenta 10, poi 6, poi 4 pezzi: 50% verde, 80% blu, «Pieno» rosso, ognuno col

@@ -5,8 +5,10 @@
 //   nessuna scelta NFC, nessun «Errore» (NG12), nessuna promessa (NG13), chiave salvata identica;
 // - `n1-scanner-web`: con «NFC», «Fotocamera» e «Tutti e due» salvati lo Scanner resta usabile (fotocamera, galleria,
 //   a mano), nessun «Leggi un tag»; nei lettori delle automazioni «Scrivi il codice» sì, «Leggi un tag» no;
-// - `n1-finestra-web`: «Codice ed etichetta» di prodotto, posizione, categoria e scaffale con la riga del telefono,
-//   senza «Scrivi tag NFC», «Collega un tag», «Programma tag» (NG19), nessuna finestra del browser;
+// - `n1-finestra-web`: «Codice ed etichetta» di prodotto, posizione, categoria e scaffale con le righe «Scrivi tag
+//   NFC» e «Collega un tag» (non per il prodotto) spente, con sotto «Funziona dal telefono» (dall'Unione 2, richiesta
+//   dell'utente del 25/11: prima una riga sola «L'NFC si usa dal telefono»): nessun pulsante vero, il tocco non apre
+//   «Avvicina il tag», nessun «Programma tag» (NG19), nessuna finestra del browser;
 // - `n1-scaffali`: niente campo del tag scritto a mano (NG18); A1 col tag salvato prima, rinominato, tiene il tag;
 //   l'UID letto a mano apre ancora A1;
 // - `n1-posizioni-categorie`: niente NFC nei moduli (NG17); posizione e categoria col tag salvato prima, rinominate,
@@ -22,8 +24,10 @@ const RIGA = 'L\'NFC si usa dal telefono';
 const label = (h, text) => h.page.getByLabel(text, { exact: true }).locator('visible=true');
 const conta = async (h, text) => h.page.getByText(text, { exact: true }).locator('visible=true').count();
 const testo = (h) => h.page.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
+// `scrivi` e `collega` contano i pulsanti veri (sul web 0); `spente` le righe spente con il motivo sotto
 const nfcIn = async (h) => ({
   riga: await conta(h, RIGA),
+  spente: { scrivi: await label(h, 'Scrivi tag NFC: funziona dal telefono').count(), collega: await label(h, 'Collega un tag: funziona dal telefono').count(), motivo: await conta(h, 'Funziona dal telefono') },
   scrivi: await label(h, 'Scrivi tag NFC').count(),
   collega: await label(h, 'Collega un tag').count(),
   programma: await conta(h, 'Programma tag'),
@@ -84,6 +88,9 @@ const salvaModo = (h, config) => h.page.evaluate(([k, v]) => localStorage.setIte
     await h.click('VIS-0142'); await h.page.waitForTimeout(900);
     await eti.apri(h, 'Codice ed etichetta', 900);
     out.prodotto = await nfcIn(h);
+    // il tocco sulla riga spenta non apre la finestra del tag
+    await label(h, 'Scrivi tag NFC: funziona dal telefono').first().click(); await h.page.waitForTimeout(400);
+    out.prodotto.toccoApre = await conta(h, 'Avvicina il tag al telefono');
     await eti.apri(h, 'Avanzate', 400);
     out.prodotto.copiaLink = await conta(h, 'Copia link');
     out.prodotto.programmaInAvanzate = await conta(h, 'Programma tag');
@@ -93,7 +100,7 @@ const salvaModo = (h, config) => h.page.evaluate(([k, v]) => localStorage.setIte
     await eti.apri(h, 'Codice ed etichetta di Magazzino');
     out.posizione = await nfcIn(h);
     await eti.apri(h, 'Stampa tutte le etichette di questa posizione', 400);
-    out.posizione.rigaInSerie = await conta(h, RIGA);
+    out.posizione.rigaInSerie = (await conta(h, RIGA)) + (await conta(h, 'Funziona dal telefono'));
     await eti.chiudiCodice(h);
     await h.go('settings/folders');
     await eti.apri(h, 'Codice di Pellicce');
@@ -103,8 +110,9 @@ const salvaModo = (h, config) => h.page.evaluate(([k, v]) => localStorage.setIte
     await eti.apri(h, 'Codice QR di A1');
     out.scaffale = await nfcIn(h);
     await eti.chiudiCodice(h);
-    const ok = ['prodotto', 'posizione', 'categoria', 'scaffale'].every((k) => out[k].riga === 1 && !out[k].scrivi && !out[k].collega && !out[k].programma)
-      && out.prodotto.copiaLink === 1 && out.prodotto.programmaInAvanzate === 0 && out.posizione.rigaInSerie === 0;
+    const ok = ['prodotto', 'posizione', 'categoria', 'scaffale'].every((k) => out[k].riga === 0 && !out[k].scrivi && !out[k].collega && !out[k].programma
+      && out[k].spente.scrivi === 1 && out[k].spente.collega === (k === 'prodotto' ? 0 : 1) && out[k].spente.motivo === (k === 'prodotto' ? 1 : 2))
+      && out.prodotto.toccoApre === 0 && out.prodotto.copiaLink === 1 && out.prodotto.programmaInAvanzate === 0 && out.posizione.rigaInSerie === 0;
     return { ok, ...out };
   });
 

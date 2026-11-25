@@ -5,8 +5,9 @@
 // «tutte le etichette di questa posizione») mostra il contatore. Le etichette sono fatte in locale (`utils/labelHtml`).
 // Sul web la stampa apre una finestra sua e stampa quella, mai la pagina dell'app.
 // N1 (ticket 22): sotto l'etichetta le righe del tag NFC, «Scrivi tag NFC» (il codice in un tocco) e «Collega un tag»
-// (posizioni, scaffali, categorie), che aprono `NfcSheet`; solo se Scanner e NFC lo permettono. Sul web una riga sola,
-// «L'NFC si usa dal telefono». «Programma tag» (il link in due passi, NG14) non c'è più.
+// (posizioni, scaffali, categorie), che aprono `NfcSheet`; solo se Scanner e NFC lo permettono. Sul web (richiesta
+// dell'utente del 25/11: non le trovava) le stesse due righe ci sono comunque, spente e senza effetto, con sotto
+// «Funziona dal telefono». «Programma tag» (il link in due passi, NG14) non c'è più.
 import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -263,11 +264,28 @@ export function CodeSheet({
               </>
             ) : null}
 
-            {tagRows === 'web' ? (
-              <View style={styles.row} accessibilityLabel="L'NFC si usa dal telefono">
-                <View style={styles.rowIcon}><AppIcon name="nfc" size={20} color={t.colors.textMuted} /></View>
-                <Text style={[styles.rowSub, styles.rowText]}>L'NFC si usa dal telefono</Text>
-              </View>
+            {tagRows === 'web' && tag ? (
+              // Sul web l'NFC non c'è: le righe si vedono, attenuate, e il tocco non fa nulla (sono `View`, non pulsanti)
+              <>
+                {code ? (
+                  <View style={styles.row} accessibilityLabel="Scrivi tag NFC: funziona dal telefono">
+                    <View style={[styles.rowIcon, styles.rowOff]}><AppIcon name="nfc" size={20} color={t.colors.textMuted} /></View>
+                    <View style={styles.rowText}>
+                      <Text style={[styles.rowTitle, styles.rowOff]}>Scrivi tag NFC</Text>
+                      <Text style={styles.rowSub} numberOfLines={1}>Funziona dal telefono</Text>
+                    </View>
+                  </View>
+                ) : null}
+                {tag.self.kind !== 'product' ? (
+                  <View style={styles.row} accessibilityLabel="Collega un tag: funziona dal telefono">
+                    <View style={[styles.rowIcon, styles.rowOff]}><AppIcon name="link" size={20} color={t.colors.textMuted} /></View>
+                    <View style={styles.rowText}>
+                      <Text style={[styles.rowTitle, styles.rowOff]}>Collega un tag</Text>
+                      <Text style={styles.rowSub} numberOfLines={1}>Funziona dal telefono</Text>
+                    </View>
+                  </View>
+                ) : null}
+              </>
             ) : tagRows === 'nfc' && tag ? (
               <>
                 {code ? (
@@ -610,6 +628,8 @@ const useStyles = makeStyles((t) => ({
     minHeight: 52,
     paddingVertical: 8,
   },
+  // riga spenta (NFC sul web): icona e titolo attenuati come le azioni spente di ACC1 (`Dimmed`); il motivo sotto resta pieno
+  rowOff: { opacity: 0.45 },
   rowIcon: {
     width: 32,
     height: 32,

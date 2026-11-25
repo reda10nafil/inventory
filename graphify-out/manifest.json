@@ -228,15 +228,15 @@
     "semantic_hash": ""
   },
   "components/Barcode.tsx": {
-    "mtime": 1795321205.0756507,
-    "seen": 1795323475.1485813,
-    "ast_hash": "c09315aeb0f788dcd5363433d67693fc",
+    "mtime": 1795558354.1377437,
+    "seen": 1795570875.456877,
+    "ast_hash": "b9c1b04f0d324170496aadbc24ba7f8f",
     "semantic_hash": ""
   },
   "components/BarcodeScanner.tsx": {
-    "mtime": 1795424064.0217702,
-    "seen": 1795428043.1481972,
-    "ast_hash": "a58e728a565845943a092160464ffa23",
+    "mtime": 1795558354.1377437,
+    "seen": 1795570875.456877,
+    "ast_hash": "0c4db07aeba7d0a1ee0ccba78aa1852d",
     "semantic_hash": ""
   },
   "constants/Colors.ts": {
@@ -282,15 +282,15 @@
     "semantic_hash": ""
   },
   "contexts/HardwareConfigContext.tsx": {
-    "mtime": 1795315119.8933437,
-    "seen": 1795323475.1485813,
-    "ast_hash": "ca5648e597ad0d65da8d3d23085aa105",
+    "mtime": 1795558354.1387427,
+    "seen": 1795570875.461251,
+    "ast_hash": "69a810dc401c411a08e77f6974868b45",
     "semantic_hash": ""
   },
   "contexts/InventoryContext.tsx": {
-    "mtime": 1795499725.3980558,
-    "seen": 1795502231.0437498,
-    "ast_hash": "912633aa78e6477ea54cb5c02988736a",
+    "mtime": 1795558330.4863136,
+    "seen": 1795570875.461251,
+    "ast_hash": "70f18ebbc5bf7afa72cf69ce0fec3e7e",
     "semantic_hash": ""
   },
   "contexts/LayoutContext.tsx": {
@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "contexts/LocationsContext.tsx": {
-    "mtime": 1795315119.8944302,
-    "seen": 1795323475.1485813,
-    "ast_hash": "50bff7e420e36def0d81f757b2256f4e",
+    "mtime": 1795558354.1387427,
+    "seen": 1795570875.4618037,
+    "ast_hash": "f226e6d4f3d96d6b19a577ab3078e3d7",
     "semantic_hash": ""
   },
   "eslint.config.js": {
@@ -1020,9 +1020,9 @@
     "semantic_hash": ""
   },
   "types/index.ts": {
-    "mtime": 1795523746.5314708,
-    "seen": 1795526700.971537,
-    "ast_hash": "9a7f9042e618bca3094c23f025a09142",
+    "mtime": 1795558330.5136433,
+    "seen": 1795570875.4925675,
+    "ast_hash": "de5bb2cf084edf115a94234e359cee41",
     "semantic_hash": ""
   },
   "utils/barcodeDecoder.ts": {
@@ -1038,9 +1038,9 @@
     "semantic_hash": ""
   },
   "utils/nfcService.ts": {
-    "mtime": 1795315120.0867617,
-    "seen": 1795323475.1495197,
-    "ast_hash": "958c4405b58ddb76914eb7b5127ea8e3",
+    "mtime": 1795558354.162627,
+    "seen": 1795570875.4943006,
+    "ast_hash": "3a5e268ae37025c49d0965e55fb1a0ad",
     "semantic_hash": ""
   },
   "AGENTS.md": {
@@ -1728,9 +1728,9 @@
     "semantic_hash": ""
   },
   "App.tsx": {
-    "mtime": 1795382158.7523463,
-    "seen": 1795403667.1854217,
-    "ast_hash": "4af17a6a4777e8b712e8472045c2e2bc",
+    "mtime": 1795558330.4823134,
+    "seen": 1795570875.445675,
+    "ast_hash": "e69e7486a48d846b1505895e1f6767d0",
     "semantic_hash": ""
   },
   "index.js": {
@@ -1752,15 +1752,15 @@
     "semantic_hash": ""
   },
   "src/navigation/RootNavigator.tsx": {
-    "mtime": 1795451189.9164464,
-    "seen": 1795452357.4625936,
-    "ast_hash": "1508fc6fbc5ae18872c4bdbc8160b516",
+    "mtime": 1795558354.1552596,
+    "seen": 1795570875.477739,
+    "ast_hash": "a6589e7b68e4dc9c466d6212d5cc6071",
     "semantic_hash": ""
   },
   "src/navigation/linking.ts": {
-    "mtime": 1795451186.8073103,
-    "seen": 1795452357.4669025,
-    "ast_hash": "4dac57eb54f3e6ddfbd32baaad1bbb4b",
+    "mtime": 1795558330.5046375,
+    "seen": 1795570875.477739,
+    "ast_hash": "fee92053971efe5da443147dc919b368",
     "semantic_hash": ""
   },
   "src/navigation/types.ts": {
@@ -1776,9 +1776,9 @@
     "semantic_hash": ""
   },
   "src/navigation/compat.ts": {
-    "mtime": 1795412067.721795,
-    "seen": 1795414573.61571,
-    "ast_hash": "72de6c389c945af5e52e911ef699e27d",
+    "mtime": 1795558330.5046375,
+    "seen": 1795570875.477739,
+    "ast_hash": "74fd1fe70d0824d9a76f851aafb89e98",
     "semantic_hash": ""
   },
   "src/screens/NotFoundScreen.tsx": {
@@ -1788,21 +1788,21 @@
     "semantic_hash": ""
   },
   "src/screens/ScannerActionScreen.tsx": {
-    "mtime": 1795498547.9399889,
-    "seen": 1795502231.0803738,
-    "ast_hash": "99113557776cdbe8d14cc114ce83b724",
+    "mtime": 1795558330.5056365,
+    "seen": 1795570875.477739,
+    "ast_hash": "41ef30ec84926ff251806ac82cef8b42",
     "semantic_hash": ""
   },
   "src/screens/ScannerScreen.tsx": {
-    "mtime": 1795446486.839561,
-    "seen": 1795449659.8603249,
-    "ast_hash": "86865b829ada3da0f4978659d2e1a193",
+    "mtime": 1795558354.1562643,
+    "seen": 1795570875.477739,
+    "ast_hash": "44775856bc9c8eb53761d82acc895e9b",
     "semantic_hash": ""
   },
   "src/screens/automations/AuditScreen.tsx": {
-    "mtime": 1795431644.5902314,
-    "seen": 1795434417.630784,
-    "ast_hash": "7ed270f5b45ddad53a653c211c3d13f4",
+    "mtime": 1795558330.5056365,
+    "seen": 1795570875.477739,
+    "ast_hash": "4a25f0a0de10a34e6b1c77a16442c21f",
     "semantic_hash": ""
   },
   "src/screens/automations/AutomationFlowScreen.tsx": {
@@ -1812,15 +1812,15 @@
     "semantic_hash": ""
   },
   "src/screens/automations/BatchMoveScreen.tsx": {
-    "mtime": 1795431664.3873546,
-    "seen": 1795434417.630784,
-    "ast_hash": "7c1cfe1724b932b148805616a39686e9",
+    "mtime": 1795558330.5066376,
+    "seen": 1795570875.477739,
+    "ast_hash": "8c4999bb903a19e998b71dbeeebe0263",
     "semantic_hash": ""
   },
   "src/screens/automations/CustomRunnerScreen.tsx": {
-    "mtime": 1795431490.9473166,
-    "seen": 1795434417.630784,
-    "ast_hash": "a399e30be64b02ea5bec240820e4dad9",
+    "mtime": 1795558330.5076456,
+    "seen": 1795570875.477739,
+    "ast_hash": "597da6818d5dfe87fc7397eec4b53618",
     "semantic_hash": ""
   },
   "src/screens/automations/QuickTagScreen.tsx": {
@@ -1836,15 +1836,15 @@
     "semantic_hash": ""
   },
   "src/screens/product/DetailScreen.tsx": {
-    "mtime": 1795523746.528433,
-    "seen": 1795526700.951285,
-    "ast_hash": "4f97c73e229a5a8118b05ab7a390bf97",
+    "mtime": 1795558503.3352199,
+    "seen": 1795570875.477739,
+    "ast_hash": "53ef0b765c549c44bb57fc2a0462af43",
     "semantic_hash": ""
   },
   "src/screens/product/EditScreen.tsx": {
-    "mtime": 1795524052.4189465,
-    "seen": 1795526700.951285,
-    "ast_hash": "a4efc960c97f8c3d6fa1ab1a47b20833",
+    "mtime": 1795558330.5096445,
+    "seen": 1795570875.477739,
+    "ast_hash": "3424a9039325932447330e9d7f955589",
     "semantic_hash": ""
   },
   "src/screens/settings/AutomationBuilderScreen.tsx": {
@@ -1860,9 +1860,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/FoldersScreen.tsx": {
-    "mtime": 1795523755.2611487,
-    "seen": 1795526700.9522848,
-    "ast_hash": "44a287dda4d9ec25726ba4baa4ae6a19",
+    "mtime": 1795558354.1572652,
+    "seen": 1795570875.4787388,
+    "ast_hash": "c7e1f8d0c9ab933a73d8b000f015d9a8",
     "semantic_hash": ""
   },
   "src/screens/settings/Gs1ConfigScreen.tsx": {
@@ -1872,9 +1872,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/HardwareScreen.tsx": {
-    "mtime": 1795323131.8486617,
-    "seen": 1795323475.1485813,
-    "ast_hash": "d0a02a3bc3cdab297b7a1b9d08a5ed79",
+    "mtime": 1795558354.1572652,
+    "seen": 1795570875.4787388,
+    "ast_hash": "68d21452fa7e97d6b9460a38672ba5fb",
     "semantic_hash": ""
   },
   "src/screens/settings/LayoutBuilderScreen.tsx": {
@@ -1884,9 +1884,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/LocationsScreen.tsx": {
-    "mtime": 1795498636.3911204,
-    "seen": 1795502231.0823946,
-    "ast_hash": "8eac11004e98ad69a706a4924aba8574",
+    "mtime": 1795558354.1572652,
+    "seen": 1795570875.4787388,
+    "ast_hash": "e7dbe38d17c553ecb710c07fe17d2137",
     "semantic_hash": ""
   },
   "src/screens/settings/SectorTemplatesScreen.tsx": {
@@ -1902,15 +1902,15 @@
     "semantic_hash": ""
   },
   "src/screens/settings/TrashScreen.tsx": {
-    "mtime": 1795376264.470029,
-    "seen": 1795379115.5555754,
-    "ast_hash": "2869bb13ebc57bca50eef283101e7edf",
+    "mtime": 1795558330.510645,
+    "seen": 1795570875.4787388,
+    "ast_hash": "ac08db3aff17f974ce81dc4c8df763b9",
     "semantic_hash": ""
   },
   "src/screens/tabs/AddScreen.tsx": {
-    "mtime": 1795534382.523956,
-    "seen": 1795537642.8464966,
-    "ast_hash": "9e49088b2c91422a84993bf125d39866",
+    "mtime": 1795558366.6594355,
+    "seen": 1795570875.4787388,
+    "ast_hash": "9d1ba2d199e3475268dffb92b371c8ea",
     "semantic_hash": ""
   },
   "src/screens/tabs/AutomationsScreen.tsx": {
@@ -1920,21 +1920,21 @@
     "semantic_hash": ""
   },
   "src/screens/tabs/HomeScreen.tsx": {
-    "mtime": 1795519032.6543205,
-    "seen": 1795521778.2956185,
-    "ast_hash": "c9ec5d42b84f80430c5475e185133133",
+    "mtime": 1795558354.1609845,
+    "seen": 1795570875.4787388,
+    "ast_hash": "a5ffb4055c00e6a21f15e2cadbb14024",
     "semantic_hash": ""
   },
   "src/screens/tabs/SettingsScreen.tsx": {
-    "mtime": 1795498588.075993,
-    "seen": 1795502231.0845134,
-    "ast_hash": "76dabf4b990a2d715e25b487dc8d687c",
+    "mtime": 1795558330.5126433,
+    "seen": 1795570875.4787388,
+    "ast_hash": "304b15331b6cbe7c03515bfca4b0533b",
     "semantic_hash": ""
   },
   "src/screens/tabs/TimelineScreen.tsx": {
-    "mtime": 1795498564.4967937,
-    "seen": 1795502231.0845134,
-    "ast_hash": "00098b051c479d8badc715375e199e12",
+    "mtime": 1795558330.5136433,
+    "seen": 1795570875.4787388,
+    "ast_hash": "9511c22c809adcef616edbe6730cd07a",
     "semantic_hash": ""
   },
   "docs/audit/screenshots/01-tabs-index-fase2.png": {
@@ -1992,9 +1992,9 @@
     "semantic_hash": ""
   },
   "src/lib/print.ts": {
-    "mtime": 1795315120.0397136,
-    "seen": 1795323475.1485813,
-    "ast_hash": "04706ffe1a6c762a701a45913142dcfa",
+    "mtime": 1795558354.1552596,
+    "seen": 1795570875.476739,
+    "ast_hash": "653c0f7272a54b04d22cf8fd8e765006",
     "semantic_hash": ""
   },
   "src/lib/sharing.ts": {
@@ -2208,9 +2208,9 @@
     "semantic_hash": ""
   },
   "src/screens/settings/TeamScreen.tsx": {
-    "mtime": 1795322576.936607,
-    "seen": 1795323475.1485813,
-    "ast_hash": "f50671cb56436b633be669cb87842743",
+    "mtime": 1795558330.510645,
+    "seen": 1795570875.4787388,
+    "ast_hash": "c045844cab509ec38f355bf3303cd3b6",
     "semantic_hash": ""
   },
   "src/services/meshServer.ts": {
@@ -2394,9 +2394,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/CRONOLOGIA.md": {
-    "mtime": 1795542732.2438593,
-    "seen": 1795558125.1030893,
-    "ast_hash": "136c9013501a700640976effa1be6869",
+    "mtime": 1795558746.9956172,
+    "seen": 1795570875.498788,
+    "ast_hash": "10c5f560ff1be6bbd18af84e637ef573",
     "semantic_hash": ""
   },
   "piani di implementazione/PIANO_IMPLEMENTAZIONE.md": {
@@ -2676,9 +2676,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/DECISIONI_DA_RIVEDERE.md": {
-    "mtime": 1795542732.235768,
-    "seen": 1795558125.1030893,
-    "ast_hash": "3e7d415b8f997f8e5915151cab48734e",
+    "mtime": 1795558795.7154655,
+    "seen": 1795570875.498788,
+    "ast_hash": "2809db1258b00e59dc9d06a63b20b7fb",
     "semantic_hash": ""
   },
   "piani di implementazione/NOTTE_22_23.md": {
@@ -3078,9 +3078,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a1-scheda.cjs": {
-    "mtime": 1795417439.643476,
-    "seen": 1795420378.6561983,
-    "ast_hash": "c393f5f134e6292c489e48749689c9a7",
+    "mtime": 1795558354.142744,
+    "seen": 1795570875.4639902,
+    "ast_hash": "3205906a9972beb40fd4fed9959ce51f",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a1-util.cjs": {
@@ -3102,9 +3102,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a2-csv.cjs": {
-    "mtime": 1795326961.6961832,
-    "seen": 1795329137.7993882,
-    "ast_hash": "fbef8c893471f1c636300267e799c208",
+    "mtime": 1795558330.4883142,
+    "seen": 1795570875.4645603,
+    "ast_hash": "8998b6b01ba890afa5212f24d77ba47a",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a2-layout.cjs": {
@@ -3144,9 +3144,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a3-chat.cjs": {
-    "mtime": 1795327147.395334,
-    "seen": 1795329137.7993882,
-    "ast_hash": "a3e8fb6137918400e5c7d2b8545ffe49",
+    "mtime": 1795558330.4893157,
+    "seen": 1795570875.4651237,
+    "ast_hash": "ed368eaeea0785314009658ad8b40095",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a3-quicktag.cjs": {
@@ -3180,9 +3180,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a4-cartelle.cjs": {
-    "mtime": 1795523755.2537546,
-    "seen": 1795526700.9157333,
-    "ast_hash": "f362a37f3853561700b6c2df97e5facd",
+    "mtime": 1795558354.143743,
+    "seen": 1795570875.465662,
+    "ast_hash": "6ff51154777d74730b92fd9b04cbdd19",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a4-dati.cjs": {
@@ -3204,15 +3204,15 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a4-hardware.cjs": {
-    "mtime": 1795411104.1537576,
-    "seen": 1795414573.6099684,
-    "ast_hash": "1249b4867964db310a575ed94daf9249",
+    "mtime": 1795558354.143743,
+    "seen": 1795570875.4662216,
+    "ast_hash": "9427fb06c9602257e6f714a75c39fdc5",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a4-impostazioni.cjs": {
-    "mtime": 1795411104.1522536,
-    "seen": 1795414573.6099684,
-    "ast_hash": "387eaf443528c4d4bf1ac09c655b7fe1",
+    "mtime": 1795558330.4893157,
+    "seen": 1795570875.4662216,
+    "ast_hash": "833da8fc0544d985944d6ec65810f045",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/a4-posizioni.cjs": {
@@ -3240,9 +3240,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/PASSAGGIO.md": {
-    "mtime": 1795542732.2494462,
-    "seen": 1795558125.1040921,
-    "ast_hash": "0c5e82df4ea7e4655f8d9003476a5050",
+    "mtime": 1795558746.9973056,
+    "seen": 1795570875.4993327,
+    "ast_hash": "4ef0c177d6590f70c8e581b6ec3db4e3",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/grafo-lavori.md": {
@@ -3492,9 +3492,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-fette.cjs": {
-    "mtime": 1795534984.5912216,
-    "seen": 1795537642.8359754,
-    "ast_hash": "af33406b04aa25fe3526944b732045d6",
+    "mtime": 1795569997.5447528,
+    "seen": 1795570875.469227,
+    "ast_hash": "918dd9e5f2a0bd6a87889e0b00b62253",
     "semantic_hash": ""
   },
   "utils/categories.ts": {
@@ -3534,9 +3534,9 @@
     "semantic_hash": ""
   },
   "utils/inventoryOps.ts": {
-    "mtime": 1795503304.831355,
-    "seen": 1795504281.5257158,
-    "ast_hash": "acfba8ce1ed1826a1fd2050f22f3fc22",
+    "mtime": 1795558330.5146441,
+    "seen": 1795570875.4943006,
+    "ast_hash": "1a905cf019cf8ee03ce928d16880ed04",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-m03.jpg": {
@@ -3546,9 +3546,9 @@
     "semantic_hash": ""
   },
   "components/MovementSheet.tsx": {
-    "mtime": 1795503455.6166735,
-    "seen": 1795504281.4920998,
-    "ast_hash": "2cc01ab3889ae915392b12b0b5af73de",
+    "mtime": 1795558330.4853158,
+    "seen": 1795570875.4574451,
+    "ast_hash": "fb87c86abf1d44f6a23c537146edc047",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/m04-movimenta.cjs": {
@@ -3606,9 +3606,9 @@
     "semantic_hash": ""
   },
   "src/screens/automations/CountScreen.tsx": {
-    "mtime": 1795451185.568299,
-    "seen": 1795452357.4808095,
-    "ast_hash": "8c6ac79aac238a762960a81adfb36ff7",
+    "mtime": 1795558330.5066376,
+    "seen": 1795570875.477739,
+    "ast_hash": "ba8a95d14ddab56de1437b1edb949f34",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-m07.jpg": {
@@ -3690,27 +3690,27 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/15-scaffale-riempimento.md": {
-    "mtime": 1795523746.5211816,
-    "seen": 1795526700.9863636,
-    "ast_hash": "6d59a6abfe21f5a3dcdd3f477f7d458d",
+    "mtime": 1795558330.4873154,
+    "seen": 1795570875.5010567,
+    "ast_hash": "65c11e463652bf37abfb03b41829286d",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/16-nfc-quando-si-ascolta.md": {
-    "mtime": 1795407219.4314597,
-    "seen": 1795414573.635396,
-    "ast_hash": "0d52216acb4d52b578811fcaa78a261a",
+    "mtime": 1795558354.1407363,
+    "seen": 1795570875.5010567,
+    "ast_hash": "1cd3d6bdb9e58f11f4681151e5510fd8",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/17-nfc-pause-e-ritardi.md": {
-    "mtime": 1795374262.4760487,
-    "seen": 1795379115.6064112,
-    "ast_hash": "631f8a3827863e228a282e8b96ee9990",
+    "mtime": 1795558354.1407363,
+    "seen": 1795570875.5010567,
+    "ast_hash": "15a927064ddf8aee44a47f174a205b3a",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/18-nfc-alla-lettura.md": {
-    "mtime": 1795407216.8923686,
-    "seen": 1795414573.635396,
-    "ast_hash": "0f55b8790587f76608fe32e295293902",
+    "mtime": 1795558354.1407363,
+    "seen": 1795570875.5010567,
+    "ast_hash": "e91945488a77a2e5a679889ba5dede48",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/19-cartelle-categorie.md": {
@@ -3726,9 +3726,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-2.md": {
-    "mtime": 1795524698.553198,
-    "seen": 1795526700.9878573,
-    "ast_hash": "5ce352b319d344d63849a049dde0883d",
+    "mtime": 1795558746.99832,
+    "seen": 1795570875.5020225,
+    "ast_hash": "943cf86b8a80355a0db95a7c3bd9e69d",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-m10.jpg": {
@@ -3810,21 +3810,21 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/s1-scaffali.cjs": {
-    "mtime": 1795523755.2557578,
-    "seen": 1795526700.9245434,
-    "ast_hash": "c2f3d7cbfb735ba81e66301007b2c2ca",
+    "mtime": 1795558354.1477444,
+    "seen": 1795570875.469227,
+    "ast_hash": "d0e7b93a5df13d43dc987aadf5c511f1",
     "semantic_hash": ""
   },
   "src/screens/settings/ShelvesScreen.tsx": {
-    "mtime": 1795523746.5294354,
-    "seen": 1795526700.953293,
-    "ast_hash": "2c1386fe5438ac253c4857b974646d01",
+    "mtime": 1795558354.1587753,
+    "seen": 1795570875.4787388,
+    "ast_hash": "11481901870ee396353313b454891196",
     "semantic_hash": ""
   },
   "utils/shelves.ts": {
-    "mtime": 1795523746.5360055,
-    "seen": 1795526700.9767945,
-    "ast_hash": "c25375b87fbf9c531c259d3d4aec2828",
+    "mtime": 1795558330.5166445,
+    "seen": 1795570875.4948702,
+    "ast_hash": "4bbc03bca76f5503b9ef247e80048930",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-s1a.jpg": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c2-indietro.cjs": {
-    "mtime": 1795446729.714741,
-    "seen": 1795449659.8413203,
-    "ast_hash": "82ce7a3c5a4f4c96e6e37c2873026cf9",
+    "mtime": 1795558330.490316,
+    "seen": 1795570875.4672287,
+    "ast_hash": "20d1936bdc46e9aaa9e0f3492ea3caee",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c2-tipo-pelle.cjs": {
@@ -3858,15 +3858,15 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/c2-util.cjs": {
-    "mtime": 1795410746.0010993,
-    "seen": 1795414573.6099684,
-    "ast_hash": "ad32d2bf5e202436c5dcac1f49d5216f",
+    "mtime": 1795558330.490316,
+    "seen": 1795570875.4672287,
+    "ast_hash": "939f3401dcfa50f65d6fb05d459b578c",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/collaudo.cjs": {
-    "mtime": 1795523755.2557578,
-    "seen": 1795526700.9198878,
-    "ast_hash": "23d30c31ca83e7210664df50aa235dfb",
+    "mtime": 1795569995.6920774,
+    "seen": 1795570875.4672287,
+    "ast_hash": "a1535e5826b4ab8c757fad23776b2eb4",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stato-da-indirizzo.mjs": {
@@ -4044,9 +4044,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/collaudo-finale.md": {
-    "mtime": 1795524798.387011,
-    "seen": 1795526700.9834037,
-    "ast_hash": "0197c9c50d6ab116e74d44d189b664d9",
+    "mtime": 1795558756.3324993,
+    "seen": 1795570875.4993327,
+    "ast_hash": "22d0e2e9f64d5574eed94fa795a24e4e",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/21-tipo-di-pelle-nei-campi.md": {
@@ -4056,9 +4056,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/22-codici-qr-etichette-nfc.md": {
-    "mtime": 1795507724.14907,
-    "seen": 1795517808.7819977,
-    "ast_hash": "ef81a1f0bfc5e9f470a41b04369ec4bb",
+    "mtime": 1795558354.1417468,
+    "seen": 1795570875.5010567,
+    "ast_hash": "c69b24106df6039401079181d4d5e735",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/23-campi-personalizzati.md": {
@@ -4098,9 +4098,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/29-automazioni.md": {
-    "mtime": 1795499165.0158448,
-    "seen": 1795502231.1138916,
-    "ast_hash": "95e619e2baa2abfd9a2ee7dfbe7d8647",
+    "mtime": 1795558354.142744,
+    "seen": 1795570875.5010567,
+    "ast_hash": "f8cabbe83d443b157cd56cb5604f6017",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/30-chat-e-team.md": {
@@ -4110,9 +4110,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/map-3.md": {
-    "mtime": 1795535195.7493804,
-    "seen": 1795537642.868013,
-    "ast_hash": "a5997017180a046179f5f3fdf7724953",
+    "mtime": 1795558746.999444,
+    "seen": 1795570875.5020225,
+    "ast_hash": "482642a424f1cdbf513d451b02416430",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/ricerche/verifiche-23/script/indietro/modali.txt": {
@@ -4224,9 +4224,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/cod-lettore.cjs": {
-    "mtime": 1795523755.2547588,
-    "seen": 1795526700.9198878,
-    "ast_hash": "34f00346fc41b823db26e71edf31f3bf",
+    "mtime": 1795558354.1447434,
+    "seen": 1795570875.4672287,
+    "ast_hash": "4ec41d1b63c86403ced4bb06a6ba9a8a",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/cod-util.cjs": {
@@ -4236,9 +4236,9 @@
     "semantic_hash": ""
   },
   "utils/codes.ts": {
-    "mtime": 1795428364.352782,
-    "seen": 1795428974.2171133,
-    "ast_hash": "92b69be3b6b6d298af15333f6f50ad2f",
+    "mtime": 1795558354.161537,
+    "seen": 1795570875.4932024,
+    "ast_hash": "fc7b46c0196c9ee3c47db493bd71e66c",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-cod.jpg": {
@@ -4260,9 +4260,9 @@
     "semantic_hash": ""
   },
   "utils/automationRun.ts": {
-    "mtime": 1795439613.084402,
-    "seen": 1795442992.4818447,
-    "ast_hash": "162223fb531e0007661e2697af1c49fc",
+    "mtime": 1795558330.5146441,
+    "seen": 1795570875.4925675,
+    "ast_hash": "ae86de62fa154c0219c7550b24b9e407",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/stili-ese.jpg": {
@@ -4404,9 +4404,9 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/32-accesso-e-rete-del-negozio.md": {
-    "mtime": 1795523575.8582754,
-    "seen": 1795526700.9878573,
-    "ast_hash": "cad1e3b1ee74d6ab86e847aedbfbcc54",
+    "mtime": 1795558341.8810198,
+    "seen": 1795570875.5020225,
+    "ast_hash": "45ecf2a86cdad1f91b525f28e9356f89",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/richieste-utente-24-novembre.md": {
@@ -4440,15 +4440,15 @@
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/cat1-categorie.cjs": {
-    "mtime": 1795523999.872201,
-    "seen": 1795526700.9198878,
-    "ast_hash": "9c5b259d0af4ceee5199f10769f59b9f",
+    "mtime": 1795558373.1651773,
+    "seen": 1795570875.4672287,
+    "ast_hash": "d62120cae4ff3b91b2d41a32d2bcb4c3",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/prova/s2-capacita.cjs": {
-    "mtime": 1795523746.5231977,
-    "seen": 1795526700.9245434,
-    "ast_hash": "844a5d0351676c26ad7762fc9916caf2",
+    "mtime": 1795558524.1201386,
+    "seen": 1795570875.469227,
+    "ast_hash": "a2aaa1feb0fd42ebd8b24ec4e12293cc",
     "semantic_hash": ""
   },
   "piani di implementazione/funzionalita/issues/33-categorie-semplici.md": {
@@ -4515,6 +4515,240 @@
     "mtime": 1795537183.8507943,
     "seen": 1795537642.876537,
     "ast_hash": "6ab423b7181b73ca915476cecdbfc77c",
+    "semantic_hash": ""
+  },
+  "__tests__/code128.test.ts": {
+    "mtime": 1795558354.1357398,
+    "seen": 1795570875.4466937,
+    "ast_hash": "66597aee403c24faa5f13b9d9303616b",
+    "semantic_hash": ""
+  },
+  "__tests__/labelHtml.test.ts": {
+    "mtime": 1795558354.1357398,
+    "seen": 1795570875.4476924,
+    "ast_hash": "2acf91eda1d9e5a7e606fbc6838a6095",
+    "semantic_hash": ""
+  },
+  "__tests__/loadCheck.test.ts": {
+    "mtime": 1795558330.4823134,
+    "seen": 1795570875.4476924,
+    "ast_hash": "6d6b62a775f32c6ed136362f3c7c78d7",
+    "semantic_hash": ""
+  },
+  "__tests__/nfcCore.test.ts": {
+    "mtime": 1795558354.1367426,
+    "seen": 1795570875.4476924,
+    "ast_hash": "e15715f6cbe14cd7782687c898e2235c",
+    "semantic_hash": ""
+  },
+  "__tests__/nfcTag.test.ts": {
+    "mtime": 1795558354.1367426,
+    "seen": 1795570875.4476924,
+    "ast_hash": "d1feca9b6c2c80aac8ab1a5268268cfb",
+    "semantic_hash": ""
+  },
+  "__tests__/profile.test.ts": {
+    "mtime": 1795558330.4833136,
+    "seen": 1795570875.4486961,
+    "ast_hash": "ae5f9aa1ee4e38550001fe6229d828e9",
+    "semantic_hash": ""
+  },
+  "__tests__/roles.test.ts": {
+    "mtime": 1795558330.4833136,
+    "seen": 1795570875.4486961,
+    "ast_hash": "a681bf2622423b5b17f1ae854b9d67a2",
+    "semantic_hash": ""
+  },
+  "__tests__/suggestCode.test.ts": {
+    "mtime": 1795558354.1367426,
+    "seen": 1795570875.4486961,
+    "ast_hash": "44bda4622e065971d2c0ed2c49ea3493",
+    "semantic_hash": ""
+  },
+  "components/CodeSheet.tsx": {
+    "mtime": 1795569951.024619,
+    "seen": 1795570875.4574451,
+    "ast_hash": "c4150a383ff00fdbaf0b1eb9e62113e5",
+    "semantic_hash": ""
+  },
+  "components/LoadBlockSheet.tsx": {
+    "mtime": 1795558330.4843135,
+    "seen": 1795570875.4574451,
+    "ast_hash": "277237fd1a62af1e0615341a66decc1c",
+    "semantic_hash": ""
+  },
+  "components/LoadNotice.tsx": {
+    "mtime": 1795558330.4843135,
+    "seen": 1795570875.4574451,
+    "ast_hash": "b94138d853710b4af9cf0aacf0ffa930",
+    "semantic_hash": ""
+  },
+  "components/NfcSheet.tsx": {
+    "mtime": 1795558354.1387427,
+    "seen": 1795570875.4574451,
+    "ast_hash": "d17e3aba825827771bf57dfb3f43361e",
+    "semantic_hash": ""
+  },
+  "components/PermissionNote.tsx": {
+    "mtime": 1795558330.4853158,
+    "seen": 1795570875.4579961,
+    "ast_hash": "e886ad8a7008ca3f2507b6a9e15659d0",
+    "semantic_hash": ""
+  },
+  "contexts/ProfileContext.tsx": {
+    "mtime": 1795558330.4863136,
+    "seen": 1795570875.4618037,
+    "ast_hash": "3d34d4670fff53c06596ffb2bfd2c0b7",
+    "semantic_hash": ""
+  },
+  "hooks/useLabelFormat.ts": {
+    "mtime": 1795558354.1387427,
+    "seen": 1795570875.462898,
+    "ast_hash": "946223c3ee8933f5ef6ce0561a5350c8",
+    "semantic_hash": ""
+  },
+  "hooks/useLoadCheck.ts": {
+    "mtime": 1795558330.4863136,
+    "seen": 1795570875.462898,
+    "ast_hash": "df398b087679845b986129644c50ca84",
+    "semantic_hash": ""
+  },
+  "hooks/useNfcUsable.ts": {
+    "mtime": 1795558354.1387427,
+    "seen": 1795570875.462898,
+    "ast_hash": "90f1022d48cdf0b7a3acd136ef505be0",
+    "semantic_hash": ""
+  },
+  "hooks/useTagLinks.ts": {
+    "mtime": 1795558354.1387427,
+    "seen": 1795570875.462898,
+    "ast_hash": "4f015099bd6e4c9badeeec3b377eccbc",
+    "semantic_hash": ""
+  },
+  "hooks/useTagOffer.tsx": {
+    "mtime": 1795558354.1387427,
+    "seen": 1795570875.462898,
+    "ast_hash": "e9ee3876f5f75afdb2c6cda4d16fcd1e",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/acc1-accesso.cjs": {
+    "mtime": 1795558330.4893157,
+    "seen": 1795570875.4662216,
+    "ast_hash": "a89aeb60958bceb62a676e035c764a00",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/eti-etichette.cjs": {
+    "mtime": 1795569531.7776313,
+    "seen": 1795570875.4672287,
+    "ast_hash": "38f92371d7a44ca865874cc95c8b3857",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/eti-util.cjs": {
+    "mtime": 1795558354.1457434,
+    "seen": 1795570875.4672287,
+    "ast_hash": "0a46da40b15b4a44f02cd38b716ad5f4",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/n1-nfc.cjs": {
+    "mtime": 1795569987.0279894,
+    "seen": 1795570875.469227,
+    "ast_hash": "2e2054935fc1b75f042f31b2b0e78333",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/s3-avvisi.cjs": {
+    "mtime": 1795558330.4915965,
+    "seen": 1795570875.469227,
+    "ast_hash": "9d5a3c7d0926ac766295e27718c5a199",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/s3-util.cjs": {
+    "mtime": 1795558330.4925904,
+    "seen": 1795570875.469227,
+    "ast_hash": "8d51cfd8ad256cb7ac6f032f8b41be72",
+    "semantic_hash": ""
+  },
+  "src/lib/profilePhoto.ts": {
+    "mtime": 1795558330.502638,
+    "seen": 1795570875.476739,
+    "ast_hash": "dab34976c814b2c6a6a1882ec651d4bf",
+    "semantic_hash": ""
+  },
+  "src/screens/settings/AccessScreen.tsx": {
+    "mtime": 1795558330.5096445,
+    "seen": 1795570875.477739,
+    "ast_hash": "46b9d2b762da833f290b526ea52e1f4c",
+    "semantic_hash": ""
+  },
+  "utils/code128.ts": {
+    "mtime": 1795558354.1609845,
+    "seen": 1795570875.4932024,
+    "ast_hash": "c45da4d093a922a0ee33606892290781",
+    "semantic_hash": ""
+  },
+  "utils/labelHtml.ts": {
+    "mtime": 1795558354.1620936,
+    "seen": 1795570875.4943006,
+    "ast_hash": "ae582f49723e8f24dd469ca001a2d046",
+    "semantic_hash": ""
+  },
+  "utils/nfcCore.ts": {
+    "mtime": 1795558354.162627,
+    "seen": 1795570875.4943006,
+    "ast_hash": "6435e27070e140f77996e8fc5be6eff9",
+    "semantic_hash": ""
+  },
+  "utils/nfcService.web.ts": {
+    "mtime": 1795558354.1631463,
+    "seen": 1795570875.4943006,
+    "ast_hash": "308ed90723d0e2523013c4c049bc4e53",
+    "semantic_hash": ""
+  },
+  "utils/nfcTag.ts": {
+    "mtime": 1795558354.1637146,
+    "seen": 1795570875.4943006,
+    "ast_hash": "cccfbdea4009e03c76259d2f7793ed71",
+    "semantic_hash": ""
+  },
+  "utils/productPdf.ts": {
+    "mtime": 1795558354.1637146,
+    "seen": 1795570875.4948702,
+    "ast_hash": "a5617c1e3b2836e57ce1eb2f209a09ea",
+    "semantic_hash": ""
+  },
+  "utils/profile.ts": {
+    "mtime": 1795558330.5156438,
+    "seen": 1795570875.4948702,
+    "ast_hash": "212badc7899212ab2e901f769aea2985",
+    "semantic_hash": ""
+  },
+  "utils/roles.ts": {
+    "mtime": 1795558330.5156438,
+    "seen": 1795570875.4948702,
+    "ast_hash": "fc7f573adf48c313552c5227bf212004",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-acc1.jpg": {
+    "mtime": 1795558330.4986384,
+    "seen": 1795570875.5090446,
+    "ast_hash": "aede7b582017d4653939aaba359d3123",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-eti.jpg": {
+    "mtime": 1795558354.15026,
+    "seen": 1795570875.510027,
+    "ast_hash": "68769e97d182ef005279c7f4c0e7bbff",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-n1.jpg": {
+    "mtime": 1795558354.154262,
+    "seen": 1795570875.5110264,
+    "ast_hash": "1ac2a27186f516cef35207483d49bd6f",
+    "semantic_hash": ""
+  },
+  "piani di implementazione/funzionalita/prova/stili-s3.jpg": {
+    "mtime": 1795558330.502638,
+    "seen": 1795570875.5110264,
+    "ast_hash": "4873bbd9db72aff93d21a9f56b4bd375",
     "semantic_hash": ""
   }
 }
