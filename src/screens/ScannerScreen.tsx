@@ -18,6 +18,11 @@ import { makeStyles, useTheme } from '../../contexts/ThemeContext';
 import { withAlpha } from '../../utils/color';
 import { Backdrop } from '../../components/ui/Backdrop';
 import { GradientFill } from '../../components/ui/GradientFill';
+// N1 (ticket 16, 22): «Leggi un tag» accanto a «Inserisci Manualmente», e la fotocamera solo se Scanner e NFC la vuole
+import { NfcSheet } from '../../components/NfcSheet';
+import { useHardwareConfig } from '../../contexts/HardwareConfigContext';
+import { useNfcUsable } from '../../hooks/useNfcUsable';
+import { readerSources } from '../../utils/nfcTag';
 
 export default function ScannerScreen() {
   const t = useTheme();
@@ -32,6 +37,10 @@ export default function ScannerScreen() {
   const [manualCode, setManualCode] = useState('');
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // N1: lettori secondo Scanner e NFC (sul web e senza NFC sempre la fotocamera, NG11)
+  const { hwConfig } = useHardwareConfig();
+  const reader = readerSources(hwConfig.scanMode, useNfcUsable());
+  const [readingTag, setReadingTag] = useState(false);
   const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<number | null>(null);
 
   // COD (ticket 22): fotocamera, «Inserisci Manualmente» e immagine dalla galleria passano tutte dal lettore unico
@@ -128,6 +137,18 @@ export default function ScannerScreen() {
       return;
     }
     answer(result, false);
+  };
+
+  // N1 (NG16): il codice del tag (UID collegato, poi il testo) passa dal lettore unico come ogni altro codice
+  const handleTagRead = (code: string) => {
+    setReadingTag(false);
+    const result = read(code);
+    if (result.status === 'unknown') {
+      soundService.playBlockingError();
+      Alert.alert('Codice Non Riconosciuto', `Tag letto: ${code}\n\n${NOT_FOUND}`, [{ text: 'OK' }]);
+      return;
+    }
+    answer(result, true);
   };
 
   const pickQRImage = async () => {
@@ -245,11 +266,12 @@ export default function ScannerScreen() {
       </View>
 
       <View style={styles.cameraContainer}>
+        {reader.camera ? (
         <CameraView
           style={styles.camera}
           facing="back"
           enableTorch={flashOn}
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          onBarcodeScanned={scanned || readingTag ? undefined : handleBarCodeScanned}
           barcodeScannerSettings={{
             barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39'],
           }}
@@ -262,9 +284,16 @@ export default function ScannerScreen() {
             <View style={[styles.corner, styles.cornerBottomRight]} />
           </View>
         </CameraView>
+        ) : (
+          <View style={[styles.camera, styles.tagPanel]}>
+            <AppIcon name="nfc" size={64} color={t.colors.onData} />
+          </View>
+        )}
       </View>
 
       <View style={styles.instructionsContainer}>
+        {reader.camera ? (
+          <>
         <AppIcon name="center-focus-strong" size={48} color={t.colors.accentInk} />
         <Text style={styles.instructionsTitle}>
           Inquadra il codice QR o barcode
@@ -273,10 +302,24 @@ export default function ScannerScreen() {
           Posiziona il codice all'interno del riquadro{'\n'}
           La scansione avviene automaticamente
         </Text>
+          </>
+        ) : (
+          <Text style={styles.instructionsTitle}>Tocca «Leggi un tag» e avvicina il tag</Text>
+        )}
       </View>
+
+      {reader.nfc ? (
+        <View style={styles.actionsContainer}>
+          <Pressable style={styles.actionButton} onPress={() => setReadingTag(true)} accessibilityRole="button" accessibilityLabel="Leggi un tag">
+            <AppIcon name="nfc" size={20} color={t.colors.onButtonSecondary} />
+            <Text style={styles.actionButtonText}>Leggi un tag</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* Action Buttons */}
       <View style={styles.actionsContainer}>
+        {reader.camera ? (
         <Pressable
           style={styles.actionButton}
           onPress={pickQRImage}
@@ -284,6 +327,7 @@ export default function ScannerScreen() {
           <AppIcon name="photo-library" size={20} color={t.colors.onButtonSecondary} />
           <Text style={styles.actionButtonText}>Importa da Galleria</Text>
         </Pressable>
+        ) : null}
 
         <Pressable
           style={styles.actionButton}
@@ -293,6 +337,8 @@ export default function ScannerScreen() {
           <Text style={styles.actionButtonText}>Inserisci Manualmente</Text>
         </Pressable>
       </View>
+
+      {readingTag ? <NfcSheet visible mode="leggi" onClose={() => setReadingTag(false)} onRead={handleTagRead} /> : null}
 
       {/* Loading Modal */}
       <Modal
@@ -402,6 +448,11 @@ const useStyles = makeStyles((t) => ({
   },
   camera: {
     flex: 1,
+  },
+  // N1: «NFC» in Scanner e NFC: al posto della fotocamera il segno del tag
+  tagPanel: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scanFrame: {
     flex: 1,

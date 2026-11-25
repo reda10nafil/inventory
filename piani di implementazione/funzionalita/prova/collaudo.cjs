@@ -13,6 +13,7 @@ const { textOf, press } = require('./a1-util.cjs');
 const c = require('./cod-util.cjs');
 const { scan, iconAt } = require('./a3-util.cjs');
 const v = require('./val-util.cjs');
+const e = require('./edc-util.cjs');
 
 const goBacks = (page) => { const l = []; page.on('console', (m) => { if (/GO_BACK/.test(m.text())) l.push(m.text()); }); return l; };
 const IN_BASSO = ['Indietro', 'Annulla', 'Torna Indietro', 'Chiudi'];
@@ -146,6 +147,48 @@ async function cfB5(h) {
     && finestre.some((m) => m.includes('«Volpe» ora si chiama «Volpe rossa». Il prodotto che lo usa mostra il nome nuovo.'))
     && finestre.some((m) => m.includes('Il tipo di pelle "Volpe rossa" è usato da 1 prodotto.'));
   return { ok, voceInImpostazioni: voce, valori: salvata && salvata.map((c) => `${c.id}:${c.label}`), prodottiUguali: JSON.stringify(prodDopo) === JSON.stringify(prodPrima), scheda };
+}
+
+// CF-B1 (C1, CAT1): «Borse» creata in cima a Impostazioni › Categorie, «Zaini» con «+ Sottocategoria» sulla riga di
+// Borse (come l'utente, niente scritto a mano nello storage): albero giusto (Zaini rientrata sotto Borse); VIS-0142
+// messo in «Borse › Zaini» da Modifica; nome completo nella Scheda; nell'Inventario «Borse» apre la seconda fila e
+// «Zaini» filtra solo VIS-0142.
+async function cfB1(h) {
+  const L = 'inventory:v1:local:libraries';
+  const lab = (t) => h.page.getByLabel(t, { exact: true }).locator('visible=true').first();
+  const riga = async (id) => {
+    const b = await h.page.locator('[tabindex="0"]').filter({ hasText: new RegExp(`ID: ${id}(?![\\w-])`) }).first().boundingBox();
+    return b && { x: Math.round(b.x), y: Math.round(b.y) };
+  };
+  await h.go('settings/folders');
+  await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('Borse');
+  await h.click('Crea Categoria');
+  await eti.chiudiCodice(h); // ETI: al «OK» si apre «Codice ed etichetta» della categoria nuova
+  await lab('Apri Borse').click(); await h.page.waitForTimeout(400);
+  await lab('Aggiungi una sottocategoria a Borse').click(); await h.page.waitForTimeout(400);
+  await lab('Nome della sottocategoria di Borse').fill('Zaini');
+  await lab('Aggiungi la sottocategoria a Borse').click(); await h.page.waitForTimeout(600);
+  const libs = await h.store(L);
+  const borse = libs.find((l) => l.name === 'Borse');
+  const zaini = libs.find((l) => l.name === 'Zaini');
+  const albero = { borse: await riga('borse'), zaini: await riga('zaini') };
+  const rientrata = !!albero.borse && !!albero.zaini && albero.zaini.y > albero.borse.y && albero.zaini.x > albero.borse.x;
+  await v.openEdit(h, 'VIS-0142');
+  await lab('Categoria Borse').click(); await h.page.waitForTimeout(300);
+  await lab('Sottocategoria Zaini').click(); await h.page.waitForTimeout(300);
+  await h.click('Salva Modifiche');
+  const vis = (await h.products()).find((p) => p.sku === 'VIS-0142');
+  await h.go('product/cmp-1');
+  const scheda = await h.has('Borse › Zaini', true);
+  await h.go('');
+  await h.click('Borse');
+  const secondaFila = await h.has('Zaini', true);
+  await h.click('Zaini');
+  const filtrati = await h.page.evaluate(() => [...document.querySelectorAll('div')]
+    .filter((d) => d.childElementCount === 0 && /^[A-Z]{3}-\d{4}$/.test(d.textContent || '') && d.offsetParent).map((d) => d.textContent));
+  const ok = !!borse && !borse.parentId && !!zaini && zaini.parentId === borse.id && rientrata && vis.libraryId === zaini.id
+    && scheda && secondaFila && filtrati.join() === 'VIS-0142';
+  return { ok, categorie: libs.map((l) => (l.parentId ? `${l.id}<${l.parentId}` : l.id)), rientrata, libraryId: vis.libraryId, scheda, secondaFila, filtrati };
 }
 
 // CF-C1 (parte GAL): Aggiungi con 3 foto (scelta file del browser), salvare, aprire la Scheda dalla Home (senza
@@ -309,7 +352,10 @@ async function cfE2(h) {
   // Categoria Pellicce con il codice di Magazzino
   await h.go('settings/folders');
   await page.locator('[tabindex="0"]').filter({ hasText: 'ID: pellicce' }).locator('visible=true').first().click(); await page.waitForTimeout(400);
-  await page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().fill('LOC-MAGAZZINO');
+  // ETI: il codice di una categoria si cambia in «Codice ed etichetta» › Avanzate › «Cambia codice» (stesso controllo)
+  await eti.apri(h, 'Codice ed etichetta');
+  await eti.cambiaCodice(h, 'LOC-MAGAZZINO');
+  await eti.chiudiCodice(h);
   await h.click('Salva Modifiche');
   // Scaffale A1 con il codice di Pellicce
   await h.go('settings/shelves');
@@ -400,6 +446,91 @@ async function cfE3(h) {
   return { ok, ...out };
 }
 
+// ---- ETI (ticket 22, corsia C, 24/11): «Codice ed etichetta» ed etichette fatte in locale ----
+const eti = require('./eti-util.cjs');
+const etiPulita = (html) => !/<script|https?:|qrserver|barcodeapi|jsdelivr|rawgit/i.test(html);
+
+// CF-E4 (ETI): «Codice ed etichetta» di VIS-0142 (col link GS1, P27) e dello scaffale A1: «Stampa etichetta» apre una
+// finestra sua con l'etichetta fatta in locale (il QR porta il codice, nessuno script né indirizzo esterno, nessuna
+// richiesta fuori da localhost); la pagina dell'app non si stampa
+async function cfE4(h) {
+  await c.prepara(h);
+  const st = await eti.guardaStampe(h);
+  await h.click('VIS-0142'); await h.page.waitForTimeout(900);
+  await eti.apri(h, 'Codice ed etichetta', 900);
+  st.esterne.length = 0;
+  await eti.apri(h, 'Stampa etichetta', 1500);
+  const p = await eti.ultimaStampa(st);
+  const prodotto = p && { qr: JSON.stringify(eti.qrHtml(p.html)) === JSON.stringify(eti.qrAtteso('VIS-0142')), pulita: etiPulita(p.html), stampata: p.stampe };
+  const paginaApp = [await h.page.evaluate(() => window.__prints)];
+  await h.go('settings/shelves');
+  await eti.apri(h, 'Codice QR di A1');
+  // le richieste della stampa: aprendo Scaffali lo Scanner web di expo-camera scarica jsQR (lettura, non etichetta)
+  st.esterne.length = 0;
+  await eti.apri(h, 'Stampa etichetta', 1500);
+  const a = await eti.ultimaStampa(st);
+  const scaffale = a && { qr: JSON.stringify(eti.qrHtml(a.html)) === JSON.stringify(eti.qrAtteso('SCAF-MAG-A1')), pulita: etiPulita(a.html), stampata: a.stampe, nome: a.html.includes('Magazzino › A1') };
+  paginaApp.push(await h.page.evaluate(() => window.__prints));
+  const ok = !!prodotto && prodotto.qr && prodotto.pulita && prodotto.stampata === 1 && !!scaffale && scaffale.qr && scaffale.pulita
+    && scaffale.stampata === 1 && scaffale.nome && st.finestre.length === 2 && paginaApp.every((n) => n === 0) && st.esterne.length === 0;
+  return { ok, prodotto, scaffale, finestre: st.finestre.length, paginaApp, esterne: st.esterne };
+}
+
+// CF-D1 (parte ETI): il ripiano «A1» creato dal modulo (Magazzino): al «OK» si apre «Codice ed etichetta» con il codice
+// SCAF-MAGAZZINO-A1 e «Stampa etichetta» lo stampa in una finestra sua. Il codice nasce al salvataggio con S2 (corsia B,
+// unita con l'Unione 2): se la finestra chiedesse ancora «Crea il codice» il passo è rosso
+async function cfD1Eti(h) {
+  const st = await eti.guardaStampe(h);
+  await h.go('settings/shelves');
+  await h.page.getByLabel('Nome', { exact: true }).locator('visible=true').first().fill('A1');
+  await eti.apri(h, 'Posizione Magazzino', 200);
+  await eti.apri(h, 'Crea scaffale', 900);
+  const finestra = await eti.aperta(h);
+  const daCreare = await h.has('Questo scaffale non ha ancora un codice.', true);
+  if (daCreare) await eti.apri(h, 'Crea il codice', 800);
+  const salvato = (((await h.store('furinventory_shelves:local', 400)) || [])[0] || {}).barcode;
+  const aVideo = await h.has('SCAF-MAGAZZINO-A1', true);
+  st.esterne.length = 0;
+  await eti.apri(h, 'Stampa etichetta', 1500);
+  const s = await eti.ultimaStampa(st);
+  const stampa = s && { qr: JSON.stringify(eti.qrHtml(s.html)) === JSON.stringify(eti.qrAtteso('SCAF-MAGAZZINO-A1')), pulita: etiPulita(s.html), stampata: s.stampe };
+  const paginaApp = await h.page.evaluate(() => window.__prints);
+  const ok = finestra && !daCreare && salvato === 'SCAF-MAGAZZINO-A1' && aVideo && !!stampa && stampa.qr && stampa.pulita && stampa.stampata === 1 && paginaApp === 0 && st.esterne.length === 0;
+  return { ok, finestra, codiceDa: daCreare ? 'Crea il codice' : 'salvataggio', salvato, aVideo, stampa, paginaApp, esterne: st.esterne };
+}
+
+// CF-E6 (N1): Impostazioni › Scanner e NFC sul web, con una configurazione salvata prima («NFC», proponi il tag): una
+// riga «L'NFC si usa dal telefono», nessuna scelta NFC, nessun interruttore, nessun «Errore» (NG12); la chiave resta
+// uguale; nella finestra «Codice ed etichetta» di VIS-0142 la stessa riga e niente «Programma tag» (NG19)
+async function cfE6(h) {
+  const KEY = 'furinventory_hardware_config:local';
+  const salvata = { scanMode: 'nfc_only', autoWriteNfcOnSave: true };
+  await h.page.evaluate(([k, v]) => localStorage.setItem(k, JSON.stringify(v)), [KEY, salvata]);
+  await h.go('settings/hardware');
+  const t = await c.testo(h);
+  const impostazioni = {
+    riga: await h.has('L\'NFC si usa dal telefono', true),
+    scelte: await h.page.getByLabel(/^Leggi con /).locator('visible=true').count(),
+    interruttori: await h.page.getByRole('switch').locator('visible=true').count(),
+    errore: /errore/i.test(t),
+  };
+  const chiave = await h.store(KEY);
+  await h.go('');
+  await h.click('VIS-0142'); await h.page.waitForTimeout(900);
+  await eti.apri(h, 'Codice ed etichetta', 900);
+  await eti.apri(h, 'Avanzate', 400);
+  const finestra = {
+    // Unione 2 (richiesta dell'utente del 25/11): in «Codice ed etichetta» «Scrivi tag NFC» c'è, spenta, con sotto «Funziona dal telefono»
+    riga: await h.page.getByLabel('Scrivi tag NFC: funziona dal telefono', { exact: true }).locator('visible=true').count(),
+    motivo: await h.page.getByText('Funziona dal telefono', { exact: true }).locator('visible=true').count(),
+    programma: await h.page.getByText('Programma tag', { exact: true }).locator('visible=true').count(),
+    scrivi: await h.page.getByLabel('Scrivi tag NFC', { exact: true }).locator('visible=true').count(),
+  };
+  const ok = impostazioni.riga && !impostazioni.scelte && !impostazioni.interruttori && !impostazioni.errore
+    && JSON.stringify(chiave) === JSON.stringify(salvata) && finestra.riga === 1 && finestra.motivo === 1 && !finestra.programma && !finestra.scrivi;
+  return { ok, impostazioni, chiaveUguale: JSON.stringify(chiave) === JSON.stringify(salvata), finestra };
+}
+
 // CF-F7 (ESE): un'automazione personale fatta dal costruttore come l'utente, [Scansiona Prodotto, Tag «Controllato»,
 // Tag «Da Pulire», Imposta Campo Condizione = Buono, Vendi con conferma], eseguita su AST-0033 con il prezzo «1300,50»
 // scritto con la virgola. Tre note presenti (la nota che AST-0033 aveva già e i due tag), Condizione in `customData` con
@@ -464,9 +595,12 @@ async function cfF7(h) {
   return { ok, ...out };
 }
 
-// CF-B3 (parte VAL): un'opzione usata e rinominata dall'editor dei valori (Campi › Taglia, «M» → «Media»): i prodotti
+// CF-B3. Parte VAL: un'opzione usata e rinominata dall'editor dei valori (Campi › Taglia, «M» → «Media»): i prodotti
 // che l'avevano non si riscrivono, mostrano «Media» nella Scheda e in Modifica resta scelta; gli id delle opzioni non
-// cambiano. Restano a EDC «Colore» con pillole, colori e icona, «Larghezza» con la ruota, la compilazione veloce.
+// cambiano. Parte EDC: campo «Colore del capo» creato dall'interfaccia (scelta da un elenco a binario orizzontale, «Mostra nella
+// card»), colore e icona dati ai valori; Larghezza Base con la ruota; Aggiungi compilato coi tocchi (pillola e ruota);
+// Scheda con l'icona e il pallino del colore, card dell'Inventario col valore. («Colore» c'è già nel campionario: il
+// campo nuovo ha un altro nome, così le etichette non si confondono.)
 async function cfB3(h) {
   const prima = await h.products(0);
   await v.matita(h, 'Taglia');
@@ -480,12 +614,49 @@ async function cfB3(h) {
   };
   await v.openEdit(h, 'VIS-0098');
   const inModifica = await v.scelti(h.page, ['XS', 'S', 'Media', 'L', 'XL']);
+
+  // EDC: «Colore del capo» a pillole con colore e icona dei valori, nella card
+  await e.crea(h, { tipo: 'scelta', nome: 'Colore del capo', valori: ['Nero lucido', 'Cammello'], aspetto: 'Binario orizzontale', card: true });
+  await v.matita(h, 'Colore del capo');
+  await e.visibile(h, '[aria-label="Rinomina Cammello"]').click(); await h.page.waitForTimeout(300);
+  await e.visibile(h, '[aria-label="Colore Marrone"]').click();
+  await e.visibile(h, '[aria-label="Icona star"]').click();
+  await e.visibile(h, '[aria-label="Rinomina Nero lucido"]').click(); await h.page.waitForTimeout(300);
+  await e.visibile(h, '[aria-label="Colore Nero"]').click();
+  await h.click('Aggiorna');
+  const colore = await e.campo(h, 'Colore del capo');
+  // Larghezza Base con la ruota, da 40 a 120 cm, passo 10
+  await h.go('settings/fields');
+  await e.visibile(h, '[aria-label="Come si compila Larghezza"]').click(); await h.page.waitForTimeout(500);
+  await h.click('Ruota');
+  await e.visibile(h, '[aria-label="Da della ruota"]').fill('40');
+  await e.visibile(h, '[aria-label="A della ruota"]').fill('120');
+  await e.visibile(h, '[aria-label="Passo della ruota"]').fill('10');
+  await h.click('Aggiorna');
+  // Aggiungi compilato coi tocchi
+  await e.prepara(h, 'Media');
+  await h.click('Cammello'); // a 1/2 il binario è una tendina: si apre e si sceglie
+  await e.ruota(h, 'Larghezza', '90 cm'); // a 1/3 il campo apre la ruota in una finestra dal basso
+  const nuovo = await e.salvaNuovo(h);
+  const cammello = (colore.options || []).find((o) => o.label === 'Cammello');
+  // davanti al nome c'è la stella del valore (un glifo): si cerca il nome nel testo
+  const schedaColore = (await v.scheda(h, nuovo.id, [['Colore del capo', 14]]))['Colore del capo'];
+  const pallinoScheda = await e.puntoColore(h.page, 'Cammello', 'rgb(141, 110, 99)');
+  await h.go('');
+  await h.page.getByText(nuovo.sku, { exact: true }).first().waitFor();
+  const cardNuovo = await e.card(h.page, nuovo.sku);
+  const pallinoCard = await e.puntoColore(h.page, 'Cammello', 'rgb(141, 110, 99)');
+
   const out = {
     opzioni: (taglia.options || []).map((o) => `${o.id}:${o.label}`).join(), prodottiUguali: JSON.stringify(dopo) === JSON.stringify(prima), schede, inModifica,
+    colore: { look: colore.look, showInCard: colore.showInCard, cammello },
+    nuovo: { colore: v.valore(nuovo, colore.id), larghezza: nuovo.width }, schedaColore, pallinoScheda, cardNuovo, pallinoCard,
   };
   const ok = out.opzioni === 'opt_0:XS,opt_1:S,opt_2:Media,opt_3:L,opt_4:XL' && out.prodottiUguali && schede.vis0142 === 'Media' && schede.vis0098 === 'Media'
-    && inModifica.join() === 'Media';
-  return { ok, ...out, daFare: 'EDC: «Colore» con pillole, colori e icona, «Larghezza» con la ruota, compilazione veloce in Aggiungi, icone e colori nella Scheda' };
+    && inModifica.join() === 'Media'
+    && colore.look === 'chips' && colore.showInCard === true && cammello && cammello.color === '#8D6E63' && cammello.icon === 'star'
+    && out.nuovo.colore === cammello.id && nuovo.width === 90 && /Cammello/.test(schedaColore || '') && pallinoScheda && /Cammello/.test(cardNuovo || '') && pallinoCard;
+  return { ok, ...out };
 }
 
 // ---- CF-D (parti S2, corsia B, 24/11): ripiano A1 con misure, riempimento a colori, barra da 15 grucce ----
@@ -541,7 +712,8 @@ async function cfD1(h) {
     && salvato.length === 50 && salvato.depth === 50 && salvato.height === 30 && salvato.maxWeight === 10 && salvato.maxPieces === 20 && !salvato.kind
     && salvato.barcode === 'SCAF-MAGAZZINO-A1' && riga.includes('Base 50 × 50 cm, alta 30 cm · fino a 10 kg · fino a 20 pezzi')
     && barre.length === 1 && barre[0].etichetta === 'Riempimento A1: 0%' && barre[0].fascia === 'verde';
-  return { ok, salvato: { ...salvato, id: undefined, createdAt: undefined }, riga, barre, daFare: 'finestra «Codice ed etichetta» con Stampa dopo la creazione (ETI)' };
+  // Unione 2: la finestra «Codice ed etichetta» con Stampa dopo la creazione è il passo CF-D1-ETI (`cfD1Eti`)
+  return { ok, salvato: { ...salvato, id: undefined, createdAt: undefined }, riga, barre };
 }
 
 // CF-D2: su A1 (20 pezzi) si caricano con Movimenta 10, poi 6, poi 4 pezzi: 50% verde, 80% blu, «Pieno» rosso, ognuno col
@@ -837,7 +1009,7 @@ const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
   ['CF-A2', 'Ogni indirizzo di linking.ts dal menu, ricaricato, aperto direttamente: freccia, scheda madre, 0 GO_BACK; Team, Chat, Crea automazione senza NotFound', 'C2, IND', cfA2],
   ['CF-A3', 'Avvio a freddo e giro di tutte le schermate: 0 errori in console; nessuna voce «Prossimamente» senza decisione', 'IND, VOCI', cfA3],
-  ['CF-B1', 'Categoria «Borse» con la sottocategoria «Borse › Zaini»', 'C1 (fatta, passo da scrivere)'],
+  ['CF-B1', 'Categoria «Borse» con la sottocategoria «Borse › Zaini»', 'C1, CAT1', cfB1],
   ['CF-B2', 'Modulo di «Borse» da un Modello di settore', 'MCAT'],
   ['CF-B3', 'Campo «Colore» (pillole, colori, icona) e «Larghezza» (ruota); rinomina di un\'opzione usata', 'VAL, EDC', cfB3],
   ['CF-B4', 'Modulo di «Borse»: nascondere, sezione, uscire senza salvare, salvare', 'MOD, MCAT'],
@@ -854,9 +1026,9 @@ const PASSI = [
   ['CF-E1', 'Scanner con SKU, SKU minuscolo, vecchio link GS1', 'COD', cfE1],
   ['CF-E2', 'Scanner con i codici di posizione, scaffale, categoria; nessun codice doppio', 'COD', cfE2],
   ['CF-E3', 'Le 5 automazioni con lo stesso codice di prodotto', 'COD, ESE', cfE3],
-  ['CF-E4', '«Codice ed etichetta» di un prodotto e di A1: Stampa', 'ETI'],
+  ['CF-E4', '«Codice ed etichetta» di un prodotto e di A1: Stampa', 'ETI', cfE4],
   ['CF-E5', 'Impostazioni › Codici ed etichette, vuote e con una configurazione GS1 vecchia', 'GS1'],
-  ['CF-E6', 'Impostazioni › Scanner e NFC sul web: «Non disponibile sul web»', 'N1'],
+  ['CF-E6', 'Impostazioni › Scanner e NFC sul web: «L\'NFC si usa dal telefono»', 'N1', cfE6],
   ['CF-F1', 'Ricevimento da un fornitore: 3 articoli in Magazzino › A1', 'FLU1'],
   ['CF-F2', 'Uscita a un cliente con quantità e prezzo', 'FLU1'],
   ['CF-F3', 'Trasferimento di 2 pezzi su 5', 'FLU1'],
@@ -876,16 +1048,19 @@ const PASSI = [
   ['CF-H4', 'Accesso: profilo riletto, Operatore con le voci spente col motivo, autore in Cronologia', 'ACC1', cfH4],
   // RETE0 (corsia B): passo nuovo, in fondo alla tabella
   ['CF-H5', 'Rete del negozio col centro finto: nessuna scelta all\'entrata, collegato con i telefoni «online dalle…» e «visto alle…», centro che tace, Scollegati', 'RETE0', cfH5],
+  // ETI (corsia C, 24/11): parte ETI di CF-D1 (la riga CF-D1 sopra è di S2): codice e «Codice ed etichetta» con Stampa
+  ['CF-D1-ETI', 'Ripiano «A1» creato: codice e finestra «Codice ed etichetta» con Stampa', 'ETI', cfD1Eti],
 ];
 const TELEFONO = [
   ['CF-T1', 'Tasto Indietro di sistema, link syncroflow:// ad app chiusa, icone su APK in modalità aereo', 'C2, IND'],
   ['CF-T2', 'Fotocamera e NFC nello Scanner e nelle automazioni', 'COD, N1, N2'],
   ['CF-T3', 'Scaffale A1 con un tag NFC', 'ETI, N1'],
-  ['CF-T4', 'Stampa di etichetta e PDF in modalità aereo', 'ETI, EDC'],
+  ['CF-T4', 'Stampa di etichetta e PDF in modalità aereo', 'ETI (il PDF con i campi, lasciato da EDC)'],
   ['CF-T5', 'Foto da galleria e fotocamera dopo «Svuota cache»', 'FOTO, GAL'],
   ['CF-T6', 'Due o tre telefoni sullo stesso modem senza internet', 'CHAT1, RETE1, RETE2, RIC1, RIC2'],
   ['CF-T7', 'Export CSV aperto in Excel; import da Excel sul telefono', 'EXP, IMP'],
   ['CF-T8', 'Login Google e passaggio dei dati locali', 'L1, L2'],
+  ['CF-T9', 'Ruota a scatti col dito, binari, menu a tendina e tastiera nei campi di Aggiungi e Modifica', 'EDC'],
 ];
 
 (async () => {

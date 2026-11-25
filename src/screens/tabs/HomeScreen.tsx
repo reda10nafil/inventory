@@ -13,6 +13,7 @@ import { useShelves } from '../../../contexts/ShelvesContext';
 import { placeWithShelf } from '../../../utils/shelves';
 import { categoryPath, categoryPicker, categoryTree, categoryWithDescendants, rootCategories } from '../../../utils/categories';
 import { isDormant, needsPromotion } from '../../../services/mockData';
+import { CodeSheet } from '../../../components/CodeSheet'; // ETI (AU-A8): etichette in serie dalla selezione
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { GradientFill } from '../../../components/ui/GradientFill';
@@ -26,6 +27,12 @@ import { PermissionNote } from '../../../components/PermissionNote';
 import { usePermission } from '../../../contexts/ProfileContext';
 import { matchesFilter, matchesSearch } from '../../../utils/inventoryFilter';
 import { formatQty, isOutOfStock, isStocked, storedTotal } from '../../../utils/stock';
+import { useCustomFields } from '../../../contexts/CustomFieldsContext';
+import { useFieldOptions } from '../../../hooks/useFieldOptions';
+import { cardFields, cardText, optionOf } from '../../../utils/fieldValues';
+import { useLayout } from '../../../contexts/LayoutContext';
+import { fieldIcon } from '../../../components/FieldInput';
+import { OptionMark, hasMark } from '../../../components/OptionMark';
 
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
@@ -43,6 +50,9 @@ export default function HomeScreen() {
   const { furTypes } = useFurTypes();
   const kindOf = useProductKind();
   const { shelfOf } = useShelves();
+  const { customFields, allFieldsIncludingDeleted } = useCustomFields();
+  const optionsOf = useFieldOptions();
+  const { layout } = useLayout();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
 
@@ -58,6 +68,14 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showActionModal, setShowActionModal] = useState(false); // Controls Modal visibility
+  const [showLabels, setShowLabels] = useState(false); // ETI: «Etichette» dei prodotti scelti
+  // ETI: le etichette dei prodotti scelti, nell'ordine dell'Inventario (poi quelli scelti fuori dal filtro)
+  const labelItems = () => {
+    const chosen = new Set(selectedIds);
+    const shown = filteredProducts.filter((p) => chosen.has(p.id));
+    const seen = new Set(shown.map((p) => p.id));
+    return [...shown, ...products.filter((p) => chosen.has(p.id) && !seen.has(p.id))].map((p) => ({ code: p.sku, name: kindOf(p).full }));
+  };
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
@@ -85,8 +103,11 @@ export default function HomeScreen() {
 
   // 2. Then, apply Status Filter & Search on the Folder-filtered list
   // La ricerca vale in tutti i filtri, anche Cestino e Attenzione, e trova la posizione per nome (P14)
+  // EDC: anche il testo mostrato dei campi personalizzati (testi brevi, numeri, prezzi, scelte scritte a mano)
   const filteredProducts = folderFilteredProducts.filter((p) =>
-    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, furTypes, categoryLabels));
+    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, furTypes, categoryLabels, allFieldsIncludingDeleted));
+  // Campi con «Mostra nella card» (EDC, al massimo 2; nessuno nei campi di partenza: la card di sempre non cambia)
+  const onCard = cardFields(customFields);
 
   const filters: { id: FilterType; label: string; count: number }[] = [
     { id: 'all', label: 'Tutti', count: stats.total - stats.trash },
@@ -254,6 +275,23 @@ export default function HomeScreen() {
             <Text style={styles.qtyText} numberOfLines={1}>{formatQty(storedTotal(product), product.unit)}</Text>
           )}
 
+          {/* EDC: i campi con «Mostra nella card», con l'icona del campo e il colore e l'icona del valore */}
+          {onCard.map((field) => {
+            const entry = (product.customData || []).find((d: any) => d.fieldSnapshot?.id === field.id);
+            if (!entry) return null;
+            const options = optionsOf(field);
+            const text = cardText(field, entry.value, { options, snapshot: entry.fieldSnapshot });
+            if (!text) return null;
+            const option = field.type === 'single_choice' ? optionOf(entry.value, options, entry.fieldSnapshot) : undefined;
+            return (
+              <View key={field.id} style={styles.cardFieldRow} accessibilityLabel={`${field.name}: ${text}`}>
+                <AppIcon name={fieldIcon(field, layout.fields.find((f) => f.id === field.id)?.icon)} size={13} color={t.colors.fieldIcon} />
+                {hasMark(option) && <OptionMark option={option} size={8} />}
+                <Text style={styles.cardFieldText} numberOfLines={1}>{text}</Text>
+              </View>
+            );
+          })}
+
           {!!product.sellPrice && (
             <Text style={styles.priceText}>{formatPrice(product.sellPrice)}</Text>
           )}
@@ -274,14 +312,22 @@ export default function HomeScreen() {
         </View>
         <View style={styles.headerActions}>
           {selectedIds.length > 0 ? (
-            <Pressable
-              style={styles.textButton}
-              onPress={handleSelectAll}
-            >
-              <Text style={styles.textButtonLabel}>
-                {selectedIds.length === filteredProducts.length ? 'Deseleziona' : 'Seleziona Tutto'}
-              </Text>
-            </Pressable>
+            <>
+              {/* ETI (AU-A8): le etichette dei prodotti scelti, nella finestra «Codice ed etichetta» col contatore. In
+                  alto e non nella barra in basso, che ha i suoi pulsanti in posizioni fisse (cartella, cestino, chiudi);
+                  solo l'icona, perché accanto a «Seleziona Tutto» la scritta non ci sta a 375 px */}
+              <Pressable style={styles.labelsButton} onPress={() => setShowLabels(true)} accessibilityRole="button" accessibilityLabel="Stampa le etichette" hitSlop={4}>
+                <AppIcon name="qr-code-2" size={22} color={t.colors.accentInk} />
+              </Pressable>
+              <Pressable
+                style={styles.textButton}
+                onPress={handleSelectAll}
+              >
+                <Text style={styles.textButtonLabel}>
+                  {selectedIds.length === filteredProducts.length ? 'Deseleziona' : 'Seleziona Tutto'}
+                </Text>
+              </Pressable>
+            </>
           ) : (
             <>
               <Pressable
@@ -493,6 +539,16 @@ export default function HomeScreen() {
           </View>
         </View>
       )}
+
+      {/* ETI (AU-A8): etichette in serie, una per prodotto scelto (lo SKU nel QR), nell'ordine dell'Inventario */}
+      {showLabels && selectedIds.length > 0 ? (
+        <CodeSheet
+          visible
+          onClose={() => setShowLabels(false)}
+          kind="prodotto"
+          items={labelItems()}
+        />
+      ) : null}
 
       {/* Product Action Modal */}
       <Modal
@@ -804,6 +860,20 @@ const useStyles = makeStyles((t) => ({
     fontVariant: ['tabular-nums'],
     color: t.colors.textPrimary,
   },
+  // EDC: campo con «Mostra nella card»
+  cardFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  cardFieldText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.colors.textSecondary,
+  },
   priceText: {
     marginTop: 4,
     fontSize: 16,
@@ -1071,5 +1141,14 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.buttonPrimary,
     color: t.colors.accentInk,
     fontSize: 14,
+  },
+  // ETI: «Stampa le etichette» della selezione: icona del QR in un riquadro da 44
+  labelsButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: t.radius.button,
+    backgroundColor: t.colors.accentSoft,
   },
 }));

@@ -52,6 +52,6 @@ export function ShelfPicker({ shelves, categories, value, onChange }: Props) {
 
 const useStyles = makeStyles((t) => ({
   ...formStyles(t),
-  // Un nome lungo va a capo dentro la pillola invece di essere tagliato, come in CategoryPicker
+  // Un nome lungo va a capo dentro la pillola invece di essere tagliato, come nelle pillole a capo di prima (le pillole del binario, `ChoiceRail`, stanno su una riga)
   chipGrow: { height: 'auto', minHeight: 34, paddingVertical: 6 },
 }));

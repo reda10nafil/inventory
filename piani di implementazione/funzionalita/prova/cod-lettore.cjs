@@ -18,6 +18,7 @@ const { scenario } = require('./lib.cjs');
 const { scan, iconAt } = require('./a3-util.cjs');
 const { press } = require('./a1-util.cjs');
 const { LOC, LK, LOCATIONS, prepara, leggi, aMano, aperto, prodotto, eventi, ultima, testo } = require('./cod-util.cjs');
+const eti = require('./eti-util.cjs');
 
 const SOLO = process.argv[2];
 const run = (name, fn, opts) => (!SOLO || name.includes(SOLO) ? scenario(name, fn, opts) : null);
@@ -225,16 +226,33 @@ const apriModifica = async (h, sku) => { await h.click(sku); await h.page.waitFo
     ];
     await prepara(h, { libraries });
     const visti = finestre(h);
-    const campo = () => h.page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first();
+    // ETI: nella finestra della categoria il codice si legge sulla riga «Codice ed etichetta» e si cambia nella finestra
+    // del codice (Avanzate › «Cambia codice», stesso controllo); prima di ETI era il campo «Scansiona o Genera...»
+    const codiceInFinestra = async () => {
+      const r = h.page.getByLabel('Codice ed etichetta', { exact: true }).locator('visible=true');
+      if (await r.count()) return (await r.first().innerText()).split('\n').map((x) => x.trim()).filter((x) => x.length > 1 && x !== 'Codice ed etichetta').pop();
+      return h.page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().inputValue();
+    };
+    const scriviCodice = async (codice) => {
+      if (await h.page.getByLabel('Codice ed etichetta', { exact: true }).locator('visible=true').count()) {
+        await eti.apri(h, 'Codice ed etichetta');
+        await eti.cambiaCodice(h, codice);
+        await eti.chiudiCodice(h);
+      } else await h.page.getByPlaceholder('Scansiona o Genera...').locator('visible=true').first().fill(codice);
+    };
+    const campo = () => ({ inputValue: codiceInFinestra, fill: scriviCodice });
     const riga = (id) => h.page.locator('[tabindex="0"]').filter({ hasText: `ID: ${id}` }).locator('visible=true').first();
     await h.go('settings/folders');
     await riga('cat_uno').click(); await h.page.waitForTimeout(400);
     const out = { campoA: await campo().inputValue() };
-    await riga('cat_due').locator('[tabindex="0"]').first().click();
+    // CAT1: la finestra della categoria copre l'elenco; si chiude, si apre il QR grande di B dalla sua riga, si riapre A
+    await h.click('Annulla');
+    await riga('cat_due').getByLabel('Codice di Cat Due', { exact: true }).click();
     await h.page.waitForTimeout(700);
     out.finestraB = await h.has('LIB-DUE', true);
     await h.page.mouse.click(10, 10);
     await h.page.waitForTimeout(500);
+    await riga('cat_uno').click(); await h.page.waitForTimeout(400);
     out.campoDopoQR = await campo().inputValue();
     await h.click('Salva Modifiche');
     const salvate = async () => Object.fromEntries(((await h.store(LK, 600)) || []).filter((l) => /cat_/.test(l.id)).map((l) => [l.id, l.barcode]));
@@ -272,12 +290,14 @@ const apriModifica = async (h, sku) => { await h.click(sku); await h.page.waitFo
   await run('cod-modifica-senza-link', async (h) => {
     await prepara(h);
     await h.click('PUZ-0012'); await h.page.waitForTimeout(800);
-    const out = { etichettaPrima: await h.has('Mostra SKU QR'), testoVecchio: await h.has('Modifica e salva il prodotto per generarlo') };
+    // ETI: l'etichetta si raggiunge dalla riga «Codice ed etichetta» (prima di ETI «Mostra SKU QR»)
+    const etichetta = async () => (await h.has('Mostra SKU QR')) || (await h.has('Codice ed etichetta', true));
+    const out = { etichettaPrima: await etichetta(), testoVecchio: await h.has('Modifica e salva il prodotto per generarlo') };
     await press(h.page, /^.?\s*Modifica$/); await h.page.waitForTimeout(1200);
     await h.click('S'); // VAL (CAM-F4): Taglia è obbligatoria anche in Modifica e PUZ-0012 non l'ha
     await salvaModifica(h);
     out.link = (await prodotto(h, 'PUZ-0012', 500)).gs1DigitalLink ?? null;
-    out.etichettaDopo = await h.has('Mostra SKU QR');
+    out.etichettaDopo = await etichetta();
     return { ok: out.link === null && out.etichettaDopo && !out.testoVecchio, ...out };
   }, { dialogs: OK });
 

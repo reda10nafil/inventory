@@ -102,21 +102,26 @@ async function conSottocategoria(h) {
     return { cards, chip, scheda, aggiungi, modifica, gestione, tipi, impostazioni, chiaviCambiate: changedKeys(prima, dopo) };
   });
 
-  // 2. Sottocategoria creata dalla gestione, assegnata in Modifica; eliminazioni rifiutate (sottocategorie, prodotti)
+  // 2. Sottocategoria creata dalla gestione, assegnata in Modifica; eliminazioni: con la sottocategoria rifiutata, con
+  // un prodotto si chiede dove spostarlo (CAT1, annullato). CAT1: la sottocategoria nasce da «+ Sottocategoria» sulla
+  // riga di Pellicce e il doppione si dice sotto il campo (non più la pillola «Pellicce» e le finestre del browser).
   await run('c1-sottocategoria', async (h) => {
     const libsPrima = await h.store(L, 0);
     const prodPrima = await h.products(0);
+    const lab = (t) => h.page.getByLabel(t, { exact: true }).locator('visible=true').first();
     await h.go('settings/folders');
-    await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('Visone');
-    await h.click('Pellicce');
-    await h.click('Crea Categoria');
+    await lab('Apri Pellicce').click(); await h.page.waitForTimeout(400);
+    await lab('Aggiungi una sottocategoria a Pellicce').click(); await h.page.waitForTimeout(400);
+    await lab('Nome della sottocategoria di Pellicce').fill('Visone');
+    await lab('Aggiungi la sottocategoria a Pellicce').click(); await h.page.waitForTimeout(500);
     const libs = await h.store(L);
     const nuova = libs.find((l) => l.name === 'Visone');
     const vecchieUguali = JSON.stringify(libs.filter((l) => l !== nuova)) === JSON.stringify(libsPrima);
     // Doppione sotto lo stesso genitore: rifiutato
-    await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('visone');
-    await h.click('Pellicce');
-    await h.click('Crea Categoria');
+    await lab('Aggiungi una sottocategoria a Pellicce').click(); await h.page.waitForTimeout(400);
+    await lab('Nome della sottocategoria di Pellicce').fill('visone');
+    await lab('Aggiungi la sottocategoria a Pellicce').click(); await h.page.waitForTimeout(400);
+    const erroreDoppione = await h.has('"Pellicce" ha già la sottocategoria "Visone"', true);
     const dopoDoppione = (await h.store(L, 500)).length;
     const riga = await h.page.locator('[tabindex="0"]').filter({ hasText: 'ID: visone' }).first().innerText();
     // Pellicce ha una sottocategoria e prodotti: non si elimina
@@ -135,11 +140,13 @@ async function conSottocategoria(h) {
     const cardVis = await card(h, 'VIS-0098');
     await h.click('VIS-0098');
     const schedaVis = await h.has('Pellicce › Visone', true);
-    // Visone ha un prodotto: non si elimina
+    // Visone ha un prodotto: si chiede dove spostarlo (CAT1); con «Annulla» resta
     await h.go('settings/folders');
     await h.page.locator('[aria-label="Elimina Visone"]').click(); await h.page.waitForTimeout(600);
+    const doveLiSposto = await h.has('Visone ha 1 prodotto. Dove li sposto?', true);
+    await h.click('Annulla');
     const visoneResta = (await h.store(L, 300)).some((l) => l.id === nuova.id);
-    return { nuova, vecchieUguali, dopoDoppione, riga: riga.replace(/\s+/g, ' '), pellicceResta, libraryId: vis.libraryId, furType: vis.furType, cambiati, altriUguali, cardVis, schedaVis, visoneResta };
+    return { nuova, vecchieUguali, erroreDoppione, dopoDoppione, riga: riga.replace(/\s+/g, ' '), pellicceResta, libraryId: vis.libraryId, furType: vis.furType, cambiati, altriUguali, cardVis, schedaVis, doveLiSposto, visoneResta };
   }, { dialogs: ['ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok'] });
 
   // 3. Prodotto senza tipo di pelle: Aggiungi lo salva (secondo tocco toglie la scelta), Modifica lo toglie con «Nessuno»

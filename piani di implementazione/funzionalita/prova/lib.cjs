@@ -55,12 +55,40 @@ async function scenario(name, fn, { dialogs = [] } = {}) {
   return { name, result, dialogs: seenDialogs, errors: realErrors };
 }
 
+// EDC (R1 di UX0): in Aggiungi i campi a scelta in una colonna da 1/2 o 1/3 possono essere tendine (da UX1-0 non più
+// Posizione e Categoria col binario, che prendono la riga intera, ma sì Posizione con «Menu a tendina»). Una
+// scelta che non si vede può stare in una tendina chiusa: come l'utente, si aprono una alla volta le tendine chiuse
+// (`aria-expanded="false"`) finché la scelta compare; quelle che non la contengono si richiudono. Conta solo una scelta
+// che si tocca (dentro un pulsante): lo stesso testo può essere un titolo («Magazzino» è anche la sezione di Aggiungi).
+async function apriTendinaCon(page, locator) {
+  // La casella di una tendina chiusa mostra la scelta fatta: quella non vale (si apre la tendina e si tocca la riga)
+  const toccabile = () => locator.evaluateAll((els) => els.some((e) => e.closest('[tabindex="0"], [role="button"], button, a, input') && !e.closest('[aria-expanded]')));
+  if (await toccabile()) return true;
+  for (const tendina of await page.$$('[aria-expanded="false"]')) {
+    if (!(await tendina.isVisible())) continue;
+    await tendina.click(); await page.waitForTimeout(250);
+    if (await toccabile()) return true;
+    await tendina.click(); await page.waitForTimeout(150);
+  }
+  return false;
+}
+
 function helpers(page, name) {
   const vis = (text, exact = true) => page.getByText(text, { exact }).locator('visible=true').first();
   return {
     page,
     vis,
-    click: async (text, exact = true) => { await vis(text, exact).click(); await page.waitForTimeout(700); },
+    click: async (text, exact = true) => {
+      const tutti = page.getByText(text, { exact }).locator('visible=true');
+      await apriTendinaCon(page, tutti);
+      // il primo a vista, saltando la casella di una tendina che mostra lo stesso testo
+      let bersaglio = tutti.first();
+      const n = await tutti.count();
+      for (let i = 0; i < n; i += 1) {
+        if (!(await tutti.nth(i).evaluate((e) => !!e.closest('[aria-expanded]')))) { bersaglio = tutti.nth(i); break; }
+      }
+      await bersaglio.click(); await page.waitForTimeout(700);
+    },
     longPress: async (text) => {
       const box = await vis(text).boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -81,4 +109,4 @@ function helpers(page, name) {
   };
 }
 
-module.exports = { scenario, log, APP, SHOTS };
+module.exports = { scenario, log, APP, SHOTS, apriTendinaCon };

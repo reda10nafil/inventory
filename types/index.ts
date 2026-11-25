@@ -114,7 +114,8 @@ export interface Library {
 export interface CustomField {
   id: string;
   name: string;
-  type: 'number' | 'currency' | 'date' | 'text_short' | 'text_long' | 'images' | 'single_choice' | 'multi_choice' | 'document';
+  /** `boolean` = Sì/No (EDC, ticket 23): si salva `true` o `false`. */
+  type: 'number' | 'currency' | 'date' | 'text_short' | 'text_long' | 'images' | 'single_choice' | 'multi_choice' | 'document' | 'boolean';
   uiType: FieldUIType;
   dataset?: any;
   unit?: string;
@@ -128,6 +129,20 @@ export interface CustomField {
   // Advanced Inteligence Features
   isBarcode?: boolean; // If true, show barcode scanner button
   linkTo?: 'locations' | 'libraries' | 'furType'; // Dynamically link options to app libraries
+
+  // EDC (ticket 23): tutte facoltative, un campo senza si disegna e si legge come prima (`utils/fieldValues.ts`).
+  /** Come si compila, oltre a quello che dicono `type` e `uiType`: «Scelgo o scrivo» (scelta singola) o «Ruota» (numero,
+   *  limiti e passo in `dataset` come il contatore; `uiType` resta `text`). */
+  input?: 'choose_or_write' | 'wheel';
+  /** Come si vede una scelta, oltre a riquadri ed elenco dal basso: binario orizzontale (`chips`), a capo (`wrap`),
+   *  elenco verticale (`list`) con `uiType` `grid`; menu a tendina (`dropdown`) e ruota (`wheel`) con `uiType`
+   *  `picker`, così tornando indietro il campo si disegna ancora. Nei campi Base Posizione e Tipo di pelle: assente =
+   *  binario orizzontale. */
+  look?: 'chips' | 'wrap' | 'list' | 'dropdown' | 'wheel';
+  /** Valore proposto in Aggiungi, nella forma salvata (testo, numero, `true`/`false`, id dell'opzione). */
+  defaultValue?: string | number | boolean;
+  /** Il valore si vede anche nella card dell'Inventario (al massimo 2 campi, `cardFields`). */
+  showInCard?: boolean;
 }
 
 export interface Alert {

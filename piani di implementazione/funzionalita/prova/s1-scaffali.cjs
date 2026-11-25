@@ -12,9 +12,10 @@
 // Uso: node s1-scaffali.cjs [nome-scenario]   (senza argomento li esegue tutti)
 const fs = require('fs');
 const path = require('path');
-const { scenario } = require('./lib.cjs');
+const { scenario, apriTendinaCon } = require('./lib.cjs');
 const { press } = require('./a1-util.cjs');
 const { scan } = require('./a3-util.cjs');
+const { chiudiCodice, cambiaCodice } = require('./eti-util.cjs'); // ETI: finestra «Codice ed etichetta»
 
 const P = 'inventory:v1:local:products';
 const T = 'inventory:v1:local:timeline';
@@ -172,20 +173,21 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await label(h, 'Posizione Magazzino').click();
     await label(h, 'Genera il codice').click(); await h.page.waitForTimeout(300);
     const generato = await field(h, 'Codice dello scaffale').inputValue();
-    await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(600);
+    await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(600); await chiudiCodice(h); // ETI
     await label(h, 'Nuovo scaffale').click(); await h.page.waitForTimeout(300);
     await field(h, 'Nome').fill('Giacche');
     await label(h, 'Posizione Magazzino').click();
     await label(h, 'Categoria dello scaffale').click(); // S2 (UX0): la categoria dello scaffale è una tendina
     await label(h, 'Categoria Pellicce').click();
     await field(h, 'Codice dello scaffale').fill('SCAF-GIACCHE');
-    await field(h, 'Tag NFC (facoltativo)').fill('04:A2:3B:1C');
-    await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(600);
+    // N1 (NG18): il campo «Tag NFC» scritto a mano non c'è più (il tag si collega dal telefono); la tenuta del tag
+    // salvato prima la prova n1-nfc.cjs
+    await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(600); await chiudiCodice(h); // ETI
     // stesso nome in un'altra posizione: va bene
     await label(h, 'Nuovo scaffale').click(); await h.page.waitForTimeout(300);
     await field(h, 'Nome').fill('A1');
     await label(h, 'Posizione Vetrina').click();
-    await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(600);
+    await label(h, 'Crea scaffale').click(); await h.page.waitForTimeout(600); await chiudiCodice(h); // ETI
     const dopoTre = (await h.store(S)) || [];
     // rifiutati: nome doppio in Magazzino, codice di un altro scaffale, SKU di un prodotto, id di una posizione
     await label(h, 'Nuovo scaffale').click(); await h.page.waitForTimeout(300);
@@ -217,9 +219,17 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await h.page.getByPlaceholder('Scansiona o Genera...').fill('SCAF-GIACCHE');
     await h.click('Crea Posizione');
     await h.go('settings/folders');
-    await h.page.getByPlaceholder('Nome categoria (es: Giacche)').fill('Borse');
-    await h.page.getByPlaceholder('Scansiona o Genera...').fill('scaf-magazzino-a1');
-    await h.click('Crea Categoria');
+    // CAT1: in cima solo il nome; il codice si scrive nella finestra della categoria (qui Pellicce)
+    await h.page.locator('[tabindex="0"]').filter({ hasText: 'ID: pellicce' }).first().click(); await h.page.waitForTimeout(400);
+    // ETI: il codice si cambia in «Codice ed etichetta» › Avanzate › «Cambia codice» (stesso rifiuto); poi «Annulla»
+    if (await hasLabel(h, 'Codice ed etichetta')) {
+      await label(h, 'Codice ed etichetta').click(); await h.page.waitForTimeout(600);
+      await cambiaCodice(h, 'scaf-magazzino-a1'); await chiudiCodice(h);
+      await h.click('Annulla');
+    } else {
+      await h.page.getByPlaceholder('Scansiona o Genera...').fill('scaf-magazzino-a1');
+      await h.click('Salva Modifiche');
+    }
     const codiciAltrove = {
       posizioniUguali: JSON.stringify(await h.store(LOC, 500)) === JSON.stringify(locPrima),
       categorieUguali: JSON.stringify(await h.store(L, 0)) === JSON.stringify(libPrima),
@@ -245,8 +255,11 @@ const of = (list, sku) => list.find((p) => p.sku === sku);
     await h.click('Visone'); // tipo di pelle
     await h.click('Magazzino');
     const soloGenerici = await pillole(h);
-    await label(h, 'Categoria Pellicce').click();
-    await label(h, 'Sottocategoria Visone').click();
+    // Da EDC la Categoria in colonna è una tendina: la scelta si cerca aprendola (`apriTendinaCon` di lib.cjs)
+    await apriTendinaCon(h.page, h.page.getByLabel('Categoria Pellicce', { exact: true }).locator('visible=true'));
+    await label(h, 'Categoria Pellicce').click(); await h.page.waitForTimeout(300);
+    await apriTendinaCon(h.page, h.page.getByLabel('Sottocategoria Visone', { exact: true }).locator('visible=true'));
+    await label(h, 'Sottocategoria Visone').click(); await h.page.waitForTimeout(300);
     const proposte = await pillole(h);
     await label(h, 'Scaffale P1').click();
     await h.click('M'); // Taglia, obbligatoria nel campionario

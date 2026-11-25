@@ -1,6 +1,6 @@
 # NFC: pause e ritardi
 
-Tipo: grilling + research (N0). Stato: **proposta dell'orchestratore, da confermare con l'utente** prima di N1. Fette: N1, N2. Dipende dal ticket 16.
+Tipo: grilling + research (N0). Stato: **proposta dell'orchestratore**; per N1 (24 novembre) le quattro decisioni sono prese dall'orchestratore al posto dell'utente, da rivedere con lui: (1) silenziatore come interruttore «Zittisci Android con l'app aperta» sotto «Avanzate», spento in partenza; (2) scrittura in un tocco; (3) e (4) come proposto qui sotto, per N2. Dettagli nel ticket 18. Fette: N1, N2. Dipende dal ticket 16.
 
 ## Question
 

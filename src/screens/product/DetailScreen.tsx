@@ -1,7 +1,6 @@
 // FurInventory Pro - Product Detail Screen
 import React, { useState } from 'react';
 import { View, Pressable, ScrollView, Alert, useWindowDimensions, Share, Modal, StatusBar, Linking } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
 import * as Print from '../../lib/print';
 import * as FileSystem from '../../lib/fileSystem';
 import * as ImageManipulator from '../../lib/imageManipulator';
@@ -20,9 +19,10 @@ import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { orderByLayout } from '../../../utils/layoutOrder';
 import { useFieldOptions } from '../../../hooks/useFieldOptions';
-import { choiceLabel, valueText } from '../../../utils/fieldValues';
-import { nfcService } from '../../../utils/nfcService';
-import Barcode from '../../../components/Barcode';
+import { choiceLabel, liveField, optionOf, valueText } from '../../../utils/fieldValues';
+import { OptionMark, hasMark } from '../../../components/OptionMark';
+import { CodeSheet } from '../../../components/CodeSheet'; // ETI: finestra «Codice ed etichetta»
+import { pdfFieldOrder, pdfFieldRows, productPdfHtml } from '../../../utils/productPdf'; // ETI: PDF con codici locali
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { Glass } from '../../../components/ui/Glass';
@@ -77,9 +77,8 @@ export default function ProductDetailScreen() {
   const focused = useIsFocused(); // ←/→ solo con la Scheda in primo piano (sotto Modifica resta montata)
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showAllHistory, setShowAllHistory] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false); // ETI: finestra «Codice ed etichetta»
   const [showMovement, setShowMovement] = useState(false);
-  const [codeType, setCodeType] = useState<'qr' | 'barcode'>('qr');
 
   // IND-P6 (ticket 28): con «Torna all'inventario», non più una pagina senza uscita
   if (!product) return <ProductNotFound />;
@@ -255,533 +254,77 @@ export default function ProductDetailScreen() {
     );
   };
 
-  const handlePrintLabel = async () => {
-    try {
-      const qrHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { 
-              display: flex; 
-              justify-content: center; 
-              align-items: center; 
-              height: 100vh; 
-              margin: 0; 
-              font-family: sans-serif;
-            }
-            .label {
-              text-align: center;
-              border: 1px dashed #000;
-              padding: 20px;
-              border-radius: 10px;
-            }
-            .sku {
-              font-size: 24px;
-              font-weight: bold;
-              margin-top: 10px;
-            }
-            .meta {
-              font-size: 12px;
-              color: #666;
-              margin-top: 5px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="label">
-            <div id="qrcode"></div>
-            <div class="sku">${product.sku}</div>
-            <div class="meta">${withKind(location?.label || product.location)}</div>
-          </div>
-          <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-          <script>
-            new QRCode(document.getElementById("qrcode"), {
-              text: "${product.sku}",
-              width: 200,
-              height: 200
-            });
-          </script>
-        </body>
-        </html>
-      `;
-
-      const barcodeHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { 
-              display: flex; 
-              justify-content: center; 
-              align-items: center; 
-              height: 100vh; 
-              margin: 0; 
-              font-family: sans-serif;
-            }
-            .label {
-              text-align: center;
-              border: 1px dashed #000;
-              padding: 20px;
-              border-radius: 10px;
-              width: 300px;
-            }
-            .sku {
-              font-size: 24px;
-              font-weight: bold;
-              margin-top: 10px;
-            }
-            .meta {
-              font-size: 12px;
-              color: #666;
-              margin-top: 5px;
-            }
-            svg {
-              width: 100%;
-              height: auto;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="label">
-            <svg id="barcode"></svg>
-            <div class="sku">${product.sku}</div>
-            <div class="meta">${withKind(location?.label || product.location)}</div>
-          </div>
-          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-          <script>
-            JsBarcode("#barcode", "${product.sku}", {
-              format: "CODE128",
-              width: 2,
-              height: 100,
-              displayValue: false
-            });
-          </script>
-        </body>
-        </html>
-      `;
-
-      const html = codeType === 'qr' ? qrHtml : barcodeHtml;
-      const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, { UTI: 'com.adobe.pdf', mimeType: 'application/pdf' });
-    } catch (error) {
-      Alert.alert('Errore', 'Impossibile stampare l\'etichetta');
-    }
-  };
-
+  // ETI (ticket 22, D16, D07, NG21): la scheda PDF da `utils/productPdf` (codici fatti in locale, campi personalizzati
+  // nell'ordine del modulo, titolo «Syncro Flow»). L'etichetta sta nella finestra «Codice ed etichetta» (`CodeSheet`).
+  // Sul web la finestra della stampa si apre subito, nel tocco (dopo le foto il browser la bloccherebbe), e si stampa
+  // quella, mai la pagina dell'app; sul telefono un PDF da condividere, come prima.
   const handlePrintPDF = async () => {
+    const win = Print.openPrintWindow();
     try {
-      // Convert ALL images to base64 for embedding (compressed)
+      // Foto in base64, ridotte (come prima)
       const imagesBase64: string[] = [];
-      if (product.images && product.images.length > 0) {
-        for (let i = 0; i < product.images.length; i++) {
-          try {
-            console.log(`Processing image ${i + 1}/${product.images.length} for PDF`);
-            const manipulatedImage = await ImageManipulator.manipulateAsync(
-              product.images[i],
-              [{ resize: { width: 600 } }],
-              { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
-            );
-            const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
-              encoding: 'base64',
-            });
-            imagesBase64.push(base64);
-          } catch (error) {
-            console.error(`Could not process image ${i + 1}:`, error);
-          }
+      for (const uri of product.images ?? []) {
+        try {
+          const manipulatedImage = await ImageManipulator.manipulateAsync(
+            uri,
+            [{ resize: { width: 600 } }],
+            { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
+          );
+          imagesBase64.push(await FileSystem.readAsStringAsync(manipulatedImage.uri, { encoding: 'base64' }));
+        } catch (error) {
+          console.warn('Foto non messa nel PDF:', error);
         }
-        console.log(`Processed ${imagesBase64.length} images for PDF`);
       }
 
-      // Build timeline HTML
-      let timelineHTML = '';
-      timeline.slice(0, 10).forEach((event) => {
-        let eventText = '';
-        if (event.type === 'created') eventText = 'Creato';
-        else if (event.type === 'moved') eventText = `Spostato: ${event.details.from} → ${event.details.to}`;
-        else if (event.type === 'sold') eventText = 'Venduto';
-        else if (event.type === 'modified') eventText = event.details.changes?.[0] || 'Modificato';
-        else if (event.type === 'scanned') eventText = 'Scansionato';
-        else if (event.type === 'photo_added') eventText = `${event.details.photoCount} foto aggiunte`;
-        else if (event.type === 'stock') eventText = stockEventText(event.details);
-
-        const date = new Date(event.timestamp).toLocaleDateString('it-IT', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-
-        timelineHTML += `
-          <div class="timeline-item">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <div class="timeline-text">${eventText}</div>
-              <div class="timeline-date">${date}</div>
-            </div>
-          </div>
-        `;
+      const eventText = (event: typeof timeline[number]) => {
+        if (event.type === 'created') return 'Creato';
+        if (event.type === 'moved') return `Spostato: ${event.details.from} → ${event.details.to}`;
+        if (event.type === 'sold') return 'Venduto';
+        if (event.type === 'modified') return event.details.changes?.[0] || 'Modificato';
+        if (event.type === 'scanned') return 'Scansionato';
+        if (event.type === 'photo_added') return `${event.details.photoCount} foto aggiunte`;
+        if (event.type === 'stock') return stockEventText(event.details);
+        return '';
+      };
+      const dateText = (timestamp: string | number) => new Date(timestamp).toLocaleDateString('it-IT', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
       });
 
-      // Build photo gallery HTML
-      let galleryHTML = '';
-      if (imagesBase64.length > 0) {
-        galleryHTML = `
-          <div class="section">
-            <div class="section-title">Galleria Foto (${imagesBase64.length})</div>
-            <div class="gallery">
-              ${imagesBase64.map((img, idx) => `
-                <div class="gallery-item">
-                  <img src="data:image/jpeg;base64,${img}" alt="Foto ${idx + 1}" />
-                  <div class="gallery-caption">Foto ${idx + 1}</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `;
+      // Campi personalizzati: lo stesso testo della Scheda, nell'ordine del modulo (`pdfFieldOrder`, un punto solo)
+      const fields = pdfFieldRows(product.customData, pdfFieldOrder(layout, product), (item) => {
+        const snapshot = item.fieldSnapshot;
+        // Unione 2: come la Scheda (EDC), nome, tipo e opzioni dal registro con `liveField`; la copia salvata col
+        // prodotto solo se il campo non c'è più, e per riconoscere le etichette di prima
+        const field = liveField(snapshot, allFieldsIncludingDeleted);
+        return { name: field.name, value: valueText(field, item.value, { options: optionsOf(field), snapshot }) };
+      });
+
+      const html = productPdfHtml({
+        sku: product.sku,
+        category: kind.path || undefined,
+        furType: kind.furType || undefined,
+        sold: product.status === 'sold',
+        location: location?.label || product.location,
+        locationColor: location?.color,
+        purchasePrice: product.purchasePrice ? formatPrice(product.purchasePrice) : undefined,
+        sellPrice: product.sellPrice ? formatPrice(product.sellPrice) : undefined,
+        measures: [
+          ...(product.length ? [{ name: 'Lunghezza', value: `${formatNumber(product.length)} cm` }] : []),
+          ...(product.width ? [{ name: 'Larghezza', value: `${formatNumber(product.width)} cm` }] : []),
+          ...(product.weight ? [{ name: 'Peso', value: `${formatNumber(product.weight)} kg` }] : []),
+        ],
+        notes: product.technicalNotes,
+        fields,
+        images: imagesBase64,
+        timeline: timeline.slice(0, 10).map((event) => ({ text: eventText(event), date: dateText(event.timestamp) })),
+        generatedAt: new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      });
+
+      if (!(await Print.savePdf(html, `Scheda Prodotto - ${product.sku}`, win))) {
+        Alert.alert('Stampa scheda PDF', 'Il browser ha bloccato la finestra della stampa: consenti le finestre di questo sito e riprova.');
       }
-
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Scheda Prodotto - ${product.sku}</title>
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-              background: #fff;
-              color: #000;
-              padding: 40px;
-              line-height: 1.6;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              padding-bottom: 20px;
-              border-bottom: 3px solid #D4AF37;
-            }
-            .header h1 {
-              font-size: 32px;
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 8px;
-            }
-            .header .sku {
-              font-size: 24px;
-              font-weight: 600;
-              color: #D4AF37;
-              margin-bottom: 4px;
-            }
-            .header .fur-type {
-              font-size: 18px;
-              color: #666;
-            }
-            ${product.status === 'sold' ? `
-            .sold-badge {
-              display: inline-block;
-              background: #999;
-              color: #fff;
-              padding: 6px 16px;
-              border-radius: 20px;
-              font-size: 14px;
-              font-weight: bold;
-              margin-top: 12px;
-            }
-            ` : ''}
-            .location-card {
-              background: #f8f8f8;
-              border: 2px solid ${location?.color || '#D4AF37'};
-              border-radius: 12px;
-              padding: 20px;
-              margin-bottom: 30px;
-            }
-            .location-card .label {
-              font-size: 11px;
-              font-weight: 600;
-              color: #999;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-              margin-bottom: 4px;
-            }
-            .location-card .value {
-              font-size: 20px;
-              font-weight: 600;
-              color: ${location?.color || '#D4AF37'};
-            }
-            .section {
-              margin-bottom: 30px;
-            }
-            .section-title {
-              font-size: 13px;
-              font-weight: 700;
-              color: #999;
-              text-transform: uppercase;
-              letter-spacing: 1.5px;
-              margin-bottom: 16px;
-            }
-            .cards-row {
-              display: flex;
-              gap: 16px;
-              margin-bottom: 20px;
-              flex-wrap: wrap;
-            }
-            .card {
-              flex: 1;
-              min-width: 120px;
-              background: #f8f8f8;
-              border-radius: 10px;
-              padding: 16px;
-            }
-            .card-label {
-              font-size: 12px;
-              color: #999;
-              margin-bottom: 6px;
-            }
-            .card-value {
-              font-size: 22px;
-              font-weight: 600;
-              color: #000;
-            }
-            .card-value.primary {
-              color: #D4AF37;
-            }
-            .notes-box {
-              background: #f8f8f8;
-              border-radius: 10px;
-              padding: 20px;
-              font-size: 15px;
-              line-height: 1.8;
-              color: #333;
-            }
-            .gallery {
-              display: flex;
-              flex-direction: column;
-              gap: 20px;
-            }
-            .gallery-item {
-              width: 100%;
-              text-align: center;
-              page-break-inside: avoid;
-            }
-            .gallery-item img {
-              width: auto;
-              max-width: 100%;
-              height: auto;
-              border-radius: 8px;
-              border: 1px solid #ddd;
-            }
-            .gallery-caption {
-              font-size: 12px;
-              color: #999;
-              margin-top: 8px;
-            }
-            .timeline-item {
-              display: flex;
-              margin-bottom: 20px;
-              page-break-inside: avoid;
-            }
-            .timeline-dot {
-              width: 12px;
-              height: 12px;
-              background: #D4AF37;
-              border-radius: 50%;
-              margin-top: 4px;
-              margin-right: 16px;
-              flex-shrink: 0;
-            }
-            .timeline-content {
-              flex: 1;
-            }
-            .timeline-text {
-              font-size: 15px;
-              font-weight: 600;
-              color: #000;
-              margin-bottom: 4px;
-            }
-            .timeline-date {
-              font-size: 12px;
-              color: #999;
-            }
-            .codes-section {
-              margin-top: 40px;
-              padding: 30px;
-              background: #f8f8f8;
-              border-radius: 12px;
-              border: 2px dashed #D4AF37;
-            }
-            .codes-container {
-              display: flex;
-              justify-content: center;
-              gap: 60px;
-              align-items: flex-start;
-              flex-wrap: wrap;
-            }
-            .code-block {
-              text-align: center;
-            }
-            .code-block .code-label {
-              font-size: 12px;
-              font-weight: 600;
-              color: #999;
-              text-transform: uppercase;
-              margin-bottom: 12px;
-            }
-            .code-block .code-value {
-              font-size: 14px;
-              font-weight: 600;
-              color: #D4AF37;
-              margin-top: 8px;
-            }
-            #qrcode {
-              display: inline-block;
-            }
-            #barcode {
-              max-width: 200px;
-            }
-            .footer {
-              margin-top: 40px;
-              padding-top: 20px;
-              border-top: 1px solid #ddd;
-              text-align: center;
-              font-size: 11px;
-              color: #999;
-            }
-            @media print {
-              body {
-                padding: 20px;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <!-- Header -->
-          <div class="header">
-            <h1>FurInventory Pro</h1>
-            <div class="sku">${product.sku}</div>
-            ${kind.path ? `<div class="fur-type">${kind.path}</div>` : ''}
-            ${kind.furType ? `<div class="fur-type">Tipo di pelle: ${kind.furType}</div>` : ''}
-            ${product.status === 'sold' ? '<div class="sold-badge">VENDUTO</div>' : ''}
-          </div>
-
-          <!-- Location -->
-          <div class="location-card">
-            <div class="label">Posizione Attuale</div>
-            <div class="value">${location?.label || product.location}</div>
-          </div>
-
-          <!-- Prices -->
-          ${(product.purchasePrice || product.sellPrice) ? `
-            <div class="section">
-              <div class="section-title">Prezzi</div>
-              <div class="cards-row">
-                ${product.purchasePrice ? `
-                  <div class="card">
-                    <div class="card-label">Acquisto</div>
-                    <div class="card-value">${formatPrice(product.purchasePrice)}</div>
-                  </div>
-                ` : ''}
-                ${product.sellPrice ? `
-                  <div class="card">
-                    <div class="card-label">Vendita</div>
-                    <div class="card-value primary">${formatPrice(product.sellPrice)}</div>
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Measurements -->
-          ${(product.length || product.width || product.weight) ? `
-            <div class="section">
-              <div class="section-title">Misure</div>
-              <div class="cards-row">
-                ${product.length ? `
-                  <div class="card">
-                    <div class="card-label">Lunghezza</div>
-                    <div class="card-value">${formatNumber(product.length)} cm</div>
-                  </div>
-                ` : ''}
-                ${product.width ? `
-                  <div class="card">
-                    <div class="card-label">Larghezza</div>
-                    <div class="card-value">${formatNumber(product.width)} cm</div>
-                  </div>
-                ` : ''}
-                ${product.weight ? `
-                  <div class="card">
-                    <div class="card-label">Peso</div>
-                    <div class="card-value">${formatNumber(product.weight)} kg</div>
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Technical Notes -->
-          ${product.technicalNotes ? `
-            <div class="section">
-              <div class="section-title">Note Tecniche</div>
-              <div class="notes-box">${product.technicalNotes}</div>
-            </div>
-          ` : ''}
-
-          <!-- Photo Gallery -->
-          ${galleryHTML}
-
-          <!-- Timeline -->
-          ${timeline.length > 0 ? `
-            <div class="section">
-              <div class="section-title">Cronologia Dettagliata</div>
-              ${timelineHTML}
-            </div>
-          ` : ''}
-
-          <!-- QR Code + Barcode -->
-          <div class="codes-section">
-            <div class="section-title" style="text-align: center; margin-bottom: 20px;">Codici Identificativi</div>
-            <div class="codes-container">
-              <div class="code-block">
-                <div class="code-label">QR Code</div>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(product.sku)}" alt="QR Code" style="width: 150px; height: 150px;" />
-                <div class="code-value">${product.sku}</div>
-              </div>
-              <div class="code-block">
-                <div class="code-label">Barcode</div>
-                <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(product.sku)}" alt="Barcode" style="height: 80px;" />
-                <div class="code-value">${product.sku}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="footer">
-            Documento generato: ${new Date().toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}
-          </div>
-        </body>
-        </html>
-      `;
-
-      const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, {
-        dialogTitle: `Scheda Prodotto - ${product.sku}`,
-        mimeType: 'application/pdf',
-        UTI: 'com.adobe.pdf',
-      });
     } catch (error) {
+      win?.close();
       console.error('Error generating PDF:', error);
       Alert.alert('Errore', 'Impossibile generare il PDF. Riprova.');
     }
@@ -791,35 +334,6 @@ export default function ProductDetailScreen() {
     if (product.gs1DigitalLink) {
       await Clipboard.setStringAsync(product.gs1DigitalLink);
       Alert.alert('Copiato', 'Link GS1 copiato negli appunti');
-    }
-  };
-
-  const handleProgramNFC = async () => {
-    if (!product.gs1DigitalLink) {
-      Alert.alert('Errore', 'Nessun Digital Link generato per questo prodotto.');
-      return;
-    }
-
-    try {
-      // Step 1: Clean tag
-      const cleaned = await nfcService.cleanTag();
-      if (!cleaned) {
-        Alert.alert('Operazione Annullata', 'Pulizia del tag non completata.');
-        return;
-      }
-
-      // Step 2: Write tag (small delay to let user remove and re-tap if needed, or just let system prompt handle it)
-      setTimeout(async () => {
-        const written = await nfcService.writeGS1Uri(product.gs1DigitalLink!);
-        if (written) {
-          Alert.alert('Successo', 'Il tag NFC è stato programmato correttamente con il Digital Link GS1.');
-        } else {
-          Alert.alert('Errore', 'Impossibile registrare il prodotto sul tag.');
-        }
-      }, 500);
-
-    } catch (e) {
-      Alert.alert('Errore Hardware', 'Si è verificato un errore di comunicazione con il sensore NFC.');
     }
   };
 
@@ -1029,16 +543,22 @@ export default function ProductDetailScreen() {
               <View style={styles.customCardsContainer}>
                 {orderByLayout(product.customData, layout.fields.map((f) => f.id)).map((dataItem, index) => {
                   const value = dataItem.value;
-                  const field = dataItem.fieldSnapshot;
+                  // EDC (CAM-F6, CAM-F7): nome, icona, tipo e opzioni dal registro (anche nel cestino); la copia salvata
+                  // col prodotto solo se il campo non c'è più, e per riconoscere le etichette di prima
+                  const snapshot = dataItem.fieldSnapshot;
+                  const field = liveField(snapshot, allFieldsIncludingDeleted);
                   if (value === undefined || value === null || value === '') return null;
-                  const options = optionsOf(allFieldsIncludingDeleted.find((f) => f.id === field.id) ?? field);
+                  const options = optionsOf(field);
+                  // Icona: quella del modulo (layout builder, come in Aggiungi), poi quella del campo
+                  const layoutIcon = layout.fields.find((f) => f.id === field.id)?.icon;
+                  const iconOf = (fallback: string) => layoutIcon || field.icon || fallback;
 
                   // Text Long -> Spanning full width like a Note
                   if (field.type === 'text_long') {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'notes'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('notes')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <Text style={styles.customNotesText}>{String(value)}</Text>
@@ -1052,15 +572,18 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'label'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('label')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <View style={styles.customTagsRow}>
                           {displayArray.map(val => {
-                            // Etichetta di adesso anche per un'etichetta salvata prima di VAL o un'opzione rinominata
-                            const label = choiceLabel(val, options, field);
+                            // Etichetta di adesso anche per un'etichetta salvata prima di VAL o un'opzione rinominata;
+                            // colore e icona dell'opzione (EDC) accanto, se ne ha
+                            const label = choiceLabel(val, options, snapshot);
+                            const option = optionOf(val, options, snapshot);
                             return (
-                              <View key={val} style={styles.customTag}>
+                              <View key={val} style={[styles.customTag, hasMark(option) && styles.customTagMarked]}>
+                                {hasMark(option) && <OptionMark option={option} />}
                                 <Text style={styles.customTagText}>{label}</Text>
                               </View>
                             )
@@ -1076,7 +599,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'description'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('description')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         <View style={styles.customDocumentList}>
@@ -1098,7 +621,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={styles.customWideCard}>
                         <View style={styles.customNotesHeader}>
-                          <AppIcon name={field.icon as any || 'image'} size={17} color={t.colors.fieldIcon} />
+                          <AppIcon name={iconOf('image')} size={17} color={t.colors.fieldIcon} />
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
                         </View>
                         {/* GAL: si aprono nel visore delle foto, partendo da quella toccata */}
@@ -1126,7 +649,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                         <View style={[styles.customIconWrap, { backgroundColor: t.colors.infoSoft }]}>
-                          <AppIcon name={field.icon as any || 'event'} size={19} color={t.colors.info} />
+                          <AppIcon name={iconOf('event')} size={19} color={t.colors.info} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1141,7 +664,7 @@ export default function ProductDetailScreen() {
                     return (
                       <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                         <View style={[styles.customIconWrap, { backgroundColor: t.colors.accentSoft }]}>
-                          <AppIcon name={field.icon as any || 'attach-money'} size={19} color={t.colors.accentInk} />
+                          <AppIcon name={iconOf('attach-money')} size={19} color={t.colors.accentInk} />
                         </View>
                         <View style={styles.customCardContent}>
                           <Text style={styles.customFieldLabel}>{field.name}</Text>
@@ -1154,17 +677,26 @@ export default function ProductDetailScreen() {
                     );
                   }
 
-                  // Default / Single Choice / Number / Text Short: numeri con la virgola, scelta con l'etichetta di adesso
-                  const displayValue = valueText(field, value, { options, snapshot: field });
+                  // Default / Single Choice / Number / Text Short / Sì-No: numeri con la virgola, scelta con l'etichetta
+                  // di adesso; una scelta con colore o icona (EDC) come pillola
+                  const displayValue = valueText(field, value, { options, snapshot });
+                  const chosen = field.type === 'single_choice' ? optionOf(value, options, snapshot) : undefined;
 
                   return (
                     <View key={field.id || index} style={[styles.customMiniCard, { width: halfTileWidth }]}>
                       <View style={styles.customIconWrap}>
-                        <AppIcon name={field.icon as any || 'info'} size={19} color={t.colors.fieldIcon} />
+                        <AppIcon name={iconOf('info')} size={19} color={t.colors.fieldIcon} />
                       </View>
                       <View style={styles.customCardContent}>
                         <Text style={styles.customFieldLabel}>{field.name}</Text>
-                        <Text style={styles.customFieldValue}>{displayValue}</Text>
+                        {hasMark(chosen) ? (
+                          <View style={[styles.customTag, styles.customTagMarked, styles.customTagInCard]}>
+                            <OptionMark option={chosen} />
+                            <Text style={styles.customTagText} numberOfLines={2}>{displayValue}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.customFieldValue}>{displayValue}</Text>
+                        )}
                       </View>
                     </View>
                   );
@@ -1227,52 +759,20 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* GS1 Digital Link Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Identità digitale GS1</Text>
+          {/* ETI (ticket 22, UX0 F3): il blocco «Identità digitale GS1» (QR grande, link scritto) diventa una riga. QR,
+              etichetta, link e «Programma tag» stanno nella finestra «Codice ed etichetta», per ogni prodotto (P27) */}
+          <Pressable style={styles.codeRow} onPress={() => setShowQRModal(true)} accessibilityRole="button" accessibilityLabel="Codice ed etichetta">
+            <View style={styles.codeRowIcon}>
+              <AppIcon name="qr-code-2" size={20} color={t.colors.accentInk} />
+            </View>
+            <View style={styles.codeRowText}>
+              <Text style={styles.codeRowTitle}>Codice ed etichetta</Text>
+              <Text style={styles.codeRowSub} numberOfLines={1}>{product.sku}</Text>
+            </View>
+            <AppIcon name="chevron-right" size={22} color={t.colors.textMuted} />
+          </Pressable>
 
-            {product.gs1DigitalLink ? (
-              <View style={styles.gs1Card}>
-                <View style={styles.gs1QrContainer}>
-                  <QRCode
-                    value={product.gs1DigitalLink}
-                    size={160}
-                    color={t.colors.qrInk}
-                    backgroundColor={t.colors.qrPaper}
-                    logoSize={30}
-                    logoBackgroundColor='transparent'
-                  />
-                </View>
-                <View style={styles.gs1Info}>
-                  <Text style={styles.gs1Label}>URL GS1 Digital Link</Text>
-                  <Text style={styles.gs1UrlText} numberOfLines={2}>
-                    {product.gs1DigitalLink}
-                  </Text>
-                </View>
-                
-                <View style={styles.gs1Actions}>
-                  <Pressable style={styles.gs1ActionButton} onPress={handleCopyGS1Link}>
-                    <AppIcon name="content-copy" size={18} color={t.colors.onButtonSecondary} />
-                    <Text style={styles.gs1ActionText}>Copia link</Text>
-                  </Pressable>
-                  <Pressable style={styles.gs1ActionButton} onPress={handleProgramNFC}>
-                    <AppIcon name="nfc" size={18} color={t.colors.onButtonSecondary} />
-                    <Text style={styles.gs1ActionText}>Programma tag</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.gs1Card}>
-                 <Text style={styles.gs1MissingText}>Questo prodotto non ha un Digital Link GS1: il suo QR porta lo SKU.</Text>
-                 <Pressable style={styles.qrButton} onPress={() => setShowQRModal(true)}>
-                    <AppIcon name="qr-code-2" size={20} color={t.colors.onButtonSecondary} />
-                    <Text style={styles.qrButtonText}>Mostra SKU QR (Legacy)</Text>
-                  </Pressable>
-              </View>
-            )}
-          </View>
-
-          {/* Azioni PDF (sotto GS1) */}
+          {/* Azioni PDF */}
           <Pressable style={[styles.qrButton, styles.pdfButton]} onPress={handlePrintPDF}>
             <AppIcon name="picture-as-pdf" size={20} color={t.colors.onButtonSecondary} />
             <Text style={[styles.qrButtonText, styles.pdfButtonText]}>Stampa scheda PDF</Text>
@@ -1303,67 +803,19 @@ export default function ProductDetailScreen() {
       </View>
       <MovementSheet product={product} visible={showMovement} onClose={() => setShowMovement(false)} />
 
-      {/* QR Code Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
+      {/* ETI: «Codice ed etichetta» del prodotto: il QR porta lo SKU, come l'etichetta e il PDF (NG23); il link GS1
+          salvato resta com'è (vincolo 5) e si vede sotto «Avanzate» con «Copia link». N1: «Scrivi tag NFC» scrive lo
+          SKU sul tag in un tocco, al posto di «Programma tag» (il link in due passi, NG14) */}
+      <CodeSheet
         visible={showQRModal}
-        onRequestClose={() => setShowQRModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.qrModalContent}>
-            <View style={styles.qrHeader}>
-              <Text style={styles.qrTitle}>Codice Prodotto</Text>
-              <Pressable onPress={() => setShowQRModal(false)}>
-                <AppIcon name="close" size={24} color={t.colors.textSecondary} />
-              </Pressable>
-            </View>
-
-            <View style={styles.toggleContainer}>
-              <Pressable
-                style={[styles.toggleButton, codeType === 'qr' && styles.toggleButtonActive]}
-                onPress={() => setCodeType('qr')}
-              >
-                <Text style={[styles.toggleText, codeType === 'qr' && styles.toggleTextActive]}>QR Code</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.toggleButton, codeType === 'barcode' && styles.toggleButtonActive]}
-                onPress={() => setCodeType('barcode')}
-              >
-                <Text style={[styles.toggleText, codeType === 'barcode' && styles.toggleTextActive]}>Barcode</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.qrContainer}>
-              {codeType === 'qr' ? (
-                <QRCode
-                  value={product.sku}
-                  size={200}
-                  color={t.colors.qrInk}
-                  backgroundColor={t.colors.qrPaper}
-                />
-              ) : (
-                <View style={{ padding: 10, alignItems: 'center' }}>
-                  <Barcode
-                    value={product.sku}
-                    width={260}
-                    height={100}
-                  />
-                </View>
-              )}
-            </View>
-
-            <Text style={styles.qrSkuText}>{product.sku}</Text>
-            {!!kind.full && <Text style={styles.qrInfoText}>{kind.full}</Text>}
-
-            <Pressable style={styles.printLabelButton} onPress={handlePrintLabel}>
-              <GradientFill gradient={t.gradients.button} style={{ borderRadius: t.radius.button }} />
-              <AppIcon name="print" size={20} color={t.colors.onButton} />
-              <Text style={styles.printLabelText}>Stampa Etichetta</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowQRModal(false)}
+        kind="prodotto"
+        items={[{ code: product.sku, name: kind.full }]}
+        onEditSku={() => { setShowQRModal(false); router.push(`/product/edit/${product.id}`); }}
+        link={product.gs1DigitalLink || undefined}
+        onCopyLink={handleCopyGS1Link}
+        tag={{ self: { kind: 'product', id: product.id } }}
+      />
 
       {/* Visore a tutto schermo (GAL, CSV-G3): stessa galleria con frecce, ←/→ ed Esc; X e tasto Indietro del telefono */}
       {viewer && (
@@ -1704,7 +1156,7 @@ const useStyles = makeStyles((t) => ({
     fontWeight: '600',
     color: t.colors.accentInk,
   },
-  // Pulsanti secondari della Scheda (Mostra SKU QR, Stampa scheda PDF)
+  // Pulsante secondario della Scheda (Stampa scheda PDF)
   qrButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1772,100 +1224,6 @@ const useStyles = makeStyles((t) => ({
   },
   actionButtonTextPrimary: {
     fontSize: 15,
-    fontWeight: '600',
-    color: t.colors.onButton,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: t.colors.scrim,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  // Finestra sopra la Scheda: fondo opaco (regola 7)
-  qrModalContent: {
-    backgroundColor: t.colors.backgroundSecondary,
-    borderRadius: t.radius.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    padding: 24,
-    width: '100%',
-    maxWidth: 340,
-    alignItems: 'center',
-    ...t.shadows.cardElevated,
-  },
-  qrHeader: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  qrTitle: {
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: t.weights.strong,
-    color: t.colors.textPrimary,
-  },
-  qrContainer: {
-    padding: 20,
-    backgroundColor: t.colors.qrPaper,
-    borderRadius: t.radius.medium,
-    marginBottom: 20,
-  },
-  qrSkuText: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: t.weights.strong,
-    color: t.colors.accentInk,
-    marginBottom: 4,
-  },
-  qrInfoText: {
-    fontSize: 16,
-    color: t.colors.textSecondary,
-    marginBottom: 24,
-  },
-  // Interruttore QR / Barcode: binario opaco, scelta su `accent`
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: t.colors.background,
-    padding: 4,
-    borderRadius: t.radius.medium,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    marginBottom: 20,
-    width: '100%',
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: t.radius.small,
-  },
-  toggleButtonActive: {
-    backgroundColor: t.colors.accent,
-  },
-  toggleText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: t.colors.textSecondary,
-  },
-  toggleTextActive: {
-    color: t.colors.onAccent,
-  },
-  printLabelButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: t.colors.button,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: t.radius.button,
-    ...t.shadows.button,
-    overflow: 'hidden',
-  },
-  printLabelText: {
-    fontSize: 16,
     fontWeight: '600',
     color: t.colors.onButton,
   },
@@ -1971,6 +1329,18 @@ const useStyles = makeStyles((t) => ({
     fontWeight: '500',
     color: t.colors.textPrimary,
   },
+  // EDC: pillola con il colore e l'icona dell'opzione
+  customTagMarked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingLeft: 10,
+  },
+  customTagInCard: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    maxWidth: '100%',
+  },
   customDocumentList: {
     gap: 8,
     marginTop: 10,
@@ -2007,61 +1377,39 @@ const useStyles = makeStyles((t) => ({
     width: '100%',
     height: '100%',
   },
-  // Identità GS1: card della tela; il codice QR resta su carta bianca e inchiostro nero
-  gs1Card: {
+  // ETI: riga «Codice ed etichetta» (UX0 R9: icona in un riquadro, titolo, sottotitolo, freccia)
+  codeRow: {
     ...cardSurface(t),
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minHeight: 56,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginTop: 4,
+    marginBottom: 12,
   },
-  gs1QrContainer: {
-    padding: 10,
-    backgroundColor: t.colors.qrPaper,
-    borderRadius: t.radius.medium,
-  },
-  gs1Info: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  gs1Label: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: t.colors.textSecondary,
-  },
-  gs1UrlText: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: t.colors.textPrimary,
-    textAlign: 'center',
-    fontFamily: 'monospace',
-  },
-  gs1Actions: {
-    flexDirection: 'row',
-    gap: 10,
-    width: '100%',
-  },
-  gs1ActionButton: {
-    flex: 1,
-    flexDirection: 'row',
+  codeRowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: t.radius.iconWrap,
+    backgroundColor: t.colors.iconWrap,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 44,
-    backgroundColor: t.colors.buttonSecondary,
-    borderRadius: t.radius.button,
-    borderWidth: 1,
-    borderColor: t.colors.buttonSecondaryBorder,
   },
-  gs1ActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: t.colors.onButtonSecondary,
+  codeRowText: {
+    flex: 1,
+    minWidth: 0,
   },
-  gs1MissingText: {
-    fontSize: 14,
+  codeRowTitle: {
+    fontSize: 15,
     lineHeight: 20,
+    fontWeight: '600',
+    color: t.colors.textPrimary,
+  },
+  codeRowSub: {
+    fontSize: 13,
+    lineHeight: 18,
     color: t.colors.textSecondary,
-    textAlign: 'center',
   },
 }));

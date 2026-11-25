@@ -22,8 +22,9 @@ import { GradientFill } from '../../../components/ui/GradientFill';
 import { Text, TextInput } from '../../../components/ui/Text';
 import { formStyles } from '../../../components/ui/formStyles';
 import { FieldInput, fieldIcon } from '../../../components/FieldInput';
+import { ChoicePicker } from '../../../components/ChoicePicker';
 import { useFieldOptions } from '../../../hooks/useFieldOptions';
-import { fieldError, invalidNumberFields, isChoiceField, NO_FLAGS, savedValue, stepperDefaults, valueText, type FlaggedFields } from '../../../utils/fieldValues';
+import { baseLook, baseMeasureField, choiceRowSize, fieldError, initialValues, invalidNumberFields, isChoiceField, MEASURE_PLACEHOLDERS, measureText, NO_FLAGS, savedValue, valueText, type FlaggedFields } from '../../../utils/fieldValues';
 import { PhotoGallery } from '../../../components/PhotoGallery';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { DEFAULT_UNIT, parseQty, UNITS } from '../../../utils/stock';
@@ -38,6 +39,7 @@ import { LoadNotice } from '../../../components/LoadNotice';
 import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
 import { usePermission } from '../../../contexts/ProfileContext';
 import { stockKey } from '../../../utils/stock';
+import { useTagOffer } from '../../../hooks/useTagOffer'; // N1: «Proponi di scrivere il tag» di Scanner e NFC
 
 export default function AddProductScreen() {
   const t = useTheme();
@@ -78,6 +80,7 @@ export default function AddProductScreen() {
   // Scaffale (S1a), tra quelli della posizione e della categoria scelte: per un pezzo unico è il suo scaffale, con una
   // quantità (S1b) è dove va la giacenza iniziale (`withInitialStock`, chiave `posizione/scaffale`)
   const { shelves } = useShelves();
+  const tagOffer = useTagOffer(); // N1
   const [shelfId, setShelfId] = useState('');
   const shelfChoices = shelvesFor(shelves, libraries, { location: formData.location, libraryId: formData.libraryId || undefined });
   const chosenShelf = shelfChoices.some((s) => s.id === shelfId) ? shelfId : '';
@@ -217,13 +220,13 @@ export default function AddProductScreen() {
   const addPerm = usePermission('aggiungere');
 
   // Valori dei campi personalizzati: quelli scritti più il minimo dei contatori visibili non toccati, che è il valore
-  // vero e si salva (VAL, CAM-F3). Calcolato a ogni disegno, così vale anche dopo lo svuotamento (D22) e quando i
-  // campi arrivano dopo la schermata.
+  // vero e si salva (VAL, CAM-F3), e il valore predefinito dei campi che ne hanno uno (EDC). Calcolato a ogni disegno,
+  // così vale anche dopo lo svuotamento (D22) e quando i campi arrivano dopo la schermata.
   const visibleCustom = getVisibleFields()
     .filter((f) => f.type === 'custom')
     .map((f) => customFields.find((cf) => cf.id === f.id))
     .filter((cf): cf is NonNullable<typeof cf> => !!cf);
-  const values: Record<string, any> = { ...stepperDefaults(visibleCustom), ...customFieldValues };
+  const values: Record<string, any> = { ...initialValues(visibleCustom), ...customFieldValues };
 
   const handleSubmit = () => {
     if (isSubmitting) return;
@@ -349,7 +352,7 @@ export default function AddProductScreen() {
       Alert.alert(
         'Prodotto Aggiunto',
         `${formData.sku || finalSKU} è stato aggiunto all'inventario`,
-        [
+        tagOffer.withTagOffer(finalSKU, [
           {
             text: 'OK',
             onPress: () => {
@@ -379,7 +382,7 @@ export default function AddProductScreen() {
               router.push('/(tabs)');
             },
           },
-        ]
+        ])
       );
     } catch (error) {
       setIsSubmitting(false);
@@ -604,56 +607,63 @@ export default function AddProductScreen() {
           </View>
         );
 
-      case 'furType':
+      // Tipo di pelle e Posizione (richiesta dell'utente del 24): nell'aspetto scelto in Campi (`baseLook`), di solito il
+      // binario orizzontale (una riga che scorre, con la sfumatura dove continua) al posto delle pillole a capo di D09.
+      // UX1-0: col binario Posizione prende la riga intera anche se nel modulo sta in una colonna (`choiceRowSize`); con
+      // la tendina resta nella colonna. Il modulo salvato non cambia
+      case 'furType': {
+        const furTypeField = customFields.find((c) => c.id === 'furType');
+        const chosen = furTypes.find((ft) => ft.id === formData.furType);
         return (
           <View key="furType" style={{ width: '100%' }}>
             {renderLabel()}
-            {/* Tipo di pelle (M01, C1): facoltativo, il secondo tocco toglie la scelta; a capo come Posizione e Categoria (D09) */}
-            <View style={styles.chipWrap}>
-              {furTypes.map((type) => {
-                const active = formData.furType === type.id;
-                return (
-                  <Pressable
-                    key={type.id}
-                    style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => updateField('furType', active ? '' : type.id)}
-                  >
-                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{type.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {/* Tipo di pelle (M01, C1): facoltativo, il secondo tocco toglie la scelta */}
+            <ChoicePicker
+              name={getFieldLabel('furType')}
+              look={baseLook(furTypeField)}
+              options={furTypes}
+              selected={(o) => formData.furType === o.id}
+              onPick={(o) => updateField('furType', formData.furType === o.id ? '' : o.id)}
+              onClear={() => updateField('furType', '')}
+              icon={getFieldIcon('furType')}
+              shown={chosen?.label ?? 'Seleziona...'}
+              empty={!chosen}
+              tileWidth={tileWidth}
+            />
           </View>
         );
+      }
 
-      // D09: le pillole di Posizione e Categoria vanno a capo invece di scorrere fuori dal campo
-      case 'location':
+      case 'location': {
+        const locationField = customFields.find((c) => c.id === 'location');
+        const chosen = locationOptions.find((l) => l.id === formData.location);
+        const look = baseLook(locationField);
+        const drawn = choiceRowSize(field.size, look);
         return (
-          <View key="location" style={sizeStyle}>
+          <View key="location" style={getSizeStyle(drawn)}>
             {renderLabel(undefined, true)}
-            <View style={styles.chipWrap}>
-              {locationOptions.map((loc) => {
-                const active = formData.location === loc.id;
-                return (
-                  <Pressable
-                    key={loc.id}
-                    style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
-                    onPress={() => updateField('location', loc.id)}
-                  >
-                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                    <View style={[styles.chipDot, active && styles.chipDotActive, { backgroundColor: loc.color }]} />
-                    <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>{loc.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <ChoicePicker
+              name={getFieldLabel('location')}
+              look={look}
+              options={locationOptions}
+              selected={(o) => formData.location === o.id}
+              onPick={(o) => updateField('location', o.id)}
+              onClear={() => updateField('location', '')}
+              icon={getFieldIcon('location')}
+              shown={chosen?.label ?? (drawn === 'small' ? 'Scegli' : 'Seleziona...')}
+              empty={!chosen}
+              small={drawn === 'small'}
+              narrow={drawn !== 'full'}
+              tileWidth={tileWidth}
+            />
           </View>
         );
+      }
 
       case 'folder':
+        // UX1-0: la Categoria ha solo il binario, quindi prende sempre la riga intera (`choiceRowSize`)
         return (
-          <View key="folder" style={sizeStyle}>
+          <View key="folder" style={getSizeStyle(choiceRowSize(field.size, 'chips'))}>
             {renderLabel()}
             {/* C1: categoria e, se ne ha, sottocategoria (la cartella di prima) */}
             <CategoryPicker categories={libraries} value={formData.libraryId} onChange={(id) => updateField('libraryId', id)} />
@@ -688,47 +698,30 @@ export default function AddProductScreen() {
           </View>
         );
 
+      // Misure Base (EDC, ticket 23 punto 4): lo stesso disegnatore dei campi, scritte o con la ruota se il campo Base
+      // lo dice; scritte, uguali a prima (segnaposto, unità, icona del modulo). L'Altezza (S2, ticket 14: su quali
+      // scaffali entra e quanti ne entrano) è una misura come le altre
       case 'length':
-        return (
-          <View key="length" style={sizeStyle}>
-            {renderLabel()}
-            {renderInputWithIcon({
-              placeholder: '85',
-              value: formData.length,
-              onChangeText: (value) => updateField('length', value),
-              keyboardType: 'numeric',
-              unit: 'cm',
-            })}
-          </View>
-        );
-
       case 'width':
-        return (
-          <View key="width" style={sizeStyle}>
-            {renderLabel()}
-            {renderInputWithIcon({
-              placeholder: '120',
-              value: formData.width,
-              onChangeText: (value) => updateField('width', value),
-              keyboardType: 'numeric',
-              unit: 'cm',
-            })}
-          </View>
-        );
-
       case 'weight':
+      case 'height': {
+        const base = baseMeasureField(customFields, field.id);
+        const key = field.id as 'length' | 'width' | 'weight' | 'height';
         return (
-          <View key="weight" style={sizeStyle}>
-            {renderLabel()}
-            {renderInputWithIcon({
-              placeholder: '1,2',
-              value: formData.weight,
-              onChangeText: (value) => updateField('weight', value),
-              keyboardType: 'numeric',
-              unit: 'kg',
-            })}
-          </View>
+          <FieldInput
+            key={field.id}
+            field={base}
+            value={formData[key]}
+            onChange={(value) => updateField(key, measureText(value))}
+            size={field.size}
+            icon={getFieldIcon(field.id)}
+            label={getFieldLabel(field.id)}
+            placeholder={MEASURE_PLACEHOLDERS[key]}
+            tileWidth={tileWidth}
+            style={sizeStyle}
+          />
         );
+      }
 
       case 'technicalNotes':
         return (
@@ -740,21 +733,6 @@ export default function AddProductScreen() {
               value: formData.technicalNotes,
               onChangeText: (value) => updateField('technicalNotes', value),
               numberOfLines: 4,
-            })}
-          </View>
-        );
-
-      // S2 (ticket 14): altezza del prodotto, per sapere su quali scaffali entra e quanti ne entrano
-      case 'height':
-        return (
-          <View key="height" style={sizeStyle}>
-            {renderLabel()}
-            {renderInputWithIcon({
-              placeholder: '40',
-              value: formData.height,
-              onChangeText: (value) => updateField('height', value),
-              keyboardType: 'numeric',
-              unit: 'cm',
             })}
           </View>
         );
@@ -900,6 +878,7 @@ export default function AddProductScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {tagOffer.sheet}
     </SafeAreaView>
   );
 }

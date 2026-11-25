@@ -1,131 +1,55 @@
-// FurInventory Pro - NFC Service Utility
-import NfcManager, { Ndef, NfcTech } from 'react-native-nfc-manager';
+// N1 (ticket 16, 17, 22): **driver vero** dell'NFC (`react-native-nfc-manager` 3.17.2) per il servizio di
+// `utils/nfcCore.ts`, solo sul telefono. Sul web Metro prende `nfcService.web.ts`, che non importa la libreria.
+// Prima: avvio all'import, «pulisci + scrivi» in due passi con la gara 500/1000 ms (NG14) e una lettura senza chiamanti
+// (NG16). Ora niente all'import, lettura a richiesta e scrittura in un tocco. Non provato sul telefono (NG20: la
+// libreria 3.x è dichiarata per la vecchia architettura, il progetto ha `newArchEnabled=true`).
+import { Platform } from 'react-native';
+import NfcManager, { Ndef, NdefStatus, NfcError, NfcEvents, NfcTech, type TagEvent } from 'react-native-nfc-manager';
+import { createNfcService, type NfcDriver, type NfcTagEvent } from './nfcCore';
 
-class NfcService {
-  constructor() {
-    this.init();
-  }
+const asTag = (tag: TagEvent | null): NfcTagEvent | null => (tag ? (tag as unknown as NfcTagEvent) : null);
+// iOS: il pannello chiuso dall'utente arriva come `NfcError.UserCancel`, un errore senza messaggio: lo si dice «cancel»
+// (il servizio lo legge come Annulla). Con `instanceof`, perché i nomi delle classi non restano nel bundle di release.
+const cancelAware = <T,>(p: Promise<T>): Promise<T> => p.catch((error: unknown) => {
+  throw error instanceof NfcError.UserCancel ? new Error('cancel') : error;
+});
 
-  async init() {
-    try {
-      await NfcManager.start();
-    } catch (ex) {
-      console.warn('NFC Manager initialization failed', ex);
-    }
-  }
+const driver: NfcDriver = {
+  os: Platform.OS === 'ios' ? 'ios' : 'android',
+  start: () => NfcManager.start(),
+  isSupported: () => NfcManager.isSupported(),
+  isEnabled: () => NfcManager.isEnabled(),
+  registerTagEvent: (options) => NfcManager.registerTagEvent(options),
+  unregisterTagEvent: () => NfcManager.unregisterTagEvent(),
+  onTag: (listener) => NfcManager.setEventListener(NfcEvents.DiscoverTag, listener ? (tag: TagEvent) => listener(asTag(tag) ?? {}) : null),
+  onStateChange: (listener) => NfcManager.setEventListener(
+    NfcEvents.StateChanged,
+    listener ? (event: { state?: string } | string) => listener(typeof event === 'string' ? event : event?.state ?? '') : null,
+  ),
+  requestNdef: async (options) => (await cancelAware(NfcManager.requestTechnology(NfcTech.Ndef, options))) != null,
+  getTag: async () => asTag(await NfcManager.getTag()),
+  ndefStatus: async () => {
+    const s = await NfcManager.ndefHandler.getNdefStatus();
+    return { writable: s.status === NdefStatus.ReadWrite, capacity: s.capacity };
+  },
+  writeNdef: (bytes) => cancelAware(NfcManager.ndefHandler.writeNdefMessage(bytes)),
+  cancelRequest: () => NfcManager.cancelTechnologyRequest(),
+};
 
-  async isSupported() {
-    return await NfcManager.isSupported();
-  }
+const service = createNfcService(driver);
+const writeOnce = async (bytes: number[]): Promise<boolean> => {
+  const opened = await service.openForWrite();
+  if (opened.esito !== 'pronto') { await service.cancel(); return false; }
+  return (await service.write(bytes)).esito === 'scritto';
+};
 
-  async isEnabled() {
-    return await NfcManager.isEnabled();
-  }
+// Solo per i file residui di `app/` (expo-router di prima, fuori dal bundle), che `tsc` controlla ancora: stessi nomi
+// di prima, fatti col servizio nuovo (una scrittura in un tocco). Da togliere insieme ad `app/`.
+const legacy = {
+  isSupported: () => driver.isSupported(),
+  isEnabled: () => driver.isEnabled(),
+  cleanTag: () => writeOnce(Ndef.encodeMessage([Ndef.record(Ndef.TNF_EMPTY, '', [], [])])),
+  writeGS1Uri: (uri: string) => writeOnce(Ndef.encodeMessage([Ndef.uriRecord(uri)])),
+};
 
-  cancel() {
-    NfcManager.cancelTechnologyRequest();
-  }
-
-  /**
-   * Passo 1: Pulisci il Tag
-   * Scrive un record NDEF vuoto per "resettare" il tag NFC.
-   */
-  async cleanTag(): Promise<boolean> {
-    let result = false;
-    try {
-      // Request Ndef technology (works on both iOS and Android)
-      await NfcManager.requestTechnology(NfcTech.Ndef, {
-        alertMessage: 'Avvicina il tag NFC per pulirlo (1/2)'
-      });
-
-      // Write an empty NDEF message to clear the tag
-      // TNF_EMPTY is 0
-      const emptyRec = Ndef.record(0, '', '', '');
-      const bytes = Ndef.encodeMessage([emptyRec]);
-      
-      if (bytes) {
-        await NfcManager.ndefHandler.writeNdefMessage(bytes);
-        result = true;
-        
-        // Optional: show a success message on iOS before closing
-        if (NfcManager.setAlertMessageIOS) {
-          await NfcManager.setAlertMessageIOS('Tag pulito con successo!');
-        }
-      }
-    } catch (ex) {
-      console.warn('Error cleaning tag', ex);
-    } finally {
-      NfcManager.cancelTechnologyRequest();
-    }
-    return result;
-  }
-
-  /**
-   * Passo 2: Scrivi il Tag
-   * Scrive un record NDEF URI per registrare il Digital Link.
-   */
-  async writeGS1Uri(uri: string): Promise<boolean> {
-    let result = false;
-    try {
-      await NfcManager.requestTechnology(NfcTech.Ndef, {
-        alertMessage: 'Avvicina il tag NFC per registrare il prodotto (2/2)'
-      });
-
-      const bytes = Ndef.encodeMessage([
-        Ndef.uriRecord(uri),
-      ]);
-
-      if (bytes) {
-        await NfcManager.ndefHandler.writeNdefMessage(bytes);
-        result = true;
-
-        if (NfcManager.setAlertMessageIOS) {
-          await NfcManager.setAlertMessageIOS('Prodotto registrato sul tag!');
-        }
-      }
-    } catch (ex) {
-      console.warn('Error writing tag', ex);
-    } finally {
-      NfcManager.cancelTechnologyRequest();
-    }
-    return result;
-  }
-
-  /**
-   * Legge un tag NFC in primo piano e restituisce la stringa contenuta (se URI o Testo)
-   */
-  async readTag(): Promise<string | null> {
-    let tagValue: string | null = null;
-    try {
-      await NfcManager.requestTechnology(NfcTech.Ndef, {
-        alertMessage: 'Avvicina il tag NFC da scansionare'
-      });
-
-      const tag = await NfcManager.getTag();
-      
-      if (tag && tag.ndefMessage && tag.ndefMessage.length > 0) {
-        const ndefRecord = tag.ndefMessage[0];
-        const payload = new Uint8Array(ndefRecord.payload as number[]);
-        // Decode URI
-        tagValue = Ndef.uri.decodePayload(payload);
-        
-        // Se non è un URI, prova a decodificarlo come Testo
-        if (!tagValue) {
-            tagValue = Ndef.text.decodePayload(payload);
-        }
-      }
-      
-      if (NfcManager.setAlertMessageIOS && tagValue) {
-        await NfcManager.setAlertMessageIOS('Tag letto con successo!');
-      }
-    } catch (ex) {
-      console.warn('Error reading tag', ex);
-    } finally {
-      NfcManager.cancelTechnologyRequest();
-    }
-    
-    return tagValue;
-  }
-}
-
-export const nfcService = new NfcService();
+export const nfcService = Object.assign(service, legacy);

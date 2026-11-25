@@ -1,6 +1,6 @@
 # Campi personalizzati: tipi, modi di inserimento, lettura veloce
 
-Tipo: grilling + research (verifica). Stato: **verificato** il 23 novembre 2026 mattina; disegno **approvato dall'utente** nella sua forma generale (un posto solo, ticket 25); una domanda aperta. Fette: **VAL** (valori corretti, **fatta il 23/11**, vedi sotto) e **EDC** (editor e lettura). Mappa: [`../map-3.md`](../map-3.md). Verifica completa: [`../ricerche/verifiche-23/verifica-campi-layout-selettori.md`](../ricerche/verifiche-23/verifica-campi-layout-selettori.md) §0-1 (forma dei dati, difetti `CAM-F1…F11`).
+Tipo: grilling + research (verifica). Stato: **verificato** il 23 novembre 2026 mattina; disegno **approvato dall'utente** nella sua forma generale (un posto solo, ticket 25); la domanda aperta (icone e colori nella card o nella Scheda) risolta dall'orchestratore il 24 con la proposta, da rivedere con l'utente. Fette: **VAL** (valori corretti, **fatta il 23/11**, vedi sotto) e **EDC** (editor e lettura, **fatta il 24/11**). Mappa: [`../map-3.md`](../map-3.md). Verifica completa: [`../ricerche/verifiche-23/verifica-campi-layout-selettori.md`](../ricerche/verifiche-23/verifica-campi-layout-selettori.md) §0-1 (forma dei dati, difetti `CAM-F1…F11`).
 
 ## Question
 
@@ -28,7 +28,7 @@ Come devono funzionare i campi personalizzati perché si possano configurare con
   - editor del campo in **tre domande**: *che cosa contiene* (Testo, Numero/Misura con unità, Prezzo, Data, Sì/No, Scelta una o più, Foto, Documento), *come si compila* («Lo scrivo io», «Scelgo da un elenco», «Scelgo o scrivo», «Contatore +/−» con minimo, massimo e passo, «Ruota» per le misure da/a/passo), *come si vede* (per le scelte: Riquadri, Pillole scorrevoli, Menu a tendina, Elenco dal basso; icona e colore);
   - opzioni con **id stabile**, etichetta, colore e icona facoltativi; valore predefinito facoltativo; «Mostra nella card» (al massimo 2 campi);
   - un solo disegnatore per Aggiungi e Modifica (`components/FieldInput.tsx`) e uno per la lettura (Scheda, card, PDF).
-- **Da chiedere quando EDC è la prossima**: per la lettura veloce, icone e colori contano di più nella **card dell'Inventario** (1-2 campi scelti, es. Taglia e Colore) o basta la **Scheda**?
+- ~~**Da chiedere quando EDC è la prossima**: per la lettura veloce, icone e colori contano di più nella **card dell'Inventario** (1-2 campi scelti, es. Taglia e Colore) o basta la **Scheda**?~~ **Decisa dall'orchestratore al posto dell'utente, 24/11** (proposta, da rivedere con lui): la Scheda li mostra sempre; la card solo per i campi con «Mostra nella card», al massimo 2, spento per tutti i campi di partenza (la card di oggi non cambia finché l'utente non accende un campo).
 
 ## Piano di implementazione
 
@@ -47,11 +47,15 @@ Come devono funzionare i campi personalizzati perché si possano configurare con
 6. `CustomFieldsContext`: `updateField`/`deleteField` dall'elenco più recente (CAM-F11).
 7. `linkTo: 'furType'`: le scelte collegate ai tipi di pelle salvano l'id, le vecchie etichette si leggono per abbinamento (resto di C2).
 
-### Fetta EDC — editor in tre domande e lettura veloce (dopo VAL)
+### Fetta EDC — editor in tre domande e lettura veloce (dopo VAL) — **fatta il 24/11**
+
+**Confine** (decisione dell'orchestratore, 24/11, in `../../DECISIONI_DA_RIVEDERE.md`): i punti 1-6 qui sotto. Fuori: il **PDF con i campi (D16), che va a ETI** insieme alle etichette (ticket 22); il modulo per categoria (MOD, MCAT); le colonne dei campi nel CSV (EXP). Scelta aperta (card o Scheda) risolta con la proposta: Scheda sempre, card solo con «Mostra nella card», al massimo 2, spento per i campi di partenza.
+
+**Fatto** (dettagli in `../../CRONOLOGIA.md`): editor in tre domande in `FieldsScreen` (1. che cosa contiene: dieci voci in italiano semplice; 2. come si compila: lo scrivo io, col lettore, contatore e ruota con Da/A/Passo, scelgo da un elenco o «Scelgo o scrivo», da dove vengono i valori; 3. come si vede: Binario orizzontale (predefinito), A capo, Riquadri, Elenco verticale, Menu a tendina, Elenco dal basso, Ruota, icona, «Mostra nella card»; valore predefinito; «Cambia tipo» con i tipi non permessi spiegati); campi raggruppati per tipo col numero; `components/ChoicePicker.tsx` (tutti gli aspetti delle scelte, binario `ChipRail` con la sfumatura, ruota a scatti `Wheel`) usato da `FieldInput` e da Tipo di pelle e Posizione in Aggiungi e Modifica, con l'aspetto scelto in Campi (richieste dell'utente del 24: binario predefinito, anche per Categoria; revisione UX0: binario solo a larghezza intera, in colonna tendina, ruota «stile orologio» a 5 righe che in colonna si apre in una finestra dal basso; testi «Obbligatorio» e «sempre presente»; «Salva campo» in basso fisso lasciato a MOD); `FieldInput` con «Scelgo o scrivo», ruota delle misure, Sì/No e testo breve fermo a 100; colore e icona dei valori (`OptionsEditor`, `OptionMark`); Scheda dal registro con ripiego sulla copia e icona del modulo (CAM-F6, F7), pillole colorate; card con i campi accesi; ricerca dell'Inventario nei campi; misure Base con `FieldInput` (scritte o ruota, matita «Come si compila»); `DynamicFieldRenderer.tsx` tolto; `parseFurTypes` col colore. Logica in `utils/fieldValues.ts` (sezione EDC) con `__tests__/fieldEditor.test.ts`. Prova `prova/edc-editor.cjs` (16 scenari, 2 dopo il parere del revisore) con `prova/edc-util.cjs`, collaudo CF-B3 completo, foglio `prova/stili-edc.jpg` (`FETTA=edc`). Non provati: sul telefono la ruota col dito, la tendina e la tastiera.
 
 1. `FieldsScreen`: editor in tre domande (sopra); testi in italiano semplice (CAM-F9, «Max 100 caratteri» applicato); tipo modificabile dove i valori lo permettono (testo ↔ testo lungo, numero ↔ prezzo; CAM-F10), altrimenti spiegato.
 2. Aspetti nuovi in `FieldInput`: menu a tendina in linea, pillole scorrevoli orizzontali, ruota per le misure, contatore con il passo; Sì/No; valore predefinito; «Scelgo o scrivo» (elenco più testo libero che può diventare un'opzione nuova, con conferma).
-3. Lettura: icone e colori dal **registro** con ripiego sulla copia `fieldSnapshot` (chiude CAM-F6 e CAM-F7); colore delle opzioni come pillola nella Scheda; «Mostra nella card» (fino a 2 campi, secondo la risposta); campi nel PDF nell'ordine del modulo (D16, insieme a ETI) e nella ricerca dell'Inventario.
+3. Lettura: icone e colori dal **registro** con ripiego sulla copia `fieldSnapshot` (chiude CAM-F6 e CAM-F7); colore delle opzioni come pillola nella Scheda; «Mostra nella card» (fino a 2 campi, secondo la risposta); campi nel PDF nell'ordine del modulo (D16, insieme a ETI: **lasciato a ETI**, ticket 22) e nella ricerca dell'Inventario.
 4. Le misure Base (lunghezza, larghezza, altezza da S2, peso) usano lo stesso `FieldInput` con «Ruota» o testo.
 5. Si toglie `components/DynamicFieldRenderer.tsx` (con il testo «Cartella» notato da C1).
 6. `utils/furTypes.ts`: `parseFurTypes` tiene `color` se le opzioni avranno un colore.

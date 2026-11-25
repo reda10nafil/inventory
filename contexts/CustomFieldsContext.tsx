@@ -4,11 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { CustomField, FieldUIType } from '../types';
 import { withSystemFieldNames } from '../utils/furTypes';
-import { normalizeField } from '../utils/fieldValues';
+import { appendOption, fieldOptions, newOptionId, normalizeField, restoredField, type FieldOption } from '../utils/fieldValues';
 
 const STORAGE_KEY = 'furinventory_custom_fields';
 
-export type FieldType = 'number' | 'currency' | 'date' | 'text_short' | 'text_long' | 'images' | 'single_choice' | 'multi_choice' | 'document';
+export type FieldType = CustomField['type'];
 
 export interface CustomFieldOption {
     id: string;
@@ -41,6 +41,8 @@ interface CustomFieldsContextType {
     loading: boolean;
     addField: (field: Omit<CustomField, 'id' | 'order'>) => Promise<CustomField>;
     updateField: (id: string, updates: Partial<CustomField>) => Promise<void>;
+    /** «Scelgo o scrivo» (EDC): aggiunge in fondo un'opzione col nome scritto, dopo la conferma; dà l'opzione nuova. */
+    addOption: (fieldId: string, label: string) => Promise<FieldOption | undefined>;
     deleteField: (id: string) => Promise<void>;
     restoreField: (id: string) => Promise<void>;
     permanentlyDeleteField: (id: string) => Promise<void>;
@@ -154,6 +156,18 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
         await writeFields((current) => current.map((f) => (f.id === id ? { ...f, ...updates } : f)));
     }, [organizationId]);
 
+    // Opzione nuova da «Scelgo o scrivo» (EDC): dall'elenco più recente, id nuovo (mai una posizione), gli altri restano
+    const addOption = useCallback(async (fieldId: string, label: string) => {
+        let created: FieldOption | undefined;
+        await writeFields((current) => current.map((f) => {
+            if (f.id !== fieldId) return f;
+            const id = newOptionId(fieldOptions(f));
+            created = { id, label: label.trim() };
+            return appendOption(f, label, id);
+        }));
+        return created;
+    }, [organizationId]);
+
     // Soft-delete a field (move to trash)
     const deleteField = useCallback(async (id: string) => {
         const deletedAt = new Date().toISOString();
@@ -162,7 +176,8 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
 
     // Restore a soft-deleted field
     const restoreField = useCallback(async (id: string) => {
-        await writeFields((current) => current.map((f) => (f.id === id ? { ...f, deletedAt: undefined } : f)));
+        // EDC: se la card ha già 2 campi accesi, il campo ripristinato torna senza «Mostra nella card»
+        await writeFields((current) => current.map((f) => (f.id === id ? restoredField(current, f) : f)));
     }, [organizationId]);
 
     // Permanently delete a field
@@ -206,6 +221,7 @@ export function CustomFieldsProvider({ children }: { children: ReactNode }) {
                 loading,
                 addField,
                 updateField,
+                addOption,
                 deleteField,
                 restoreField,
                 permanentlyDeleteField,
@@ -229,17 +245,19 @@ export function useCustomFields() {
     return context;
 }
 
-// Helper function to get field type info
+// Che cosa contiene un campo (prima domanda dell'editor, EDC): nomi in italiano semplice (CAM-F9). «Max 100 caratteri»
+// del testo breve ora è vero (`SHORT_TEXT_MAX` in `utils/fieldValues.ts`).
 export const FIELD_TYPE_INFO: Record<FieldType, { label: string; icon: string; description: string }> = {
-    number: { label: 'Numero/Decimale', icon: 'pin', description: 'Con unità di misura personalizzabile' },
-    currency: { label: 'Valuta', icon: 'euro', description: 'Per prezzi e costi' },
-    date: { label: 'Data', icon: 'calendar-today', description: 'Con calendario picker' },
-    text_short: { label: 'Testo Breve', icon: 'short-text', description: 'Max 100 caratteri' },
-    text_long: { label: 'Testo Lungo', icon: 'notes', description: 'Note espandibili' },
-    images: { label: 'Immagini Multiple', icon: 'collections', description: 'Fino a 10 foto' },
-    single_choice: { label: 'Scelta Singola', icon: 'radio-button-checked', description: 'Dropdown menu' },
-    multi_choice: { label: 'Scelta Multipla', icon: 'check-box', description: 'Checkbox multipli' },
-    document: { label: 'Documento / File', icon: 'description', description: 'Allega PDF, Excel o altri file' },
+    text_short: { label: 'Testo breve', icon: 'short-text', description: 'Max 100 caratteri' },
+    text_long: { label: 'Testo lungo', icon: 'notes', description: 'Note su più righe' },
+    number: { label: 'Numero o misura', icon: 'pin', description: 'Con l\'unità che vuoi: cm, kg, pezzi' },
+    currency: { label: 'Prezzo', icon: 'euro', description: 'Prezzi e costi in euro' },
+    date: { label: 'Data', icon: 'calendar-today', description: 'Si sceglie dal calendario' },
+    boolean: { label: 'Sì/No', icon: 'toggle-on', description: 'Una risposta: sì oppure no' },
+    single_choice: { label: 'Scelta da un elenco', icon: 'radio-button-checked', description: 'Un valore tra quelli pronti' },
+    multi_choice: { label: 'Più scelte da un elenco', icon: 'check-box', description: 'Uno o più valori tra quelli pronti' },
+    images: { label: 'Foto', icon: 'collections', description: 'Fino a 10 foto' },
+    document: { label: 'Documento', icon: 'description', description: 'PDF, Excel o altri file' },
 };
 
 // Re-export CustomField type from types for backward compatibility

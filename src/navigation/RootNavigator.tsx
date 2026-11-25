@@ -110,7 +110,7 @@ export default function RootNavigator() {
       <Stack.Screen name="SettingsFolders" component={FoldersScreen} options={{ headerShown: true, headerTitle: 'Categorie' }} />
       <Stack.Screen name="SettingsLayoutBuilder" component={LayoutBuilderScreen} options={{ headerShown: true, headerTitle: 'Configura Layout Aggiungi' }} />
       <Stack.Screen name="SettingsGs1" component={Gs1ConfigScreen} options={{ headerShown: true, headerTitle: 'GS1 Digital Link' }} />
-      <Stack.Screen name="SettingsHardware" component={HardwareScreen} options={{ headerShown: true, headerTitle: 'Scanner & Hardware' }} />
+      <Stack.Screen name="SettingsHardware" component={HardwareScreen} options={{ headerShown: true, headerTitle: 'Scanner e NFC' }} />
       <Stack.Screen name="SettingsAppearance" component={AppearanceScreen} options={{ headerShown: true, headerTitle: 'Aspetto' }} />
       <Stack.Screen name="SettingsTrash" component={TrashScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettingsShare" component={ShareScreen} options={{ headerShown: false }} />

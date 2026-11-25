@@ -270,7 +270,7 @@ const FETTE = {
       ['sottocategoria', async (page) => {
         await page.getByText('Cappotti lunghi e giacche da sera', { exact: true }).first().click(); await page.waitForTimeout(500);
         await page.evaluate(() => window.scrollTo(0, 0));
-        await page.getByText('Sottocategoria di', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+        await page.getByText('Dove sta', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' })); // CAT1: era «Sottocategoria di»
       }],
       ['aggiungi', async (page) => {
         await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
@@ -608,6 +608,81 @@ const FETTE = {
       ['scaffale-azione-rapida', async (page) => { await page.goto(`${APP}/scanner-action?type=shelf&id=1732300000000-gen1`); await page.waitForTimeout(1800); }],
     ],
   },
+  // EDC (ticket 23): Campi raggruppati per tipo; Aggiungi con i binari orizzontali (Tipo di pelle, Posizione,
+  // Categoria); editor in tre domande (Colore con colori e icona per valore); Aggiungi con il binario di Colore, menu a
+  // tendina aperto (Lavorazione), ruota a scatti (Larghezza Base, 40-120 passo 10) e Sì/No; Scheda con icone e pillole
+  // colorate; card dell'Inventario con due campi accesi (Colore e Taglia). I colori dei valori sono quelli scelti
+  // dall'utente (pallino col bordo del tema), il resto viene dal tema.
+  edc: {
+    prepara: () => {
+      const cf = 'furinventory_custom_fields:local';
+      const fields = JSON.parse(localStorage.getItem(cf));
+      const byId = (id) => fields.find((f) => f.id === id);
+      const colori = { Nero: '#212121', Marrone: '#8D6E63', 'Grigio perla': '#3B82F6', Naturale: '#E2B93B', Bianco: '#F5F5F5' };
+      const colore = byId('field_cmp_colore');
+      colore.options = colore.options.map((o) => ({ ...o, color: colori[o.label], ...(o.label === 'Grigio perla' && { icon: 'star' }) }));
+      Object.assign(colore, { uiType: 'grid', look: 'chips', showInCard: true });
+      Object.assign(byId('field_cmp_taglia'), { showInCard: true });
+      Object.assign(byId('field_cmp_lav'), { uiType: 'picker', look: 'dropdown' });
+      Object.assign(byId('width'), { input: 'wheel', dataset: { min: 40, max: 120, step: 10 } });
+      fields.push({ id: 'field_edc_cappuccio', name: 'Con cappuccio', type: 'boolean', uiType: 'text', icon: 'checkroom', required: false, order: 40, defaultValue: false });
+      localStorage.setItem(cf, JSON.stringify(fields));
+      const lk = 'furinventory_layout_config:local';
+      const layout = JSON.parse(localStorage.getItem(lk));
+      const dopo = layout.fields.findIndex((f) => f.id === 'field_cmp_cond');
+      layout.fields.splice(dopo + 1, 0, { id: 'field_edc_cappuccio', type: 'custom', size: 'medium', visible: true });
+      localStorage.setItem(lk, JSON.stringify(layout));
+      const pk = 'inventory:v1:local:products';
+      const list = JSON.parse(localStorage.getItem(pk));
+      const vis = list.find((p) => p.sku === 'VIS-0142');
+      vis.customData.push({ value: true, fieldSnapshot: fields[fields.length - 1] });
+      localStorage.setItem(pk, JSON.stringify(list));
+    },
+    schermate: [
+      ['campi-per-tipo', async (page) => { await page.goto(`${APP}/settings/fields`); await page.waitForTimeout(1800); }],
+      ['aggiungi-binari', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        await page.getByText('Visone', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(200);
+        await page.getByText('Tipo di pelle', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['editor-tre-domande', async (page) => {
+        await page.goto(`${APP}/settings/fields`); await page.waitForTimeout(1800);
+        const card = page.getByText('Colore', { exact: true }).locator('visible=true').first().locator('xpath=ancestor::div[.//div[@tabindex="0"]][1]');
+        await card.locator('div[tabindex="0"]').first().click(); await page.waitForTimeout(900);
+      }],
+      ['editor-colore-del-valore', async (page) => {
+        await page.getByLabel('Rinomina Grigio perla', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+        await page.getByText('Colore di «Grigio perla»', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      }],
+      ['editor-come-si-vede', async (page) => {
+        await page.getByText('3. Come si vede?', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      // In colonna (R1-R3 di UX0): Posizione tendina aperta; Larghezza a 1/3 apre la ruota in una finestra dal basso;
+      // Colore a 1/2 è una tendina col pallino del colore e la stella del valore
+      ['aggiungi-tendina-posizione', async (page) => {
+        await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+        // Da UX1-0 Posizione col binario prende la riga intera: la tendina c'è solo con «Menu a tendina» scelto in Campi
+        const casella = page.getByLabel('Posizione: Seleziona...', { exact: true }).locator('visible=true');
+        if (await casella.count()) { await casella.first().click(); await page.waitForTimeout(300); }
+        await page.getByText('Tipo di pelle', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['aggiungi-ruota-in-finestra', async (page) => {
+        await page.getByText('Vetrina', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(200);
+        await page.getByLabel('Larghezza: nessun valore', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+        await page.getByLabel('Larghezza 90 cm', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      }],
+      ['aggiungi-tendina-colore', async (page) => {
+        await page.getByText('Fatto', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+        await page.getByLabel('Colore: Seleziona...', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+        await page.getByText('Misure', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['scheda-icone-colori', async (page) => {
+        await page.goto(`${APP}/product/cmp-1`); await page.waitForTimeout(1800);
+        await page.getByText('Campi strutturati', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      }],
+      ['card-con-due-campi', async (page) => { await page.goto(APP); await page.waitForTimeout(1800); }],
+    ],
+  },
 };
 // m04 parte dallo stato di m03 (le funzioni passano al browser una per volta)
 FETTE.m04.prima = FETTE.m03.prepara;
@@ -660,6 +735,171 @@ FETTE.s2 = {
       await page.goto(`${APP}/product/cmp-5`); await page.waitForTimeout(1800);
       await page.getByText('Spazio sullo scaffale', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
     }],
+    // Unione 1 (S2 con EDC): l'Altezza è una misura come le altre, in Aggiungi (tre per riga, lei sotto) e in Modifica
+    ['aggiungi-altezza', async (page) => {
+      await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+      await page.getByText('Altezza', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['modifica-misure', async (page) => {
+      await page.goto(`${APP}/product/edit/cmp-2`); await page.waitForTimeout(1800);
+      await page.getByText('Altezza', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+  ],
+};
+// CAT1 (ticket 33): Impostazioni › Categorie ad albero con lo stato di c1 (Pellicce con Visone e Volpe, Collezione Inverno
+// con un nome lungo): albero aperto, «+ Sottocategoria» col campo, finestra della categoria con «Dove sta», «Dove li
+// sposto?» con una scelta. Si aggiunge qui, fuori dalla tabella, per non toccare le righe delle altre corsie.
+FETTE.cat1 = {
+  prepara: FETTE.c1.prepara,
+  schermate: [
+    ['albero', async (page) => {
+      await page.goto(`${APP}/settings/folders`); await page.waitForTimeout(1800);
+      await page.getByText('Categorie esistenti', { exact: false }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['piu-sottocategoria', async (page) => {
+      await page.getByLabel('Apri Usato e permute', { exact: true }).first().click(); await page.waitForTimeout(300);
+      await page.getByLabel('Aggiungi una sottocategoria a Usato e permute', { exact: true }).first().click(); await page.waitForTimeout(300);
+      await page.getByLabel('Nome della sottocategoria di Usato e permute', { exact: true }).first().fill('Permute di stagione');
+      await page.getByLabel('Nome della sottocategoria di Usato e permute', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['finestra', async (page) => {
+      await page.getByLabel('Annulla la sottocategoria', { exact: true }).first().click(); await page.waitForTimeout(200);
+      await page.getByText('Cappotti lunghi e giacche da sera', { exact: true }).first().click(); await page.waitForTimeout(600);
+    }],
+    ['dove-li-sposto', async (page) => {
+      await page.getByText('Annulla', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+      await page.getByLabel('Elimina Usato e permute', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.getByLabel('Sposta in Pellicce › Visone', { exact: true }).first().click(); await page.waitForTimeout(300);
+    }],
+  ],
+};
+// ETI (ticket 22, corsia C): riga «Codice ed etichetta» della Scheda, la finestra di un prodotto (e le sue Avanzate col
+// link GS1), di uno scaffale e di una posizione con «tutte le etichette», e l'anteprima dell'etichetta stampata (la
+// pagina della finestra di stampa messa al posto dell'app per la foto). Aggiunta in fondo, come CAT1.
+FETTE.eti = {
+  prepara: () => {
+    localStorage.setItem('furinventory_locations:local', JSON.stringify([
+      { id: 'magazzino', label: 'Magazzino', color: '#3B82F6', barcode: 'LOC-MAGAZZINO' },
+      { id: 'vetrina', label: 'Vetrina', color: '#D4AF37', barcode: 'LOC-VETRINA' },
+      { id: 'stand_a', label: 'Stand A', color: '#10B981' }, { id: 'stand_b', label: 'Stand B', color: '#10B981' },
+      { id: 'stand_c', label: 'Stand C', color: '#10B981' }, { id: 'sartoria', label: 'Sartoria', color: '#8B5CF6' },
+    ]));
+    localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+      { id: '1732300000000-gen1', name: 'A1', locationId: 'magazzino', barcode: 'SCAF-MAG-A1', createdAt: '2026-11-24T09:00:00.000Z' },
+    ]));
+  },
+  schermate: [
+    ['scheda-riga', async (page) => {
+      await page.getByText('VIS-0142', { exact: true }).first().click(); await page.waitForTimeout(1200);
+      await page.getByLabel('Codice ed etichetta', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['prodotto', async (page) => {
+      await page.getByLabel('Codice ed etichetta', { exact: true }).first().click(); await page.waitForTimeout(800);
+    }],
+    ['avanzate', async (page) => {
+      await page.getByLabel('Avanzate', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+      // N1: «Programma tag» non c'è più; si scorre fino a «Copia link» (ultimo di Avanzate)
+      await page.getByText('Copia link', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'end' }));
+    }],
+    ['scaffale', async (page) => {
+      await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+      await page.getByLabel('Codice QR di A1', { exact: true }).first().click(); await page.waitForTimeout(800);
+      await page.getByLabel('Formato Etichettatrice', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+    }],
+    ['posizione-serie', async (page) => {
+      await page.goto(`${APP}/settings/locations`); await page.waitForTimeout(1800);
+      await page.getByLabel('Codice ed etichetta di Magazzino', { exact: true }).first().click(); await page.waitForTimeout(800);
+      await page.getByLabel('Formato Foglio A4', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(300);
+      await page.getByLabel('Stampa tutte le etichette di questa posizione', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+    }],
+    ['anteprima', async (page) => {
+      await page.context().addInitScript(() => { window.print = () => {}; });
+      const [pop] = await Promise.all([
+        page.context().waitForEvent('page'),
+        page.getByLabel('Stampa etichette', { exact: true }).locator('visible=true').first().click(),
+      ]);
+      await pop.waitForLoadState(); await page.waitForTimeout(600);
+      await page.setContent(await pop.content()); await pop.close();
+    }],
+  ],
+};
+// N1 (ticket 16, 18, 22, corsia C): sul web Scanner e NFC con la riga del telefono, «Codice ed etichetta» di uno scaffale
+// e di un prodotto con la riga «L'NFC si usa dal telefono» al posto di «Collega un tag», i moduli di Scaffali e
+// Posizioni senza campi NFC. Aggiunta in fondo, come ETI.
+FETTE.n1 = {
+  prepara: () => {
+    localStorage.setItem('furinventory_locations:local', JSON.stringify([
+      { id: 'magazzino', label: 'Magazzino', color: '#3B82F6', barcode: 'LOC-MAGAZZINO', nfcTag: '04:11:22:33' },
+      { id: 'vetrina', label: 'Vetrina', color: '#D4AF37', barcode: 'LOC-VETRINA' },
+      { id: 'stand_a', label: 'Stand A', color: '#10B981' }, { id: 'sartoria', label: 'Sartoria', color: '#8B5CF6' },
+    ]));
+    localStorage.setItem('furinventory_shelves:local', JSON.stringify([
+      { id: '1732300000000-gen1', name: 'A1', locationId: 'magazzino', barcode: 'SCAF-MAG-A1', nfcTag: '04:A2:3B:1C', createdAt: '2026-11-24T09:00:00.000Z' },
+    ]));
+    localStorage.setItem('furinventory_hardware_config:local', JSON.stringify({ scanMode: 'nfc_only', autoWriteNfcOnSave: true }));
+  },
+  schermate: [
+    ['scanner-e-nfc', async (page) => {
+      await page.goto(`${APP}/settings/hardware`); await page.waitForTimeout(1800);
+    }],
+    ['scaffale-codice', async (page) => {
+      await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+      await page.getByLabel('Codice QR di A1', { exact: true }).first().click(); await page.waitForTimeout(800);
+      await page.getByText('Funziona dal telefono', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['scaffali-modulo', async (page) => {
+      await page.getByLabel('Chiudi Codice ed etichetta', { exact: true }).locator('visible=true').last().click(); await page.waitForTimeout(400);
+      await page.getByLabel('Modifica scaffale A1', { exact: true }).first().click(); await page.waitForTimeout(600);
+      await page.getByLabel('Codice dello scaffale', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['posizioni-modulo', async (page) => {
+      await page.goto(`${APP}/settings/locations`); await page.waitForTimeout(1800);
+      await page.getByText('Magazzino', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+    }],
+    ['prodotto-codice', async (page) => {
+      await page.goto(APP); await page.getByText('VIS-0142', { exact: true }).first().waitFor();
+      await page.getByText('VIS-0142', { exact: true }).first().click(); await page.waitForTimeout(1200);
+      await page.getByLabel('Codice ed etichetta', { exact: true }).first().click(); await page.waitForTimeout(800);
+      await page.getByText('Funziona dal telefono', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+  ],
+};
+
+// UX1-0 (ticket 34): in Aggiungi Posizione e Categoria (con la sottocategoria) binari a tutta riga, la ruota di
+// Larghezza nella finestra dal basso unica, l'«Elenco dal basso» di Colore, la categoria dello scaffale nella stessa
+// finestra, campi e pillole col bordo (Minimal: #E7E6E3). Si aggiunge qui, fuori dalla tabella, come S2 e CAT1.
+FETTE.ux10 = {
+  prepara: () => {
+    const lk = 'inventory:v1:local:libraries';
+    const libs = JSON.parse(localStorage.getItem(lk));
+    libs.push({ id: 'giacche-lunghe', name: 'Giacche lunghe', icon: 'folder', createdAt: '2026-11-24T09:00:00.000Z', parentId: 'pellicce' });
+    localStorage.setItem(lk, JSON.stringify(libs));
+    const ck = 'furinventory_custom_fields:local';
+    const fields = JSON.parse(localStorage.getItem(ck));
+    Object.assign(fields.find((f) => f.id === 'width'), { input: 'wheel', dataset: { min: 40, max: 120, step: 10 } });
+    localStorage.setItem(ck, JSON.stringify(fields));
+  },
+  schermate: [
+    ['aggiungi-binari', async (page) => {
+      await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+      await page.getByLabel('Categoria Pellicce', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(400);
+      await page.getByText('Tipo di pelle', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['aggiungi-bordi', async (page) => {
+      await page.getByText('Prezzo Acquisto', { exact: true }).locator('visible=true').first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['finestra-ruota', async (page) => {
+      await page.getByLabel('Larghezza: nessun valore', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+      await page.getByLabel('Larghezza 90 cm', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+    }],
+    ['elenco-dal-basso', async (page) => {
+      await page.getByText('Fatto', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(500);
+      await page.locator('xpath=//div[normalize-space()="Colore"]/following-sibling::div[1]').locator('visible=true').first().click(); await page.waitForTimeout(700);
+    }],
+    ['finestra-categoria', async (page) => {
+      await page.goto(`${APP}/settings/shelves`); await page.waitForTimeout(1800);
+      await page.getByLabel('Categoria dello scaffale', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(700);
+    }],
   ],
 };
 
@@ -699,6 +939,15 @@ FETTE.s3 = {
     ['blocco-proposta', async (page) => {
       await page.locator('input[placeholder^="es. 2,5"]').first().fill('2'); await page.waitForTimeout(300);
       await page.getByLabel('Registra movimento', { exact: true }).first().click(); await page.waitForTimeout(900);
+    }],
+    // Unione 2: l'avviso sotto lo Scaffale in Aggiungi (Posizione a binario di UX1-0, blocco Magazzino di oggi)
+    ['aggiungi-avviso', async (page) => {
+      await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+      await page.goto(`${APP}/add`); await page.waitForTimeout(1800);
+      await page.locator('[aria-label="Scelte di Posizione"]').getByText('Magazzino', { exact: true }).first().click(); await page.waitForTimeout(400);
+      await page.getByLabel('Scaffale R2', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.locator('[data-testid="avviso-carico"]').first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+      await page.waitForTimeout(300);
     }],
     ['spostamento-scaffale', async (page) => {
       await page.goto(`${APP}/automations/batch-move`); await page.waitForTimeout(1800);

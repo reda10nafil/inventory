@@ -24,7 +24,8 @@ import { Text, TextInput } from '../../../components/ui/Text';
 import { formStyles } from '../../../components/ui/formStyles';
 import { FieldInput, fieldIcon } from '../../../components/FieldInput';
 import { missingRequiredFields } from '../../../utils/formValidation';
-import { fieldError, formValue, invalidNumberFields, NO_FLAGS, savedValue, type FlaggedFields } from '../../../utils/fieldValues';
+import { ChoicePicker } from '../../../components/ChoicePicker';
+import { baseLook, baseMeasureField, fieldError, formValue, invalidNumberFields, MEASURE_PLACEHOLDERS, measureText, NO_FLAGS, savedValue, type FlaggedFields } from '../../../utils/fieldValues';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
 import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
@@ -128,6 +129,8 @@ function EditProductForm({ product }: { product: Product }) {
   const imageWidth = Math.max(1, screenWidth - 32);
   // Riquadri delle scelte: tre per riga, 10 px tra l'uno e l'altro, come in Aggiungi
   const tileWidth = Math.floor((imageWidth - 20) / 3);
+  // Misure: tre per riga con 12 px tra l'una e l'altra (come `row`), la quarta (Altezza) a capo alla stessa larghezza
+  const measureWidth = Math.floor((imageWidth - 24) / 3);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -354,31 +357,26 @@ function EditProductForm({ product }: { product: Product }) {
 
           <View style={styles.inputGroup}>
             {renderLabel('Tipo di pelle')}
-            {/* Tipo di pelle (M01, C1): facoltativo, «Nessuno» lo toglie; a capo come Posizione e Categoria (D09) */}
-            <View style={styles.chipWrap}>
-              <Pressable
-                style={[styles.chip, !formData.furType && styles.chipActive]}
-                onPress={() => updateField('furType', '')}
-              >
-                {!formData.furType && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                <Text style={[styles.chipText, !formData.furType && styles.chipTextActive]}>Nessuno</Text>
-              </Pressable>
-              {furTypes.map((type) => {
-                const active = formData.furType === type.id;
-                return (
-                  <Pressable
-                    key={type.id}
-                    style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => updateField('furType', type.id)}
-                  >
-                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                      {type.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {/* Tipo di pelle (M01, C1): facoltativo, «Nessuno» lo toglie (nella ruota è la voce «–»); nell'aspetto scelto
+                in Campi, di solito il binario orizzontale (richiesta dell'utente del 24) */}
+            {(() => {
+              const look = baseLook(customFields.find((c) => c.id === 'furType'));
+              const none = { id: '', label: 'Nessuno' };
+              const chosen = furTypes.find((ft) => ft.id === formData.furType);
+              return (
+                <ChoicePicker
+                  name="Tipo di pelle"
+                  look={look}
+                  options={look === 'wheel' ? furTypes : [none, ...furTypes]}
+                  selected={(o) => formData.furType === o.id}
+                  onPick={(o) => updateField('furType', o.id)}
+                  onClear={() => updateField('furType', '')}
+                  shown={chosen?.label ?? 'Nessuno'}
+                  empty={!chosen}
+                  tileWidth={tileWidth}
+                />
+              );
+            })()}
           </View>
 
           {/* D09: pillole di Posizione e Categoria a capo, come in Aggiungi */}
@@ -405,24 +403,22 @@ function EditProductForm({ product }: { product: Product }) {
           ) : (
           <View style={styles.inputGroup}>
             {renderLabel('Posizione')}
-            <View style={styles.chipWrap}>
-              {locations.map((location) => {
-                const active = formData.location === location.id;
-                return (
-                  <Pressable
-                    key={location.id}
-                    style={[styles.chip, styles.chipSmall, active && styles.chipActive]}
-                    onPress={() => updateField('location', location.id)}
-                  >
-                    {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
-                    <View style={[styles.chipDot, active && styles.chipDotActive, { backgroundColor: location.color }]} />
-                    <Text style={[styles.chipText, styles.chipTextSmall, active && styles.chipTextActive]} numberOfLines={1}>
-                      {location.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {(() => {
+              const chosen = locations.find((l) => l.id === formData.location);
+              return (
+                <ChoicePicker
+                  name="Posizione"
+                  look={baseLook(customFields.find((c) => c.id === 'location'))}
+                  options={locations.map((l) => ({ id: l.id, label: l.label, color: l.color }))}
+                  selected={(o) => formData.location === o.id}
+                  onPick={(o) => updateField('location', o.id)}
+                  onClear={() => updateField('location', '')}
+                  shown={chosen?.label ?? 'Seleziona...'}
+                  empty={!chosen}
+                  tileWidth={tileWidth}
+                />
+              );
+            })()}
           </View>
           )}
 
@@ -470,51 +466,22 @@ function EditProductForm({ product }: { product: Product }) {
 
           {renderSection('Misure')}
 
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, styles.thirdWidth]}>
-              {renderLabel('Lunghezza (cm)')}
-              {renderInput({
-                placeholder: '85',
-                value: formData.length,
-                onChangeText: (value) => updateField('length', value),
-                numeric: true,
-                small: true,
-              })}
-            </View>
-            <View style={[styles.inputGroup, styles.thirdWidth]}>
-              {renderLabel('Larghezza (cm)')}
-              {renderInput({
-                placeholder: '120',
-                value: formData.width,
-                onChangeText: (value) => updateField('width', value),
-                numeric: true,
-                small: true,
-              })}
-            </View>
-            <View style={[styles.inputGroup, styles.thirdWidth]}>
-              {renderLabel('Peso (kg)')}
-              {renderInput({
-                placeholder: '1,2',
-                value: formData.weight,
-                onChangeText: (value) => updateField('weight', value),
-                numeric: true,
-                small: true,
-              })}
-            </View>
-          </View>
-
-          {/* S2 (ticket 14): altezza del prodotto per gli scaffali, in una riga a sé sotto le misure */}
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, styles.thirdWidth]}>
-              {renderLabel('Altezza (cm)')}
-              {renderInput({
-                placeholder: '40',
-                value: formData.height,
-                onChangeText: (value) => updateField('height', value),
-                numeric: true,
-                small: true,
-              })}
-            </View>
+          {/* Misure Base (EDC, ticket 23 punto 4): lo stesso disegnatore dei campi di Aggiungi, scritte o con la ruota.
+              L'Altezza (S2, ticket 14) è la quarta: tre per riga come in Aggiungi, lei va sotto alla stessa larghezza */}
+          <View style={[styles.row, styles.measureRow]}>
+            {(['length', 'width', 'weight', 'height'] as const).map((key) => (
+              <FieldInput
+                key={key}
+                field={baseMeasureField(customFields, key)}
+                value={formData[key]}
+                onChange={(value) => updateField(key, measureText(value))}
+                size="small"
+                icon={fieldIcon(baseMeasureField(customFields, key), layout.fields.find((lf) => lf.id === key)?.icon)}
+                placeholder={MEASURE_PLACEHOLDERS[key]}
+                tileWidth={tileWidth}
+                style={[styles.inputGroup, { width: measureWidth }]}
+              />
+            ))}
           </View>
 
           {renderSection('Note tecniche')}
@@ -622,10 +589,11 @@ const useStyles = makeStyles((t) => ({
     flexDirection: 'row',
     gap: 12,
   },
-  halfWidth: {
-    flex: 1,
+  measureRow: {
+    flexWrap: 'wrap',
+    rowGap: 0,
   },
-  thirdWidth: {
+  halfWidth: {
     flex: 1,
   },
   // Barra fissa Annulla / Salva (regola 9): vetro, filetto in alto

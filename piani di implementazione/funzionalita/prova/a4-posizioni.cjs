@@ -1,7 +1,7 @@
 // a4: Impostazioni › Posizioni - crea, modifica nome/colore, elimina (e cosa succede ai prodotti), nome doppio.
 // C2: gli elementi premibili si contano solo a video e senza la freccia nativa in alto (un <a>): da C2 sotto ogni
 // indirizzo c'è Impostazioni nascosta e la freccia c'è anche aprendo l'indirizzo direttamente.
-const { scenario } = require('./lib.cjs');
+const { scenario, apriTendinaCon } = require('./lib.cjs');
 const KEY = 'furinventory_locations:local';
 // riga della posizione e suo cestino (Pressable annidato nella riga)
 const row = (h, label) => h.page.locator('[tabindex="0"]').filter({ hasText: `${label}ID:` }).first();
@@ -21,6 +21,8 @@ const swatch = (h, i) => h.page.locator('[tabindex="0"]:visible:not(a)').nth(i);
     await h.go('settings/locations');
     const dopoRicarica = await h.has('Deposito Nord');
     await h.go('add');
+    // Da EDC Posizione in Aggiungi (a 1/2) è una tendina: la posizione nuova si cerca aprendola
+    await apriTendinaCon(h.page, h.page.getByText('Deposito Nord').locator('visible=true'));
     const inAggiungi = await h.has('Deposito Nord');
     return { primaSalvato: prima, nuova, totale: (dopo || []).length, dopoRicarica, inAggiungi };
   });
