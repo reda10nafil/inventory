@@ -10,7 +10,8 @@ export const documentDirectory = RNFS ? RNFS.DocumentDirectoryPath + '/' : (Expo
 export async function writeAsStringAsync(uri: string, content: string, options?: any) {
   if (RNFS) {
     const path = uri.replace('file://', '');
-    return RNFS.writeFile(path, content, 'utf8');
+    // EXP (DATI): lo ZIP di «Esporta con le foto» si scrive in base64
+    return RNFS.writeFile(path, content, options?.encoding === 'base64' ? 'base64' : 'utf8');
   }
   return (ExpoFS as any).writeAsStringAsync(uri, content, options);
 }

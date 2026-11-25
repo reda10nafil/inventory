@@ -7,7 +7,9 @@
 // Le intestazioni sono cambiate tre volte; l'import riconosce il file dall'intestazione (`productCsvFormat`).
 // S1a (ticket 13): colonna «Scaffale» in fondo, col nome dello scaffale (unico dentro la posizione del prodotto).
 // S1b: la giacenza sugli scaffali sta nella colonna Giacenza, con le chiavi salvate (`magazzino/<idScaffale>:3`).
-import type { Product, TimelineEvent } from '../types';
+import type { CustomField, Product, TimelineEvent } from '../types';
+// EXP (DATI, ticket 26): colonne dei campi col valore leggibile in fondo, JSON dei campi senza foto locali
+import { exportCustomData, exportFields, fieldCell, fieldColumns } from './productExport';
 import { categoryPath, categoryTree, type CategoryNode } from './categories';
 import { furTypeFromCsv, type FurType } from './furTypes';
 import { parseStoredNumber } from './number';
@@ -59,10 +61,21 @@ export function parseStockCell(text: string): Record<string, number> | null | un
   return stock;
 }
 
-/** Intestazione più una riga per ogni prodotto non nel cestino. «Scaffale»: il nome, se il pezzo unico ci sta davvero. */
-export function productCsvRows(products: readonly Product[], categories: readonly CategoryNode[], shelves: readonly Shelf[] = []): unknown[][] {
+/**
+ * Intestazione più una riga per ogni prodotto non nel cestino. «Scaffale»: il nome, se il pezzo unico ci sta davvero.
+ * EXP (DATI): con `fields` (il registro dei campi, l'ordine del modulo Aggiungi e i tipi di pelle per le scelte
+ * collegate) una colonna per ogni campo personalizzato attivo, in fondo, col valore leggibile (`fieldCell`). Usata
+ * dall'export e dal backup Drive (CSV-E5).
+ */
+export function productCsvRows(
+  products: readonly Product[],
+  categories: readonly CategoryNode[],
+  shelves: readonly Shelf[] = [],
+  fields?: { fields: readonly CustomField[]; layoutIds?: readonly string[]; furTypes?: readonly { id: string; label: string; color?: string }[] },
+): unknown[][] {
+  const columns = fields ? fieldColumns(exportFields(fields.fields, fields.layoutIds), PRODUCT_CSV_HEADER) : [];
   return [
-    PRODUCT_CSV_HEADER,
+    [...PRODUCT_CSV_HEADER, ...columns.map((c) => c.header)],
     ...products.filter((p) => !p.deletedAt).map((product) => [
       product.sku,
       product.furType,
@@ -76,7 +89,7 @@ export function productCsvRows(products: readonly Product[], categories: readonl
       product.technicalNotes,
       product.productionDate,
       JSON.stringify(product.backupImageLinks?.length ? product.backupImageLinks : (product.images || []).filter((uri) => /^https?:\/\//i.test(uri))),
-      JSON.stringify(product.customData || []),
+      JSON.stringify(exportCustomData(product.customData)), // CSV-E3: immagini e documenti solo come link http
       product.gs1DigitalLink,
       JSON.stringify(product.backupCustomDataLinks || {}),
       categoryPath(categories, product.libraryId),
@@ -85,6 +98,7 @@ export function productCsvRows(products: readonly Product[], categories: readonl
       product.minStock,
       productShelf(product, shelves)?.name ?? '',
       product.height,
+      ...columns.map((c) => fieldCell(c.field, product, { furTypes: fields?.furTypes })),
     ]),
   ];
 }

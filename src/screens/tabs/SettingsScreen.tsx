@@ -9,6 +9,11 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
 import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
+// EXP (DATI, ticket 26): colonne dei campi, avviso delle foto ed «Esporta con le foto»
+import { photoFiles, photosWarning, rowsWithImageFiles, ZIP_CSV_NAME, ZIP_IMAGES_DIR } from '../../../utils/productExport';
+import { base64ToBytes, bytesToBase64, dataUrlBytes, makeZip, utf8 } from '../../../utils/zip';
+import { useCustomFields } from '../../../contexts/CustomFieldsContext';
+import { useLayout } from '../../../contexts/LayoutContext';
 import { categoryPath } from '../../../utils/categories';
 import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
@@ -44,6 +49,10 @@ export default function SettingsScreen() {
   const { shelves } = useShelves();
   // S3 (ticket 15): l'import registra merce che è già lì: niente blocco, solo l'informazione «oltre il limite»
   const { check: checkLoad } = useLoadCheck();
+  // EXP (DATI): campi personalizzati nell'ordine del modulo Aggiungi, per le colonne dei campi dell'export
+  const { customFields } = useCustomFields();
+  const { layout } = useLayout();
+  const [photoNote, setPhotoNote] = useState('');
   // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
   // C1: nel report delle giacenze «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo
   const reportLabels = {
@@ -70,7 +79,7 @@ export default function SettingsScreen() {
   // Un solo modo di scaricare (web) o condividere (telefono) un CSV: prodotti, giacenze e movimenti (M08)
   const exportCsv = async (name: string, rows: readonly (readonly unknown[])[]) => {
     try {
-      const csvContent = stringifyCsv(rows);
+      const csvContent = `\uFEFF${stringifyCsv(rows)}`; // EXP: BOM, così Excel legge gli accenti (CSV-E4)
 
       if (Platform.OS === 'web') {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
@@ -98,7 +107,51 @@ export default function SettingsScreen() {
       Alert.alert('Errore', 'Impossibile esportare i dati');
     }
   };
-  const exportToCSV = () => exportCsv('inventario', productCsvRows(products, libraries, shelves));
+  // EXP (DATI): una sola funzione delle righe per l'export e il backup Drive (CSV-E5), con le colonne dei campi in fondo
+  const inventoryRows = () => productCsvRows(products, libraries, shelves, { fields: customFields, layoutIds: layout.fields.map((f) => f.id), furTypes });
+  const exportToCSV = async () => {
+    await exportCsv('inventario', inventoryRows());
+    setPhotoNote(photosWarning(products) ?? '');
+  };
+
+  // «Esporta con le foto»: ZIP con il CSV (più «Immagini file») e la cartella immagini/ con le foto del dispositivo
+  const photoBytes = async (uri: string): Promise<Uint8Array | null> => {
+    const inline = dataUrlBytes(uri);
+    if (inline) return inline.data;
+    try { return base64ToBytes(await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })); } catch { return null; }
+  };
+  const exportWithPhotos = async () => {
+    try {
+      const live = products.filter((p) => !p.deletedAt);
+      const files = photoFiles(live);
+      const entries: { name: string; data: Uint8Array }[] = [];
+      const skipped = new Set<string>();
+      for (const f of files) {
+        const data = await photoBytes(f.uri);
+        if (data && data.length) entries.push({ name: `${ZIP_IMAGES_DIR}${f.name}`, data });
+        else skipped.add(f.name); // una foto non più leggibile (blob: scaduto) non ferma l'export
+      }
+      const csv = `\uFEFF${stringifyCsv(rowsWithImageFiles(inventoryRows(), live, files, skipped))}`;
+      const zip = makeZip([{ name: ZIP_CSV_NAME, data: utf8(csv) }, ...entries]);
+      const name = `inventario-con-foto_${Date.now()}.zip`;
+      if (Platform.OS === 'web') {
+        const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: 'application/zip' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        const fileUri = FileSystem.documentDirectory + name;
+        await FileSystem.writeAsStringAsync(fileUri, bytesToBase64(zip), { encoding: FileSystem.EncodingType.Base64 });
+        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(fileUri);
+        else Alert.alert('Successo', `File salvato in: ${fileUri}`);
+      }
+      setPhotoNote(`ZIP con ${entries.length} foto${skipped.size ? `; ${skipped.size} non più leggibili su questo dispositivo, rimaste fuori` : ''}.`);
+    } catch (error) {
+      Alert.alert('Errore', 'Impossibile esportare con le foto');
+    }
+  };
   const exportStockCsv = () => exportCsv('giacenze', stockCsvRows(products, reportLabels));
   const exportMovementsCsv = () => exportCsv('movimenti', movementCsvRows(timeline, products, reportLabels));
 
@@ -110,15 +163,7 @@ export default function SettingsScreen() {
     }
     setCloudBackupBusy(true);
     try {
-      const values = [
-        ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
-        ...products.map((product) => [
-          product.sku, product.furType, product.location, product.status,
-          product.purchasePrice, product.sellPrice, product.length, product.width, product.weight,
-          product.technicalNotes, product.productionDate, JSON.stringify(product.backupImageLinks?.length ? product.backupImageLinks : (product.images || []).filter((uri) => /^https?:\/\//i.test(uri))),
-          JSON.stringify(product.customData || []), product.gs1DigitalLink, JSON.stringify(product.backupCustomDataLinks || {}),
-        ]),
-      ];
+      const values = inventoryRows(); // EXP: stesse righe dell'export (CSV-E5), senza il cestino
       const content = stringifyCsv(values);
       const folderId = await ensureOrganizationDriveFolder(accessToken, organizationId);
       const file = await uploadDriveFile(
@@ -539,6 +584,24 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
+        {/* EXP (DATI): il CSV più la cartella immagini/ in un file ZIP, per il sito o un gestionale */}
+        <Pressable style={styles.settingRow} onPress={() => void exportWithPhotos()}>
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#10B981' }]}>
+              <AppIcon name="photo-library" size={24} color={t.colors.onData} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Esporta con le foto</Text>
+              <Text style={styles.settingDescription}>
+                ZIP con il CSV e la cartella immagini, per il sito o un gestionale
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+        {photoNote ? <Text style={styles.exportNote} testID="export-avviso">{photoNote}</Text> : null}
+        <Text style={styles.exportNote}>Per avere i link delle foto serve il cloud (in arrivo)</Text>
+
         <Pressable style={styles.settingRow} onPress={exportStockCsv}>
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
@@ -802,4 +865,6 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
   },
   settingRowOff: { opacity: 0.55 },
+  // EXP (DATI): avviso delle foto non esportate e riga del cloud
+  exportNote: { ...t.typography.caption, fontSize: 12, lineHeight: 17, marginTop: -4, marginBottom: 10, paddingHorizontal: 4 },
 }));
