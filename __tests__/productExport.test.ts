@@ -37,7 +37,8 @@ describe('EXP: colonne dei campi', () => {
     expect(exportFields(FIELDS, ['f_dett', 'f_taglia']).map((f) => f.id)).toEqual(['f_dett', 'f_taglia', 'f_larg', 'f_foto', 'f_ok', 'f_tipo']);
   });
   it('nomi uguali a una colonna di sistema resi univoci («Larghezza (campo)»)', () => {
-    expect(fieldColumns([LARG, TAGLIA, { ...LARG, id: 'f_larg2' }], PRODUCT_CSV_HEADER).map((c) => c.header)).toEqual(['Larghezza (campo)', 'Taglia', 'Larghezza (campo 2)']);
+    expect(fieldColumns([LARG, TAGLIA, { ...LARG, id: 'f_larg2' }], PRODUCT_CSV_HEADER).map((c) => c.header)).toEqual(['Larghezza (campo)', 'Taglia', 'Larghezza (campo 2)']); // e «Immagini file» resta dello ZIP
+    expect(fieldColumns([{ ...TAGLIA, name: 'Immagini file' }], PRODUCT_CSV_HEADER)[0].header).toBe('Immagini file (campo)');
   });
   it('valori leggibili: scelte con l\'etichetta, multiple con «; », numeri col punto, Sì/No, solo link http', () => {
     const lists = { furTypes: DEFAULT_FUR_TYPES };

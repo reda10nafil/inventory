@@ -85,3 +85,21 @@ describe('zip (DATI: «Esporta con le foto» e import dello ZIP)', () => {
     expect(safeFileName('   ')).toBe('prodotto');
   });
 });
+
+describe('zip: correzioni del revisore (DATI)', () => {
+  it('senza TextDecoder: UTF-8 a mano; un file Windows-1252 si legge come Latin-1 senza perdere i separatori', () => {
+    const saved = (global as any).TextDecoder;
+    (global as any).TextDecoder = undefined;
+    try {
+      expect(fromUtf8(utf8('Città;Prezzo €'))).toBe('Città;Prezzo €');
+      expect(fromUtf8(new Uint8Array([0x43, 0x69, 0x74, 0x74, 0xe0, 0x3b, 0x50]))).toBe('Città;P');
+      expect(fromUtf8(new Uint8Array([0xff, 0x3b]))).toBe('ÿ;');
+    } finally { (global as any).TextDecoder = saved; }
+  });
+  it('dimensione dichiarata diversa da quella estratta: errore', async () => {
+    const zip = makeZip([{ name: 'a.txt', data: utf8('ciao') }]);
+    const central = 30 + 5 + 4; // locale + nome + dati
+    new DataView(zip.buffer).setUint32(central + 24, 99, true);
+    await expect(readZip(zip)).rejects.toThrow('dimensione');
+  });
+});

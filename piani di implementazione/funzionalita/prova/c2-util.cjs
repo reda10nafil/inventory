@@ -28,6 +28,7 @@ const MADRE = {
   'settings/network': 'settings', // SettingsScreen.tsx (Persone e telefoni › Rete del negozio, RETE0)
   'settings/team': 'settings', // indirizzo vecchio della Rete del negozio (da RETE0 stessa schermata di settings/network)
   'settings/access': 'settings', // SettingsScreen.tsx (Persone e telefoni › Accesso, ACC1)
+  'settings/import': 'settings', // SettingsScreen.tsx (Dati e backup › Importa prodotti CSV, IMP della fetta DATI)
   chat: 'settings', // StoreNetworkScreen.tsx «Apri la Chat» (la Rete del negozio sta in Impostazioni; prima TeamScreen)
   'settings/automation-builder': 'automations', // AutomationsScreen.tsx:103, :115; AutomationFlowScreen.tsx:77
   'automations/audit': 'automations', // AutomationsScreen.tsx:38 e :67 (modelli); CountScreen.tsx:137

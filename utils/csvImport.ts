@@ -16,6 +16,7 @@ import { parseNumber, parseStoredNumber } from './number';
 import { choiceOptions, fieldOptions, isChoiceField, isNumberField, newOptionId, SHORT_TEXT_MAX, type FieldOption } from './fieldValues';
 import { placeOfKey, round3, SHELF_KEY_SEPARATOR, splitStockKey } from './stock';
 import { IMAGE_FILES_HEADER } from './productExport';
+import { PRODUCT_CSV_HEADER } from './productCsv';
 
 export const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toLocaleLowerCase();
 
@@ -153,7 +154,12 @@ export function guessMapping(header: readonly string[], lists: MappingLists, row
     taken.add(target);
     return target;
   });
-  if (out.includes('customData')) return out.map((t) => (t.startsWith('field:') ? 'ignore' : t));
+  // Export dell'app (c'è il JSON dei campi): valgono solo le colonne di sistema dell'export; le colonne leggibili dei campi
+  // (anche un campo che si chiama come un sinonimo, «Quantità», «Foto»…) restano su Ignora: il JSON ha già i valori
+  if (out.includes('customData')) {
+    const own = new Set([...PRODUCT_CSV_HEADER, IMAGE_FILES_HEADER].map(fold));
+    return out.map((t, i) => (t.startsWith('field:') || !own.has(names[i]) ? 'ignore' : t));
+  }
   return out;
 }
 
@@ -246,6 +252,9 @@ const STATUS: Record<string, Product['status']> = {
   sold: 'sold', venduto: 'sold', venduta: 'sold',
   archived: 'archived', archiviato: 'archived', archiviata: 'archived',
 };
+/** Valore di una scelta dell'utente («Usa…») solo se è sua (niente «constructor» dal prototipo). */
+const own = (map: Record<string, string> | undefined, key: string): string | undefined =>
+  (map && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined);
 const YES = new Set(['si', 'sì', 'yes', 'true', '1', 'x', 'vero']);
 const NO = new Set(['no', 'false', '0', 'falso']);
 
@@ -305,12 +314,12 @@ export function previewImport(rows: readonly (readonly string[])[], mapping: rea
   const locationOf = (raw: string): string | undefined => {
     const v = fold(raw);
     if (!v) return undefined;
-    return ctx.locations.find((l) => fold(l.id) === v)?.id ?? ctx.locations.find((l) => fold(l.label) === v)?.id ?? ctx.locationChoice?.[v];
+    return ctx.locations.find((l) => fold(l.id) === v)?.id ?? ctx.locations.find((l) => fold(l.label) === v)?.id ?? own(ctx.locationChoice, v);
   };
   const categoryOf = (raw: string): string | undefined => {
     const v = fold(raw);
     if (!v) return undefined;
-    return libraryIdFromCsv(raw, ctx.categories) ?? ctx.categoryChoice?.[v];
+    return libraryIdFromCsv(raw, ctx.categories) ?? own(ctx.categoryChoice, v);
   };
   const required = requiredFor({}, ctx.layoutFields ?? [], ctx.fields);
   const requiredMissingColumn = required.filter((f) => !fieldCols.some((c) => c.field.id === f.id) && col('customData') < 0);
@@ -415,8 +424,9 @@ export function previewImport(rows: readonly (readonly string[])[], mapping: rea
     const minStock = numberOf('minStock', 'Scorta minima');
 
     const statusText = fold(cell('status'));
-    let status: Product['status'] = STATUS[statusText] ?? 'available';
-    if (!(statusText in STATUS)) warn(`stato:${statusText}`, (n) => `Stato sconosciuto «${cell('status')}» (${n} ${n === 1 ? 'riga' : 'righe'}): disponibile`);
+    const known = Object.prototype.hasOwnProperty.call(STATUS, statusText);
+    let status: Product['status'] = known ? STATUS[statusText] : 'available';
+    if (!known) warn(`stato:${statusText}`, (n) => `Stato sconosciuto «${cell('status')}» (${n} ${n === 1 ? 'riga' : 'righe'}): disponibile`);
     if (stock) status = 'available'; // un articolo a quantità non è mai «venduto» (ticket 03)
 
     const categoryRaw = cell('category');

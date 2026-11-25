@@ -208,3 +208,15 @@ describe('aiuti', () => {
     expect(newLocationId('Magazzino Centrale', [{ id: 'magazzino_centrale' }])).toBe('magazzino_centrale_2');
   });
 });
+
+describe('correzioni del revisore (DATI)', () => {
+  const lists = { fields: [...FIELDS, field({ id: 'field_qta', name: 'Quantità', type: 'number' })], furTypes: DEFAULT_FUR_TYPES, categories: CATEGORIES };
+  it('export dell\'app: un campo chiamato come un sinonimo («Quantità») non prende la colonna di sistema', () => {
+    expect(guessMapping(['SKU', 'Dati Personalizzati JSON', 'Quantità', 'Immagini file', 'Taglia'], lists)).toEqual(['sku', 'customData', 'ignore', 'imageFiles', 'ignore']);
+  });
+  it('valori come «constructor» non escono dal prototipo', () => {
+    const p = run('SKU,Posizione,Status\r\nP-1,constructor,constructor\r\nP-2,vetrina,constructor\r\n');
+    expect(p.rejected[0].reason).toBe('posizione sconosciuta «constructor»');
+    expect(p.toAdd[0].product.status).toBe('available');
+  });
+});

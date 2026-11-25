@@ -1080,6 +1080,35 @@ FETTE.rete0 = {
   ],
 };
 
+// DATI (EXP + IMP, corsia B, 25/11): Dati e backup con «Esporta con le foto», l'avviso delle foto dopo l'export e la
+// riga del cloud; Importa prodotti con un CSV «;» di un altro gestionale: colonne abbinate, selettore della colonna,
+// anteprima con rifiutate e avvisi. Aggiunta qui sotto (non dentro l'oggetto) per non scontrarsi con le altre corsie.
+const PV_DATI = require('fs').readFileSync(require('path').join(__dirname, 'imp-csv', 'altro-gestionale-pv.csv'), 'utf8');
+FETTE.dati = {
+  prepara: () => {},
+  schermate: [
+    ['dati-backup', async (page) => {
+      await page.goto(`${APP}/settings`); await page.waitForTimeout(2500);
+      await page.getByText('Esporta Inventario', { exact: true }).first().click(); await page.waitForTimeout(1200);
+      await page.getByText('Esporta con le foto', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['import-colonne', async (page) => {
+      await page.getByText('Importa prodotti CSV', { exact: true }).first().click(); await page.waitForTimeout(1500);
+      const dt = await page.evaluateHandle((t) => { const d = new DataTransfer(); d.items.add(new File([t], 'altro-gestionale-pv.csv', { type: 'text/csv' })); return d; }, PV_DATI);
+      await page.locator('[aria-label="Importa CSV trascinando un file qui"]').dispatchEvent('drop', { dataTransfer: dt });
+      await page.waitForTimeout(1500);
+      await page.getByText('2. Colonne', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['import-scelta', async (page) => {
+      await page.locator('[aria-label^="Colonna Materiale:"]').click(); await page.waitForTimeout(800);
+    }],
+    ['import-anteprima', async (page) => {
+      await page.getByLabel('Chiudi', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      await page.locator('[data-testid="import-anteprima"]').evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+  ],
+};
+
 (async () => {
   const fetta = FETTE[process.env.FETTA];
   if (!fetta) throw new Error(`FETTA sconosciuta: ${process.env.FETTA} (note: ${Object.keys(FETTE).join(', ')})`);

@@ -12,6 +12,7 @@ import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from '../../navigation/compat';
 import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
@@ -47,6 +48,9 @@ import { overLimitText } from '../../../utils/shelves';
 import { placeOfKey, stockKey } from '../../../utils/stock';
 
 const DRAFT_KEY = 'furinventory_import_draft';
+/** Foto dello ZIP che si possono importare in una volta: sul web tutto sta nel localStorage del browser (circa 5 MB),
+ *  sul telefono una riga di AsyncStorage (circa 2 MB). Oltre, i prodotti si importano senza le foto (revisore DATI). */
+const PHOTOS_MAX_CHARS = Platform.OS === 'web' ? 3_500_000 : 1_500_000;
 
 interface LoadedFile {
   name: string;
@@ -104,6 +108,9 @@ export default function ImportScreen() {
   const [done, setDone] = useState<null | { imported: number; rejected: Preview['rejected']; header: string[]; over: string[] }>(null);
   const [links, setLinks] = useState<null | { ok: number; ko: string[]; checking: boolean }>(null);
   const restored = useRef(false);
+  const userLoaded = useRef(false); // un file scelto prima che la bozza sia letta non si sovrascrive
+  const busy = useRef(false); // «Importa» una volta sola (revisore DATI: due tocchi importavano due volte)
+  const [importing, setImporting] = useState(false);
 
   // ── File letto ─────────────────────────────────────────────
   const parsed = useMemo(() => {
@@ -121,7 +128,7 @@ export default function ImportScreen() {
       try {
         const raw = await AsyncStorage.getItem(draftKey);
         const d: Draft | null = raw ? JSON.parse(raw) : null;
-        if (d?.file && !restored.current) {
+        if (d?.file && !restored.current && !userLoaded.current) {
           setFile(d.file); setMapping(d.mapping ?? []); setDefaults(d.defaults ?? {}); setLocationChoice(d.locationChoice ?? {});
           setCategoryChoice(d.categoryChoice ?? {}); setPending(d.pending); setCreated(d.created ?? []);
           if (d.file.zip) setDraftNote('Le foto dello ZIP non restano dopo una ricarica: scegli di nuovo lo ZIP per importarle.');
@@ -139,17 +146,32 @@ export default function ImportScreen() {
     AsyncStorage.setItem(draftKey, JSON.stringify(d)).catch(() => setDraftNote('La bozza non si è potuta salvare (file troppo grande): non ricaricare la pagina prima di «Importa».'));
   }, [file, mapping, defaults, locationChoice, categoryChoice, pending, created, done, draftKey]);
 
-  // Ritorno da «+ Crea campo»: il campo nuovo (non c'era prima) va sulla colonna
-  useEffect(() => {
-    if (!pending) return;
-    const fresh = fields.find((f) => !pending.idsBefore.includes(f.id));
-    if (!fresh) return;
-    setMapping((m) => m.map((x, i) => (i === pending.column ? `field:${fresh.id}` as Target : x)));
+  // Ritorno da «+ Crea campo»: il campo nuovo (non c'era prima) va sulla colonna. Tornando senza averlo creato (Annulla
+  // in Campi) l'attesa finisce, così un campo creato dopo non finisce su quella colonna (revisore DATI)
+  const latest = useRef({ pending, fields });
+  latest.current = { pending, fields };
+  const adopt = (wait: Draft['pending'], list: typeof fields) => {
+    if (!wait) return false;
+    const fresh = list.find((f) => !wait.idsBefore.includes(f.id));
+    if (!fresh) return false;
+    setMapping((m) => m.map((x, i) => (i === wait.column ? `field:${fresh.id}` as Target : x)));
     setCreated((c) => [...c, fresh.name]);
     setPending(undefined);
-  }, [customFields, pending]);
+    return true;
+  };
+  useEffect(() => { adopt(pending, fields); }, [customFields, pending]);
+  const leftForFields = useRef(false);
+  useFocusEffect(React.useCallback(() => {
+    if (leftForFields.current) {
+      leftForFields.current = false;
+      const { pending: wait, fields: list } = latest.current;
+      if (wait && !adopt(wait, list)) setPending(undefined);
+    }
+    return undefined;
+  }, []));
 
   const load = async (name: string, bytes: Uint8Array) => {
+    userLoaded.current = true;
     setError(''); setDone(null); setLinks(null); setDraftNote('');
     try {
       let text: string;
@@ -160,9 +182,18 @@ export default function ImportScreen() {
         if (!csv) throw new Error('Nello ZIP non c\'è un file CSV.');
         text = decodeText(csv.data);
         zipPhotos = new Map();
+        // `immagini/` accanto al CSV, anche dentro una cartella (uno ZIP rifatto da Esplora risorse) o con «\»
+        let chars = 0;
         for (const e of entries) {
-          if (!e.name.startsWith(ZIP_IMAGES_DIR) || !/\.(jpe?g|png|webp|gif|heic)$/i.test(e.name)) continue;
-          zipPhotos.set(e.name.slice(ZIP_IMAGES_DIR.length), `data:${mimeOfName(e.name)};base64,${bytesToBase64(e.data)}`);
+          const m = new RegExp(`(?:^|/)${ZIP_IMAGES_DIR}([^/]+\\.(?:jpe?g|png|webp|gif|heic))$`, 'i').exec(e.name.replace(/\\/g, '/'));
+          if (!m || zipPhotos.has(m[1])) continue;
+          const uri = `data:${mimeOfName(m[1])};base64,${bytesToBase64(e.data)}`;
+          chars += uri.length;
+          zipPhotos.set(m[1], uri);
+        }
+        if (chars > PHOTOS_MAX_CHARS) {
+          zipPhotos = null;
+          setDraftNote(`Le foto dello ZIP pesano ${Math.round(chars / 1_000_000)} MB: non stanno nello spazio dell'app su questo dispositivo. I prodotti si importano senza foto; per le foto importa ZIP più piccoli (meno prodotti alla volta).`);
         }
       } else {
         if (!/\.(csv|txt)$/i.test(name)) throw new Error('Scegli un file .csv o lo .zip di «Esporta con le foto».');
@@ -171,7 +202,7 @@ export default function ImportScreen() {
       const delimiter = detectDelimiter(text);
       const rows = parseCsv(text, delimiter);
       if (rows.length < 2) throw new Error('Il CSV non contiene prodotti.');
-      setFile({ name, text, zip: !!zipPhotos });
+      setFile({ name, text, zip: isZip(bytes) });
       setPhotos(zipPhotos);
       setMapping(guessMapping(rows[0], lists, rows.slice(1)));
       setDefaults({}); setLocationChoice({}); setCategoryChoice({}); setPending(undefined); setCreated([]);
@@ -224,7 +255,7 @@ export default function ImportScreen() {
   };
   const preview = useMemo(
     () => (parsed && !done ? previewImport(parsed.body, mapping, context) : null),
-    [parsed, mapping, products, locations, libraries, furTypes, shelves, customFields, layoutFields, defaults, locationChoice, categoryChoice, photos, done],
+    [parsed, mapping, products, locations, libraries, furTypes, shelves, customFields, layoutFields, defaults, locationChoice, categoryChoice, photos, done, gs1Config],
   );
 
   const targetLabel = (target: Target) => {
@@ -241,6 +272,7 @@ export default function ImportScreen() {
     setPending({ column, idsBefore: fields.map((f) => f.id) });
     setPicker(null);
     // dopo la chiusura della finestra (la sua voce della storia del web), poi Campi Personalizzati
+    leftForFields.current = true;
     setTimeout(() => router.push({
       pathname: '/settings/fields',
       params: { nuovoCampo: parsed.header[column].trim(), tipo: guess.type, valori: JSON.stringify(guess.options), ritorno: 'import' },
@@ -253,8 +285,15 @@ export default function ImportScreen() {
       await addLocation({ id, label: value.trim(), color: t.colors.accent });
       setLocationChoice((c) => ({ ...c, [fold(value)]: id }));
     } else {
-      const lib = addLibrary(value.trim(), 'folder');
-      setCategoryChoice((c) => ({ ...c, [fold(value)]: lib.id }));
+      // «Pellicce › Visone»: la principale (trovata o creata) e dentro la sottocategoria (revisore DATI)
+      let parentId: string | undefined;
+      let id = '';
+      for (const part of value.split(/\s*[›>]\s*/).map((x) => x.trim()).filter(Boolean)) {
+        const found = libraries.find((c) => (c.parentId || undefined) === parentId && fold(c.name) === fold(part));
+        id = found ? found.id : addLibrary(part, 'folder', parentId).id;
+        parentId = id;
+      }
+      if (id) setCategoryChoice((c) => ({ ...c, [fold(value)]: id }));
     }
   };
 
@@ -274,8 +313,22 @@ export default function ImportScreen() {
 
   // ── Importa: si rifà l'anteprima e si scrive quella ────────
   const runImport = async () => {
-    if (!parsed || !addPerm.allowed) return;
+    if (!parsed || !addPerm.allowed || busy.current) return;
+    busy.current = true;
+    setImporting(true);
+    try {
+      await writeImport();
+    } catch (e) {
+      Alert.alert('Importazione non riuscita', e instanceof Error ? e.message : 'Qualcosa non ha funzionato: controlla i prodotti in Inventario.');
+    } finally {
+      busy.current = false;
+      setImporting(false);
+    }
+  };
+  const writeImport = async () => {
+    if (!parsed) return;
     const p = previewImport(parsed.body, mapping, context);
+    if (!p.toAdd.length) return;
     for (const { fieldId, options } of p.newOptions) {
       const field = customFields.find((f) => f.id === fieldId);
       if (field) await updateField(fieldId, { options, dataset: options.map((o) => o.label) });
@@ -328,6 +381,8 @@ export default function ImportScreen() {
   const finish = () => { cancel(); router.back(); };
 
   // ── Disegno ────────────────────────────────────────────────
+  // ZIP ritrovato nella bozza dopo una ricarica: le foto non ci sono (a meno che fossero troppe e già tolte apposta)
+  const zipWithoutPhotos = !!file?.zip && !photos && !userLoaded.current;
   const sample = (preview?.toAdd ?? []).slice(0, 3);
   const placeName = (id: string) => locations.find((l) => l.id === id)?.label ?? id;
   const sampleLine = (r: NonNullable<typeof preview>['toAdd'][number]) => [
@@ -484,10 +539,12 @@ export default function ImportScreen() {
                 )}
 
                 {/* 4. IMPORTA */}
+                {zipWithoutPhotos && <Text style={styles.warning}>Scegli di nuovo lo ZIP: dopo una ricarica le sue foto non ci sono più, e importando adesso i prodotti resterebbero senza.</Text>}
                 <Pressable
-                  style={[styles.button, (!preview.toAdd.length || !addPerm.allowed) && styles.buttonOff]}
-                  onPress={() => { if (preview.toAdd.length) void runImport(); }}
+                  style={[styles.button, (!preview.toAdd.length || !addPerm.allowed || importing || zipWithoutPhotos) && styles.buttonOff]}
+                  onPress={() => { if (preview.toAdd.length && !importing && !zipWithoutPhotos) void runImport(); }}
                   accessibilityRole="button"
+                  accessibilityState={{ busy: importing }}
                 >
                   <Text style={styles.buttonText}>{`Importa ${preview.toAdd.length} ${preview.toAdd.length === 1 ? 'prodotto' : 'prodotti'}`}</Text>
                 </Pressable>

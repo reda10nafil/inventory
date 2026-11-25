@@ -38,7 +38,7 @@ export interface FieldColumn {
  * un altro campo, «Nome (campo)», «Nome (campo 2)»… così l'import non le confonde.
  */
 export function fieldColumns(fields: readonly CustomField[], reserved: readonly string[]): FieldColumn[] {
-  const used = new Set(reserved.map(fold));
+  const used = new Set([...reserved, IMAGE_FILES_HEADER].map(fold)); // la colonna dello ZIP resta sua
   return fields.map((field) => {
     let header = field.name.trim() || field.id;
     if (used.has(fold(header))) {

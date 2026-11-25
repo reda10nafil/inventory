@@ -9,7 +9,7 @@ import { useInventory } from '../../../contexts/InventoryContext';
 import { stringifyCsv } from '../../../utils/csv';
 import { movementCsvRows, productCsvRows, stockCsvRows } from '../../../utils/productCsv';
 // EXP (DATI, ticket 26): colonne dei campi, avviso delle foto ed «Esporta con le foto»
-import { photoFiles, photosWarning, rowsWithImageFiles, ZIP_CSV_NAME, ZIP_IMAGES_DIR } from '../../../utils/productExport';
+import { localPhotoCount, photoFiles, photosWarning, rowsWithImageFiles, ZIP_CSV_NAME, ZIP_IMAGES_DIR } from '../../../utils/productExport';
 import { base64ToBytes, bytesToBase64, dataUrlBytes, makeZip, utf8 } from '../../../utils/zip';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -141,7 +141,9 @@ export default function SettingsScreen() {
         if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(fileUri);
         else Alert.alert('Successo', `File salvato in: ${fileUri}`);
       }
-      setPhotoNote(`ZIP con ${entries.length} foto${skipped.size ? `; ${skipped.size} non più leggibili su questo dispositivo, rimaste fuori` : ''}.`);
+      // le foto dei campi Immagini restano fuori dallo ZIP (solo i link http): si dice (revisore DATI)
+      const fieldPhotos = localPhotoCount(live).fields;
+      setPhotoNote(`ZIP con ${entries.length} foto${skipped.size ? `; ${skipped.size} non più leggibili su questo dispositivo, rimaste fuori` : ''}${fieldPhotos ? `; ${fieldPhotos} foto dei campi personalizzati non incluse` : ''}.`);
     } catch (error) {
       Alert.alert('Errore', 'Impossibile esportare con le foto');
     }

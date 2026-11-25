@@ -41,30 +41,46 @@ export function utf8(text: string): Uint8Array {
 
 export function fromUtf8(data: Uint8Array): string {
   if (typeof TextDecoder !== 'undefined') return new TextDecoder('utf-8').decode(data);
-  // Ripiego (motori senza TextDecoder): UTF-8 a mano
-  let out = '';
+  // Ripiego (motori senza TextDecoder): UTF-8 a mano; un byte che non torna (CSV di Excel in Windows-1252) fa
+  // leggere tutto il file come Latin-1, così i separatori restano al loro posto (revisore DATI)
+  const parts: string[] = [];
+  const cont = (i: number) => i < data.length && (data[i] & 0xc0) === 0x80;
   for (let i = 0; i < data.length;) {
-    const a = data[i++];
-    let cp = a;
-    if (a >= 0xf0) cp = ((a & 7) << 18) | ((data[i++] & 63) << 12) | ((data[i++] & 63) << 6) | (data[i++] & 63);
-    else if (a >= 0xe0) cp = ((a & 15) << 12) | ((data[i++] & 63) << 6) | (data[i++] & 63);
-    else if (a >= 0xc0) cp = ((a & 31) << 6) | (data[i++] & 63);
-    out += String.fromCodePoint(cp);
+    const a = data[i];
+    let cp: number;
+    let n: number;
+    if (a < 0x80) { cp = a; n = 1; }
+    else if (a >= 0xc2 && a < 0xe0 && cont(i + 1)) { cp = ((a & 31) << 6) | (data[i + 1] & 63); n = 2; }
+    else if (a >= 0xe0 && a < 0xf0 && cont(i + 1) && cont(i + 2)) { cp = ((a & 15) << 12) | ((data[i + 1] & 63) << 6) | (data[i + 2] & 63); n = 3; }
+    else if (a >= 0xf0 && a < 0xf5 && cont(i + 1) && cont(i + 2) && cont(i + 3)) { cp = ((a & 7) << 18) | ((data[i + 1] & 63) << 12) | ((data[i + 2] & 63) << 6) | (data[i + 3] & 63); n = 4; }
+    else return latin1(data);
+    parts.push(String.fromCodePoint(cp));
+    i += n;
   }
-  return out;
+  return parts.join('');
+}
+
+/** Ogni byte un carattere (Latin-1, quasi uguale a Windows-1252 per le lettere accentate). */
+export function latin1(data: Uint8Array): string {
+  const parts: string[] = [];
+  for (let i = 0; i < data.length; i += 8192) parts.push(String.fromCharCode(...Array.from(data.subarray(i, i + 8192))));
+  return parts.join('');
 }
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+// Tabella inversa (revisore DATI: `indexOf` per ogni carattere era lento con centinaia di foto)
+const B64_INDEX = (() => { const t = new Int16Array(128).fill(-1); for (let i = 0; i < B64.length; i += 1) t[B64.charCodeAt(i)] = i; return t; })();
+const b64 = (s: string, i: number) => (i < s.length ? B64_INDEX[s.charCodeAt(i)] : -1);
 
 export function base64ToBytes(base64: string): Uint8Array {
   const clean = base64.replace(/[^A-Za-z0-9+/]/g, '');
   const out = new Uint8Array(Math.floor((clean.length * 3) / 4));
   let o = 0;
   for (let i = 0; i < clean.length; i += 4) {
-    const a = B64.indexOf(clean[i]);
-    const b = B64.indexOf(clean[i + 1]);
-    const c = i + 2 < clean.length ? B64.indexOf(clean[i + 2]) : -1;
-    const d = i + 3 < clean.length ? B64.indexOf(clean[i + 3]) : -1;
+    const a = b64(clean, i);
+    const b = b64(clean, i + 1);
+    const c = b64(clean, i + 2);
+    const d = b64(clean, i + 3);
     out[o++] = (a << 2) | (b >> 4);
     if (c >= 0) out[o++] = ((b & 15) << 4) | (c >> 2);
     if (d >= 0) out[o++] = ((c & 3) << 6) | d;
@@ -73,16 +89,18 @@ export function base64ToBytes(base64: string): Uint8Array {
 }
 
 export function bytesToBase64(data: Uint8Array): string {
-  let out = '';
+  // a pezzi (revisore DATI: una stringa sola con `+=` era lenta con file grandi)
+  const parts: string[] = [];
+  let chunk: string[] = [];
   for (let i = 0; i < data.length; i += 3) {
     const a = data[i];
     const b = i + 1 < data.length ? data[i + 1] : 0;
     const c = i + 2 < data.length ? data[i + 2] : 0;
-    out += B64[a >> 2] + B64[((a & 3) << 4) | (b >> 4)];
-    out += i + 1 < data.length ? B64[((b & 15) << 2) | (c >> 6)] : '=';
-    out += i + 2 < data.length ? B64[c & 63] : '=';
+    chunk.push(B64[a >> 2], B64[((a & 3) << 4) | (b >> 4)], i + 1 < data.length ? B64[((b & 15) << 2) | (c >> 6)] : '=', i + 2 < data.length ? B64[c & 63] : '=');
+    if (chunk.length >= 32768) { parts.push(chunk.join('')); chunk = []; }
   }
-  return out;
+  parts.push(chunk.join(''));
+  return parts.join('');
 }
 
 /** Foto `data:image/png;base64,…` → byte e tipo; `null` se non è un indirizzo `data:` in base64. */
@@ -178,6 +196,9 @@ export function isZip(data: Uint8Array): boolean {
 
 type Inflate = (data: Uint8Array) => Promise<Uint8Array>;
 
+/** Limite di quello che si estrae da uno ZIP (revisore DATI: niente «zip bomb»). */
+export const ZIP_MAX_BYTES = 300 * 1024 * 1024;
+
 /** Deflate grezzo col browser (`DecompressionStream`), se c'è. */
 async function inflateWithStream(data: Uint8Array): Promise<Uint8Array> {
   const DS = (globalThis as any).DecompressionStream;
@@ -200,11 +221,13 @@ export async function readZip(data: Uint8Array, inflate: Inflate = inflateWithSt
   const count = view.getUint16(endAt + 10, true);
   let at = view.getUint32(endAt + 16, true);
   const out: ZipEntry[] = [];
+  let total = 0;
   for (let n = 0; n < count; n += 1) {
     if (at + 46 > data.length || view.getUint32(at, true) !== 0x02014b50) throw new Error('Il file ZIP è rovinato.');
     const method = view.getUint16(at + 10, true);
     const crc = view.getUint32(at + 16, true);
     const compressed = view.getUint32(at + 20, true);
+    const size = view.getUint32(at + 24, true);
     const nameLength = view.getUint16(at + 28, true);
     const extraLength = view.getUint16(at + 30, true);
     const commentLength = view.getUint16(at + 32, true);
@@ -212,6 +235,8 @@ export async function readZip(data: Uint8Array, inflate: Inflate = inflateWithSt
     const name = fromUtf8(data.subarray(at + 46, at + 46 + nameLength));
     at += 46 + nameLength + extraLength + commentLength;
     if (name.endsWith('/')) continue;
+    total += size;
+    if (total > ZIP_MAX_BYTES) throw new Error('Lo ZIP è troppo grande per l\'app (oltre 300 MB estratti).');
     if (localAt + 30 > data.length || view.getUint32(localAt, true) !== 0x04034b50) throw new Error('Il file ZIP è rovinato.');
     const start = localAt + 30 + view.getUint16(localAt + 26, true) + view.getUint16(localAt + 28, true);
     const raw = data.subarray(start, start + compressed);
@@ -219,6 +244,7 @@ export async function readZip(data: Uint8Array, inflate: Inflate = inflateWithSt
     if (method === 0) bytes = raw;
     else if (method === 8) bytes = await inflate(raw);
     else throw new Error(`Il file «${name}» dello ZIP usa una compressione che l'app non conosce.`);
+    if (bytes.length !== size) throw new Error(`Il file «${name}» dello ZIP è rovinato (dimensione sbagliata).`);
     if (crc32(bytes) !== crc) throw new Error(`Il file «${name}» dello ZIP è rovinato (controllo non riuscito).`);
     out.push({ name, data: bytes });
   }
