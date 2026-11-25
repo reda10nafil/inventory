@@ -16,7 +16,7 @@
 import { Platform } from 'react-native';
 import { Buffer } from 'buffer';
 import { isMeshRequestAuthorized } from './meshAuth';
-import { HEARTBEAT_MS, SILENCE_MS, phoneFromHello, presenceMessage, type PhoneId, type PresencePhone } from '../../utils/storeNetwork';
+import { HEARTBEAT_MS, SILENCE_MS, chatForward, phoneFromHello, presenceMessage, type PhoneId, type PresencePhone } from '../../utils/storeNetwork';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,6 +39,8 @@ type ClientMeta = {
   phone?: PhoneId;
   since?: number;
   lastSeen?: number;
+  // quando si è aperto il collegamento: chi non si fa riconoscere entro 10 s si chiude
+  openedAt?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -60,6 +62,8 @@ const departed = new Map<string, PresencePhone>();
 let sweepTimer: ReturnType<typeof setInterval> | null = null;
 const MAX_BUFFER = 1_000_000; // un telefono che manda più di 1 MB senza chiudere una cornice si scollega
 const MAX_DEPARTED = 20;
+const MAX_SOCKETS = 80; // collegamenti aperti insieme (accettati e no)
+const HELLO_MS = 10_000; // tempo per farsi riconoscere col `hello`
 
 // ---------------------------------------------------------------------------
 // Shim loader: react-native-tcp-socket con try/catch
@@ -133,9 +137,11 @@ function encodeWsFrame(data: string | Buffer): Buffer {
   return Buffer.concat([header, payload]);
 }
 
-function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer } {
+function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer; closed: boolean } {
   const messages: string[] = [];
   let offset = 0;
+  // RETE0 (revisore): il telefono ha mandato la cornice di chiusura
+  let closed = false;
   while (offset + 2 <= buf.length) {
     const b0 = buf[offset];
     const b1 = buf[offset + 1];
@@ -177,6 +183,7 @@ function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer
     if (opcode === 0x8) {
       // close frame — caller should close socket
       offset += headerLen + payloadLen;
+      closed = true;
       break;
     } else if (opcode === 0x9) {
       // ping -> handled outside (we know offset)
@@ -188,7 +195,7 @@ function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer
     }
     offset += headerLen + payloadLen;
   }
-  return { messages, remaining: buf.slice(offset) };
+  return { messages, remaining: buf.slice(offset), closed };
 }
 
 // ---------------------------------------------------------------------------
@@ -259,11 +266,14 @@ async function handleRestRequest(
   if (pathname === '/chat/push' && method === 'POST') {
     try {
       const json = body ? JSON.parse(body) : {};
-      const { token: _roomToken, ...chatPayload } = json;
-      await appendChatMessage(chatPayload);
-      // persist + broadcast WS
-      broadcastWs({ type: 'chat', ...chatPayload });
-      if (onMessageCb) onMessageCb({ type: 'chat', ...chatPayload }, socket);
+      // RETE0 (revisore): si inoltra solo la Chat (testo, prodotti, automazioni) col tipo «chat»: dal corpo non passa
+      // una `presence` finta; e se il database non scrive il messaggio arriva lo stesso
+      const chat = chatForward(json);
+      if (chat) {
+        try { await appendChatMessage(chat); } catch { /* registrato in appendChatMessage */ }
+        broadcastWs(chat);
+        if (onMessageCb) onMessageCb(chat, socket);
+      }
     } catch (e) {
       console.log('[meshServer] /chat/push error', e);
       sendHttp(socket, 500, JSON.stringify({ error: 'chat_push_failed' }));
@@ -493,8 +503,16 @@ async function handleTcpData(socket: any, data: Buffer) {
 
   // If already WS upgraded, decode frames
   if (meta.isWs) {
-    const { messages, remaining } = tryDecodeWsFrames(meta.buffer);
+    const { messages, remaining, closed } = tryDecodeWsFrames(meta.buffer);
     meta.buffer = remaining;
+    // RETE0 (revisore): il telefono ha chiesto di chiudere («Scollegati»): dopo i messaggi arrivati prima esce subito
+    // dagli online, senza aspettare i 30 s del silenzio
+    const closeAfter = () => {
+      if (!closed || !clientMeta.has(socket)) return;
+      try { socket.write(Buffer.from([0x88, 0x00])); } catch {}
+      try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+      phoneGone(socket);
+    };
     for (const m of messages) {
       // ping/pong
       if (m === '__ping__') {
@@ -510,8 +528,7 @@ async function handleTcpData(socket: any, data: Buffer) {
           // «Il centro non ha accettato il codice» invece di «non risponde»
           try { socket.write(encodeWsFrame(JSON.stringify({ type: 'error', error: 'unauthorized' }))); } catch {}
           try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
-          clients.delete(socket);
-          clientMeta.delete(socket);
+          phoneGone(socket); // se era già accettato, gli altri lo vedono uscire
           break;
         }
         const now = Date.now();
@@ -519,6 +536,15 @@ async function handleTcpData(socket: any, data: Buffer) {
         meta.phone = phoneFromHello(obj, `tel-${meta.addr.replace(/[^\w]/g, '')}`);
         meta.since = now;
         meta.lastSeen = now;
+        // RETE0 (revisore): un telefono per id. Chi rientra prima che il collegamento di prima sia chiuso ne prende il
+        // posto: quello vecchio si chiude senza passare da «visto alle…»
+        for (const [other, om] of [...clientMeta]) {
+          if (other !== socket && om.authenticated && om.phone?.id === meta.phone.id) {
+            clients.delete(other);
+            clientMeta.delete(other);
+            try { other.destroy ? other.destroy() : other.end?.(); } catch {}
+          }
+        }
         departed.delete(meta.phone.id);
         sendWs(socket, { type: 'hello_ack', token: activeToken, center: { name: centerName }, ts: now });
         broadcastPresence();
@@ -540,16 +566,20 @@ async function handleTcpData(socket: any, data: Buffer) {
       if (obj.type === 'light_payload' || obj.type === 'chat' || obj.type === 'push') {
         // save chat if light_payload
         if (obj.type === 'light_payload') {
-          await appendChatMessage(obj);
-          // normalize to chat for listeners
-          const chat = { type: 'chat', skus: obj.skus, automationIds: obj.automationIds, text: obj.text, ts: obj.ts };
+          // RETE0 (revisore): se il database del centro non scrive, il messaggio si inoltra lo stesso
+          try { await appendChatMessage(obj); } catch { /* registrato in appendChatMessage */ }
+          // normalize to chat for listeners (solo testo, prodotti e automazioni)
+          const chat = chatForward(obj);
           // RETE0: a tutti tranne chi lo manda (lo vede già da sé: niente copie doppie)
-          broadcastWs(chat, socket);
+          if (chat) broadcastWs(chat, socket);
           // notifica anche Host (server) — la sua UI non è WS client, va avvisata via meshSync
           try { const msync: any = require('./meshSync'); if (msync?.notifyLocalChat) msync.notifyLocalChat(obj); } catch {}
         } else {
           // forward to other WS clients (exclude sender)
-          const { token: _roomToken, ...message } = obj;
+          // RETE0 (revisore): della Chat solo testo, prodotti e automazioni; `push` (inventario, RETE2a) com'è
+          const { token: _roomToken, ...rest } = obj;
+          const message = obj.type === 'chat' ? chatForward(obj) : rest;
+          if (!message) continue;
           const frame = encodeWsFrame(JSON.stringify(message));
           for (const c of clients) {
             if (c !== socket) {
@@ -566,6 +596,7 @@ async function handleTcpData(socket: any, data: Buffer) {
         try { onMessageCb(message, socket); } catch (e) { console.log('[meshServer] onMessage error', e); }
       }
     }
+    closeAfter();
     return;
   }
 
@@ -664,6 +695,10 @@ export async function startMeshServer(port: number, token: string, onMessage?: O
       if (meta.authenticated && meta.lastSeen !== undefined && now - meta.lastSeen > SILENCE_MS) {
         try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
         phoneGone(socket);
+      } else if (!meta.authenticated && now - (meta.openedAt ?? now) > HELLO_MS) {
+        // RETE0 (revisore): collegamento aperto e mai riconosciuto (senza richiesta o senza `hello`): si chiude
+        try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+        phoneGone(socket);
       }
     }
   }, HEARTBEAT_MS);
@@ -678,8 +713,10 @@ export async function startMeshServer(port: number, token: string, onMessage?: O
         server = tcpModule.createServer((socket: any) => {
           const addr = `${socket.remoteAddress ?? 'unknown'}:${socket.remotePort ?? ''}`;
           console.log('[meshServer] TCP client connected', addr);
+          // RETE0 (revisore): tetto ai collegamenti aperti insieme
+          if (clientMeta.size >= MAX_SOCKETS) { try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {} return; }
           clients.add(socket);
-          clientMeta.set(socket, { socket, isWs: false, authenticated: false, buffer: Buffer.alloc(0), addr });
+          clientMeta.set(socket, { socket, isWs: false, authenticated: false, buffer: Buffer.alloc(0), addr, openedAt: Date.now() });
 
           socket.on('data', (d: any) => {
             const buf = Buffer.isBuffer(d) ? d : Buffer.from(d);
@@ -810,10 +847,13 @@ async function startHttpFallback(port: number, token: string, onMessage?: OnMesh
     if (pathname === '/chat/push' && method === 'POST') {
       try {
         const j = body ? JSON.parse(body) : {};
-        const { token: _roomToken, ...chatPayload } = j;
-        await appendChatMessage(chatPayload);
-        broadcastHttpWs({ type: 'chat', ...chatPayload });
-        if (onMessageCb) onMessageCb({ type: 'chat', ...chatPayload }, null);
+        // RETE0 (revisore): come nella via TCP, solo la Chat col tipo «chat», anche se il database non scrive
+        const chat = chatForward(j);
+        if (chat) {
+          try { await appendChatMessage(chat); } catch { /* registrato in appendChatMessage */ }
+          broadcastHttpWs(chat);
+          if (onMessageCb) onMessageCb(chat, null);
+        }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {

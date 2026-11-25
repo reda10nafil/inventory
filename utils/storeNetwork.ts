@@ -83,11 +83,16 @@ export interface PhoneId { id: string; name: string }
 export interface PresencePhone { id: string; name: string; since: number; lastSeen: number; online: boolean }
 export interface Presence { centerName: string; centerSince: number; phones: PresencePhone[] }
 
-/** Nome pulito: niente caratteri di controllo o di direzione del testo, spazi ridotti, al massimo 40 caratteri. */
+/** Nome pulito: niente caratteri di controllo o di direzione del testo, niente mezze coppie, spazi ridotti, al massimo 40 caratteri interi. */
 export function cleanName(v: unknown, fallback: string): string {
   if (typeof v !== 'string') return fallback;
   // eslint-disable-next-line no-control-regex
-  const s = v.replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX).trim();
+  const stripped = v.replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '');
+  // Per caratteri interi (una faccina sono due unità): una mezza coppia, tagliata o mandata da sola da un altro
+  // telefono, farebbe lanciare `encodeURIComponent` e romperebbe la rilettura della chiave a ogni avvio
+  const whole = (t: string) => Array.from(t).filter((c) => !(c.length === 1 && c.charCodeAt(0) >= 0xd800 && c.charCodeAt(0) <= 0xdfff));
+  const spaced = whole(stripped).join('').replace(/\s+/g, ' ').trim();
+  const s = Array.from(spaced).slice(0, NAME_MAX).join('').trim();
   return s || fallback;
 }
 
@@ -111,6 +116,24 @@ export function presenceMessage(center: { name: string; since: number }, phones:
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+const CHAT_TEXT_MAX = 2000;
+const CHAT_LIST_MAX = 50;
+const chatList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.length <= ID_MAX).slice(0, CHAT_LIST_MAX) : []);
+
+/**
+ * Sul centro: ciò che si inoltra di un messaggio della Chat arrivato da un telefono. Solo testo, prodotti e automazioni,
+ * sempre col tipo «chat»: così nessuno fa arrivare agli altri una `presence` o un `hello_ack` finti. Null se è vuoto.
+ */
+export function chatForward(raw: unknown): { type: 'chat'; text: string; skus: string[]; automationIds: string[]; ts: number } | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const text = typeof r.text === 'string' ? r.text.slice(0, CHAT_TEXT_MAX) : '';
+  const skus = chatList(r.skus);
+  const automationIds = chatList(r.automationIds);
+  if (!text && !skus.length && !automationIds.length) return null;
+  return { type: 'chat', text, skus, automationIds, ts: num(r.ts) ? r.ts : Date.now() };
+}
+
 /**
  * Sul telefono: la presenza mandata dal centro, con le ore portate all'orologio di questo telefono (i due orologi
  * possono non andare d'accordo). Ciò che non torna si scarta o prende un valore prudente; l'elenco si taglia a 50.
@@ -123,12 +146,15 @@ export function readPresence(raw: unknown, localNow: number): Presence | null {
   const local = (v: unknown) => (num(v) ? v + shift : localNow);
   const center = r.center && typeof r.center === 'object' ? (r.center as Record<string, unknown>) : {};
   const phones: PresencePhone[] = [];
+  const seen = new Set<string>();
   for (const p of Array.isArray(r.phones) ? r.phones : []) {
     if (phones.length >= MAX_PHONES) break;
     if (!p || typeof p !== 'object') continue;
     const q = p as Record<string, unknown>;
     const id = cleanId(q.id);
-    if (!id) continue;
+    // un telefono per id: il primo dell'elenco (il centro mette prima chi è online)
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
     phones.push({ id, name: cleanName(q.name, NO_NAME), since: local(q.since), lastSeen: local(q.lastSeen), online: q.online === true });
   }
   return { centerName: cleanName(center.name, ''), centerSince: local(center.since), phones };
@@ -265,6 +291,11 @@ export const networkKey = (org: string) => `network:v1:${org}:settings`;
 
 /** Ciò che si può usare della chiave salvata. Sul web un centro non può esistere: il ruolo «centro» torna «nessuno». */
 export function normalizeNetworkSettings(raw: unknown, platform: Platform): NetworkSettings {
+  // una chiave che non si riesce a rileggere vale «nessuno»: non deve mai fermare l'avvio della rete
+  try { return readNetworkSettings(raw, platform); } catch { return { role: 'none' }; }
+}
+
+function readNetworkSettings(raw: unknown, platform: Platform): NetworkSettings {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { role: 'none' };
   const r = raw as Record<string, unknown>;
   const hostToken = typeof r.hostToken === 'string' && TOKEN.test(r.hostToken) ? r.hostToken : undefined;

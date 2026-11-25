@@ -1,7 +1,7 @@
 // RETE0 (ticket 32): «Rete del negozio» in funzioni pure. Codice del centro, messaggi della rete (hello, presenza),
 // battito, stato in una riga, righe dei telefoni con «online dalle…» e «visto alle…», chiave per spazio.
 import {
-  HEARTBEAT_MS, SILENCE_MS, atText, buildCenterCode, centerUrl, cleanName, codeError, durationText, helloMessage,
+  HEARTBEAT_MS, SILENCE_MS, atText, buildCenterCode, chatForward, centerUrl, cleanName, codeError, durationText, helloMessage,
   isLocalAddress, isSilent, linkErrorText, networkKey, normalizeNetworkSettings, onlineCount, phoneFromHello,
   phoneRow, presenceMessage, readCenterCode, readPresence, retryDelay, settingsSubtitle, sinceText, statusLine,
   type PresencePhone,
@@ -192,5 +192,47 @@ describe('chiave della rete per spazio (RETE0)', () => {
     expect(normalizeNetworkSettings({ role: 'host', hostToken: 'ABCDEF1234567890' }, 'web')).toEqual({ role: 'none', hostToken: 'ABCDEF1234567890' });
     expect(normalizeNetworkSettings({ role: 'host', hostToken: 'no' }, 'android')).toEqual({ role: 'host' });
     expect(normalizeNetworkSettings({ role: 'boh' }, 'android')).toEqual({ role: 'none' });
+  });
+});
+
+// Dal parere del revisore su c84433d (rete0/revisore/parere-1.md)
+describe('correzioni del revisore (RETE0)', () => {
+  const faccina = '😀';
+
+  it('G1: il nome si taglia per caratteri interi e non lascia mezze coppie', () => {
+    const tagliato = cleanName(`${'a'.repeat(39)}${faccina}${'b'.repeat(10)}`, '');
+    expect(tagliato).toBe(`${'a'.repeat(39)}${faccina}`);
+    expect(cleanName(`Banco \ud83d 1`, '')).toBe('Banco 1');
+    expect(cleanName(`\ude00`, 'Senza nome')).toBe('Senza nome');
+    expect(() => buildCenterCode({ ip: '192.168.1.50', port: 8080, token: '0123456789ABCDEF', name: tagliato })).not.toThrow();
+  });
+
+  it('G1: una chiave salvata con mezza coppia nel nome non rompe la rilettura', () => {
+    const salvata = { role: 'client', center: { ip: '192.168.1.50', port: 8080, token: '0123456789ABCDEF', name: `${'a'.repeat(39)}\ud83d` } };
+    let letta: ReturnType<typeof normalizeNetworkSettings> | undefined;
+    expect(() => { letta = normalizeNetworkSettings(salvata, 'web'); }).not.toThrow();
+    expect(letta?.role).toBe('client');
+    expect(letta?.center?.name).toBe('a'.repeat(39));
+  });
+
+  it('M1: nella presenza un telefono per id (il primo, cioè quello online)', () => {
+    const p = readPresence({
+      type: 'presence', ts: NOW, center: { name: 'Magazzino', since: NOW },
+      phones: [
+        { id: 'tel-1', name: 'Mario', since: NOW, lastSeen: NOW, online: true },
+        { id: 'tel-1', name: 'Mario', since: NOW - 60_000, lastSeen: NOW - 30_000, online: true },
+        { id: 'tel-2', name: 'Cassa', since: NOW, lastSeen: NOW, online: false },
+      ],
+    }, NOW);
+    expect(p?.phones.map((x) => x.id)).toEqual(['tel-1', 'tel-2']);
+    expect(p?.phones[0].since).toBe(NOW);
+  });
+
+  it('M3: della Chat si inoltrano solo testo, prodotti e automazioni, sempre col tipo «chat»', () => {
+    expect(chatForward({ type: 'presence', center: { name: 'Centro falso' }, phones: [{ id: 'x' }], text: 'ciao', skus: ['VIS-0142', 7], automationIds: 'no', ts: 5 }))
+      .toEqual({ type: 'chat', text: 'ciao', skus: ['VIS-0142'], automationIds: [], ts: 5 });
+    expect(chatForward({ type: 'hello_ack', token: 'X' })).toBeNull();
+    expect(chatForward(null)).toBeNull();
+    expect(chatForward({ text: 'a'.repeat(5000) })?.text.length).toBe(2000);
   });
 });

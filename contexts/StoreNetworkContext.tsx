@@ -70,6 +70,7 @@ export function StoreNetworkProvider({ children }: { children: React.ReactNode }
   // Collegamento in corso: i messaggi e le chiusure di un collegamento vecchio non toccano lo stato
   const sessionRef = useRef(0);
   const lastHeardRef = useRef<number | undefined>(undefined);
+  const lastSavedRef = useRef(0);
   const attemptsRef = useRef(0);
   const timers = useRef<{ retry?: ReturnType<typeof setTimeout>; beat?: ReturnType<typeof setInterval>; check?: ReturnType<typeof setInterval>; host?: ReturnType<typeof setInterval> }>({});
   const hostAddrRef = useRef<{ ip: string; port: number } | null>(null);
@@ -155,6 +156,13 @@ export function StoreNetworkProvider({ children }: { children: React.ReactNode }
             if (session !== sessionRef.current) return;
             const now = Date.now();
             lastHeardRef.current = now;
+            // L'ultima notizia si salva al più ogni 10 s: alla riapertura «non risponde da…» e «visto alle…» partono da
+            // qui e non dall'ora del collegamento (dopo una giornata collegati direbbe «da 8 ore»)
+            const saved = settingsRef.current;
+            if (now - lastSavedRef.current >= HEARTBEAT_MS && saved.role === 'client' && saved.center) {
+              lastSavedRef.current = now;
+              save({ ...saved, center: { ...saved.center, lastSeen: now } });
+            }
             if (m?.type === 'presence') {
               const p = readPresence(m, now);
               if (p) setState((s) => ({ ...s, phones: p.phones, centerName: p.centerName || s.centerName, centerSince: p.centerSince }));
@@ -168,6 +176,7 @@ export function StoreNetworkProvider({ children }: { children: React.ReactNode }
       if (session !== sessionRef.current) { return false; }
       const now = Date.now();
       lastHeardRef.current = now;
+      lastSavedRef.current = now;
       attemptsRef.current = 0;
       const center = { ...code, name: cleanName(res.centerName, '') || code.name };
       save({ role: 'client', center: { ...center, lastSeen: now }, ...(settingsRef.current.hostToken && { hostToken: settingsRef.current.hostToken }) });
