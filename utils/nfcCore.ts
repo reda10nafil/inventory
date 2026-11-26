@@ -304,7 +304,8 @@ export function createNfcService(driver: NfcDriver): NfcService {
     },
 
     async rearm() {
-      if (driver.os !== 'android' || !registered || busy) return;
+      // anche durante una lettura: lo Scanner ascolta a lungo e l'app può andare e tornare nel frattempo
+      if (driver.os !== 'android' || !(registered || own)) return;
       try { await driver.registerTagEvent(SILENCER); } catch { /* si riprova alla prossima lettura */ }
     },
 

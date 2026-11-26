@@ -18,18 +18,20 @@ import { makeStyles, useTheme } from '../../contexts/ThemeContext';
 import { withAlpha } from '../../utils/color';
 import { Backdrop } from '../../components/ui/Backdrop';
 import { GradientFill } from '../../components/ui/GradientFill';
-// N1 (ticket 16, 22): «Leggi un tag» accanto a «Inserisci Manualmente», e la fotocamera solo se Scanner e NFC la vuole
-import { NfcSheet } from '../../components/NfcSheet';
+// N1 (ticket 16, 22): la fotocamera solo se Scanner e NFC la vuole. 26/11: l'NFC si ascolta da solo con lo Scanner
+// aperto (anche insieme alla fotocamera, «Tutti e due»): niente più pulsante «Leggi un tag» qui
 import { useHardwareConfig } from '../../contexts/HardwareConfigContext';
+import { useNfcListen } from '../../hooks/useNfcListen';
 import { useNfcUsable } from '../../hooks/useNfcUsable';
-import { readerSources } from '../../utils/nfcTag';
+import type { NfcTagEvent } from '../../utils/nfcCore';
+import { readerSources, readStep } from '../../utils/nfcTag';
 
 export default function ScannerScreen() {
   const t = useTheme();
   const styles = useStyles();
   const router = useRouter();
   const { products, scanProduct } = useInventory();
-  const { read, choose, name } = useCodeReader();
+  const { read, choose, name, sources } = useCodeReader();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
@@ -40,7 +42,6 @@ export default function ScannerScreen() {
   // N1: lettori secondo Scanner e NFC (sul web e senza NFC sempre la fotocamera, NG11)
   const { hwConfig } = useHardwareConfig();
   const reader = readerSources(hwConfig.scanMode, useNfcUsable());
-  const [readingTag, setReadingTag] = useState(false);
   const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<number | null>(null);
 
   // COD (ticket 22): fotocamera, «Inserisci Manualmente» e immagine dalla galleria passano tutte dal lettore unico
@@ -141,7 +142,6 @@ export default function ScannerScreen() {
 
   // N1 (NG16): il codice del tag (UID collegato, poi il testo) passa dal lettore unico come ogni altro codice
   const handleTagRead = (code: string) => {
-    setReadingTag(false);
     const result = read(code);
     if (result.status === 'unknown') {
       soundService.playBlockingError();
@@ -150,6 +150,21 @@ export default function ScannerScreen() {
     }
     answer(result, true);
   };
+
+  // Tag avvicinato con lo Scanner aperto: UID collegato o testo del tag, poi come un codice della fotocamera
+  const handleTag = (tag: NfcTagEvent) => {
+    const step = readStep(tag, sources);
+    if (step.kind === 'nothing') {
+      soundService.playBlockingError();
+      Alert.alert('Tag letto', step.text, [{ text: 'OK' }]);
+      return;
+    }
+    handleTagRead(step.code);
+  };
+  const nfcListen = useNfcListen(reader.nfc, handleTag);
+  const nfcLine = nfcListen === 'spento' ? 'NFC spento: accendilo da Impostazioni › Scanner e NFC'
+    : nfcListen === 'assente' ? 'Questo telefono non ha l\'NFC'
+      : 'NFC attivo: avvicina un tag al telefono';
 
   const pickQRImage = async () => {
     try {
@@ -271,7 +286,7 @@ export default function ScannerScreen() {
           style={styles.camera}
           facing="back"
           enableTorch={flashOn}
-          onBarcodeScanned={scanned || readingTag ? undefined : handleBarCodeScanned}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
           barcodeScannerSettings={{
             barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39'],
           }}
@@ -304,18 +319,15 @@ export default function ScannerScreen() {
         </Text>
           </>
         ) : (
-          <Text style={styles.instructionsTitle}>Tocca «Leggi un tag» e avvicina il tag</Text>
+          <Text style={styles.instructionsTitle}>Avvicina il tag al telefono</Text>
         )}
+        {reader.nfc ? (
+          <View style={styles.nfcLine} accessibilityLiveRegion="polite">
+            <AppIcon name="nfc" size={18} color={nfcListen === 'spento' || nfcListen === 'assente' ? t.colors.textMuted : t.colors.accentInk} />
+            <Text style={styles.nfcLineText}>{nfcLine}</Text>
+          </View>
+        ) : null}
       </View>
-
-      {reader.nfc ? (
-        <View style={styles.actionsContainer}>
-          <Pressable style={styles.actionButton} onPress={() => setReadingTag(true)} accessibilityRole="button" accessibilityLabel="Leggi un tag">
-            <AppIcon name="nfc" size={20} color={t.colors.onButtonSecondary} />
-            <Text style={styles.actionButtonText}>Leggi un tag</Text>
-          </Pressable>
-        </View>
-      ) : null}
 
       {/* Action Buttons */}
       <View style={styles.actionsContainer}>
@@ -338,7 +350,6 @@ export default function ScannerScreen() {
         </Pressable>
       </View>
 
-      {readingTag ? <NfcSheet visible mode="leggi" onClose={() => setReadingTag(false)} onRead={handleTagRead} /> : null}
 
       {/* Loading Modal */}
       <Modal
@@ -505,6 +516,16 @@ const useStyles = makeStyles((t) => ({
   instructionsText: {
     ...t.typography.caption,
     textAlign: 'center',
+    lineHeight: 20,
+  },
+  nfcLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 14,
+  },
+  nfcLineText: {
+    ...t.typography.caption,
     lineHeight: 20,
   },
   actionsContainer: {

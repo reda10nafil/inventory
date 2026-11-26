@@ -135,7 +135,7 @@ describe('silenziatore (N0, decisione 1)', () => {
     expect(f.calls).not.toContain('unregister');
   });
 
-  it('rearm: col silenziatore acceso lo rimette; spento, su iOS o durante un\'operazione non fa nulla', async () => {
+  it('rearm: col silenziatore acceso lo rimette, anche a lettura in corso; spento o su iOS non fa nulla', async () => {
     const f = fakeDriver();
     const nfc = createNfcService(f.driver);
     await nfc.rearm();
@@ -146,7 +146,7 @@ describe('silenziatore (N0, decisione 1)', () => {
     const reading = nfc.read({ timeoutMs: 5000 });
     await flush();
     await nfc.rearm();
-    expect(count(f.calls, 'register')).toBe(3); // quella della lettura, nessuna in più
+    expect(count(f.calls, 'register')).toBe(4); // quella della lettura e quella del rientro (lo Scanner ascolta a lungo)
     f.tap(TAG);
     await reading;
     const ios = fakeDriver('ios');

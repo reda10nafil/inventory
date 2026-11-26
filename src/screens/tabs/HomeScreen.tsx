@@ -330,6 +330,16 @@ export default function HomeScreen() {
             </>
           ) : (
             <>
+              {/* 26/11: lo Scanner (fotocamera e NFC) a un tocco dalla Home, accanto alla ricerca */}
+              <Pressable
+                style={styles.iconButton}
+                onPress={() => router.push('/scanner' as any)}
+                accessibilityRole="button"
+                accessibilityLabel="Apri lo Scanner"
+                hitSlop={4}
+              >
+                <AppIcon name="qr-code-scanner" size={22} color={t.colors.textPrimary} />
+              </Pressable>
               <Pressable
                 style={styles.iconButton}
                 onPress={() => {
