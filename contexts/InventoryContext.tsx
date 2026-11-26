@@ -9,6 +9,7 @@ import { useFurTypes } from './FurTypesContext';
 import { useEventAuthor } from './ProfileContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
+import { isRemote, uploadPhoto } from '../utils/photoCloud';
 import { usage } from '../utils/productRules';
 import { childrenOf } from '../utils/categories';
 import { describeChanges } from '../utils/productChanges';
@@ -152,6 +153,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const lastRemoteUpdate = useRef<string | null>(null);
   const uploadingMedia = useRef(new Set<string>());
   const backedUpMedia = useRef(new Set<string>());
+  const uploadingPhotos = useRef(new Set<string>());
+  const failedPhotos = useRef(new Set<string>());
 
   // Local state is keyed by organization; no operator can read another account's cache.
   useEffect(() => {
@@ -225,12 +228,39 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return () => { void supabase.removeChannel(channel); };
   }, [organizationId, cloudEnabled, user?.id]);
 
-  // Keep product photos in tenant-private Storage for team sync; copy them to private Drive too when authorized.
+  // 26/11: le foto del prodotto vanno online da sole, con o senza account (archivio pubblico «product-photos»,
+  // `utils/photoCloud.ts`): il link permanente prende il posto del file del telefono, così il CSV lo porta e gli
+  // altri telefoni lo vedono. Una alla volta; una non riuscita si riprova alla prossima apertura dell'app.
+  useEffect(() => {
+    if (!organizationId || loadedOrganization.current !== organizationId) return;
+    const pending = products.flatMap((product) => (product.images || []).map((uri, index) => ({ product, uri, index })))
+      .filter(({ uri }) => !!uri && !isRemote(uri) && !uploadingPhotos.current.has(uri) && !failedPhotos.current.has(uri));
+    if (!pending.length) return;
+    pending.forEach(({ uri }) => uploadingPhotos.current.add(uri));
+    const folder = cloudEnabled ? organizationId : null;
+    void (async () => {
+      for (const { product, uri, index } of pending) {
+        try {
+          const url = await uploadPhoto(uri, product.id, index, folder);
+          setProducts((current) => current.map((item) => item.id !== product.id ? item : {
+            ...item, images: (item.images || []).map((image) => image === uri ? url : image),
+          }));
+        } catch (error) {
+          failedPhotos.current.add(uri);
+          console.warn(`Foto di ${product.sku} non caricata online: si riprova alla prossima apertura.`, error);
+        } finally {
+          uploadingPhotos.current.delete(uri);
+        }
+      }
+    })();
+  }, [organizationId, cloudEnabled, products]);
+
+  // Allegati dei campi personalizzati: nello Storage privato del team (con l'accesso); copia anche su Drive se autorizzato.
+  // Le foto del prodotto non passano più di qui (sopra, link pubblico permanente).
   useEffect(() => {
     const token = (session as any)?.provider_token as string | undefined;
     if (!organizationId || !cloudEnabled || !products.length) return;
     const localAssets = products.flatMap((product) => [
-      ...(product.images || []).map((uri, index) => ({ product, uri, index, fieldId: undefined as string | undefined })),
       ...(product.customData || []).flatMap((entry) => {
         const fieldId = entry.fieldSnapshot?.id;
         const fieldType = entry.fieldSnapshot?.type;

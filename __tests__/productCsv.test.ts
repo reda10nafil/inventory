@@ -356,8 +356,9 @@ describe('Scaffale nel CSV dei prodotti (S1a)', () => {
 
 describe('Altezza nel CSV dei prodotti (S2)', () => {
   const lists = { categories: [], furTypes: DEFAULT_FUR_TYPES };
-  it('ultima colonna, esportata e riletta; un CSV di prima senza la colonna dà un prodotto senza altezza', () => {
-    expect(PRODUCT_CSV_HEADER[PRODUCT_CSV_HEADER.length - 1]).toBe('Altezza');
+  it('colonna 21, esportata e riletta; un CSV di prima senza la colonna dà un prodotto senza altezza', () => {
+    expect(PRODUCT_CSV_HEADER[20]).toBe('Altezza');
+    expect(PRODUCT_CSV_HEADER[21]).toBe('Link foto'); // 26/11: dopo l'altezza, i link delle foto in chiaro
     expect(productCsvColumns(PRODUCT_CSV_HEADER).height).toBe(20);
     const rows = productCsvRows([product({ sku: 'A', height: 42.5 }), product({ sku: 'B' })], []);
     expect(rows.slice(1).map((r) => r[20])).toEqual([42.5, undefined]);

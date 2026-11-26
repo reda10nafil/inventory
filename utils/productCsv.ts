@@ -21,7 +21,7 @@ const mainFirst = (location: string) => (key: string) => (key === location ? 2 :
 
 // Stesse posizioni delle colonne di prima di C1: cambiano solo i nomi della seconda («Categoria» → «Tipo di pelle»)
 // e della sedicesima («Cartella» → «Categoria»). «Scaffale» (S1a) e poi «Altezza» (S2) in fondo: le altre restano dove erano.
-export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Categoria', 'Unità', 'Giacenza', 'Scorta minima', 'Scaffale', 'Altezza'];
+export const PRODUCT_CSV_HEADER = ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON', 'Categoria', 'Unità', 'Giacenza', 'Scorta minima', 'Scaffale', 'Altezza', 'Link foto'];
 
 /**
  * Giacenza di un articolo a quantità per il CSV: «magazzino:12; vetrina:2.5», con la posizione principale per
@@ -85,6 +85,8 @@ export function productCsvRows(products: readonly Product[], categories: readonl
       product.minStock,
       productShelf(product, shelves)?.name ?? '',
       product.height,
+      // 26/11: i link pubblici delle foto in chiaro, separati da una virgola (si caricano online da sole)
+      (product.images || []).filter((uri) => /^https?:\/\//i.test(uri)).join(', '),
     ]),
   ];
 }

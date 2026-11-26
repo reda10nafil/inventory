@@ -8,6 +8,7 @@ import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
+import { photoCounts } from '../../../utils/photoCloud';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
 import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
 import { categoryPath } from '../../../utils/categories';
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { products, timeline, addProduct, getProductBySku, libraries } = useInventory();
+  const photos = photoCounts(products);
   // S1b: nei report le chiavi con lo scaffale si leggono «Magazzino › A1»
   const placeLabel = usePlaceLabel();
   const { furTypes, labelOf } = useFurTypes();
@@ -537,6 +539,14 @@ export default function SettingsScreen() {
               <Text style={styles.settingDescription}>
                 Esporta CSV completo, apribile anche in Excel
               </Text>
+              {/* 26/11: quante foto hanno già il link (il CSV porta solo quelle online) */}
+              {photos.total > 0 ? (
+                <Text style={styles.settingDescription}>
+                  {photos.online === photos.total
+                    ? `Foto online con link: ${photos.total} su ${photos.total}`
+                    : `Foto online con link: ${photos.online} su ${photos.total} (le altre si caricano con la connessione)`}
+                </Text>
+              ) : null}
             </View>
           </View>
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
