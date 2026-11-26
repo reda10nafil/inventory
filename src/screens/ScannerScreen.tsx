@@ -26,6 +26,12 @@ import { useNfcUsable } from '../../hooks/useNfcUsable';
 import type { NfcTagEvent } from '../../utils/nfcCore';
 import { readerSources, readStep } from '../../utils/nfcTag';
 
+// 26/11: sul telefono di prova (Samsung) con la fotocamera accesa il sistema spegne la lettura NFC («active polling is
+// forced to disable now» nel log): con «Tutti e due» lo Scanner ha due modi, Fotocamera e NFC; in NFC la fotocamera si
+// spegne e il tag si legge da solo. Il modo scelto resta finché l'app è aperta.
+type ScanTab = 'camera' | 'nfc';
+let lastTab: ScanTab = 'camera';
+
 export default function ScannerScreen() {
   const t = useTheme();
   const styles = useStyles();
@@ -42,6 +48,11 @@ export default function ScannerScreen() {
   // N1: lettori secondo Scanner e NFC (sul web e senza NFC sempre la fotocamera, NG11)
   const { hwConfig } = useHardwareConfig();
   const reader = readerSources(hwConfig.scanMode, useNfcUsable());
+  const both = reader.camera && reader.nfc;
+  const [tab, setTabState] = useState<ScanTab>(lastTab);
+  const setTab = (next: ScanTab) => { lastTab = next; setTabState(next); };
+  const showCamera = reader.camera && (!both || tab === 'camera');
+  const listenNfc = reader.nfc && (!both || tab === 'nfc');
   const [errorTimeoutRef, setErrorTimeoutRef] = React.useState<number | null>(null);
 
   // COD (ticket 22): fotocamera, «Inserisci Manualmente» e immagine dalla galleria passano tutte dal lettore unico
@@ -161,7 +172,7 @@ export default function ScannerScreen() {
     }
     handleTagRead(step.code);
   };
-  const nfcListen = useNfcListen(reader.nfc, handleTag);
+  const nfcListen = useNfcListen(listenNfc, handleTag);
   const nfcLine = nfcListen === 'spento' ? 'NFC spento: accendilo da Impostazioni › Scanner e NFC'
     : nfcListen === 'assente' ? 'Questo telefono non ha l\'NFC'
       : 'NFC attivo: avvicina un tag al telefono';
@@ -280,8 +291,30 @@ export default function ScannerScreen() {
         </Pressable>
       </View>
 
+      {both ? (
+        <View style={styles.segments} accessibilityRole="radiogroup">
+          {([['camera', 'Fotocamera', 'photo-camera'], ['nfc', 'NFC', 'nfc']] as const).map(([id, label, icon]) => {
+            const active = tab === id;
+            return (
+              <Pressable
+                key={id}
+                style={[styles.segment, active && styles.segmentActive]}
+                onPress={() => setTab(id)}
+                accessibilityRole="radio"
+                aria-checked={active}
+                accessibilityLabel={`Leggi con ${label}`}
+              >
+                {active && <GradientFill gradient={t.gradients.chipActive} style={{ borderRadius: t.radius.chip }} />}
+                <AppIcon name={icon} size={18} color={active ? t.colors.chipActiveText : t.colors.chipText} />
+                <Text style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+
       <View style={styles.cameraContainer}>
-        {reader.camera ? (
+        {showCamera ? (
         <CameraView
           style={styles.camera}
           facing="back"
@@ -307,7 +340,7 @@ export default function ScannerScreen() {
       </View>
 
       <View style={styles.instructionsContainer}>
-        {reader.camera ? (
+        {showCamera ? (
           <>
         <AppIcon name="center-focus-strong" size={48} color={t.colors.accentInk} />
         <Text style={styles.instructionsTitle}>
@@ -321,7 +354,10 @@ export default function ScannerScreen() {
         ) : (
           <Text style={styles.instructionsTitle}>Avvicina il tag al telefono</Text>
         )}
-        {reader.nfc ? (
+        {both && tab === 'camera' ? (
+          <Text style={[styles.instructionsText, { marginTop: 12 }]}>Per i tag NFC tocca «NFC» qui sopra: con la fotocamera accesa il telefono non li legge</Text>
+        ) : null}
+        {listenNfc ? (
           <View style={styles.nfcLine} accessibilityLiveRegion="polite">
             <AppIcon name="nfc" size={18} color={nfcListen === 'spento' || nfcListen === 'assente' ? t.colors.textMuted : t.colors.accentInk} />
             <Text style={styles.nfcLineText}>{nfcLine}</Text>
@@ -517,6 +553,39 @@ const useStyles = makeStyles((t) => ({
     ...t.typography.caption,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  segments: {
+    flexDirection: 'row',
+    gap: 6,
+    padding: 4,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: t.radius.chip,
+    backgroundColor: t.colors.chip,
+    borderWidth: 1,
+    borderColor: t.colors.chipBorder,
+  },
+  segment: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: t.radius.chip,
+    overflow: 'hidden',
+  },
+  segmentActive: {
+    backgroundColor: t.colors.chipActive,
+  },
+  segmentText: {
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: t.colors.chipText,
+  },
+  segmentTextActive: {
+    color: t.colors.chipActiveText,
   },
   nfcLine: {
     flexDirection: 'row',

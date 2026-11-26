@@ -21,6 +21,7 @@ export function useNfcListen(enabled: boolean, onTag: (tag: NfcTagEvent) => void
     if (!enabled || !nfcService.available) { setState('fermo'); return undefined; }
     let alive = true;
     void (async () => {
+      await pause(400); // la fotocamera appena spenta: il telefono riaccende l'NFC un attimo dopo
       while (alive) {
         const outcome = await nfcService.read({ timeoutMs: LISTEN_MS });
         if (!alive) return;
