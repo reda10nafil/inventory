@@ -1,35 +1,13 @@
-// 26/11: «Condividi prodotto» manda anche le foto (prima solo il testo: su Android `Share.share` ignora `url`).
-// Le foto online (link http) si scaricano nella cache del telefono, poi si condividono tutte insieme al testo con
-// `react-native-share` 12.3.1: WhatsApp e simili ricevono le foto con la scheda come didascalia. Al massimo 10 foto.
-// Una foto che non si scarica si salta; senza nessuna foto resta la condivisione del solo testo.
-import * as ExpoFS from 'expo-file-system/legacy';
-import { Share as RNShare } from 'react-native';
-import Share from 'react-native-share';
+// 26/11: «Condividi prodotto» = la scheda di sempre (testo) con in fondo i link delle foto online. Richiesta
+// dell'utente: inviare le foto come file faceva arrivare una sola immagine e perdere le specifiche. Su WhatsApp il
+// primo link mostra l'anteprima della foto. Le foto non ancora online (senza link) non si possono mettere nel testo.
+import { Share } from 'react-native';
 
-const MAX_PHOTOS = 10;
-
-async function localCopy(uri: string, index: number): Promise<string | null> {
-  if (!/^https?:\/\//i.test(uri)) return uri; // già sul telefono
-  const ext = uri.match(/\.(jpe?g|png|webp|heic)(?:[?#]|$)/i)?.[1]?.toLowerCase() ?? 'jpg';
-  const target = `${(ExpoFS as any).cacheDirectory}condividi_${Date.now()}_${index + 1}.${ext}`;
-  try {
-    const result = await (ExpoFS as any).downloadAsync(uri, target);
-    return result?.status === 200 ? result.uri : null;
-  } catch {
-    return null;
-  }
+export function messageWithPhotoLinks(message: string, images: readonly string[] | undefined): string {
+  const links = (images || []).filter((uri) => /^https?:\/\//i.test(uri));
+  return links.length ? `${message}\n\n📷 FOTO:\n${links.join('\n')}` : message;
 }
 
-/** Condivide testo e foto del prodotto in un'unica volta (l'utente sceglie l'app). */
 export async function shareWithPhotos(message: string, title: string, images: readonly string[] | undefined): Promise<void> {
-  const files: string[] = [];
-  for (const [index, uri] of (images || []).filter(Boolean).slice(0, MAX_PHOTOS).entries()) {
-    const file = await localCopy(uri, index);
-    if (file) files.push(file);
-  }
-  if (!files.length) {
-    await RNShare.share({ message, title });
-    return;
-  }
-  await Share.open({ title, message, urls: files, type: 'image/*', failOnCancel: false });
+  await Share.share({ title, message: messageWithPhotoLinks(message, images) });
 }
