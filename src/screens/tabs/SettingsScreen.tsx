@@ -1,5 +1,5 @@
 // FurInventory Pro - Settings Screen
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, Alert, Platform, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
@@ -10,6 +10,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { photoCounts } from '../../../utils/photoCloud';
 import { googleAccountAvailable } from '../../../utils/googleAccount';
+import { backupWhen, lastDriveBackup, runDriveBackup, type DriveBackupInfo } from '../../../utils/driveBackup';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
 import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
 import { categoryPath } from '../../../utils/categories';
@@ -120,6 +121,31 @@ export default function SettingsScreen() {
   const exportToCSV = () => exportCsv('inventario', productCsvRows(products, libraries, shelves));
   const exportStockCsv = () => exportCsv('giacenze', stockCsvRows(products, reportLabels));
   const exportMovementsCsv = () => exportCsv('movimenti', movementCsvRows(timeline, products, reportLabels));
+
+  // 26/11: backup su Drive con l'account Google del telefono (prima cercava il permesso del vecchio accesso dal
+  // browser, che non c'è più: per questo il pulsante restava spento anche con l'accesso fatto)
+  const [lastBackup, setLastBackup] = useState<DriveBackupInfo | null>(null);
+  useEffect(() => {
+    if (!cloudOrganizationId) { setLastBackup(null); return; }
+    void lastDriveBackup(cloudOrganizationId).then(setLastBackup);
+  }, [cloudOrganizationId]);
+  const backupNow = async () => {
+    if (!session || !cloudOrganizationId) {
+      Alert.alert('Prima accedi con Google', 'Tocca «Accedi con Google» qui sopra: il backup va nel Drive del tuo account.');
+      return;
+    }
+    setCloudBackupBusy(true);
+    try {
+      const info = await runDriveBackup(cloudOrganizationId, productCsvRows(products, libraries, shelves));
+      setLastBackup(info);
+      Alert.alert('Backup fatto', 'CSV dell\'inventario e foglio Google nella cartella «Syncro Flow» del tuo Google Drive.',
+        info.sheetUrl ? [{ text: 'Apri foglio', onPress: () => void Linking.openURL(info.sheetUrl!) }, { text: 'Chiudi' }] : undefined);
+    } catch (error) {
+      Alert.alert('Backup non riuscito', error instanceof Error ? error.message : 'Google Drive non ha completato il caricamento.');
+    } finally {
+      setCloudBackupBusy(false);
+    }
+  };
 
   const backupToDrive = async () => {
     const accessToken = (session as any)?.provider_token as string | undefined;
@@ -670,8 +696,12 @@ export default function SettingsScreen() {
 
         {/* ACC1 (AR12): col login spento la voce resta, attenuata e senza effetto, con il motivo */}
         <Pressable
-          style={[styles.settingRow, !LOGIN_ENABLED && styles.settingRowOff]}
-          onPress={() => { if (LOGIN_ENABLED && !cloudBackupBusy) void backupToDrive(); }}
+          style={[styles.settingRow, !LOGIN_ENABLED && !session && styles.settingRowOff]}
+          onPress={() => {
+            if (cloudBackupBusy) return;
+            if (LOGIN_ENABLED) void backupToDrive();
+            else void backupNow();
+          }}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#3B82F6' }]}>
@@ -680,7 +710,10 @@ export default function SettingsScreen() {
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>{cloudBackupBusy ? 'Backup in corso…' : 'Backup Google Drive'}</Text>
               <Text style={styles.settingDescription}>
-                {LOGIN_ENABLED ? 'Copia privata di CSV, fogli, foto e allegati' : 'Spento: serve l’accesso con Google, che oggi non c’è'}
+                {LOGIN_ENABLED ? 'Copia privata di CSV, fogli, foto e allegati'
+                  : !session ? 'Prima accedi con Google qui sopra'
+                    : lastBackup ? `Ultimo backup: ${backupWhen(lastBackup.at)} · da solo una volta al giorno. Tocca per rifarlo ora`
+                      : 'Ancora nessun backup: tocca per salvare CSV e foglio nel tuo Drive (poi da solo ogni giorno)'}
               </Text>
             </View>
           </View>

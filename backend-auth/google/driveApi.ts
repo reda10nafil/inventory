@@ -13,16 +13,17 @@ async function driveRequest<T>(url: string, token: string, init?: RequestInit): 
   return response.json() as Promise<T>;
 }
 
-export async function ensureOrganizationDriveFolder(token: string, organizationId: string) {
-  const escapedOrgId = organizationId.replace(/'/g, "\\'");
-  const query = encodeURIComponent(`name = 'Syncro Flow ${escapedOrgId}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`);
+// 26/11: la cartella si chiama «Syncro Flow» (prima «Syncro Flow <id>»): con `drive.file` l'app vede solo i file suoi,
+// quindi nel Drive di un negozio c'è una sola cartella con questo nome creata dall'app. `organizationId` resta per firma.
+export async function ensureOrganizationDriveFolder(token: string, _organizationId: string) {
+  const query = encodeURIComponent(`name = 'Syncro Flow' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`);
   const found = await driveRequest<{ files?: Array<{ id: string }> }>(
     `${DRIVE_API}/files?q=${query}&fields=files(id)&pageSize=1`, token,
   );
   if (found.files?.[0]?.id) return found.files[0].id;
   const folder = await driveRequest<{ id: string }>(`${DRIVE_API}/files?fields=id`, token, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: `Syncro Flow ${organizationId}`, mimeType: 'application/vnd.google-apps.folder' }),
+    body: JSON.stringify({ name: 'Syncro Flow', mimeType: 'application/vnd.google-apps.folder' }),
   });
   return folder.id;
 }
@@ -48,6 +49,14 @@ export async function uploadLocalUriToDrive(token: string, folderId: string, uri
   if (!source.ok) throw new Error('Il file locale non è leggibile.');
   const blob = await source.blob();
   return uploadDriveFile(token, folderId, fileName, blob, blob.type);
+}
+
+/** Sposta un file (per esempio il foglio Google appena creato) nella cartella. */
+export async function moveDriveFileToFolder(token: string, fileId: string, folderId: string) {
+  return driveRequest<{ id: string }>(
+    `${DRIVE_API}/files/${fileId}?addParents=${folderId}&removeParents=root&fields=id`, token,
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: '{}' },
+  );
 }
 
 export async function createGoogleSheetBackup(token: string, title: string, values: string[][]) {

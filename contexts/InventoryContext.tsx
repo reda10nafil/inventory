@@ -10,6 +10,8 @@ import { useEventAuthor } from './ProfileContext';
 import { supabase } from '../backend-auth/supabase/client';
 import { ensureOrganizationDriveFolder, uploadDriveFile } from '../backend-auth/google/driveApi';
 import { isRemote, uploadPhoto } from '../utils/photoCloud';
+import { driveBackupDue, lastDriveBackup, runDriveBackup } from '../utils/driveBackup';
+import { productCsvRows } from '../utils/productCsv';
 import { usage } from '../utils/productRules';
 import { childrenOf } from '../utils/categories';
 import { describeChanges } from '../utils/productChanges';
@@ -255,6 +257,23 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       }
     })();
   }, [organizationId, cloudEnabled, cloudOrganizationId, products]);
+
+  // 26/11: backup su Google Drive da solo, una volta al giorno (come WhatsApp), con l'account Google attivo. Parte
+  // 30 s dopo il caricamento, una volta per apertura dell'app; un errore si riprova all'apertura dopo.
+  const autoBackupTried = useRef<string | null>(null);
+  useEffect(() => {
+    if (!cloudEnabled || !cloudOrganizationId || !organizationId || loadedOrganization.current !== organizationId) return;
+    if (autoBackupTried.current === cloudOrganizationId) return;
+    const org = cloudOrganizationId;
+    const timer = setTimeout(() => {
+      autoBackupTried.current = org;
+      void lastDriveBackup(org).then((last) => {
+        if (!driveBackupDue(last)) return;
+        return runDriveBackup(org, productCsvRows(productsRef.current, libraries, shelvesRef.current));
+      }).catch((error) => console.warn('Backup automatico su Drive non riuscito: si riprova alla prossima apertura.', error));
+    }, 30000);
+    return () => clearTimeout(timer);
+  }, [cloudEnabled, cloudOrganizationId, organizationId, products.length]);
 
   // Allegati dei campi personalizzati: nello Storage privato del team (con l'accesso); copia anche su Drive se autorizzato.
   // Le foto del prodotto non passano più di qui (sopra, link pubblico permanente).
