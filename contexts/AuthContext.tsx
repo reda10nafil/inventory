@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../backend-auth/supabase/client';
+import { chooseGoogleAccount, forgetGoogleAccount } from '../utils/googleAccount';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -22,6 +23,12 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   organizationId: string | null;
+  /**
+   * 26/11: spazio nel cloud dell'account Google (uno per negozio), con l'accesso facoltativo da Impostazioni. I dati
+   * del telefono restano nello spazio `local`; il cloud riceve la loro copia, le foto e la sincronizzazione con gli
+   * altri telefoni dello stesso account. Null senza accesso.
+   */
+  cloudOrganizationId: string | null;
   organizations: Array<{ id: string; name: string; role: string }>;
   loading: boolean;
   authError: string | null;
@@ -60,6 +67,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string; role: string }>>(LOGIN_ENABLED ? [] : LOCAL_ORGANIZATIONS);
   const [loading, setLoading] = useState(LOGIN_ENABLED);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [cloudOrganizationId, setCloudOrganizationId] = useState<string | null>(null);
+
+  // Accesso facoltativo (login spento): la sessione Supabase c'è solo se l'utente ha scelto l'account Google
+  const resolveCloud = useCallback(async (activeSession: Session | null) => {
+    if (!activeSession) { setCloudOrganizationId(null); return; }
+    const { data, error } = await (supabase as any).rpc('ensure_personal_organization');
+    if (error) throw error;
+    setCloudOrganizationId(typeof data === 'string' && data ? data : null);
+  }, []);
+
+  useEffect(() => {
+    if (LOGIN_ENABLED) return;
+    let mounted = true;
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!mounted) return;
+      setSession(data.session);
+      await resolveCloud(data.session);
+    }).catch((error) => {
+      if (mounted) setAuthError(error instanceof Error ? error.message : 'Account non raggiungibile.');
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      void resolveCloud(nextSession).catch((error) => {
+        setAuthError(error instanceof Error ? error.message : 'Spazio cloud non raggiungibile.');
+      });
+    });
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, [resolveCloud]);
 
   const resolveOrganization = useCallback(async (activeSession: Session | null) => {
     if (!activeSession) {
@@ -132,8 +167,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [resolveOrganization]);
 
   const signInWithGoogle = useCallback(async () => {
-    if (!LOGIN_ENABLED) throw new Error('L’accesso con Google è momentaneamente disattivato.');
     setAuthError(null);
+    if (!LOGIN_ENABLED) {
+      // Account Google del telefono → token d'identità → sessione Supabase (niente browser, niente password)
+      const chosen = await chooseGoogleAccount();
+      if (!chosen) return; // annullato
+      const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: chosen.idToken });
+      if (error) throw error;
+      return;
+    }
     const redirectTo = callbackUrl();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -155,7 +197,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!LOGIN_ENABLED) return;
+    if (!LOGIN_ENABLED) {
+      await forgetGoogleAccount();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setSession(null);
+      setCloudOrganizationId(null);
+      return;
+    }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setSession(null);
@@ -181,8 +230,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session?.user.id]);
 
   const value = useMemo(() => ({
-    session, user: session?.user ?? null, organizationId, organizations, loading, authError, signInWithGoogle, signOut, switchOrganization,
-  }), [session, organizationId, organizations, loading, authError, signInWithGoogle, signOut, switchOrganization]);
+    session, user: session?.user ?? null, organizationId,
+    cloudOrganizationId: LOGIN_ENABLED ? organizationId : cloudOrganizationId,
+    organizations, loading, authError, signInWithGoogle, signOut, switchOrganization,
+  }), [session, organizationId, cloudOrganizationId, organizations, loading, authError, signInWithGoogle, signOut, switchOrganization]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

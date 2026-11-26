@@ -1,6 +1,7 @@
 // 26/11: foto online (archivio pubblico «product-photos»): percorsi accettati dalla regola dell'archivio, tipi, conti.
 jest.mock('../backend-auth/supabase/client', () => ({ supabase: {} }));
 jest.mock('../src/lib/fileSystem', () => ({}));
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
 import { isRemote, newUuid, photoCounts, photoPath, photoType } from '../utils/photoCloud';
 

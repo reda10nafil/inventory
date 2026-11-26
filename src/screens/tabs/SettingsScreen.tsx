@@ -9,6 +9,7 @@ import * as Sharing from '../../lib/sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { photoCounts } from '../../../utils/photoCloud';
+import { googleAccountAvailable } from '../../../utils/googleAccount';
 import { parseCsv, stringifyCsv } from '../../../utils/csv';
 import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
 import { categoryPath } from '../../../utils/categories';
@@ -54,7 +55,20 @@ export default function SettingsScreen() {
     furType: labelOf,
     contact: contactName,
   };
-  const { session, organizationId, user, signOut } = useAuth();
+  const { session, organizationId, user, signOut, signInWithGoogle, cloudOrganizationId } = useAuth();
+  const [accountBusy, setAccountBusy] = useState(false);
+  // 26/11: account Google del telefono (facoltativo), come il backup di WhatsApp: un negozio = un account
+  const connectGoogle = async () => {
+    if (accountBusy) return;
+    setAccountBusy(true);
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      Alert.alert('Accesso non riuscito', error instanceof Error ? error.message : String(error));
+    } finally {
+      setAccountBusy(false);
+    }
+  };
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
   // ACC1 (ticket 32): profilo e permessi di questo telefono. Le voci che cambiano le impostazioni e l'import restano
   // visibili, attenuate e senza effetto, con il motivo sopra il blocco, quando il ruolo non le permette
@@ -619,6 +633,40 @@ export default function SettingsScreen() {
           children: 'Trascina qui un file CSV per importare prodotti. Per esportare usa “Esporta Inventario”.',
         })}
         </Dimmed>
+
+        {/* 26/11: account Google del telefono, facoltativo. Con l'account: copia nel cloud del negozio, foto nella sua
+            cartella e sincronizzazione con gli altri telefoni dello stesso account. Solo sul telefono. */}
+        {!LOGIN_ENABLED && googleAccountAvailable ? (
+          <Pressable
+            style={styles.settingRow}
+            onPress={() => {
+              if (!session) { void connectGoogle(); return; }
+              Alert.alert('Esci dall’account?', `${user?.email || 'Google'}\n\nI prodotti restano sul telefono; non si sincronizzano più finché non rientri.`, [
+                { text: 'Annulla', style: 'cancel' },
+                { text: 'Esci', style: 'destructive', onPress: () => void signOut() },
+              ]);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={session ? 'Account Google collegato' : 'Accedi con Google'}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: '#4285F4' }]}>
+                <AppIcon name="account-circle" size={24} color={t.colors.onData} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingTitle}>
+                  {accountBusy ? 'Accesso in corso…' : session ? (user?.email || 'Account Google') : 'Accedi con Google'}
+                </Text>
+                <Text style={styles.settingDescription}>
+                  {session
+                    ? (cloudOrganizationId ? 'Prodotti e foto salvati nel cloud del tuo negozio. Tocca per uscire.' : 'Collegamento al cloud in corso…')
+                    : 'Usa l’account Google del telefono: prodotti e foto nel cloud del tuo negozio, anche su altri telefoni'}
+                </Text>
+              </View>
+            </View>
+            <AppIcon name={session ? 'logout' : 'chevron-right'} size={22} color={t.colors.textSecondary} />
+          </Pressable>
+        ) : null}
 
         {/* ACC1 (AR12): col login spento la voce resta, attenuata e senza effetto, con il motivo */}
         <Pressable

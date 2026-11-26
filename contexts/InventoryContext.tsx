@@ -124,9 +124,10 @@ export const useInventory = () => {
 };
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
-  const { organizationId, session, user } = useAuth();
-  // Senza sessione (login disattivato) l'inventario resta solo locale: niente Supabase, Storage o Drive.
-  const cloudEnabled = !!session;
+  const { organizationId, session, user, cloudOrganizationId } = useAuth();
+  // Senza account l'inventario resta solo sul telefono. Con l'account Google (facoltativo, 26/11) i dati restano nello
+  // spazio del telefono e il cloud dell'account (`cloudOrganizationId`) ne riceve la copia e li tiene in sincronia.
+  const cloudEnabled = !!session && !!cloudOrganizationId;
   const [products, setProducts] = useState<Product[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -166,11 +167,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       setProducts([]); setTimeline([]); setAlerts([]); setLibraries(DEFAULT_LIBRARIES); setDeletedProductIds([]);
       return;
     }
-    void loadData(organizationId, cloudEnabled).then(() => {
+    void loadData(organizationId, cloudEnabled ? cloudOrganizationId : null).then(() => {
       if (active) loadedOrganization.current = organizationId;
     });
     return () => { active = false; };
-  }, [organizationId, cloudEnabled]);
+  }, [organizationId, cloudEnabled, cloudOrganizationId]);
 
   // Persist offline immediately and coalesce cloud writes while editing.
   useEffect(() => {
@@ -184,7 +185,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
     const timer = setTimeout(() => {
       void (supabase as any).rpc('merge_inventory_snapshot', {
-        target_organization_id: organizationId,
+        target_organization_id: cloudOrganizationId,
         incoming_products: products,
         incoming_timeline: timeline,
         incoming_alerts: alerts,
@@ -203,15 +204,15 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         });
     }, 900);
     return () => clearTimeout(timer);
-  }, [organizationId, cloudEnabled, products, timeline, alerts, libraries, deletedProductIds]);
+  }, [organizationId, cloudEnabled, cloudOrganizationId, products, timeline, alerts, libraries, deletedProductIds]);
 
   // Realtime propagation keeps operator profiles in the same organization in sync.
   useEffect(() => {
-    if (!organizationId || !cloudEnabled) return;
-    const channel = supabase.channel(`inventory:${organizationId}`)
+    if (!organizationId || !cloudEnabled || !cloudOrganizationId) return;
+    const channel = supabase.channel(`inventory:${cloudOrganizationId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'organization_inventory_snapshots',
-        filter: `organization_id=eq.${organizationId}`,
+        filter: `organization_id=eq.${cloudOrganizationId}`,
       }, (payload: any) => {
         if (payload.eventType === 'DELETE' || !payload.new) return;
         const incoming = payload.new;
@@ -226,7 +227,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         setDeletedProductIds(Array.isArray(incoming.deleted_product_ids) ? incoming.deleted_product_ids : []);
       }).subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [organizationId, cloudEnabled, user?.id]);
+  }, [organizationId, cloudEnabled, cloudOrganizationId, user?.id]);
 
   // 26/11: le foto del prodotto vanno online da sole, con o senza account (archivio pubblico «product-photos»,
   // `utils/photoCloud.ts`): il link permanente prende il posto del file del telefono, così il CSV lo porta e gli
@@ -237,7 +238,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       .filter(({ uri }) => !!uri && !isRemote(uri) && !uploadingPhotos.current.has(uri) && !failedPhotos.current.has(uri));
     if (!pending.length) return;
     pending.forEach(({ uri }) => uploadingPhotos.current.add(uri));
-    const folder = cloudEnabled ? organizationId : null;
+    const folder = cloudEnabled ? cloudOrganizationId : null;
     void (async () => {
       for (const { product, uri, index } of pending) {
         try {
@@ -253,7 +254,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     })();
-  }, [organizationId, cloudEnabled, products]);
+  }, [organizationId, cloudEnabled, cloudOrganizationId, products]);
 
   // Allegati dei campi personalizzati: nello Storage privato del team (con l'accesso); copia anche su Drive se autorizzato.
   // Le foto del prodotto non passano più di qui (sopra, link pubblico permanente).
@@ -270,7 +271,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     ]).filter(({ uri }) => typeof uri === 'string' && !/^https?:\/\//i.test(uri) && !uploadingMedia.current.has(uri) && !backedUpMedia.current.has(uri));
     if (!localAssets.length) return;
     let cancelled = false;
-    void (token ? ensureOrganizationDriveFolder(token, organizationId).catch((error) => {
+    const cloudOrg = cloudOrganizationId!;
+    void (token ? ensureOrganizationDriveFolder(token, cloudOrg).catch((error) => {
       console.warn('Cartella Google Drive non disponibile; salvo comunque le foto nel cloud del team.', error);
       return null;
     }) : Promise.resolve(null)).then(async (folderId) => {
@@ -281,7 +283,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
           const response = await fetch(uri);
           if (!response.ok) throw new Error('Il file locale non è leggibile.');
           const blob = await response.blob();
-          const path = `${organizationId}/${product.id}/${Date.now()}_${index + 1}.${extension}`;
+          const path = `${cloudOrg}/${product.id}/${Date.now()}_${index + 1}.${extension}`;
           const contentType = inferMediaType(uri, blob.type);
           const [storageResult, driveResult] = await Promise.all([
             supabase.storage.from('organization-media').upload(path, blob, {
@@ -333,14 +335,14 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       }));
     }).catch((error) => console.warn('Backup foto cloud non riuscito.', error));
     return () => { cancelled = true; };
-  }, [organizationId, session, products]);
+  }, [organizationId, cloudOrganizationId, session, products]);
 
   // Generate alerts for dormant products and promotion suggestions
   useEffect(() => {
     generateAlerts();
   }, [products]);
 
-  const loadData = async (orgId: string, useCloud: boolean) => {
+  const loadData = async (orgId: string, cloudOrgId: string | null) => {
     try {
       const prefix = `inventory:v1:${orgId}`;
       const keys = ['products', 'timeline', 'alerts', 'libraries', 'deleted_product_ids'] as const;
@@ -360,8 +362,19 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
         await AsyncStorage.setItem(migrationKey, 'yes');
       }
 
-      const { data: cloud, error: cloudError } = useCloud
-        ? await (supabase as any).from('organization_inventory_snapshots').select('*').eq('organization_id', orgId).maybeSingle()
+      // Con l'account: i dati del telefono si uniscono a quelli del cloud (nessuno si perde: per prodotto vince il più
+      // recente, gli eliminati restano eliminati) e il risultato torna qui. Prima il cloud sostituiva il telefono.
+      const local = localValues.map((value) => { try { return value ? JSON.parse(value) : null; } catch { return null; } });
+      const list = (value: unknown) => (Array.isArray(value) ? value : []);
+      const { data: cloud, error: cloudError } = cloudOrgId
+        ? await (supabase as any).rpc('merge_inventory_snapshot', {
+          target_organization_id: cloudOrgId,
+          incoming_products: list(local[0]),
+          incoming_timeline: list(local[1]),
+          incoming_alerts: list(local[2]),
+          incoming_libraries: list(local[3]),
+          incoming_deleted_product_ids: list(local[4]),
+        })
         : { data: null, error: null };
       if (cloudError) console.warn('Uso i dati locali: il backup cloud non è raggiungibile.', cloudError);
 
