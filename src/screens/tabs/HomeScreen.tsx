@@ -1,5 +1,6 @@
 // FurInventory Pro - Home Screen
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Pressable, ScrollView, Alert, Modal, FlatList } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from '../../navigation/compat';
@@ -37,6 +38,19 @@ import { OptionMark, hasMark } from '../../../components/OptionMark';
 type FilterType = 'all' | 'available' | 'sold' | 'alert' | 'trash';
 
 
+// 26/11: ordine della Home (tocco sulla riga sotto il numero dei prodotti: si passa al successivo; resta salvato)
+type SortKey = 'recenti' | 'vecchi' | 'sku' | 'prezzo-giu' | 'prezzo-su';
+const SORT_STORAGE = 'home:sort:v1';
+const time = (p: { createdAt?: string }) => Date.parse(p.createdAt || '') || 0;
+const price = (p: { sellPrice?: unknown }) => Number(p.sellPrice) || 0;
+const SORTS: Record<SortKey, { label: string; compare: (a: any, b: any) => number }> = {
+  recenti: { label: 'Più recenti', compare: (a, b) => time(b) - time(a) },
+  vecchi: { label: 'Meno recenti', compare: (a, b) => time(a) - time(b) },
+  sku: { label: 'SKU A→Z', compare: (a, b) => String(a.sku || '').localeCompare(String(b.sku || ''), 'it', { numeric: true }) },
+  'prezzo-giu': { label: 'Prezzo ↓', compare: (a, b) => price(b) - price(a) },
+  'prezzo-su': { label: 'Prezzo ↑', compare: (a, b) => price(a) - price(b) },
+};
+
 export default function HomeScreen() {
   const t = useTheme();
   const styles = useStyles();
@@ -66,6 +80,16 @@ export default function HomeScreen() {
   }, [params]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('recenti');
+  useEffect(() => {
+    AsyncStorage.getItem(SORT_STORAGE).then((saved) => { if (saved && saved in SORTS) setSortKey(saved as SortKey); }).catch(() => {});
+  }, []);
+  const nextSort = () => {
+    const order = Object.keys(SORTS) as SortKey[];
+    const next = order[(order.indexOf(sortKey) + 1) % order.length];
+    setSortKey(next);
+    AsyncStorage.setItem(SORT_STORAGE, next).catch(() => {});
+  };
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showActionModal, setShowActionModal] = useState(false); // Controls Modal visibility
   const [showLabels, setShowLabels] = useState(false); // ETI: «Etichette» dei prodotti scelti
@@ -104,8 +128,10 @@ export default function HomeScreen() {
   // 2. Then, apply Status Filter & Search on the Folder-filtered list
   // La ricerca vale in tutti i filtri, anche Cestino e Attenzione, e trova la posizione per nome (P14)
   // EDC: anche il testo mostrato dei campi personalizzati (testi brevi, numeri, prezzi, scelte scritte a mano)
+  // 26/11: ordine scelto (prima nessuno: dopo il cloud i prodotti erano in ordine di id e i nuovi finivano in mezzo)
   const filteredProducts = folderFilteredProducts.filter((p) =>
-    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, furTypes, categoryLabels, allFieldsIncludingDeleted));
+    matchesFilter(p, activeFilter, alertedIds) && matchesSearch(p, searchQuery, locations, furTypes, categoryLabels, allFieldsIncludingDeleted))
+    .sort(SORTS[sortKey].compare);
   // Campi con «Mostra nella card» (EDC, al massimo 2; nessuno nei campi di partenza: la card di sempre non cambia)
   const onCard = cardFields(customFields);
 
@@ -308,6 +334,9 @@ export default function HomeScreen() {
         <View>
           <Text style={styles.headerTitle}>Syncro Flow</Text>
           <Text style={styles.headerSubtitle}>{filteredProducts.length} prodotti</Text>
+          <Pressable onPress={nextSort} accessibilityRole="button" accessibilityLabel={`Ordine: ${SORTS[sortKey].label}. Tocca per cambiarlo`} hitSlop={8}>
+            <Text style={[styles.headerSubtitle, { color: t.colors.accentInk }]}>⇅ {SORTS[sortKey].label}</Text>
+          </Pressable>
 
         </View>
         <View style={styles.headerActions}>
