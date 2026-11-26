@@ -74,7 +74,7 @@ export function webSize(width: number, height: number, max = WEB_MAX_SIDE): { wi
 }
 
 async function toWebp(uri: string): Promise<string | null> {
-  if (Platform.OS === 'web') return null;
+  if (Platform.OS === 'web' || photoType(uri).ext === 'webp') return null; // già WebP (convertita quando è stata scelta)
   try {
     const original = await manipulateAsync(uri, []);
     const size = webSize(original.width, original.height);
@@ -83,6 +83,14 @@ async function toWebp(uri: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * 26/11: foto appena scattate o scelte → WebP subito, prima di salvarle nel prodotto (Aggiungi, Modifica): il prodotto
+ * nasce con la foto WebP e su Supabase va quella. Una foto che non si converte resta com'è.
+ */
+export async function toWebFormat(uris: readonly string[]): Promise<string[]> {
+  return Promise.all(uris.map(async (uri) => (await toWebp(uri)) ?? uri));
 }
 
 export async function uploadPhoto(uri: string, productId: string, index: number, folder?: string | null): Promise<string> {

@@ -7,5 +7,5 @@ export function messageWithPhotoLinks(message: string, images: readonly string[]
 }
 
 export async function shareWithPhotos(message: string, title: string, images: readonly string[] | undefined): Promise<void> {
-  await Share.share({ title, message: messageWithPhotoLinks(message, images) });
+  await Share.share({ title, message }); // senza link, come sul telefono (26/11)
 }

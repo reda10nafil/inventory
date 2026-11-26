@@ -1,5 +1,4 @@
-// 26/11: «Condividi prodotto» come i messaggi dei canali WhatsApp: UNA foto con la scheda come didascalia (sotto, i
-// link di tutte le foto). Con più foto insieme WhatsApp scartava il testo; con nessuna foto: solo testo.
+// 26/11: «Condividi prodotto» come i messaggi dei canali WhatsApp: UNA foto con la scheda come didascalia, senza link. Con più foto insieme WhatsApp scartava il testo; con nessuna foto: solo testo.
 // La prima foto (online o del telefono) si scarica nella cache e si manda con `react-native-share` 12.3.1 in un solo
 // invio (ACTION_SEND con immagine e testo).
 import * as ExpoFS from 'expo-file-system/legacy';
@@ -35,7 +34,8 @@ async function firstPhotoFile(images: readonly string[] | undefined): Promise<{ 
 }
 
 export async function shareWithPhotos(message: string, title: string, images: readonly string[] | undefined): Promise<void> {
-  const text = messageWithPhotoLinks(message, images);
+  // 26/11: su WhatsApp solo foto e scheda, senza i link in fondo (richiesta dell'utente)
+  const text = message;
   const photo = await firstPhotoFile(images);
   if (!photo) {
     await RNShare.share({ title, message: text });

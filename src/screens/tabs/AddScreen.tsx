@@ -40,6 +40,7 @@ import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
 import { usePermission } from '../../../contexts/ProfileContext';
 import { stockKey } from '../../../utils/stock';
 import { useTagOffer } from '../../../hooks/useTagOffer'; // N1: «Proponi di scrivere il tag» di Scanner e NFC
+import { toWebFormat } from '../../../utils/photoCloud';
 
 export default function AddProductScreen() {
   const t = useTheme();
@@ -175,7 +176,7 @@ export default function AddProductScreen() {
     });
 
     if (!result.canceled) {
-      const newImages = result.assets.map((asset) => asset.uri);
+      const newImages = await toWebFormat(result.assets.map((asset) => asset.uri)); // 26/11: WebP subito
       setImages((prev) => [...prev, ...newImages].slice(0, 10));
     }
   };
@@ -189,7 +190,7 @@ export default function AddProductScreen() {
       });
 
       if (!result.canceled && result.assets) {
-        const newImages = result.assets.map((asset) => asset.uri);
+        const newImages = await toWebFormat(result.assets.map((asset) => asset.uri)); // 26/11: WebP subito
         setImages((prev) => [...prev, ...newImages].slice(0, 10));
       }
     } catch (error) {
@@ -210,7 +211,8 @@ export default function AddProductScreen() {
     });
 
     if (!result.canceled) {
-      setImages((prev) => [...prev, result.assets[0].uri].slice(0, 10));
+      const [photo] = await toWebFormat([result.assets[0].uri]); // 26/11: WebP subito
+      setImages((prev) => [...prev, photo].slice(0, 10));
     }
   };
 

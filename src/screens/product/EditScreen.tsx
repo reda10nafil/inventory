@@ -38,6 +38,7 @@ import { LoadNotice } from '../../../components/LoadNotice';
 import { stockKey } from '../../../utils/stock';
 import { PhotoGallery } from '../../../components/PhotoGallery';
 import { addPhotos, photosPatch, type Photos } from '../../../utils/photos';
+import { toWebFormat } from '../../../utils/photoCloud';
 
 // Il modulo nasce solo quando il prodotto c'è. Aperta dall'indirizzo o ricaricata, la schermata partiva prima
 // che i prodotti fossero letti e il modulo restava vuoto: salvando si sovrascriveva il prodotto (P04).
@@ -151,7 +152,7 @@ function EditProductForm({ product }: { product: Product }) {
     });
 
     if (!result.canceled) {
-      const newImages = result.assets.map((asset) => asset.uri);
+      const newImages = await toWebFormat(result.assets.map((asset) => asset.uri)); // 26/11: WebP subito
       setPhotos((prev) => addPhotos(prev, newImages));
     }
   };
@@ -168,7 +169,8 @@ function EditProductForm({ product }: { product: Product }) {
     });
 
     if (!result.canceled) {
-      setPhotos((prev) => addPhotos(prev, [result.assets[0].uri]));
+      const newImages = await toWebFormat([result.assets[0].uri]); // 26/11: WebP subito
+      setPhotos((prev) => addPhotos(prev, newImages));
     }
   };
 
