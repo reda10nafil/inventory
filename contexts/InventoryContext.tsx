@@ -262,7 +262,9 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   // 30 s dopo il caricamento, una volta per apertura dell'app; un errore si riprova all'apertura dopo.
   const autoBackupTried = useRef<string | null>(null);
   useEffect(() => {
-    if (!cloudEnabled || !cloudOrganizationId || !organizationId || loadedOrganization.current !== organizationId) return;
+    // Niente controllo su `loadedOrganization` (è un ref: dopo il caricamento non fa ripartire l'effetto e il backup
+    // non partiva mai); bastano i prodotti caricati, e il callback legge quelli del momento da `productsRef`
+    if (!cloudEnabled || !cloudOrganizationId || !products.length) return;
     if (autoBackupTried.current === cloudOrganizationId) return;
     const org = cloudOrganizationId;
     const timer = setTimeout(() => {
@@ -273,7 +275,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       }).catch((error) => console.warn('Backup automatico su Drive non riuscito: si riprova alla prossima apertura.', error));
     }, 30000);
     return () => clearTimeout(timer);
-  }, [cloudEnabled, cloudOrganizationId, organizationId, products.length]);
+  }, [cloudEnabled, cloudOrganizationId, products.length > 0]);
 
   // Allegati dei campi personalizzati: nello Storage privato del team (con l'accesso); copia anche su Drive se autorizzato.
   // Le foto del prodotto non passano più di qui (sopra, link pubblico permanente).
