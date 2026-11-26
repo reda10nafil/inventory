@@ -3,7 +3,9 @@ jest.mock('../backend-auth/supabase/client', () => ({ supabase: {} }));
 jest.mock('../src/lib/fileSystem', () => ({}));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
-import { isRemote, newUuid, photoCounts, photoPath, photoType } from '../utils/photoCloud';
+jest.mock('expo-image-manipulator', () => ({ manipulateAsync: jest.fn(), SaveFormat: { WEBP: 'webp', JPEG: 'jpeg' } }));
+
+import { isRemote, newUuid, photoCounts, photoPath, photoType, webSize } from '../utils/photoCloud';
 
 // La stessa espressione della regola su Supabase (migrazione product_photos_public_bucket)
 const POLICY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[A-Za-z0-9._-]{1,120}$/;
@@ -31,5 +33,12 @@ describe('photoCloud', () => {
       { images: ['file:///3.jpg'], deletedAt: '2026-11-26' },
       { images: [] },
     ])).toEqual({ total: 2, online: 1 });
+  });
+
+  it('WebP per il web: lato lungo al massimo 1600 px, proporzioni tenute; una foto piccola resta uguale', () => {
+    expect(webSize(4000, 3000)).toEqual({ width: 1600, height: 1200 });
+    expect(webSize(3000, 4000)).toEqual({ width: 1200, height: 1600 });
+    expect(webSize(1200, 900)).toBeNull();
+    expect(webSize(0, 0)).toBeNull();
   });
 });

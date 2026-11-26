@@ -5,6 +5,7 @@
 // percorso «<uuid>/<file>» e non si può elencare: le foto si vedono solo da chi ha il link.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode } from 'base64-arraybuffer';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 import { supabase } from '../backend-auth/supabase/client';
 import * as FileSystem from '../src/lib/fileSystem';
@@ -62,10 +63,34 @@ async function readBytes(uri: string): Promise<ArrayBuffer> {
 }
 
 /** Carica una foto e dà il suo link pubblico permanente. `folder`: lo spazio di lavoro (uuid), se no il telefono. */
+// 26/11: prima di andare online la foto diventa WebP (formato dei siti e-commerce, molto più leggero) con il lato
+// lungo al massimo di 1600 px. Solo sul telefono; se la conversione non riesce si carica l'originale.
+export const WEB_MAX_SIDE = 1600;
+export function webSize(width: number, height: number, max = WEB_MAX_SIDE): { width: number; height: number } | null {
+  if (!(width > 0 && height > 0) || Math.max(width, height) <= max) return null; // già piccola: niente ridimensionamento
+  return width >= height
+    ? { width: max, height: Math.round((height * max) / width) }
+    : { width: Math.round((width * max) / height), height: max };
+}
+
+async function toWebp(uri: string): Promise<string | null> {
+  if (Platform.OS === 'web') return null;
+  try {
+    const original = await manipulateAsync(uri, []);
+    const size = webSize(original.width, original.height);
+    const result = await manipulateAsync(uri, size ? [{ resize: size }] : [], { compress: 0.8, format: SaveFormat.WEBP });
+    return result?.uri ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function uploadPhoto(uri: string, productId: string, index: number, folder?: string | null): Promise<string> {
   const target = folder && UUID.test(folder) ? folder : await deviceFolder();
-  const { ext, mime } = photoType(uri);
-  const bytes = await readBytes(uri);
+  const webp = await toWebp(uri);
+  const source = webp ?? uri;
+  const { ext, mime } = webp ? { ext: 'webp', mime: 'image/webp' } : photoType(uri);
+  const bytes = await readBytes(source);
   if (!bytes.byteLength) throw new Error('foto vuota');
   const path = photoPath(target, productId, index, ext);
   const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, bytes, { contentType: mime, upsert: false });

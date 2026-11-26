@@ -3,6 +3,7 @@
 // La prima foto (online o del telefono) si scarica nella cache e si manda con `react-native-share` 12.3.1 in un solo
 // invio (ACTION_SEND con immagine e testo).
 import * as ExpoFS from 'expo-file-system/legacy';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Share as RNShare } from 'react-native';
 import Share from 'react-native-share';
 
@@ -21,7 +22,13 @@ async function firstPhotoFile(images: readonly string[] | undefined): Promise<{ 
   if (!/^https?:\/\//i.test(uri)) return { uri, type }; // già sul telefono
   try {
     const result = await (ExpoFS as any).downloadAsync(uri, `${(ExpoFS as any).cacheDirectory}condividi_${Date.now()}.${ext}`);
-    return result?.status === 200 ? { uri: result.uri, type } : null;
+    if (result?.status !== 200) return null;
+    // WhatsApp può trattare un WebP come adesivo: per l'invio la foto WebP diventa JPEG
+    if (ext === 'webp') {
+      const jpeg = await manipulateAsync(result.uri, [], { compress: 0.9, format: SaveFormat.JPEG });
+      return { uri: jpeg.uri, type: 'image/jpeg' };
+    }
+    return { uri: result.uri, type };
   } catch {
     return null;
   }
