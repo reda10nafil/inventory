@@ -3,7 +3,7 @@
 // Prima: avvio all'import, «pulisci + scrivi» in due passi con la gara 500/1000 ms (NG14) e una lettura senza chiamanti
 // (NG16). Ora niente all'import, lettura a richiesta e scrittura in un tocco. Non provato sul telefono (NG20: la
 // libreria 3.x è dichiarata per la vecchia architettura, il progetto ha `newArchEnabled=true`).
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import NfcManager, { Ndef, NdefStatus, NfcError, NfcEvents, NfcTech, type TagEvent } from 'react-native-nfc-manager';
 import { createNfcService, type NfcDriver, type NfcTagEvent } from './nfcCore';
 
@@ -27,6 +27,10 @@ const driver: NfcDriver = {
     listener ? (event: { state?: string } | string) => listener(typeof event === 'string' ? event : event?.state ?? '') : null,
   ),
   requestNdef: async (options) => (await cancelAware(NfcManager.requestTechnology(NfcTech.Ndef, options))) != null,
+  requestAny: async (options) => (await cancelAware(NfcManager.requestTechnology(
+    [NfcTech.Ndef, NfcTech.NfcA, NfcTech.NfcB, NfcTech.NfcF, NfcTech.NfcV],
+    options,
+  ))) != null,
   getTag: async () => asTag(await NfcManager.getTag()),
   ndefStatus: async () => {
     const s = await NfcManager.ndefHandler.getNdefStatus();
@@ -37,6 +41,8 @@ const driver: NfcDriver = {
 };
 
 const service = createNfcService(driver);
+// Al rientro dell'app Android rifiuta a volte il reader mode rimesso dalla libreria (troppo presto): lo si rifà poco dopo
+AppState.addEventListener('change', (s) => { if (s === 'active') setTimeout(() => { void service.rearm(); }, 600); });
 const writeOnce = async (bytes: number[]): Promise<boolean> => {
   const opened = await service.openForWrite();
   if (opened.esito !== 'pronto') { await service.cancel(); return false; }

@@ -19,6 +19,7 @@ function fakeDriver(os: 'android' | 'ios' = 'android', { supported = true, enabl
   let connected = false; // c'è una richiesta collegata a un tag
   let pendingRequest: { resolve: (connected: boolean) => void; reject: (e: Error) => void } | null = null;
   let current: NfcTagEvent | null = null;
+  let linked: NfcTagEvent | null = null; // il tag collegato alla richiesta (quello che dà `getTag`)
   const native = { registered: false, libraryOwns: false };
   const state = { supported, enabled, writable: true, writeFails: false, registerOptions: [] as unknown[] };
   const driver: NfcDriver = {
@@ -36,7 +37,13 @@ function fakeDriver(os: 'android' | 'ios' = 'android', { supported = true, enabl
       if (os === 'android' && !native.registered) { native.registered = true; native.libraryOwns = true; }
       return new Promise<boolean>((resolve, reject) => { pendingRequest = { resolve, reject }; });
     },
-    getTag: async () => { if (!connected) throw new Error('no tech request available'); return current; },
+    requestAny: (options) => {
+      calls.push('request-any');
+      state.registerOptions.push(options);
+      if (os === 'android' && !native.registered) { native.registered = true; native.libraryOwns = true; }
+      return new Promise<boolean>((resolve, reject) => { pendingRequest = { resolve: () => resolve(true), reject }; });
+    },
+    getTag: async () => { if (!connected) throw new Error('no tech request available'); return linked; },
     ndefStatus: async () => ({ writable: state.writable, capacity: 137 }),
     writeNdef: async () => { calls.push('write'); if (state.writeFails) throw new Error('tag allontanato'); },
     cancelRequest: async () => {
@@ -59,6 +66,7 @@ function fakeDriver(os: 'android' | 'ios' = 'android', { supported = true, enabl
       if (pendingRequest && (os === 'ios' || native.registered)) {
         const p = pendingRequest; pendingRequest = null;
         connected = true;
+        linked = tag;
         p.resolve(!tag.techTypes || tag.techTypes.some((t) => /Ndef$/.test(t)));
       }
     },
@@ -86,7 +94,7 @@ describe('silenziatore (N0, decisione 1)', () => {
     expect(SILENCER.readerModeFlags).toBe(271);
     expect(f.state.registerOptions[0]).toEqual(SILENCER);
     expect(f.listening).toBe(false); // a riposo nessun ascoltatore: un tag è scartato
-    // una lettura e una scrittura riusano la registrazione e alla fine non la tolgono
+    // una lettura e una scrittura rifanno la registrazione (al rientro Android può averla rifiutata) e non la tolgono
     const reading = nfc.read({ timeoutMs: 5000 });
     await flush();
     f.tap(TAG);
@@ -96,7 +104,7 @@ describe('silenziatore (N0, decisione 1)', () => {
     f.tap(TAG);
     await opening;
     await nfc.write([1]);
-    expect(count(f.calls, 'register')).toBe(1);
+    expect(count(f.calls, 'register')).toBe(3);
     expect(f.calls).not.toContain('unregister');
     expect(f.listening).toBe(false);
   });
@@ -113,6 +121,37 @@ describe('silenziatore (N0, decisione 1)', () => {
     f.nfcState('on');
     await flush();
     expect(count(f.calls, 'register')).toBe(2);
+  });
+
+  it('registrazione persa al rientro dell\'app (26/11, «Caller is not in foreground»): la lettura la rifà e legge', async () => {
+    const f = fakeDriver();
+    const nfc = createNfcService(f.driver);
+    await nfc.setSilencer(true);
+    f.native.registered = false; // Android ha rifiutato il reader mode rimesso dalla libreria
+    const reading = nfc.read({ timeoutMs: 5000 });
+    await flush();
+    f.tap(TAG);
+    expect(await reading).toEqual({ esito: 'letto', tag: TAG });
+    expect(f.calls).not.toContain('unregister');
+  });
+
+  it('rearm: col silenziatore acceso lo rimette; spento, su iOS o durante un\'operazione non fa nulla', async () => {
+    const f = fakeDriver();
+    const nfc = createNfcService(f.driver);
+    await nfc.rearm();
+    expect(f.calls).not.toContain('register');
+    await nfc.setSilencer(true);
+    await nfc.rearm();
+    expect(count(f.calls, 'register')).toBe(2);
+    const reading = nfc.read({ timeoutMs: 5000 });
+    await flush();
+    await nfc.rearm();
+    expect(count(f.calls, 'register')).toBe(3); // quella della lettura, nessuna in più
+    f.tap(TAG);
+    await reading;
+    const ios = fakeDriver('ios');
+    await createNfcService(ios.driver).rearm();
+    expect(ios.calls).not.toContain('register');
   });
 
   it('spento durante una lettura: si toglie appena la lettura finisce', async () => {
@@ -167,6 +206,7 @@ describe('stato e lettura (una pressione = una lettura)', () => {
     f.tap(TAG);
     f.tap({ ...TAG, id: 'ALTRO' }); // il secondo tag non conta
     expect(await reading).toEqual({ esito: 'letto', tag: TAG });
+    expect(f.calls).toContain('request-any'); // Android: richiesta col tag collegato, non l'evento della libreria
     expect(count(f.calls, 'unregister')).toBe(1);
   });
 
@@ -213,6 +253,16 @@ describe('stato e lettura (una pressione = una lettura)', () => {
     const none = fakeDriver('android', { supported: false });
     expect(await createNfcService(none.driver).read()).toEqual({ esito: 'assente' });
     expect(off.calls).not.toContain('register');
+  });
+
+  it('Android: un tag non formattato (senza Ndef) si legge lo stesso, con l\'UID (per «Collega un tag»)', async () => {
+    const f = fakeDriver();
+    const nfc = createNfcService(f.driver);
+    const reading = nfc.read({ timeoutMs: 5000 });
+    await flush();
+    const raw = { id: '01020304', techTypes: ['android.nfc.tech.MifareClassic', 'android.nfc.tech.NfcA'] };
+    f.tap(raw);
+    expect(await reading).toEqual({ esito: 'letto', tag: raw });
   });
 
   it('iOS: la lettura dà anche l\'UID (per «Collega un tag» e i tag collegati); il pannello chiuso vale Annulla', async () => {

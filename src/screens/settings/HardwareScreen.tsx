@@ -5,7 +5,7 @@
 // testo lungo e le promesse («Pulizia + Scrittura», NG13). Sul web una riga sola: «L'NFC si usa dal telefono» (NG12:
 // prima la diagnostica diceva «Errore»). Aprire la schermata non scrive nulla.
 import React, { useCallback, useEffect, useState } from 'react';
-import { AppState, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHardwareConfig } from '../../../contexts/HardwareConfigContext';
 import { nfcService } from '../../../utils/nfcService';
@@ -44,6 +44,14 @@ export default function HardwareSettingsScreen() {
   const hasNfc = !web && state !== 'assente';
   const nfcOn = hasNfc && readerSources(hwConfig.scanMode, true).nfc;
 
+  // Pannello rapido dell'NFC (Android 10+), se no la pagina NFC delle impostazioni, se no le impostazioni dell'app.
+  // Al ritorno lo stato si rilegge da solo (`refresh` su AppState «active»).
+  const openNfcSwitch = () => {
+    void Linking.sendIntent('android.settings.panel.action.NFC')
+      .catch(() => Linking.sendIntent('android.settings.NFC_SETTINGS'))
+      .catch(() => Linking.openSettings());
+  };
+
   const toggle = (value: boolean) => ({
     trackColor: { false: t.colors.checkRing, true: withAlpha(t.colors.accent, 0.502) },
     thumbColor: value ? t.colors.accent : t.colors.textMuted,
@@ -81,6 +89,25 @@ export default function HardwareSettingsScreen() {
             <Text style={styles.statusText}>{statusText}</Text>
           </View>
           {web ? <Text style={styles.hint}>Dal computer: fotocamera o codice scritto a mano.</Text> : null}
+          {/* 26/11: l'utente cercava l'interruttore nell'app. Android non lascia spegnere l'NFC a un'app: si apre il suo */}
+          {hasNfc && Platform.OS === 'android' && state !== null ? (
+            <>
+              <View style={styles.divider} />
+              <Pressable
+                style={styles.row}
+                onPress={openNfcSwitch}
+                accessibilityRole="button"
+                accessibilityLabel={state === 'spento' ? 'Accendi l\'NFC' : 'Spegni l\'NFC'}
+              >
+                <View style={styles.rowIcon}><AppIcon name="nfc" size={20} color={t.colors.accentInk} /></View>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>{state === 'spento' ? 'Accendi l\'NFC' : 'Spegni l\'NFC'}</Text>
+                  <Text style={styles.rowSub}>Si apre l'interruttore del telefono</Text>
+                </View>
+                <AppIcon name="chevron-right" size={22} color={t.colors.textMuted} />
+              </Pressable>
+            </>
+          ) : null}
         </View>
 
         {hasNfc ? (

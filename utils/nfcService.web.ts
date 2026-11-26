@@ -12,4 +12,5 @@ export const nfcService: NfcService = {
   openForWrite: async () => ({ esito: 'non-disponibile' }),
   write: async () => ({ esito: 'non-disponibile' }),
   cancel: async () => {},
+  rearm: async () => {},
 };
