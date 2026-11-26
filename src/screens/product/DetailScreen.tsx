@@ -10,6 +10,7 @@ import { useRouter, useLocalSearchParams } from '../../navigation/compat';
 import { ProductNotFound } from '../../components/ProductNotFound';
 import * as Clipboard from '../../lib/clipboard';
 import * as Sharing from '../../lib/sharing';
+import { shareWithPhotos } from '../../../utils/shareProduct';
 import { Image } from '../../lib/ExpoImage';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { useLocations } from '../../../contexts/LocationsContext';
@@ -211,18 +212,8 @@ export default function ProductDetailScreen() {
           text: 'Cliente',
           onPress: async () => {
             try {
-              const text = generateClientText();
-              const shareOptions: any = {
-                message: text,
-                title: [product.sku, kind.full].filter(Boolean).join(' - '),
-              };
-
-              // Add first image if available
-              if (product.images && product.images.length > 0) {
-                shareOptions.url = product.images[0];
-              }
-
-              await Share.share(shareOptions);
+              // 26/11: testo e foto insieme (`utils/shareProduct.ts`)
+              await shareWithPhotos(generateClientText(), [product.sku, kind.full].filter(Boolean).join(' - '), product.images);
             } catch (error) {
               console.error('Errore condivisione cliente:', error);
             }
@@ -232,18 +223,7 @@ export default function ProductDetailScreen() {
           text: 'Professionista',
           onPress: async () => {
             try {
-              const text = generateProfessionalText();
-              const shareOptions: any = {
-                message: text,
-                title: `Scheda Tecnica - ${product.sku}`,
-              };
-
-              // Add first image if available
-              if (product.images && product.images.length > 0) {
-                shareOptions.url = product.images[0];
-              }
-
-              await Share.share(shareOptions);
+              await shareWithPhotos(generateProfessionalText(), `Scheda Tecnica - ${product.sku}`, product.images);
             } catch (error) {
               console.error('Errore condivisione professionista:', error);
             }
