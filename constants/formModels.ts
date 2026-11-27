@@ -105,3 +105,21 @@ export function modelLayout(id: FormModelId, existing: readonly CustomField[]): 
   });
   return out;
 }
+
+/**
+ * Modulo di Modifica per un prodotto creato con un modello: se il prodotto ha almeno un campo del modello, dà gruppi
+ * e campi del modello (solo i personalizzati: i campi Base Modifica li ha già fissi). null = prodotto senza modello.
+ */
+export function productModelGroups(productFieldIds: readonly string[], existing: readonly CustomField[]): { label: string; ids: string[] }[] | null {
+  for (const m of FORM_MODELS) {
+    const layout = modelLayout(m.id, existing);
+    if (!layout || !layout.some((f) => f.type === 'custom' && productFieldIds.includes(f.id))) continue;
+    const groups: { label: string; ids: string[] }[] = [];
+    for (const f of layout) {
+      if (f.type === 'section') groups.push({ label: f.label ?? '', ids: [] });
+      else if (f.type === 'custom' && groups.length) groups[groups.length - 1].ids.push(f.id);
+    }
+    return groups.filter((g) => g.ids.length > 0);
+  }
+  return null;
+}

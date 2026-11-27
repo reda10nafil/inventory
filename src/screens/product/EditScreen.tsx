@@ -14,6 +14,7 @@ import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { CategoryPicker } from '../../../components/CategoryPicker';
 import { useCustomFields } from '../../../contexts/CustomFieldsContext';
 import { useLayout } from '../../../contexts/LayoutContext';
+import { productModelGroups } from '../../../constants/formModels';
 import { editableFields } from '../../../utils/layoutOrder';
 import type { Product } from '../../../types';
 import { AppIcon } from '../../../components/ui/AppIcon';
@@ -505,8 +506,12 @@ function EditProductForm({ product }: { product: Product }) {
               Un disegnatore solo per Aggiungi e Modifica (VAL, `components/FieldInput.tsx`), contatore compreso (CAM-F5) */}
           {(() => {
             const entries = new Map((product.customData || []).map((d) => [d.fieldSnapshot?.id, d]));
-            const existingFields = editableFields(customFields, layout.fields, [...entries.keys()].filter(Boolean) as string[]);
-            if (existingFields.length === 0) return null;
+            const productIds = [...entries.keys()].filter(Boolean) as string[];
+            // 27/11: prodotto creato con un modello (Borse): i campi del modello nei loro gruppi, anche quelli vuoti
+            const groups = productModelGroups(productIds, customFields);
+            const inModel = new Set(groups?.flatMap((g) => g.ids) ?? []);
+            const existingFields = editableFields(customFields, groups ? [] : layout.fields, productIds).filter((f) => !inModel.has(f.id));
+            if (existingFields.length === 0 && !groups) return null;
             const isChoice = (f: { type: string }) => f.type === 'single_choice' || f.type === 'multi_choice';
             const render = (field: typeof existingFields[number]) => (
               <FieldInput
@@ -521,9 +526,16 @@ function EditProductForm({ product }: { product: Product }) {
                 error={fieldError(field, customFieldValues[field.id], flagged)}
               />
             );
+            const byId = (id: string) => customFields.find((f) => f.id === id && !f.deletedAt);
             return (
               <>
-                {renderSection('Campi personalizzati')}
+                {groups?.map((g) => (
+                  <React.Fragment key={g.label}>
+                    {renderSection(g.label)}
+                    {g.ids.map(byId).filter((f): f is NonNullable<typeof f> => !!f).map(render)}
+                  </React.Fragment>
+                ))}
+                {existingFields.length > 0 && renderSection(groups ? 'Altri campi' : 'Campi personalizzati')}
                 {existingFields.filter(isChoice).map(render)}
                 {existingFields.filter((f) => !isChoice(f)).map(render)}
               </>

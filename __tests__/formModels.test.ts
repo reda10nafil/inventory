@@ -22,3 +22,13 @@ test('un campo con lo stesso nome ma tipo diverso non si riusa', () => {
   const other: CustomField = { id: 'x', name: 'Categoria', type: 'text_short', uiType: 'text', required: false, order: 0 };
   expect(missingModelFields('borse', [other]).some((f) => f.name === 'Categoria')).toBe(true);
 });
+
+test('Modifica: un prodotto Borse ha i gruppi del modello, uno qualunque no', () => {
+  const { productModelGroups } = require('../constants/formModels');
+  const fields: CustomField[] = missingModelFields('borse', []).map((f, i) => ({ ...f, id: `f${i}`, order: i }));
+  const colori = fields.find((f) => f.name === 'Colori disponibili')!;
+  const groups = productModelGroups([colori.id], fields);
+  expect(groups.map((g: { label: string }) => g.label)).toContain('Caratteristiche tecniche');
+  expect(groups.flatMap((g: { ids: string[] }) => g.ids)).toHaveLength(fields.length);
+  expect(productModelGroups(['altro'], fields)).toBeNull();
+});
