@@ -43,3 +43,15 @@ EXP/IMP e RETE0. L'utente dice che **campi personalizzati e Layout Builder non s
 ## F. Accesso e sincronizzazione degli operatori (ticket 32, RETE1-2)
 
 - Non funziona; **l'interfaccia è da rifare da zero**.
+
+## Ordine deciso dall'utente (27/11)
+
+1. **Adesso**: A + B, campi personalizzati e Layout Builder, in una sessione a sé.
+2. **Dopo, in attesa**:
+   - **Automazioni da WMS** (punto C): i passi che leggono un codice usano anche l'NFC; passi nuovi di carico,
+     scarico, trasferimento con quantità, ricevimento, uscita a cliente, conta, riordino, reso, chiedi conferma
+     (fette FLU1, FLU2, CON, RIO, RES di `map-3.md`), più automazioni pronte che li usano.
+   - **Codici** (punto D): «SKU» scritto sui prodotti ovunque; codice BIN/LOC degli scaffali (es. `A-01-03`,
+     generato e modificabile, letto dallo Scanner e sull'etichetta); campo EAN/GTIN con cifra di controllo, letto e
+     stampato come EAN-13. Prima chiedere all'utente se servono EAN ufficiali o interni.
+   - Chat e condivisione (E), accesso e sincronizzazione da rifare (F).
