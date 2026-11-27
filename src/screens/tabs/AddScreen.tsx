@@ -1,5 +1,7 @@
 // FurInventory Pro - Add Product Screen
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FORM_MODELS, missingModelFields, modelLayout, modelName, type FormModelId } from '../../../constants/formModels';
 import { View, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
@@ -42,6 +44,8 @@ import { stockKey } from '../../../utils/stock';
 import { useTagOffer } from '../../../hooks/useTagOffer'; // N1: «Proponi di scrivere il tag» di Scanner e NFC
 import { toWebFormat } from '../../../utils/photoCloud';
 
+const MODEL_KEY = 'syncro_add_form_model';
+
 export default function AddProductScreen() {
   const t = useTheme();
   const styles = useStyles();
@@ -50,8 +54,30 @@ export default function AddProductScreen() {
   const { addProduct, products, libraries } = useInventory();
   const { locations } = useLocations();
   const { furTypes } = useFurTypes();
-  const { customFields } = useCustomFields();
-  const { layout, getVisibleFields } = useLayout();
+  const { customFields, addField } = useCustomFields();
+  // Modello del modulo (27/11): «Pellicce (attuale)» = il layout salvato; «Borse» = i suoi campi raggruppati, in memoria
+  const [model, setModel] = useState<FormModelId>('attuale');
+  useEffect(() => {
+    AsyncStorage.getItem(MODEL_KEY).then((v) => { if (v && FORM_MODELS.some((m) => m.id === v)) setModel(v as FormModelId); }).catch(() => {});
+  }, []);
+  const chooseModel = async (id: FormModelId) => {
+    try {
+      for (const def of missingModelFields(id, customFields)) await addField(def);
+    } catch {
+      Alert.alert('Modello', 'Non sono riuscito a creare i campi del modello. Riprova.');
+      return;
+    }
+    setModel(id);
+    AsyncStorage.setItem(MODEL_KEY, id).catch(() => {});
+  };
+  const showModelPicker = () => {
+    Alert.alert('Modello di settore', `Adesso: ${modelName(model)}. Quale modulo vuoi usare?`, [
+      ...FORM_MODELS.map((m) => ({ text: m.name, onPress: () => { chooseModel(m.id); } })),
+      { text: 'Annulla', style: 'cancel' as const },
+    ]);
+  };
+  const { layout, getVisibleFields: getLayoutFields } = useLayout();
+  const getVisibleFields = (): LayoutField[] => modelLayout(model, customFields) ?? getLayoutFields();
   const { gs1Config } = useGS1Config();
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
@@ -335,6 +361,7 @@ export default function AddProductScreen() {
         gs1DigitalLink,
         // VAL: scelte con l'id dell'opzione, numeri come numero (un numero vuoto non si salva), contatori col minimo
         customData: Object.keys(values)
+          .filter((fieldId) => model === 'attuale' || visibleCustom.some((cf) => cf.id === fieldId)) // solo i campi del modello
           .map(fieldId => {
             const field = customFields.find(f => f.id === fieldId);
             if (!field) return null;
@@ -766,7 +793,17 @@ export default function AddProductScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Aggiungi prodotto</Text>
-            <AppIcon name="add-photo-alternate" size={26} color={t.colors.accentInk} />
+            <Pressable
+              onPress={showModelPicker}
+              accessibilityRole="button"
+              accessibilityLabel={`Modello di settore: ${modelName(model)}`}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: t.colors.accentInk }}
+            >
+              <AppIcon name="dashboard-customize" size={18} color={t.colors.accentInk} />
+              <Text style={{ color: t.colors.accentInk, fontWeight: '600' }} numberOfLines={1}>{model === 'attuale' ? 'Pellicce' : modelName(model)}</Text>
+              <AppIcon name="expand-more" size={18} color={t.colors.accentInk} />
+            </Pressable>
           </View>
 
           {/* Dynamic Form Fields - Rendered based on Layout Configuration */}
