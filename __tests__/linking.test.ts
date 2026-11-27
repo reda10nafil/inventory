@@ -16,6 +16,9 @@ describe('linking (C2)', () => {
 
   it('i tre indirizzi che davano «Page Not Found» (P29, AU-V11)', () => {
     expect(screens.SettingsTeam).toBe('settings/team');
+    // RETE0: la Rete del negozio ha l'indirizzo nuovo; quello vecchio resta e porta alla stessa schermata
+    expect(screens.SettingsNetwork).toBe('settings/network');
+    expect(PARENT_TAB.SettingsNetwork).toBe('settings');
     expect(screens.Chat).toBe('chat');
     expect(screens.SettingsAutomationBuilder).toBe('settings/automation-builder');
   });

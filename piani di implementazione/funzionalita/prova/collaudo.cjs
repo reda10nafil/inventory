@@ -58,7 +58,8 @@ async function cfA2(h) {
     n += 1;
     if (dalMenu !== indirizzo || !tocco || dopo !== '/settings') rosse.push(`menu ${voce}: ${dalMenu}, dopo la ricarica ${tocco || 'nessuna freccia'} → ${dopo}`);
   }
-  for (const indirizzo of ['settings/team', 'chat', 'settings/automation-builder']) {
+  // RETE0: in più `settings/network`, l'indirizzo nuovo della Rete del negozio (`settings/team` è quello vecchio)
+  for (const indirizzo of ['settings/team', 'settings/network', 'chat', 'settings/automation-builder']) {
     await h.go(indirizzo);
     await h.page.reload(); await h.page.waitForTimeout(2200);
     n += 1;
@@ -948,6 +949,135 @@ async function cfH4(h) {
   return { ok, indirizzo, riletti, motivi, restaInImpostazioni, autore, righe, supabase: sb.length };
 }
 
+// CF-H5 (RETE0, ticket 32): Impostazioni › Persone e telefoni › Rete del negozio col centro finto delle prove
+// (`centro-finto.mjs`, su questo computer): all'entrata «Non collegato» e nessuna scelta fatta, «Fai da centro» spento
+// col motivo; il codice del centro scritto, la domanda in pagina, «Collegato al centro "Magazzino" · 3 telefoni online»,
+// le righe dei telefoni con «online dalle…» e «visto alle…», la voce di Impostazioni con lo stato vero; il centro tace
+// (acceso ma muto: così la console resta pulita) → «non risponde» e tutti «visto alle…»; «Scollegati» → «Non collegato».
+// Il centro vero sul telefono resta a CF-T6.
+async function cfH5(h) {
+  const { pathToFileURL } = require('url');
+  const { avviaCentro } = await import(pathToFileURL(require('path').join(__dirname, 'centro-finto.mjs')).href);
+  const ora = Date.now();
+  const centro = await avviaCentro({
+    porta: 47331, token: 'RETE0COLLAUDO001', nome: 'Magazzino',
+    altri: [
+      { id: 'banco-2', name: 'Banco 2', since: ora - 10 * 60_000, lastSeen: ora, online: true },
+      { id: 'cassa', name: 'Cassa', since: ora - 2 * 3600_000, lastSeen: ora - 5 * 60_000, online: false },
+    ],
+  });
+  const stato = async () => ((await h.page.locator('[data-testid="rete-stato"]').locator('visible=true').first().innerText()) || '').replace(/\s+/g, ' ').trim();
+  const righe = () => h.page.locator('[data-testid="rete-telefono"]').locator('visible=true').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  const aspetta = async (re, ms) => { const t0 = Date.now(); let s = await stato(); while (!re.test(s) && Date.now() - t0 < ms) { await h.page.waitForTimeout(500); s = await stato(); } return s; };
+  try {
+    const esterne = [];
+    // richieste verso fuori (non `data:` o `blob:`; il lettore di QR di sempre, jsqr, non conta)
+    h.page.on('request', (r) => { const x = new URL(r.url()); if (/^https?:$/.test(x.protocol) && !/^(localhost|127\.0\.0\.1)$/.test(x.hostname) && !/jsdelivr/.test(x.hostname)) esterne.push(x.hostname); });
+    await h.go('settings');
+    await h.click('Rete del negozio');
+    await h.page.waitForTimeout(1200);
+    const entrata = { indirizzo: u.percorso(h.page), stato: await stato(), motivo: await h.has('Sul computer non si può: usa un telefono che resta acceso in negozio.', true) };
+    await h.click('Collegati a un centro');
+    await h.page.getByLabel('Codice del centro', { exact: true }).fill(centro.codice);
+    await h.click('Continua');
+    const domanda = await h.has('Collegarti al centro "Magazzino"?', true);
+    await h.click('Collegati');
+    const collegato = await aspetta(/^Collegato/, 8000);
+    await h.page.waitForTimeout(800);
+    const telefoni = await righe();
+    await u.toccaIndietro(h.page); await h.page.waitForTimeout(1200);
+    const voce = await h.has('Collegato al centro "Magazzino"', true);
+    await h.click('Rete del negozio'); await h.page.waitForTimeout(1000);
+    centro.muto(true);
+    const tace = await aspetta(/non risponde/, 50000);
+    const visti = await righe();
+    await h.click('Scollegati'); await h.page.waitForTimeout(1200);
+    const scollegato = await stato();
+    const nomi = telefoni.join(' | ');
+    const ok = entrata.indirizzo === '/settings/network' && entrata.stato === 'Non collegato' && entrata.motivo && domanda
+      && collegato === 'Collegato al centro "Magazzino" · 3 telefoni online' && telefoni.length === 4
+      && /^Magazzino, Centro · online dalle \d\d:\d\d, Online$/.test(telefoni[0]) && /Banco 2, online dalle \d\d:\d\d, Online/.test(nomi)
+      && /Cassa, visto alle \d\d:\d\d, Non in linea/.test(nomi) && voce
+      && tace.startsWith('Il centro "Magazzino" non risponde') && visti.length === 4 && visti.every((r) => /visto alle \d\d:\d\d, Non in linea$/.test(r))
+      && scollegato === 'Non collegato' && esterne.length === 0;
+    return { ok, entrata, domanda, collegato, voce, tace, scollegato, esterne, telefoni, visti };
+  } finally { await centro.spegni(); }
+}
+
+// DATI (EXP + IMP, corsia B, 25/11): CF-G1 export, CF-G2 import d'altri con «+ Crea campo», CF-G3 andata e ritorno
+const imp = require('./imp-util.cjs');
+const datiCsv = (n) => require('fs').readFileSync(require('path').join(__dirname, 'imp-csv', n), 'utf8');
+async function datiScarica(h, voce) {
+  const dl = h.page.waitForEvent('download', { timeout: 15000 });
+  await h.click(voce);
+  return require('fs').readFileSync(await (await dl).path());
+}
+function datiRighe(testo) {
+  const rows = []; let row = []; let f = ''; let q = false;
+  for (let i = 0; i < testo.length; i++) {
+    const ch = testo[i];
+    if (q) { if (ch === '"' && testo[i + 1] === '"') { f += '"'; i++; } else if (ch === '"') q = false; else f += ch; }
+    else if (ch === '"' && !f) q = true; else if (ch === ',') { row.push(f); f = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && testo[i + 1] === '\n') i++; row.push(f); if (row.some(Boolean)) rows.push(row); row = []; f = ''; } else f += ch;
+  }
+  row.push(f); if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+async function cfG1(h) {
+  await h.tab('Impostazioni');
+  const testo = (await datiScarica(h, 'Esporta Inventario')).toString('utf8');
+  const [testa, ...dati] = datiRighe(testo.replace(/^﻿/, ''));
+  const vis = dati.find((r) => r[0] === 'VIS-0142');
+  const val = (c) => vis[testa.indexOf(c)];
+  await h.page.waitForTimeout(500);
+  const avviso = await h.page.locator('[data-testid="export-avviso"]').innerText().catch(() => '');
+  const cloud = await h.has('Per avere i link delle foto serve il cloud (in arrivo)', true);
+  const r = { bom: testo.charCodeAt(0) === 0xfeff, taglia: val('Taglia'), colore: val('Colore'), dettagli: val('Dettagli'), giacenza: testa.includes('Giacenza'), scaffale: testa.includes('Scaffale'), avviso, cloud };
+  return { ok: r.bom && r.taglia === 'M' && r.colore === 'Grigio perla' && /; /.test(r.dettagli) && r.giacenza && r.scaffale && /^\d+ foto non esportate: sono solo su questo dispositivo/.test(avviso) && cloud, ...r };
+}
+async function cfG2(h) {
+  await h.tab('Impostazioni');
+  const prima = await h.page.evaluate(() => JSON.stringify(Object.keys(localStorage).filter((k) => !/import_draft/.test(k)).sort().map((k) => [k, localStorage.getItem(k)])));
+  await imp.trascina(h, datiCsv('altro-gestionale-pv.csv'), 'altro-gestionale-pv.csv');
+  const abbinate = await h.page.locator('[aria-label^="Colonna "]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  const intatto = prima === await h.page.evaluate(() => JSON.stringify(Object.keys(localStorage).filter((k) => !/import_draft/.test(k)).sort().map((k) => [k, localStorage.getItem(k)])));
+  await h.page.locator('[aria-label^="Colonna Materiale:"]').click(); await h.page.waitForTimeout(500);
+  await h.click('+ Crea campo'); await h.page.waitForTimeout(1500);
+  await h.click('Salva Campo'); await h.page.waitForTimeout(1800);
+  const ritorno = await h.page.locator('[aria-label^="Colonna Materiale:"]').getAttribute('aria-label').catch(() => null);
+  const fileAncora = await h.page.locator('[data-testid="import-file"]').innerText().catch(() => null);
+  await h.click('Posizione');
+  await h.page.locator('[aria-modal="true"]').last().getByText('Magazzino', { exact: true }).first().click();
+  await h.page.waitForTimeout(500);
+  const rifiutate = await h.page.getByText(/^Riga \d+ · /).count();
+  const n = await imp.chiudiImport(h);
+  const campi = await h.store('furinventory_custom_fields:local', 0);
+  const materiale = campi.find((f) => f.name === 'Materiale');
+  const b = (await h.products()).find((p) => p.sku === 'BOR-001');
+  const mat = b && b.customData.find((c) => c.fieldSnapshot.id === materiale?.id);
+  const r = { abbinate: abbinate.slice(0, 3), intatto, ritorno, fileAncora, rifiutate, importati: n, materiale: mat && (materiale.options || []).find((o) => o.id === mat.value)?.label, foto: b && b.images, giacenza: b && b.stock };
+  return { ok: abbinate[0] === 'Colonna Codice articolo: SKU' && intatto && ritorno === 'Colonna Materiale: Materiale' && fileAncora === 'altro-gestionale-pv.csv' && rifiutate === 0 && n === 2
+    && r.materiale === 'Pelle' && JSON.stringify(r.foto) === '["https://img.prova.test/borsa1.png"]' && r.giacenza?.magazzino === 3, ...r };
+}
+async function cfG3(h) {
+  await h.tab('Impostazioni');
+  const originali = (await h.products(0)).filter((p) => !p.deletedAt);
+  const zip = await datiScarica(h, 'Esporta con le foto');
+  await h.page.evaluate(() => { localStorage.setItem('inventory:v1:local:products', '[]'); localStorage.setItem('inventory:v1:local:timeline', '[]'); });
+  await h.go('settings'); await h.page.waitForTimeout(800);
+  await imp.trascina(h, zip, 'inventario.zip', 'application/zip');
+  const n = await imp.chiudiImport(h);
+  const dopo = await h.products();
+  const diversi = originali.filter((o) => {
+    const p = dopo.find((x) => x.sku === o.sku);
+    if (!p) return true;
+    const campi = (x) => JSON.stringify((x.customData || []).filter((c) => !['images', 'document'].includes(c.fieldSnapshot.type)).map((c) => [c.fieldSnapshot.id, c.value]));
+    return ['furType', 'location', 'status', 'sellPrice', 'libraryId', 'unit', 'shelfId'].some((k) => JSON.stringify(o[k] ?? null) !== JSON.stringify(p[k] ?? null))
+      || JSON.stringify(o.images) !== JSON.stringify(p.images) || JSON.stringify(o.stock ?? null) !== JSON.stringify(p.stock ?? null) || campi(o) !== campi(p);
+  }).map((o) => o.sku);
+  return { ok: n === originali.length && diversi.length === 0, importati: n, prodotti: originali.length, diversi };
+}
+
 // ---- Tutti i passi del piano (collaudo-finale.md) ----
 const PASSI = [
   ['CF-A1', 'Icone visibili nelle schermate principali, nei 5 stili', 'nessuna (controllo; d-icone.cjs)'],
@@ -981,15 +1111,17 @@ const PASSI = [
   ['CF-F6', 'Reso di un articolo a quantità e di un pezzo unico venduto', 'RES'],
   ['CF-F7', 'Automazione personale [Scansiona, Tag, Tag, Imposta campo, Vendi]', 'ESE', cfF7],
   ['CF-F8', 'Costruttore: passi Carico e «Chiedi conferma», riordino', 'FLU2, ESE'],
-  ['CF-G1', 'Esporta inventario: BOM, una colonna per campo, avviso foto', 'EXP'],
-  ['CF-G2', 'Import di un CSV «;» con abbinamento, «+ Crea campo», rifiutate', 'IMP'],
-  ['CF-G3', 'Esportare e reimportare in uno spazio vuoto', 'EXP, IMP'],
+  ['CF-G1', 'Esporta inventario: BOM, una colonna per campo, avviso foto', 'EXP', cfG1],
+  ['CF-G2', 'Import di un CSV «;» con abbinamento, «+ Crea campo», rifiutate', 'IMP', cfG2],
+  ['CF-G3', 'Esportare e reimportare in uno spazio vuoto (ZIP con le foto)', 'EXP, IMP', cfG3],
   ['CF-H1', 'Home con Team e Chat; Chat senza colleghi; card giuste', 'CHAT1'],
   ['CF-H2', 'Selezione › «Invia» a un collega › «Ricevuto, sposta»', 'RIC1'],
   ['CF-H3', 'Automazioni «Invia a collega», «Ricevi», condivise', 'RIC2, RIC3'],
   ['CF-Z', 'La catena intera (Borse, modello, campo, foto, scaffale, etichetta, codice, export, import)', 'MCAT, EDC, GAL, FOTO, S3, ETI, COD, ESE, EXP, IMP'],
   // ACC1 (corsia B): passo nuovo, in fondo alla tabella per non scontrarsi con le altre corsie
   ['CF-H4', 'Accesso: profilo riletto, Operatore con le voci spente col motivo, autore in Cronologia', 'ACC1', cfH4],
+  // RETE0 (corsia B): passo nuovo, in fondo alla tabella
+  ['CF-H5', 'Rete del negozio col centro finto: nessuna scelta all\'entrata, collegato con i telefoni «online dalle…» e «visto alle…», centro che tace, Scollegati', 'RETE0', cfH5],
   // ETI (corsia C, 24/11): parte ETI di CF-D1 (la riga CF-D1 sopra è di S2): codice e «Codice ed etichetta» con Stampa
   ['CF-D1-ETI', 'Ripiano «A1» creato: codice e finestra «Codice ed etichetta» con Stampa', 'ETI', cfD1Eti],
 ];

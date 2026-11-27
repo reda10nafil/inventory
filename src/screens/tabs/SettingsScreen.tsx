@@ -3,34 +3,35 @@ import React, { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, Alert, Platform, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from '../../navigation/compat';
-import { useIsFocused } from '@react-navigation/native';
 import * as FileSystem from '../../lib/fileSystem';
 import * as Sharing from '../../lib/sharing';
-import * as DocumentPicker from 'expo-document-picker';
 import { useInventory } from '../../../contexts/InventoryContext';
 import { photoCounts } from '../../../utils/photoCloud';
 import { googleAccountAvailable } from '../../../utils/googleAccount';
 import { backupWhen, lastDriveBackup, runDriveBackup, type DriveBackupInfo } from '../../../utils/driveBackup';
-import { parseCsv, stringifyCsv } from '../../../utils/csv';
-import { movementCsvRows, productCsvColumns, productCsvRows, productFromCsvRow, stockCsvRows } from '../../../utils/productCsv';
+import { stringifyCsv } from '../../../utils/csv';
+import { movementCsvRows, productCsvRows, stockCsvRows } from '../../../utils/productCsv';
+// EXP (DATI, ticket 26): colonne dei campi, avviso delle foto ed «Esporta con le foto»
+import { localPhotoCount, photoFiles, photosWarning, rowsWithImageFiles, ZIP_CSV_NAME, ZIP_IMAGES_DIR } from '../../../utils/productExport';
+import { base64ToBytes, bytesToBase64, dataUrlBytes, makeZip, utf8 } from '../../../utils/zip';
+import { useCustomFields } from '../../../contexts/CustomFieldsContext';
+import { useLayout } from '../../../contexts/LayoutContext';
 import { categoryPath } from '../../../utils/categories';
 import { usePlaceLabel } from '../../../hooks/usePlaceLabel';
 import { useFurTypes } from '../../../contexts/FurTypesContext';
 import { useContacts } from '../../../contexts/ContactsContext';
 import { useShelves } from '../../../contexts/ShelvesContext';
-import { useLoadCheck } from '../../../hooks/useLoadCheck';
-import { overLimitText } from '../../../utils/shelves';
-import { placeOfKey, stockKey } from '../../../utils/stock';
 import { LOGIN_ENABLED, useAuth } from '../../../contexts/AuthContext';
 import { createGoogleSheetBackup, ensureOrganizationDriveFolder, uploadDriveFile } from '../../../backend-auth/google/driveApi';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { Backdrop } from '../../../components/ui/Backdrop';
 import { cardSurface } from '../../../components/ui/surfaces';
-import { Text, fontStyle } from '../../../components/ui/Text';
+import { Text } from '../../../components/ui/Text';
 import { Dimmed, PermissionNote } from '../../../components/PermissionNote';
 import { usePermission, useProfile } from '../../../contexts/ProfileContext';
 import { profileSubtitle } from '../../../utils/profile';
-import { getActiveRole, getActiveSocket } from '../../services/meshSync';
+import { useStoreNetwork } from '../../../contexts/StoreNetworkContext';
+import { settingsSubtitle } from '../../../utils/storeNetwork';
 import { makeStyles, useTheme } from '../../../contexts/ThemeContext';
 
 export default function SettingsScreen() {
@@ -38,7 +39,7 @@ export default function SettingsScreen() {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { products, timeline, addProduct, getProductBySku, libraries } = useInventory();
+  const { products, timeline, libraries } = useInventory();
   const photos = photoCounts(products);
   // S1b: nei report le chiavi con lo scaffale si leggono «Magazzino › A1»
   const placeLabel = usePlaceLabel();
@@ -46,8 +47,10 @@ export default function SettingsScreen() {
   const { nameOf: contactName } = useContacts();
   // S1a: colonna «Scaffale» nel CSV dei prodotti (nome dello scaffale dentro la posizione)
   const { shelves } = useShelves();
-  // S3 (ticket 15): l'import registra merce che è già lì: niente blocco, solo l'informazione «oltre il limite»
-  const { check: checkLoad } = useLoadCheck();
+  // EXP (DATI): campi personalizzati nell'ordine del modulo Aggiungi, per le colonne dei campi dell'export
+  const { customFields } = useCustomFields();
+  const { layout } = useLayout();
+  const [photoNote, setPhotoNote] = useState('');
   // `contact`: nome del fornitore o cliente nel report dei movimenti (M10); undefined per un id sconosciuto, che resta scritto
   // C1: nel report delle giacenze «Categoria» è la cartella (nome completo) e «Tipo di pelle» il nome del tipo
   const reportLabels = {
@@ -77,11 +80,8 @@ export default function SettingsScreen() {
   const settingsPerm = usePermission('impostazioni');
   const addPerm = usePermission('aggiungere');
   const openSetting = (path: string) => { if (settingsPerm.allowed) router.push(path); };
-  // Rete del negozio: lo stato di oggi in una riga, riletto a ogni ritorno su Impostazioni (la schermata la rifà
-  // RETE0). Sul web un centro non può esistere (niente server): mai «Fa da centro»
-  useIsFocused();
-  const networkState = Platform.OS !== 'web' && getActiveRole() === 'host' ? 'Fa da centro'
-    : getActiveSocket()?.readyState === 1 ? 'Collegato a un centro' : 'Non collegato';
+  // Rete del negozio (RETE0): lo stato vero, dal contesto della rete (sul web mai «Fa da centro»)
+  const networkState = settingsSubtitle(useStoreNetwork().view);
 
   const showComingSoon = (feature: string) => {
     Alert.alert('Prossimamente', `${feature} sarà disponibile nella prossima versione`);
@@ -90,7 +90,7 @@ export default function SettingsScreen() {
   // Un solo modo di scaricare (web) o condividere (telefono) un CSV: prodotti, giacenze e movimenti (M08)
   const exportCsv = async (name: string, rows: readonly (readonly unknown[])[]) => {
     try {
-      const csvContent = stringifyCsv(rows);
+      const csvContent = `\uFEFF${stringifyCsv(rows)}`; // EXP: BOM, così Excel legge gli accenti (CSV-E4)
 
       if (Platform.OS === 'web') {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
@@ -118,7 +118,53 @@ export default function SettingsScreen() {
       Alert.alert('Errore', 'Impossibile esportare i dati');
     }
   };
-  const exportToCSV = () => exportCsv('inventario', productCsvRows(products, libraries, shelves));
+  // EXP (DATI): una sola funzione delle righe per l'export e il backup Drive (CSV-E5), con le colonne dei campi in fondo
+  const inventoryRows = () => productCsvRows(products, libraries, shelves, { fields: customFields, layoutIds: layout.fields.map((f) => f.id), furTypes });
+  const exportToCSV = async () => {
+    await exportCsv('inventario', inventoryRows());
+    setPhotoNote(photosWarning(products) ?? '');
+  };
+
+  // «Esporta con le foto»: ZIP con il CSV (più «Immagini file») e la cartella immagini/ con le foto del dispositivo
+  const photoBytes = async (uri: string): Promise<Uint8Array | null> => {
+    const inline = dataUrlBytes(uri);
+    if (inline) return inline.data;
+    try { return base64ToBytes(await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })); } catch { return null; }
+  };
+  const exportWithPhotos = async () => {
+    try {
+      const live = products.filter((p) => !p.deletedAt);
+      const files = photoFiles(live);
+      const entries: { name: string; data: Uint8Array }[] = [];
+      const skipped = new Set<string>();
+      for (const f of files) {
+        const data = await photoBytes(f.uri);
+        if (data && data.length) entries.push({ name: `${ZIP_IMAGES_DIR}${f.name}`, data });
+        else skipped.add(f.name); // una foto non più leggibile (blob: scaduto) non ferma l'export
+      }
+      const csv = `\uFEFF${stringifyCsv(rowsWithImageFiles(inventoryRows(), live, files, skipped))}`;
+      const zip = makeZip([{ name: ZIP_CSV_NAME, data: utf8(csv) }, ...entries]);
+      const name = `inventario-con-foto_${Date.now()}.zip`;
+      if (Platform.OS === 'web') {
+        const url = URL.createObjectURL(new Blob([zip as BlobPart], { type: 'application/zip' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        const fileUri = FileSystem.documentDirectory + name;
+        await FileSystem.writeAsStringAsync(fileUri, bytesToBase64(zip), { encoding: FileSystem.EncodingType.Base64 });
+        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(fileUri);
+        else Alert.alert('Successo', `File salvato in: ${fileUri}`);
+      }
+      // le foto dei campi Immagini restano fuori dallo ZIP (solo i link http): si dice (revisore DATI)
+      const fieldPhotos = localPhotoCount(live).fields;
+      setPhotoNote(`ZIP con ${entries.length} foto${skipped.size ? `; ${skipped.size} non più leggibili su questo dispositivo, rimaste fuori` : ''}${fieldPhotos ? `; ${fieldPhotos} foto dei campi personalizzati non incluse` : ''}.`);
+    } catch (error) {
+      Alert.alert('Errore', 'Impossibile esportare con le foto');
+    }
+  };
   const exportStockCsv = () => exportCsv('giacenze', stockCsvRows(products, reportLabels));
   const exportMovementsCsv = () => exportCsv('movimenti', movementCsvRows(timeline, products, reportLabels));
 
@@ -136,7 +182,7 @@ export default function SettingsScreen() {
     }
     setCloudBackupBusy(true);
     try {
-      const info = await runDriveBackup(cloudOrganizationId, productCsvRows(products, libraries, shelves));
+      const info = await runDriveBackup(cloudOrganizationId, inventoryRows());
       setLastBackup(info);
       Alert.alert('Backup fatto', 'CSV dell\'inventario e foglio Google nella cartella «Syncro Flow» del tuo Google Drive.',
         info.sheetUrl ? [{ text: 'Apri foglio', onPress: () => void Linking.openURL(info.sheetUrl!) }, { text: 'Chiudi' }] : undefined);
@@ -155,15 +201,7 @@ export default function SettingsScreen() {
     }
     setCloudBackupBusy(true);
     try {
-      const values = [
-        ['SKU', 'Tipo di pelle', 'Posizione', 'Status', 'Prezzo Acquisto', 'Prezzo Vendita', 'Lunghezza', 'Larghezza', 'Peso', 'Note', 'Data Produzione', 'Immagini URL', 'Dati Personalizzati JSON', 'GS1 Digital Link', 'Link allegati Drive JSON'],
-        ...products.map((product) => [
-          product.sku, product.furType, product.location, product.status,
-          product.purchasePrice, product.sellPrice, product.length, product.width, product.weight,
-          product.technicalNotes, product.productionDate, JSON.stringify(product.backupImageLinks?.length ? product.backupImageLinks : (product.images || []).filter((uri) => /^https?:\/\//i.test(uri))),
-          JSON.stringify(product.customData || []), product.gs1DigitalLink, JSON.stringify(product.backupCustomDataLinks || {}),
-        ]),
-      ];
+      const values = inventoryRows(); // EXP: stesse righe dell'export (CSV-E5), senza il cestino
       const content = stringifyCsv(values);
       const folderId = await ensureOrganizationDriveFolder(accessToken, organizationId);
       const file = await uploadDriveFile(
@@ -183,85 +221,8 @@ export default function SettingsScreen() {
     }
   };
 
-  const importCsvContent = (content: string) => {
-    const rows = parseCsv(content.replace(/^\uFEFF/, ''));
-    if (rows.length < 2) throw new Error('Il CSV non contiene prodotti.');
-    // C1: colonne e formato (prima di M01, M01-M10, da C1) dall'intestazione; una riga → un prodotto in `productFromCsvRow`
-    const cols = productCsvColumns(rows[0]);
-    if (cols.sku < 0) throw new Error('Manca la colonna SKU. Esporta prima un CSV dall’app per vedere il formato supportato.');
-
-    let imported = 0;
-    let skipped = 0;
-    const over = new Map<string, string>(); // S3: nome del posto → «A1 è oltre il limite: …» (l'ultima riga vince)
-    const seenSkus = new Set(products.map((product) => product.sku.trim().toLocaleLowerCase()));
-    rows.slice(1).forEach((row) => {
-      // SKU vuoto, giacenza scritta ma non valida o su uno scaffale (S1a): `null`, la riga si salta
-      const parsed = productFromCsvRow(row, cols, { categories: libraries, furTypes, shelves });
-      const normalizedSku = parsed ? parsed.product.sku.toLocaleLowerCase() : '';
-      if (!parsed || seenSkus.has(normalizedSku) || getProductBySku(parsed.product.sku)) {
-        skipped += 1;
-        return;
-      }
-      seenSkus.add(normalizedSku);
-      // S3: posti che questa riga porta oltre il limite, prima di scrivere: ogni scaffale con la sua quantità, ogni
-      // posizione con capienza con la somma della riga (revisore: «X: 5; X/A1: 5» sono 10 pezzi in X)
-      const { product } = parsed;
-      const entries: [string, number][] = parsed.stock
-        ? Object.entries(parsed.stock).filter(([, qty]) => qty > 0)
-        : product.status === 'available' ? [[stockKey(product.location, product.shelfId), 1]] : [];
-      const perPlace = new Map<string, number>();
-      for (const [key, qty] of entries) perPlace.set(placeOfKey(key), (perPlace.get(placeOfKey(key)) ?? 0) + qty);
-      const loads = [
-        ...entries.filter(([key]) => key !== placeOfKey(key)).map(([key, qty]) => checkLoad(product, key, [{ qty }], { soloScaffale: true })),
-        ...[...perPlace].map(([place, qty]) => checkLoad(product, place, [{ qty }])),
-      ];
-      const added = addProduct(parsed.product, parsed.stock ? { stock: parsed.stock } : undefined);
-      if (added) {
-        imported += 1;
-        for (const l of loads) if (l.level === 'blocco') over.set(l.name, overLimitText(l));
-      } else skipped += 1;
-    });
-
-    return { imported, skipped, over: [...over.values()] };
-  };
-
-  /** Messaggio finale dell'import (S3: con i posti oltre il limite, se ce ne sono; altrimenti quello di prima). */
-  const importText = (outcome: { imported: number; skipped: number; over: string[] }) =>
-    `${outcome.imported} prodotti importati. ${outcome.skipped} saltati (SKU vuoto o già presente, o giacenza non valida).`
-    + (outcome.over.length ? ` ${outcome.over.join('. ')}.` : '');
-
-  const importFromCSV = async () => {
-    if (!addPerm.allowed) return;
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/csv', 'text/comma-separated-values', 'application/vnd.ms-excel'],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
-      const outcome = importCsvContent(content);
-      Alert.alert('Importazione completata', importText(outcome));
-    } catch (error) {
-      Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
-    }
-  };
-
-  const handleCsvDrop = async (event: any) => {
-    event.preventDefault();
-    if (!addPerm.allowed) return;
-    const file = event.dataTransfer?.files?.[0];
-    if (!file || !/\.csv$/i.test(file.name || '')) {
-      Alert.alert('Formato non supportato', 'Trascina un file .csv.');
-      return;
-    }
-    try {
-      const outcome = importCsvContent(await file.text());
-      Alert.alert('Importazione completata', importText(outcome));
-    } catch (error) {
-      Alert.alert('Importazione non riuscita', error instanceof Error ? error.message : 'Il file CSV non è valido.');
-    }
-  };
+  // IMP (DATI): l'import è nella schermata «Importa prodotti» (`settings/import`), con abbinamento e anteprima
+  const openImport = () => { if (addPerm.allowed) router.push('/settings/import'); };
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
@@ -592,6 +553,24 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
+        {/* EXP (DATI): il CSV più la cartella immagini/ in un file ZIP, per il sito o un gestionale */}
+        <Pressable style={styles.settingRow} onPress={() => void exportWithPhotos()}>
+          <View style={styles.settingLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#10B981' }]}>
+              <AppIcon name="photo-library" size={24} color={t.colors.onData} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>Esporta con le foto</Text>
+              <Text style={styles.settingDescription}>
+                ZIP con il CSV e la cartella immagini, per il sito o un gestionale
+              </Text>
+            </View>
+          </View>
+          <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
+        </Pressable>
+        {photoNote ? <Text style={styles.exportNote} testID="export-avviso">{photoNote}</Text> : null}
+        <Text style={styles.exportNote}>Per avere i link delle foto serve il cloud (in arrivo)</Text>
+
         <Pressable style={styles.settingRow} onPress={exportStockCsv}>
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: t.colors.accent }]}>
@@ -624,7 +603,7 @@ export default function SettingsScreen() {
 
         <PermissionNote text={addPerm.reason} />
         <Dimmed off={!addPerm.allowed}>
-        <Pressable style={styles.settingRow} onPress={importFromCSV}>
+        <Pressable style={styles.settingRow} onPress={openImport}>
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
               <AppIcon name="file-upload" size={24} color={t.colors.onData} />
@@ -632,32 +611,13 @@ export default function SettingsScreen() {
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Importa prodotti CSV</Text>
               <Text style={styles.settingDescription}>
-                Seleziona un CSV; gli SKU già presenti vengono saltati
+                CSV o ZIP con le foto: abbini le colonne e vedi l'anteprima
               </Text>
             </View>
           </View>
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
-        {Platform.OS === 'web' && React.createElement('div', {
-          role: 'region',
-          'aria-label': 'Importa CSV trascinando un file qui',
-          onDragOver: (event: any) => event.preventDefault(),
-          onDrop: handleCsvDrop,
-          style: {
-            ...fontStyle(t, '400'),
-            fontSize: 13,
-            lineHeight: '18px',
-            border: `1px dashed ${t.colors.dash}`,
-            borderRadius: t.radius.card,
-            padding: 18,
-            marginBottom: 10,
-            color: t.colors.textSecondary,
-            background: t.colors.surface,
-            textAlign: 'center',
-          },
-          children: 'Trascina qui un file CSV per importare prodotti. Per esportare usa “Esporta Inventario”.',
-        })}
         </Dimmed>
 
         {/* 26/11: account Google del telefono, facoltativo. Con l'account: copia nel cloud del negozio, foto nella sua
@@ -760,10 +720,10 @@ export default function SettingsScreen() {
           <AppIcon name="chevron-right" size={24} color={t.colors.textSecondary} />
         </Pressable>
 
-        {/* La schermata di oggi resta all'indirizzo `settings/team`: la rifà RETE0 */}
+        {/* RETE0: indirizzo nuovo `settings/network` (`settings/team` resta come indirizzo vecchio) */}
         <Pressable
           style={styles.settingRow}
-          onPress={() => router.push('/settings/team')}
+          onPress={() => router.push('/settings/network')}
         >
           <View style={styles.settingLeft}>
             <View style={[styles.iconContainer, { backgroundColor: '#8B5CF6' }]}>
@@ -896,4 +856,6 @@ const useStyles = makeStyles((t) => ({
     lineHeight: 18,
   },
   settingRowOff: { opacity: 0.55 },
+  // EXP (DATI): avviso delle foto non esportate e riga del cloud
+  exportNote: { ...t.typography.caption, fontSize: 12, lineHeight: 17, marginTop: -4, marginBottom: 10, paddingHorizontal: 4 },
 }));

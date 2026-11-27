@@ -1038,6 +1038,77 @@ FETTE.acc1 = {
   ],
 };
 
+// RETE0 (corsia B, 24/11): Rete del negozio non collegata (le due scelte, «Fai da centro» spento col motivo), la domanda
+// in pagina dopo il codice, collegata al centro finto con due telefoni (uno online, uno visto), centro che non risponde,
+// e la voce di Impostazioni con lo stato vero. Il centro finto (`centro-finto.mjs`, solo per le prove) si accende e si
+// spegne qui, uno per stile; a centro spento il browser scrive in console i tentativi falliti (attesi).
+// Aggiunta qui sotto (non dentro l'oggetto) per non scontrarsi con le altre corsie.
+let centroRete0 = null;
+FETTE.rete0 = {
+  prepara: () => {
+    localStorage.setItem('device:v1:profile', JSON.stringify({ id: 'tel-stili-rete0', name: 'Mario Rossi', role: 'titolare', device: 'Banco 1' }));
+  },
+  schermate: [
+    ['non-collegato', async (page) => { await page.goto(`${APP}/settings/network`); await page.waitForTimeout(1800); }],
+    ['domanda', async (page) => {
+      const { avviaCentro } = await import(require('url').pathToFileURL(path.join(__dirname, 'centro-finto.mjs')).href);
+      const ora = Date.now();
+      centroRete0 = await avviaCentro({
+        porta: 47321, token: 'RETE0STILI000001', nome: 'Magazzino',
+        altri: [
+          { id: 'banco-2', name: 'Banco 2', since: ora - 10 * 60_000, lastSeen: ora, online: true },
+          { id: 'cassa', name: 'Cassa', since: ora - 2 * 3600_000, lastSeen: ora - 5 * 60_000, online: false },
+        ],
+      });
+      await page.getByText('Collegati a un centro', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.getByLabel('Codice del centro', { exact: true }).fill(centroRete0.codice);
+      await page.getByText('Continua', { exact: true }).first().click(); await page.waitForTimeout(500);
+      await page.getByText('Collegati', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'end' }));
+    }],
+    ['collegato', async (page) => {
+      await page.getByText('Collegati', { exact: true }).first().click();
+      // la riga dello stato della schermata (sotto, in Impostazioni, c'è lo stesso testo nella voce: non è a video)
+      await page.locator('[data-testid="rete-stato"]').locator('visible=true').filter({ hasText: /^Collegato al centro/ }).first().waitFor();
+      await page.waitForTimeout(800);
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }],
+    ['non-risponde', async (page) => { await centroRete0.spegni(); await page.waitForTimeout(1500); }],
+    ['impostazioni-riga', async (page) => {
+      await page.goto(`${APP}/settings`); await page.waitForTimeout(2500);
+      await page.getByText('Persone e telefoni', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+  ],
+};
+
+// DATI (EXP + IMP, corsia B, 25/11): Dati e backup con «Esporta con le foto», l'avviso delle foto dopo l'export e la
+// riga del cloud; Importa prodotti con un CSV «;» di un altro gestionale: colonne abbinate, selettore della colonna,
+// anteprima con rifiutate e avvisi. Aggiunta qui sotto (non dentro l'oggetto) per non scontrarsi con le altre corsie.
+const PV_DATI = require('fs').readFileSync(require('path').join(__dirname, 'imp-csv', 'altro-gestionale-pv.csv'), 'utf8');
+FETTE.dati = {
+  prepara: () => {},
+  schermate: [
+    ['dati-backup', async (page) => {
+      await page.goto(`${APP}/settings`); await page.waitForTimeout(2500);
+      await page.getByText('Esporta Inventario', { exact: true }).first().click(); await page.waitForTimeout(1200);
+      await page.getByText('Esporta con le foto', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    }],
+    ['import-colonne', async (page) => {
+      await page.getByText('Importa prodotti CSV', { exact: true }).first().click(); await page.waitForTimeout(1500);
+      const dt = await page.evaluateHandle((t) => { const d = new DataTransfer(); d.items.add(new File([t], 'altro-gestionale-pv.csv', { type: 'text/csv' })); return d; }, PV_DATI);
+      await page.locator('[aria-label="Importa CSV trascinando un file qui"]').dispatchEvent('drop', { dataTransfer: dt });
+      await page.waitForTimeout(1500);
+      await page.getByText('2. Colonne', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+    ['import-scelta', async (page) => {
+      await page.locator('[aria-label^="Colonna Materiale:"]').click(); await page.waitForTimeout(800);
+    }],
+    ['import-anteprima', async (page) => {
+      await page.getByLabel('Chiudi', { exact: true }).locator('visible=true').first().click(); await page.waitForTimeout(600);
+      await page.locator('[data-testid="import-anteprima"]').evaluate((e) => e.scrollIntoView({ block: 'start' }));
+    }],
+  ],
+};
+
 (async () => {
   const fetta = FETTE[process.env.FETTA];
   if (!fetta) throw new Error(`FETTA sconosciuta: ${process.env.FETTA} (note: ${Object.keys(FETTE).join(', ')})`);

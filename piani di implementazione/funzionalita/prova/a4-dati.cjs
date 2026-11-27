@@ -33,13 +33,7 @@ const CSV = [HEADER,
 
   await run('a4-dati-importa-trascina', async (h) => {
     await h.go('settings');
-    await h.page.evaluate((csv) => {
-      const zone = document.querySelector('[aria-label="Importa CSV trascinando un file qui"]');
-      const dt = new DataTransfer();
-      dt.items.add(new File([csv], 'prova.csv', { type: 'text/csv' }));
-      zone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
-    }, CSV);
-    await h.page.waitForTimeout(800);
+    await require('./imp-util.cjs').importaCsv(h, CSV, 'prova.csv'); // IMP (DATI): dalla schermata Importa prodotti
     const prods = await h.products();
     const n1 = prods.find((p) => p.sku === 'NEW-001');
     const n2 = prods.find((p) => p.sku === 'NEW-002');
@@ -55,11 +49,10 @@ const CSV = [HEADER,
     await h.go('settings');
     let scelta = 'nessuna finestra file';
     try {
-      const [chooser] = await Promise.all([h.page.waitForEvent('filechooser', { timeout: 5000 }), h.click('Importa prodotti CSV')]);
-      await chooser.setFiles({ name: 'prova.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV) });
-      scelta = 'file scelto';
+      // IMP (DATI): «Importa prodotti CSV» apre la schermata; la finestra dei file è «Scegli file»
+      const r = await require('./imp-util.cjs').importaConPulsante(h, Buffer.from(CSV), 'prova.csv');
+      scelta = r.filechooser ? 'file scelto' : 'nessuna finestra file';
     } catch (e) { scelta = 'nessuna finestra file: ' + e.message.split('\n')[0]; }
-    await h.page.waitForTimeout(1500);
     const prods = await h.products();
     return { scelta, totale: prods.length, importato: prods.some((p) => p.sku === 'NEW-001') };
   });

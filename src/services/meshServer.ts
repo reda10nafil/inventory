@@ -16,6 +16,7 @@
 import { Platform } from 'react-native';
 import { Buffer } from 'buffer';
 import { isMeshRequestAuthorized } from './meshAuth';
+import { HEARTBEAT_MS, SILENCE_MS, chatForward, phoneFromHello, presenceMessage, type PhoneId, type PresencePhone } from '../../utils/storeNetwork';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,6 +35,12 @@ type ClientMeta = {
   authenticated: boolean;
   buffer: Buffer;
   addr: string;
+  // RETE0: chi è (dal suo `hello`, pulito), da quando è collegato, ultimo segnale
+  phone?: PhoneId;
+  since?: number;
+  lastSeen?: number;
+  // quando si è aperto il collegamento: chi non si fa riconoscere entro 10 s si chiude
+  openedAt?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -48,6 +55,15 @@ let onMessageCb: OnMeshMessage | null = null;
 let clients: Set<any> = new Set();
 let clientMeta = new Map<any, ClientMeta>();
 let serverMode: 'tcp' | 'http' | 'shim' = 'shim';
+// RETE0 (ticket 32): nome del centro, accensione, telefoni andati via («visto alle…»), controllo dei silenzi
+let centerName = 'Centro del negozio';
+let centerSince = 0;
+const departed = new Map<string, PresencePhone>();
+let sweepTimer: ReturnType<typeof setInterval> | null = null;
+const MAX_BUFFER = 1_000_000; // un telefono che manda più di 1 MB senza chiudere una cornice si scollega
+const MAX_DEPARTED = 20;
+const MAX_SOCKETS = 80; // collegamenti aperti insieme (accettati e no)
+const HELLO_MS = 10_000; // tempo per farsi riconoscere col `hello`
 
 // ---------------------------------------------------------------------------
 // Shim loader: react-native-tcp-socket con try/catch
@@ -121,9 +137,11 @@ function encodeWsFrame(data: string | Buffer): Buffer {
   return Buffer.concat([header, payload]);
 }
 
-function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer } {
+function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer; closed: boolean } {
   const messages: string[] = [];
   let offset = 0;
+  // RETE0 (revisore): il telefono ha mandato la cornice di chiusura
+  let closed = false;
   while (offset + 2 <= buf.length) {
     const b0 = buf[offset];
     const b1 = buf[offset + 1];
@@ -165,6 +183,7 @@ function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer
     if (opcode === 0x8) {
       // close frame — caller should close socket
       offset += headerLen + payloadLen;
+      closed = true;
       break;
     } else if (opcode === 0x9) {
       // ping -> handled outside (we know offset)
@@ -176,7 +195,7 @@ function tryDecodeWsFrames(buf: Buffer): { messages: string[]; remaining: Buffer
     }
     offset += headerLen + payloadLen;
   }
-  return { messages, remaining: buf.slice(offset) };
+  return { messages, remaining: buf.slice(offset), closed };
 }
 
 // ---------------------------------------------------------------------------
@@ -207,6 +226,13 @@ async function handleRestRequest(
       sendHttp(socket, 401, JSON.stringify({ error: 'unauthorized' }));
       return true;
     }
+  }
+
+  // RETE0 (ticket 32): niente `/pull` e `/push` sul database WatermelonDB, che l'inventario non usa (CT15, AR01): per
+  // ora passano solo i messaggi della Chat. L'inventario comune arriva con RETE2a.
+  if ((pathname === '/pull' && method === 'GET') || (pathname === '/push' && method === 'POST')) {
+    sendHttp(socket, 404, JSON.stringify({ error: 'not available' }));
+    return true;
   }
 
   if (pathname === '/pull' && method === 'GET') {
@@ -240,11 +266,14 @@ async function handleRestRequest(
   if (pathname === '/chat/push' && method === 'POST') {
     try {
       const json = body ? JSON.parse(body) : {};
-      const { token: _roomToken, ...chatPayload } = json;
-      await appendChatMessage(chatPayload);
-      // persist + broadcast WS
-      broadcastWs({ type: 'chat', ...chatPayload });
-      if (onMessageCb) onMessageCb({ type: 'chat', ...chatPayload }, socket);
+      // RETE0 (revisore): si inoltra solo la Chat (testo, prodotti, automazioni) col tipo «chat»: dal corpo non passa
+      // una `presence` finta; e se il database non scrive il messaggio arriva lo stesso
+      const chat = chatForward(json);
+      if (chat) {
+        try { await appendChatMessage(chat); } catch { /* registrato in appendChatMessage */ }
+        broadcastWs(chat);
+        if (onMessageCb) onMessageCb(chat, socket);
+      }
     } catch (e) {
       console.log('[meshServer] /chat/push error', e);
       sendHttp(socket, 500, JSON.stringify({ error: 'chat_push_failed' }));
@@ -313,10 +342,11 @@ function sendWsUpgrade(socket: any, accept: string) {
   }
 }
 
-function broadcastWs(obj: any): number {
+function broadcastWs(obj: any, except?: any): number {
   const frame = encodeWsFrame(JSON.stringify(obj));
   let delivered = 0;
   for (const c of clients) {
+    if (c === except) continue;
     const m = clientMeta.get(c);
     if (m?.isWs && m.authenticated) {
       try { c.write(frame); delivered += 1; } catch {}
@@ -465,11 +495,24 @@ async function handleTcpData(socket: any, data: Buffer) {
   if (!meta) return;
   // Append to buffer
   meta.buffer = Buffer.concat([meta.buffer, data]);
+  if (meta.buffer.length > MAX_BUFFER) {
+    console.log('[meshServer] buffer troppo grande, scollego', meta.addr);
+    try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+    return;
+  }
 
   // If already WS upgraded, decode frames
   if (meta.isWs) {
-    const { messages, remaining } = tryDecodeWsFrames(meta.buffer);
+    const { messages, remaining, closed } = tryDecodeWsFrames(meta.buffer);
     meta.buffer = remaining;
+    // RETE0 (revisore): il telefono ha chiesto di chiudere («Scollegati»): dopo i messaggi arrivati prima esce subito
+    // dagli online, senza aspettare i 30 s del silenzio
+    const closeAfter = () => {
+      if (!closed || !clientMeta.has(socket)) return;
+      try { socket.write(Buffer.from([0x88, 0x00])); } catch {}
+      try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+      phoneGone(socket);
+    };
     for (const m of messages) {
       // ping/pong
       if (m === '__ping__') {
@@ -481,14 +524,30 @@ async function handleTcpData(socket: any, data: Buffer) {
       // Authenticate every peer before accepting any message or broadcasting it.
       if (obj.type === 'hello') {
         if (!activeToken || obj.token !== activeToken) {
-          sendWs(socket, { type: 'error', error: 'unauthorized' });
+          // RETE0: il rifiuto arriva davvero (sendWs scrive solo ai telefoni già accettati), così il telefono dice
+          // «Il centro non ha accettato il codice» invece di «non risponde»
+          try { socket.write(encodeWsFrame(JSON.stringify({ type: 'error', error: 'unauthorized' }))); } catch {}
           try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
-          clients.delete(socket);
-          clientMeta.delete(socket);
+          phoneGone(socket); // se era già accettato, gli altri lo vedono uscire
           break;
         }
+        const now = Date.now();
         meta.authenticated = true;
-        sendWs(socket, { type: 'hello_ack', token: activeToken, ts: Date.now() });
+        meta.phone = phoneFromHello(obj, `tel-${meta.addr.replace(/[^\w]/g, '')}`);
+        meta.since = now;
+        meta.lastSeen = now;
+        // RETE0 (revisore): un telefono per id. Chi rientra prima che il collegamento di prima sia chiuso ne prende il
+        // posto: quello vecchio si chiude senza passare da «visto alle…»
+        for (const [other, om] of [...clientMeta]) {
+          if (other !== socket && om.authenticated && om.phone?.id === meta.phone.id) {
+            clients.delete(other);
+            clientMeta.delete(other);
+            try { other.destroy ? other.destroy() : other.end?.(); } catch {}
+          }
+        }
+        departed.delete(meta.phone.id);
+        sendWs(socket, { type: 'hello_ack', token: activeToken, center: { name: centerName }, ts: now });
+        broadcastPresence();
         continue;
       }
       if (!meta.authenticated) {
@@ -498,6 +557,7 @@ async function handleTcpData(socket: any, data: Buffer) {
         clientMeta.delete(socket);
         break;
       }
+      meta.lastSeen = Date.now();
       if (obj.type === 'ping') {
         sendWs(socket, { type: 'pong', ts: Date.now() });
         continue;
@@ -506,15 +566,20 @@ async function handleTcpData(socket: any, data: Buffer) {
       if (obj.type === 'light_payload' || obj.type === 'chat' || obj.type === 'push') {
         // save chat if light_payload
         if (obj.type === 'light_payload') {
-          await appendChatMessage(obj);
-          // normalize to chat for listeners
-          const chat = { type: 'chat', skus: obj.skus, automationIds: obj.automationIds, text: obj.text, ts: obj.ts };
-          broadcastWs(chat);
+          // RETE0 (revisore): se il database del centro non scrive, il messaggio si inoltra lo stesso
+          try { await appendChatMessage(obj); } catch { /* registrato in appendChatMessage */ }
+          // normalize to chat for listeners (solo testo, prodotti e automazioni)
+          const chat = chatForward(obj);
+          // RETE0: a tutti tranne chi lo manda (lo vede già da sé: niente copie doppie)
+          if (chat) broadcastWs(chat, socket);
           // notifica anche Host (server) — la sua UI non è WS client, va avvisata via meshSync
           try { const msync: any = require('./meshSync'); if (msync?.notifyLocalChat) msync.notifyLocalChat(obj); } catch {}
         } else {
           // forward to other WS clients (exclude sender)
-          const { token: _roomToken, ...message } = obj;
+          // RETE0 (revisore): della Chat solo testo, prodotti e automazioni; `push` (inventario, RETE2a) com'è
+          const { token: _roomToken, ...rest } = obj;
+          const message = obj.type === 'chat' ? chatForward(obj) : rest;
+          if (!message) continue;
           const frame = encodeWsFrame(JSON.stringify(message));
           for (const c of clients) {
             if (c !== socket) {
@@ -531,6 +596,7 @@ async function handleTcpData(socket: any, data: Buffer) {
         try { onMessageCb(message, socket); } catch (e) { console.log('[meshServer] onMessage error', e); }
       }
     }
+    closeAfter();
     return;
   }
 
@@ -610,7 +676,7 @@ async function handleTcpData(socket: any, data: Buffer) {
 // ---------------------------------------------------------------------------
 // Public API: startMeshServer / stopMeshServer
 // ---------------------------------------------------------------------------
-export async function startMeshServer(port: number, token: string, onMessage?: OnMeshMessage): Promise<void> {
+export async function startMeshServer(port: number, token: string, onMessage?: OnMeshMessage, opts?: { name?: string }): Promise<void> {
   if (server || httpFallbackServer) {
     console.log('[meshServer] already running on', activePort, '— restarting');
     await stopMeshServer();
@@ -618,6 +684,24 @@ export async function startMeshServer(port: number, token: string, onMessage?: O
   activePort = port;
   activeToken = token;
   onMessageCb = onMessage ?? null;
+  centerName = opts?.name || 'Centro del negozio';
+  centerSince = Date.now();
+  departed.clear();
+  // Battito (RETE0): chi tace da più di 30 s si scollega e diventa «visto alle…»
+  if (sweepTimer) clearInterval(sweepTimer);
+  sweepTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [socket, meta] of clientMeta) {
+      if (meta.authenticated && meta.lastSeen !== undefined && now - meta.lastSeen > SILENCE_MS) {
+        try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+        phoneGone(socket);
+      } else if (!meta.authenticated && now - (meta.openedAt ?? now) > HELLO_MS) {
+        // RETE0 (revisore): collegamento aperto e mai riconosciuto (senza richiesta o senza `hello`): si chiude
+        try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {}
+        phoneGone(socket);
+      }
+    }
+  }, HEARTBEAT_MS);
 
   tcpModule = loadTcpSocket();
 
@@ -629,8 +713,10 @@ export async function startMeshServer(port: number, token: string, onMessage?: O
         server = tcpModule.createServer((socket: any) => {
           const addr = `${socket.remoteAddress ?? 'unknown'}:${socket.remotePort ?? ''}`;
           console.log('[meshServer] TCP client connected', addr);
+          // RETE0 (revisore): tetto ai collegamenti aperti insieme
+          if (clientMeta.size >= MAX_SOCKETS) { try { socket.destroy ? socket.destroy() : socket.end?.(); } catch {} return; }
           clients.add(socket);
-          clientMeta.set(socket, { socket, isWs: false, authenticated: false, buffer: Buffer.alloc(0), addr });
+          clientMeta.set(socket, { socket, isWs: false, authenticated: false, buffer: Buffer.alloc(0), addr, openedAt: Date.now() });
 
           socket.on('data', (d: any) => {
             const buf = Buffer.isBuffer(d) ? d : Buffer.from(d);
@@ -639,8 +725,7 @@ export async function startMeshServer(port: number, token: string, onMessage?: O
           socket.on('error', (e: any) => console.log('[meshServer] socket error', addr, e?.message ?? e));
           socket.on('close', () => {
             console.log('[meshServer] socket close', addr);
-            clients.delete(socket);
-            clientMeta.delete(socket);
+            phoneGone(socket);
           });
         });
 
@@ -762,10 +847,13 @@ async function startHttpFallback(port: number, token: string, onMessage?: OnMesh
     if (pathname === '/chat/push' && method === 'POST') {
       try {
         const j = body ? JSON.parse(body) : {};
-        const { token: _roomToken, ...chatPayload } = j;
-        await appendChatMessage(chatPayload);
-        broadcastHttpWs({ type: 'chat', ...chatPayload });
-        if (onMessageCb) onMessageCb({ type: 'chat', ...chatPayload }, null);
+        // RETE0 (revisore): come nella via TCP, solo la Chat col tipo «chat», anche se il database non scrive
+        const chat = chatForward(j);
+        if (chat) {
+          try { await appendChatMessage(chat); } catch { /* registrato in appendChatMessage */ }
+          broadcastHttpWs(chat);
+          if (onMessageCb) onMessageCb(chat, null);
+        }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {
@@ -831,6 +919,8 @@ async function startHttpFallback(port: number, token: string, onMessage?: OnMesh
 
 export async function stopMeshServer(): Promise<void> {
   console.log('[meshServer] stopping...', { port: activePort, mode: serverMode });
+  if (sweepTimer) { clearInterval(sweepTimer); sweepTimer = null; }
+  departed.clear();
   // close clients
   for (const c of clients) {
     try { c.destroy ? c.destroy() : c.end?.(); } catch {}
@@ -873,7 +963,52 @@ export function getMeshServerInfo() {
     clientCount: authenticatedClients.length,
     authenticatedClients,
     listening: !!(server || httpFallbackServer),
+    // RETE0: telefoni collegati e andati via, per il centro e per la presenza
+    centerName,
+    centerSince,
+    phones: currentPhones(),
   };
+}
+
+// ---------------------------------------------------------------------------
+// RETE0 (ticket 32): presenza — chi è collegato, da quando, l'ultima volta
+// ---------------------------------------------------------------------------
+function currentPhones(): PresencePhone[] {
+  const online: PresencePhone[] = [];
+  for (const meta of clientMeta.values()) {
+    if (!meta.isWs || !meta.authenticated || !meta.phone) continue;
+    online.push({ id: meta.phone.id, name: meta.phone.name, since: meta.since ?? 0, lastSeen: meta.lastSeen ?? 0, online: true });
+  }
+  const ids = new Set(online.map((p) => p.id));
+  return [...online, ...[...departed.values()].filter((p) => !ids.has(p.id)).sort((a, b) => b.lastSeen - a.lastSeen)];
+}
+
+function broadcastPresence() {
+  broadcastWs(presenceMessage({ name: centerName, since: centerSince }, currentPhones(), Date.now()));
+}
+
+/** Un telefono chiude o tace: esce dall'elenco degli online e resta come «visto alle…». */
+function phoneGone(socket: any) {
+  const meta = clientMeta.get(socket);
+  clients.delete(socket);
+  clientMeta.delete(socket);
+  if (!meta?.authenticated || !meta.phone) return;
+  departed.set(meta.phone.id, { id: meta.phone.id, name: meta.phone.name, since: meta.since ?? 0, lastSeen: meta.lastSeen ?? Date.now(), online: false });
+  while (departed.size > MAX_DEPARTED) departed.delete(departed.keys().next().value as string);
+  broadcastPresence();
+}
+
+/**
+ * «Nuovo codice» (CT11, AR10): vale per chi entra dopo, senza riavviare il server; chi è già collegato resta collegato.
+ * Scritto in RETE0, da provare sul telefono in RETE1.
+ */
+export function setMeshServerToken(token: string) {
+  if (server || httpFallbackServer) activeToken = token;
+}
+
+export function setMeshCenterName(name: string) {
+  centerName = name || 'Centro del negozio';
+  if (server || httpFallbackServer) broadcastPresence();
 }
 export function broadcastToMeshClients(obj: any) { return broadcastWs(obj); }
 export function sendToMeshClient(socket: any, obj: any) { sendWs(socket, obj); }

@@ -1,5 +1,7 @@
 // a4: Impostazioni - ogni voce: dove porta (indirizzo e titolo della pagina) e quali finestre apre.
 // Poi Condivisione (cosa si può fare) e Team (Rete del negozio, prima Accesso Multi-Utente) sul web.
+// RETE0: «Rete del negozio» è la schermata nuova (`settings/network`): a4-imp-team riscritto per quella (nessuna scelta
+// all'entrata, «Fai da centro» spento sul web col motivo, «Apri la Chat»); prima toccava «Genera QR Host».
 // ACC1: «Spazio locale» e «Accesso Multi-Utente» diventano «Accesso» e «Rete del negozio»; «Backup Google Drive» è
 // spento col motivo (nessuna finestra).
 // Uso: node a4-impostazioni.cjs [nome-scenario]
@@ -44,26 +46,26 @@ const VOCI = [
   await run('a4-imp-team', async (h) => {
     await h.go('settings');
     await h.click('Rete del negozio');
-    await h.page.waitForTimeout(5000); // la schermata prova subito a creare la stanza Host
+    await h.page.waitForTimeout(2500);
     const url = h.page.url();
     await h.shot('team');
     const testo = (await h.page.locator('body').innerText()).replace(/\s+/g, ' ');
     const stato = {
       url: new URL(url).pathname,
       erroreHost: /Impossibile|non disponibile|errore/i.test(testo),
-      dispositivi: (testo.match(/Dispositivi nella stanza \(\d+\)/) || [])[0],
+      stato: (testo.match(/Non collegato|Host pronto[^•]*|Collegato al centro/) || [])[0],
+      scelte: [await h.has('Fai da centro del negozio', true), await h.has('Collegati a un centro', true)],
       estratto: testo.slice(0, 260),
     };
-    // pulsanti Host: Genera QR e Sincronizza ora (senza rete LAN né server mesh sul web)
+    // RETE0: «Fai da centro» spento sul web col motivo; il tocco non fa nulla (nessuna finestra, stato invariato)
     const visti = []; h.page.on('dialog', (d) => visti.push(d.message().replace(/\n+/g, ' | ').slice(0, 90)));
-    await h.click('Genera QR Host'); await h.page.waitForTimeout(2500);
-    stato.generaQr = visti.slice();
-    stato.bannerDopo = ((await h.page.locator('body').innerText()).match(/(Host pronto[^\n]*|Connesso LAN[^\n]*)/) || [])[0];
-    await h.click('Sincronizza ora', false); await h.page.waitForTimeout(1500);
-    stato.sincronizza = visti.slice(stato.generaQr.length);
-    // Chat Team (segnaposto)
-    const chat = await h.has('Apri Chat Team');
-    if (chat) { await h.click('Apri Chat Team', false); await h.page.waitForTimeout(1500); stato.chat = `${new URL(h.page.url()).pathname} «${await h.page.title()}»`; }
+    stato.motivoCentro = await h.has('Sul computer non si può: usa un telefono che resta acceso in negozio.', true);
+    await h.click('Fai da centro del negozio'); await h.page.waitForTimeout(1500);
+    stato.toccoCentro = visti.slice();
+    stato.bannerDopo = ((await h.page.locator('body').innerText()).match(/(Non collegato|Questo telefono è il centro[^\n]*|Collegato al centro[^\n]*)/) || [])[0];
+    // Chat (fino a CHAT1 si apre da qui)
+    const chat = await h.has('Apri la Chat', true);
+    if (chat) { await h.click('Apri la Chat'); await h.page.waitForTimeout(1500); stato.chat = `${new URL(h.page.url()).pathname} «${await h.page.title()}»`; }
     // l'indirizzo della schermata Team riaperto direttamente
     await h.page.goto(url); await h.page.waitForTimeout(2500);
     stato.riaperturaIndirizzo = `${new URL(h.page.url()).pathname} «${await h.page.title()}»`;
